@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShadowLingo · 卡拉OK字幕</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080d14; --card: #0f1623; --border: #1a2540;
+    --green: #22c55e; --purple: #a78bfa; --indigo: #6366f1;
+    --text: #f1f5f9; --muted: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; }
+  #app { max-width: 440px; margin: 0 auto; padding-bottom: 60px; }
+  .header { padding: 16px 20px; display: flex; align-items: center; gap: 10px; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; background: var(--green); display: grid; place-items: center; font-weight: 900; font-size: 16px; color: #000; flex-shrink: 0; }
+  .prog-track { height: 2px; background: var(--border); margin: 0 20px 16px; border-radius: 99px; }
+  .prog-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width 0.4s ease; }
+  .scene { margin: 0 20px 14px; border-radius: 20px; height: 220px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: radial-gradient(ellipse at 30% 40%, #0d2a4a 0%, #080d14 60%), radial-gradient(ellipse at 70% 60%, #1a0a2e 0%, transparent 50%); border: 1px solid var(--border); }
+  .particle { position: absolute; border-radius: 50%; pointer-events: none; }
+  .avatar { width: 68px; height: 68px; border-radius: 50%; background: linear-gradient(135deg, #1e3a5f, #2d5a8e); border: 3px solid transparent; display: grid; place-items: center; font-size: 30px; position: relative; transition: border-color 0.3s; flex-shrink: 0; }
+  .avatar.speaking { border-color: var(--green); animation: avatarPulse 0.4s ease-in-out infinite alternate; }
+  @keyframes avatarPulse { from { transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94,0.3); } to { transform: scale(1.04); box-shadow: 0 0 16px 4px rgba(34,197,94,0.15); } }
+  .avatar-ring { position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--green); }
+  .avatar.speaking .avatar-ring { animation: ringPulse 1.2s ease-out infinite; }
+  @keyframes ringPulse { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
+  .karaoke-wrap { padding: 0 16px; text-align: center; min-height: 56px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .kchar { font-family: 'Noto Serif SC', serif; font-size: 26px; font-weight: 700; display: inline-block; position: relative; color: rgba(255,255,255,0.3); }
+  .kchar::after { content: attr(data-char); position: absolute; inset: 0; color: var(--green); clip-path: inset(0 100% 0 0); transition: clip-path 0.05s linear; text-shadow: 0 0 12px rgba(34,197,94,0.6); }
+  .kchar.done::after { clip-path: inset(0 0% 0 0); }
+  .kchar.active::after { clip-path: inset(0 var(--fill-right, 100%) 0 0); }
+  .scene-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.08); }
+  .scene-bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), #86efac); width: 0%; transition: width 0.1s linear; border-radius: 0 99px 99px 0; }
+  .status { position: absolute; top: 10px; right: 12px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border); transition: all 0.3s; }
+  .status.playing { background: rgba(34,197,94,0.12); color: var(--green); border-color: rgba(34,197,94,0.3); }
+  .status.recording { background: rgba(167,139,250,0.12); color: var(--purple); border-color: rgba(167,139,250,0.3); }
+  .lc { position: absolute; top: 10px; left: 12px; padding: 3px 10px; border-radius: 20px; font-size: 11px; background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border); }
+  .info-card { margin: 0 20px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 18px; }
+  .pinyin { font-size: 14px; color: #818cf8; letter-spacing: 0.5px; margin-bottom: 6px; line-height: 1.6; }
+  .en { font-size: 13px; color: var(--muted); }
+  .steps { display: flex; margin: 0 20px 10px; }
+  .step { flex: 1; text-align: center; font-size: 11px; padding-top: 6px; border-top: 2px solid var(--border); color: #374151; transition: all 0.3s; }
+  .step.active { border-color: #fff; color: #fff; font-weight: 700; }
+  .step.done { border-color: var(--green); color: var(--green); }
+  .rec-card { margin: 0 20px 10px; background: #120a2e; border: 1px solid #4c1d9555; border-radius: 14px; padding: 12px 18px; display: none; align-items: center; gap: 12px; }
+  .rec-card.show { display: flex; }
+  .waveform { display: flex; align-items: flex-end; gap: 3px; height: 24px; }
+  .wb { width: 3px; border-radius: 99px; background: var(--purple); height: 4px; }
+  .rec-info { font-size: 13px; color: var(--purple); font-weight: 600; }
+  .rec-cd { font-size: 26px; font-weight: 800; color: var(--purple); line-height: 1; }
+  .score-card { margin: 0 20px 10px; background: var(--card); border: 1px solid #92400e44; border-radius: 16px; padding: 14px 18px; display: none; align-items: center; gap: 14px; animation: fadeUp 0.4s ease; }
+  .score-card.show { display: flex; }
+  .btn-area { margin: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+  .btn { padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; transition: all 0.2s; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { cursor: not-allowed; color: #1a2535; border-color: #0d1520; background: #090e18; }
+  .btn.on-listen { background: #1e3a8a; color: #93c5fd; border-color: #1d4ed8; }
+  .btn.on-slow { background: #2e1065; color: var(--purple); border-color: #7c3aed; }
+  .btn.on-normal { background: #052e16; color: var(--green); border-color: #16a34a; }
+  .btn-next { padding: 15px; border-radius: 14px; border: none; background: var(--green); color: #000; font-weight: 700; font-size: 16px; font-family: inherit; cursor: pointer; display: none; animation: fadeUp 0.4s ease; margin-top: 2px; }
+  .btn-next.show { display: block; }
+  .btn-next:active { transform: scale(0.97); }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">影</div>
+    <div>
+      <div style="font-weight:700;font-size:15px">ShadowLingo</div>
+      <div style="font-size:11px;color:var(--muted)">轻松学中文 · 开场白</div>
+    </div>
+    <div style="margin-left:auto;font-size:12px;color:var(--muted)" id="counter-top">1 / 5</div>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="prog" style="width:0"></div></div>
+  <div class="scene" id="scene">
+    <div id="particles"></div>
+    <div class="lc" id="lc">第 1/5 句</div>
+    <div class="status" id="status">准备好了</div>
+    <div class="avatar" id="avatar">🧑‍🏫<div class="avatar-ring"></div></div>
+    <div class="karaoke-wrap" id="karaoke"></div>
+    <div class="scene-bar"><div class="scene-bar-fill" id="bar-fill"></div></div>
+  </div>
+  <div class="info-card">
+    <div class="pinyin" id="pinyin"></div>
+    <div class="en" id="en"></div>
+  </div>
+  <div class="steps">
+    <div class="step" id="st0">🎧 听</div>
+    <div class="step" id="st1">🐢 慢读</div>
+    <div class="step" id="st2">🚀 跟读</div>
+    <div class="step" id="st3">📊 分数</div>
+  </div>
+  <div class="rec-card" id="rec-card">
+    <div class="waveform" id="waveform"></div>
+    <div>
+      <div class="rec-info" id="rec-info">请跟读！</div>
+      <div class="rec-cd" id="rec-cd"></div>
+    </div>
+  </div>
+  <div class="score-card" id="score-card">
+    <svg width="88" height="88" style="transform:rotate(-90deg);flex-shrink:0">
+      <circle cx="44" cy="44" r="37" fill="none" stroke="#1e2a3a" stroke-width="7"/>
+      <circle cx="44" cy="44" r="37" fill="none" stroke="#4ade80" stroke-width="7"
+        stroke-dasharray="0 233" stroke-linecap="round" id="sc"
+        style="transition:stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1)"/>
+      <text x="44" y="51" text-anchor="middle" id="sn" fill="#4ade80"
+        style="font-size:20px;font-weight:800;transform:rotate(90deg);transform-origin:44px 44px;font-family:serif"></text>
+    </svg>
+    <div style="flex:1">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">本句得分</div>
+      <div style="font-size:14px;font-weight:700;line-height:1.5;margin-bottom:4px" id="praise"></div>
+      <div style="font-size:12px;color:#4b5563" id="shint"></div>
+    </div>
+  </div>
+  <div class="btn-area">
+    <button class="btn" id="bl" onclick="doListen()">🎧 第一步：听原声</button>
+    <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 第二步：慢速跟读</button>
+    <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 第三步：常速跟读</button>
+    <div style="display:flex;gap:10px">
+      <button class="btn" id="bback" onclick="doBack()" style="flex:1">← 上一句</button>
+      <button class="btn" id="bskip" onclick="doNext()" style="flex:1">下一句 →</button>
+    </div>
+    <button class="btn-next" id="bnext" onclick="doNext()">✅ 完成本句，下一句 →</button>
+  </div>
+</div>
+
+<script>
+// 音频文件 - 一个文件，按时间段播放每句
+const AUDIO_SRC = "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a";
+
+const SENTENCES = [
+  { zh:"你好，很高兴认识你！",          pinyin:"Nǐ hǎo, hěn gāoxìng rènshi nǐ!",          en:"Hello, nice to meet you!",                                         start:1,  end:4.5  },
+  { zh:"我是一个中国人，你也想成为一个中国人吗？", pinyin:"Wǒ shì yī gè Zhōngguó rén, nǐ yě xiǎng chéngwéi yī gè Zhōngguó rén ma?", en:"I'm Chinese — do you want to become one too?",  start:5,  end:10.5 },
+  { zh:"首先，你得学会中文。",           pinyin:"Shǒuxiān, nǐ děi xuéhuì Zhōngwén.",        en:"First of all, you need to learn Chinese.",                         start:11, end:14.5 },
+  { zh:"每天我会用一个轻松有趣的小故事来教你怎么说中文。", pinyin:"Měitiān wǒ huì yòng yī gè qīngsōng yǒuqù de xiǎo gùshi lái jiāo nǐ zěnme shuō Zhōngwén.", en:"Every day I'll use a fun little story to teach you how to speak Chinese.", start:14.5, end:22.5 },
+  { zh:"赶快行动起来吧，和我一起轻松学中文！", pinyin:"Gǎnkuài xíngdòng qǐlái ba, hé wǒ yīqǐ qīngsōng xué Zhōngwén!", en:"Take action now — let's learn Chinese together, the easy way!",    start:22.5, end:28.5 },
+];
+
+const PRAISES=[
+  {min:90,msgs:["🏆 完美！声调拿捏得非常精准！","🌟 太棒了！说得非常地道！","🎯 满分水准！语感越来越强！"]},
+  {min:75,msgs:["🔥 非常好！再练一遍就完美！","💪 发音很稳！越来越自然了！","✨ 进步神速！你有语言天赋！"]},
+  {min:60,msgs:["👏 不错！节奏感已经很到位了！","💡 有进步！多听几遍能做到！","🎵 越来越好了！继续保持！"]},
+  {min:0, msgs:["🌱 开口就是最大的勇气！","💫 每次练习都是进步！","🎉 比昨天的自己更好了！"]},
+];
+function getPraise(s){const b=PRAISES.find(p=>s>=p.min);return b.msgs[Math.floor(Math.random()*b.msgs.length)];}
+function randScore(){return Math.floor(Math.random()*14)+85;}
+
+let idx=0, phase='idle', cdTimer=null;
+// 共用一个Audio元素，通过 currentTime 跳到对应片段
+const audio = new Audio(AUDIO_SRC);
+audio.preload = 'auto';
+let segTimer = null;
+
+// 播放指定片段
+function playSegment(start, end, rate, onEnd) {
+  clearTimeout(segTimer);
+  audio.playbackRate = rate;
+  audio.currentTime = start;
+  audio.play().catch(()=>{});
+  avatarSpeak(true);
+  const dur = ((end - start) / rate) * 1000;
+  const fill = document.getElementById('bar-fill');
+  fill.style.transition='none'; fill.style.width='0%';
+  setTimeout(()=>{ fill.style.transition=`width ${dur}ms linear`; fill.style.width='100%'; },50);
+  buildKaraoke(SENTENCES[idx].zh);
+  segTimer = setTimeout(()=>{
+    audio.pause();
+    avatarSpeak(false);
+    fill.style.transition='none'; fill.style.width='0%';
+    completeKaraoke();
+    if(onEnd) onEnd();
+  }, dur + 80);
+}
+
+// Karaoke
+function buildKaraoke(text) {
+  const el=document.getElementById('karaoke');
+  el.innerHTML='';
+  if(!text) return;
+  [...text].forEach(c=>{
+    const span=document.createElement('span');
+    span.className='kchar'; span.dataset.char=c; span.textContent=c;
+    el.appendChild(span);
+  });
+}
+function animateKaraoke(text, dur) {
+  buildKaraoke(text);
+  const chars=document.querySelectorAll('.kchar');
+  const total=chars.length; if(!total) return;
+  const perChar=dur/total;
+  chars.forEach((c,i)=>{
+    setTimeout(()=>c.classList.add('done'), i*perChar+perChar);
+    for(let s=0;s<=10;s++){
+      setTimeout(()=>{
+        c.classList.add('active');
+        c.style.setProperty('--fill-right',(100-s*10)+'%');
+      }, i*perChar+(s/10)*perChar);
+    }
+  });
+}
+
+function avatarSpeak(on) {
+  document.getElementById('avatar').classList[on?'add':'remove']('speaking');
+}
+function setStatus(type,text){
+  const el=document.getElementById('status');
+  el.className='status'+(type==='playing'?' playing':type==='recording'?' recording':'');
+  el.textContent=text;
+}
+
+// 录音
+async function startRecording(label, dur, onDone){
+  document.getElementById('rec-info').textContent=label;
+  document.getElementById('rec-card').classList.add('show');
+  let c=Math.ceil(dur/1000);
+  document.getElementById('rec-cd').textContent=c;
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr=new MediaRecorder(stream);
+    mr.start();
+    cdTimer=setInterval(()=>{
+      c--; if(c<=0){ clearInterval(cdTimer); mr.stop(); stream.getTracks().forEach(t=>t.stop()); document.getElementById('rec-card').classList.remove('show'); onDone(); }
+      else document.getElementById('rec-cd').textContent=c;
+    },1000);
+  } catch {
+    cdTimer=setInterval(()=>{
+      c--; if(c<=0){ clearInterval(cdTimer); document.getElementById('rec-card').classList.remove('show'); onDone(); }
+      else document.getElementById('rec-cd').textContent=c;
+    },1000);
+  }
+}
+
+function showScore(){
+  const s=randScore();
+  const circ=2*Math.PI*37, dash=(s/100)*circ;
+  const color=s>=85?'#4ade80':s>=70?'#facc15':'#f87171';
+  const sc=document.getElementById('sc'), sn=document.getElementById('sn');
+  sc.setAttribute('stroke',color); sn.setAttribute('fill',color); sn.textContent=s;
+  setTimeout(()=>sc.setAttribute('stroke-dasharray',`${dash} ${circ}`),100);
+  document.getElementById('praise').textContent=getPraise(s);
+  document.getElementById('shint').textContent=s>=85?'发音流畅，声调准确':s>=70?'整体不错，声调注意一下':'多听几遍，大胆模仿';
+  document.getElementById('score-card').classList.add('show');
+  phase='scored'; updateUI();
+}
+
+function updateSteps(){
+  const map={idle:-1,listen_play:0,listened:0,slow_play:1,slow_rec:1,normal_play:2,normal_rec:2,scored:3};
+  const cur=map[phase]??-1;
+  [0,1,2,3].forEach(i=>{ document.getElementById('st'+i).className='step'+(i<cur?' done':i===cur?' active':''); });
+}
+
+function updateUI(){
+  const s=SENTENCES[idx];
+  document.getElementById('counter-top').textContent=`${idx+1} / ${SENTENCES.length}`;
+  document.getElementById('lc').textContent=`第 ${idx+1}/${SENTENCES.length} 句`;
+  document.getElementById('prog').style.width=`${(idx/SENTENCES.length)*100}%`;
+  document.getElementById('pinyin').textContent=s.pinyin;
+  document.getElementById('en').textContent=s.en;
+  const bl=document.getElementById('bl'),bs=document.getElementById('bs'),bn=document.getElementById('bn'),bnext=document.getElementById('bnext');
+  bl.className='btn'+(phase==='listen_play'?' on-listen':'');
+  bs.className='btn'+(['slow_play','slow_rec'].includes(phase)?' on-slow':'');
+  bn.className='btn'+(['normal_play','normal_rec'].includes(phase)?' on-normal':'');
+  bs.disabled=(phase==='idle');
+  bn.disabled=(phase==='idle'||phase==='listen_play');
+  bnext.className='btn-next'+(phase==='scored'?' show':'');
+  bnext.textContent=idx+1>=SENTENCES.length?'🏁 完成本课':'下一句 →';
+  updateSteps();
+}
+
+function doListen(){
+  clearTimeout(segTimer); clearInterval(cdTimer); audio.pause();
+  document.getElementById('score-card').classList.remove('show');
+  document.getElementById('sc').setAttribute('stroke-dasharray','0 233');
+  phase='listen_play'; setStatus('playing','🎧 播放中…'); updateUI();
+  const s=SENTENCES[idx];
+  playSegment(s.start, s.end, 1, ()=>{ phase='listened'; setStatus('','准备好了'); updateUI(); });
+}
+
+function doSlow(){
+  if(phase==='idle') return;
+  clearTimeout(segTimer); clearInterval(cdTimer); audio.pause();
+  document.getElementById('score-card').classList.remove('show');
+  document.getElementById('sc').setAttribute('stroke-dasharray','0 233');
+  phase='slow_play'; setStatus('recording','🐢 慢速 · 同步跟读'); updateUI();
+  const s=SENTENCES[idx];
+  const dur=((s.end-s.start)/0.65)*1000;
+  playSegment(s.start, s.end, 0.65, ()=>{ phase='scored'; setStatus('','录音完成'); showScore(); });
+  startRecording('🐢 慢速跟读 · 请同步开口！', dur+300, ()=>{});
+}
+
+function doNormal(){
+  if(phase==='idle'||phase==='listen_play') return;
+  clearTimeout(segTimer); clearInterval(cdTimer); audio.pause();
+  document.getElementById('score-card').classList.remove('show');
+  document.getElementById('sc').setAttribute('stroke-dasharray','0 233');
+  phase='normal_play'; setStatus('recording','🚀 常速 · 同步跟读'); updateUI();
+  const s=SENTENCES[idx];
+  const dur=(s.end-s.start)*1000;
+  playSegment(s.start, s.end, 1, ()=>{ phase='scored'; setStatus('','录音完成'); showScore(); });
+  startRecording('🚀 常速跟读 · 请同步开口！', dur+300, ()=>{});
+}
+
+function doBack(){
+  if(idx===0) return;
+  clearTimeout(segTimer); clearInterval(cdTimer); audio.pause(); avatarSpeak(false);
+  document.getElementById("score-card").classList.remove("show");
+  document.getElementById("sc").setAttribute("stroke-dasharray","0 233");
+  document.getElementById("bar-fill").style.width="0%";
+  buildKaraoke("");
+  idx--; phase="idle"; updateUI(); setStatus("","准备好了");
+  document.getElementById("bback").disabled=(idx===0);
+}
+
+function doNext(){
+  clearTimeout(segTimer); clearInterval(cdTimer); audio.pause(); avatarSpeak(false);
+  document.getElementById('score-card').classList.remove('show');
+  document.getElementById('sc').setAttribute('stroke-dasharray','0 233');
+  document.getElementById('bar-fill').style.width='0%';
+  buildKaraoke('');
+  if(idx+1>=SENTENCES.length){ showDone(); return; }
+  idx++; phase='idle'; updateUI(); setStatus('','准备好了');
+}
+
+function showDone(){
+  document.getElementById('app').innerHTML=`
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px;text-align:center">
+      <div style="font-size:60px">🎓</div>
+      <div style="font-size:26px;font-weight:800">本课完成！</div>
+      <div style="font-size:15px;color:var(--muted)">你完成了全部 ${SENTENCES.length} 句精读练习</div>
+      <div style="font-size:18px;color:var(--green);max-width:300px">${getPraise(82)}</div>
+      <button onclick="location.reload()" style="margin-top:12px;padding:14px 32px;border-radius:14px;border:none;background:var(--green);color:#000;font-weight:700;font-size:16px;cursor:pointer;font-family:inherit">再练一遍</button>
+    </div>`;
+}
+
+// 粒子
+const pc=document.getElementById('particles');
+for(let i=0;i<14;i++){
+  const p=document.createElement('div');p.className='particle';
+  const sz=Math.random()*5+2;
+  p.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;bottom:0;background:hsl(${190+Math.random()*60},70%,65%);opacity:0.12;animation:floatUp ${5+Math.random()*8}s linear ${Math.random()*6}s infinite;`;
+  pc.appendChild(p);
+}
+const ps=document.createElement('style');
+ps.textContent='@keyframes floatUp{0%{transform:translateY(0);opacity:0}10%{opacity:0.12}90%{opacity:0.12}100%{transform:translateY(-240px);opacity:0}}';
+document.head.appendChild(ps);
+
+// 波形
+const wf=document.getElementById('waveform');
+for(let i=0;i<10;i++){
+  const b=document.createElement('div');b.className='wb';
+  b.style.animation=`wvanim ${0.28+i*0.06}s ease-in-out ${i*0.04}s infinite alternate`;
+  wf.appendChild(b);
+}
+const ws=document.createElement('style');
+ws.textContent='@keyframes wvanim{from{height:4px}to{height:22px}}';
+document.head.appendChild(ws);
+
+updateUI();
+</script>
+</body>
+</html>
+<script>
+// Accurate karaoke sync
+const KARAOKE_OFFSET = 0.15; // seconds - compensate for audio buffer startup delay
+let lastCharIdx = -1;
+
+audio.addEventListener('timeupdate', function() {
+  const s = SENTENCES[idx];
+  if (!s || audio.paused) return;
+  // Apply offset so chars start slightly after audio begins
+  const elapsed = audio.currentTime - s.start - KARAOKE_OFFSET;
+  const segDur = s.end - s.start;
+  if (elapsed < 0) return;
+  const progress = Math.min(elapsed / segDur, 1);
+  const chars = document.querySelectorAll('.kchar');
+  if (!chars.length) return;
+  const charProgress = progress * chars.length;
+  const currentCharIdx = Math.floor(charProgress);
+  chars.forEach((c, i) => {
+    if (c.classList.contains('done')) return;
+    if (i < currentCharIdx) {
+      c.classList.remove('active');
+      c.classList.add('done');
+      c.style.setProperty('--fill-right', '0%');
+    } else if (i === currentCharIdx) {
+      const frac = charProgress - i;
+      c.classList.add('active');
+      c.style.setProperty('--fill-right', Math.max(0, 100 - frac * 100).toFixed(1) + '%');
+    }
+  });
+  lastCharIdx = currentCharIdx;
+});
+
+// When segment ends, make sure all chars are fully green
+function completeKaraoke() {
+  document.querySelectorAll('.kchar').forEach(c => {
+    c.classList.remove('active');
+    c.classList.add('done');
+    c.style.setProperty('--fill-right', '0%');
+  });
+}
+
+audio.addEventListener('seeking', function() {
+  lastCharIdx = -1;
+  document.querySelectorAll('.kchar').forEach(c => {
+    c.classList.remove('done','active');
+    c.style.setProperty('--fill-right','100%');
+  });
+});
+</script>
