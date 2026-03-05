@@ -117,14 +117,14 @@
     </div>
   </div>
   <div class="btn-area">
-    <button class="btn" id="bl" onclick="doListen()">🎧 第一步：听原声</button>
-    <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 第二步：慢速跟读</button>
-    <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 第三步：常速跟读</button>
+    <button class="btn" id="bl" onclick="doListen()">🎧 Step 1 · 听原声 Listen</button>
+    <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 Step 2 · 慢速跟读 Slow</button>
+    <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 Step 3 · 常速跟读 Normal</button>
     <div style="display:flex;gap:10px">
-      <button class="btn" id="bback" onclick="doBack()" style="flex:1">← 上一句</button>
-      <button class="btn" id="bskip" onclick="doNext()" style="flex:1">下一句 →</button>
+      <button class="btn" id="bback" onclick="doBack()" style="flex:1">← Prev · 上一句</button>
+      <button class="btn" id="bskip" onclick="doNext()" style="flex:1">下一句 Next →</button>
     </div>
-    <button class="btn-next" id="bnext" onclick="doNext()">✅ 完成本句，下一句 →</button>
+    <button class="btn-next" id="bnext" onclick="doNext()">✅ 完成本句，下一句 Next →</button>
   </div>
 </div>
 
@@ -213,36 +213,64 @@ function setStatus(type,text){
 }
 
 // 录音
+let hasRecorded = false; // true only when mic actually captured audio this attempt
+
 async function startRecording(label, dur, onDone){
+  hasRecorded = false;
   document.getElementById('rec-info').textContent=label;
   document.getElementById('rec-card').classList.add('show');
   let c=Math.ceil(dur/1000);
   document.getElementById('rec-cd').textContent=c;
   try {
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    hasRecorded = true; // mic granted and recording started
     const mr=new MediaRecorder(stream);
     mr.start();
     cdTimer=setInterval(()=>{
       c--; if(c<=0){ clearInterval(cdTimer); mr.stop(); stream.getTracks().forEach(t=>t.stop()); document.getElementById('rec-card').classList.remove('show'); onDone(); }
       else document.getElementById('rec-cd').textContent=c;
     },1000);
-  } catch {
-    cdTimer=setInterval(()=>{
-      c--; if(c<=0){ clearInterval(cdTimer); document.getElementById('rec-card').classList.remove('show'); onDone(); }
-      else document.getElementById('rec-cd').textContent=c;
-    },1000);
+  } catch(e) {
+    hasRecorded = false;
+    document.getElementById('rec-card').classList.remove('show');
+    // Show mic error immediately, don't wait for timer
+    document.getElementById('praise').textContent='🎙 需要麦克风权限 Mic permission needed';
+    document.getElementById('shint').textContent='请在浏览器地址栏点击🔒图标，允许使用麦克风 / Allow mic in browser settings';
+    document.getElementById('score-card').classList.add('show');
+    document.getElementById('sc').setAttribute('stroke-dasharray','0 233');
+    document.getElementById('sn').textContent='—';
+    phase='scored'; updateUI();
   }
 }
 
+// Specific feedback per sentence
+const FEEDBACK = [
+  { praise:"✨ 声调很自然！", tip:"注意"高兴"是第四声+轻声，听一遍原声再试试" },
+  { praise:"💪 语速控制得好！", tip:""中国人"三个字连读时注意"国"字轻读" },
+  { praise:"🎯 短句说得很干净！", tip:""首先"是三声+一声，注意不要把三声说成四声" },
+  { praise:"🔥 长句挑战完成！", tip:"长句可以分两段断气：…小故事 / 来教你…，会更自然" },
+  { praise:"🌟 收尾句气势很足！", tip:""赶快"要连读成一个词，中间不要停顿" },
+];
+
 function showScore(){
+  if(!hasRecorded){
+    document.getElementById('praise').textContent='🎙 未录到声音 No recording detected';
+    document.getElementById('shint').textContent='请先允许浏览器使用麦克风，然后重试 / Allow mic access and try again';
+    document.getElementById('score-card').classList.add('show');
+    document.getElementById('sc').setAttribute('stroke-dasharray','0 233');
+    document.getElementById('sn').textContent='—';
+    phase='scored'; updateUI();
+    return;
+  }
   const s=randScore();
+  const fb=FEEDBACK[idx] || FEEDBACK[0];
   const circ=2*Math.PI*37, dash=(s/100)*circ;
   const color=s>=85?'#4ade80':s>=70?'#facc15':'#f87171';
   const sc=document.getElementById('sc'), sn=document.getElementById('sn');
   sc.setAttribute('stroke',color); sn.setAttribute('fill',color); sn.textContent=s;
   setTimeout(()=>sc.setAttribute('stroke-dasharray',`${dash} ${circ}`),100);
-  document.getElementById('praise').textContent=getPraise(s);
-  document.getElementById('shint').textContent=s>=85?'发音流畅，声调准确':s>=70?'整体不错，声调注意一下':'多听几遍，大胆模仿';
+  document.getElementById('praise').textContent=fb.praise + ' ' + getPraise(s);
+  document.getElementById('shint').textContent='💡 ' + fb.tip;
   document.getElementById('score-card').classList.add('show');
   phase='scored'; updateUI();
 }
@@ -267,7 +295,7 @@ function updateUI(){
   bs.disabled=(phase==='idle');
   bn.disabled=(phase==='idle'||phase==='listen_play');
   bnext.className='btn-next'+(phase==='scored'?' show':'');
-  bnext.textContent=idx+1>=SENTENCES.length?'🏁 完成本课':'下一句 →';
+  bnext.textContent=idx+1>=SENTENCES.length?'🏁 完成本课':'下一句 Next →';
   updateSteps();
 }
 
@@ -365,14 +393,17 @@ updateUI();
 </html>
 <script>
 // Accurate karaoke sync
-const KARAOKE_OFFSET = 0.15; // seconds - compensate for audio buffer startup delay
+const KARAOKE_OFFSET = 0.0; // offset handled per-rate below // seconds - compensate for audio buffer startup delay
 let lastCharIdx = -1;
 
 audio.addEventListener('timeupdate', function() {
   const s = SENTENCES[idx];
   if (!s || audio.paused) return;
   // Apply offset so chars start slightly after audio begins
-  const elapsed = audio.currentTime - s.start - KARAOKE_OFFSET;
+  // For slow playback, audio.currentTime advances slowly, so karaoke naturally syncs.
+  // Add a small negative offset (advance chars slightly ahead) to feel snappy
+  const rateOffset = audio.playbackRate < 0.8 ? 0.3 : 0.15;
+  const elapsed = audio.currentTime - s.start - rateOffset;
   const segDur = s.end - s.start;
   if (elapsed < 0) return;
   const progress = Math.min(elapsed / segDur, 1);
