@@ -316,8 +316,8 @@ function doSlow(){
   phase='slow_play'; setStatus('recording','🐢 慢速 · 同步跟读'); updateUI();
   const s=SENTENCES[idx];
   const dur=((s.end-s.start)/0.65)*1000;
-  playSegment(s.start, s.end, 0.65, ()=>{ phase='scored'; setStatus('','录音完成'); showScore(); });
-  startRecording('🐢 慢速跟读 · 请同步开口！', dur+300, ()=>{});
+  playSegment(s.start, s.end, 0.65, ()=>{ setStatus('','🎙 录音中...'); });
+  startRecording('🐢 慢速跟读 · 请同步开口！', dur+300, ()=>{ phase='scored'; setStatus('','录音完成'); showScore(); });
 }
 
 function doNormal(){
@@ -328,8 +328,8 @@ function doNormal(){
   phase='normal_play'; setStatus('recording','🚀 常速 · 同步跟读'); updateUI();
   const s=SENTENCES[idx];
   const dur=(s.end-s.start)*1000;
-  playSegment(s.start, s.end, 1, ()=>{ phase='scored'; setStatus('','录音完成'); showScore(); });
-  startRecording('🚀 常速跟读 · 请同步开口！', dur+300, ()=>{});
+  playSegment(s.start, s.end, 1, ()=>{ setStatus('','🎙 录音中...'); });
+  startRecording('🚀 常速跟读 · 请同步开口！', dur+300, ()=>{ phase='scored'; setStatus('','录音完成'); showScore(); });
 }
 
 function doBack(){
