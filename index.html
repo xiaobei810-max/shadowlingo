@@ -1,456 +1,440 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="zh">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ShadowLingo</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green: #22c55e;
+  --bg: #080d14;
+  --card: #0d1520;
+  --border: #1a2540;
+  --text: #e2e8f0;
+  --muted: #4b5563;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; display: flex; justify-content: center; }
+.app { width: 100%; max-width: 480px; padding-bottom: 40px; }
+
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 38px; height: 38px; background: var(--green); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.logo-text { font-weight: 700; font-size: 18px; }
+.logo-sub { font-size: 11px; color: var(--muted); }
+.counter { font-size: 14px; color: var(--muted); }
+
+/* Progress bar */
+.prog-bar { height: 3px; background: var(--border); margin: 0 20px 16px; border-radius: 99px; }
+.prog-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width 0.4s ease; width: 0%; }
+
+/* Scene */
+.scene {
+  margin: 0 16px 14px;
+  border-radius: 20px;
+  min-height: 300px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: radial-gradient(ellipse at 30% 40%, #0d2a4a 0%, #080d14 60%),
+              radial-gradient(ellipse at 70% 60%, #1a0a2e 0%, transparent 50%);
+  border: 1px solid var(--border);
+  padding: 20px 16px;
+}
+.scene-top { display: flex; justify-content: space-between; align-items: center; width: 100%; position: absolute; top: 12px; left: 0; padding: 0 14px; }
+.label { font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.06); padding: 4px 10px; border-radius: 20px; }
+.status { font-size: 11px; color: var(--green); }
+
+/* Mascot */
+.mascot-wrap { position: relative; width: 140px; height: 140px; }
+.mascot-img { width: 140px; height: 140px; object-fit: contain; mix-blend-mode: screen; transition: transform 0.15s; }
+.mascot-ring { position: absolute; inset: -8px; border-radius: 50%; border: 3px solid var(--green); opacity: 0; transition: opacity 0.3s; }
+
+/* Karaoke text */
+.kara-wrap { text-align: center; padding: 0 8px; min-height: 52px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1px; }
+.kc { font-family: 'Noto Serif SC', serif; font-size: 30px; font-weight: 700; color: #4b5563; position: relative; transition: color 0.05s; }
+.kc.done { color: var(--green); }
+.kc.active { color: var(--green); }
+
+/* Info card */
+.info-card { background: rgba(13,21,32,0.85); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin: 0 16px 10px; }
+.pinyin { font-size: 14px; color: #60a5fa; margin-bottom: 4px; letter-spacing: 0.02em; }
+.eng { font-size: 13px; color: var(--muted); }
+
+/* Tabs */
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin: 0 16px 12px; }
+.tab { flex: 1; text-align: center; padding: 8px 4px; font-size: 11px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+/* Score card */
+.score-card { display: none; margin: 0 16px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; flex-direction: row; align-items: center; gap: 16px; }
+.score-card.show { display: flex; }
+.score-ring { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: var(--green); }
+.score-text { flex: 1; }
+.score-praise { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.score-hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* Buttons */
+.btn-area { display: flex; flex-direction: column; gap: 8px; margin: 0 16px; }
+.btn {
+  width: 100%; padding: 14px 16px; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); font-size: 14px; font-family: inherit;
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.btn:hover:not(:disabled) { border-color: var(--green); background: rgba(34,197,94,0.08); }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn.active { border-color: var(--green); background: rgba(34,197,94,0.12); color: var(--green); }
+.btn-nav { display: flex; gap: 8px; }
+.btn-nav .btn { flex: 1; }
+.btn-done { background: var(--green); color: #000; font-weight: 700; border-color: var(--green); display: none; }
+.btn-done.show { display: block; }
+.btn-done:hover { background: #16a34a; }
+
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+@keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 14px 4px rgba(34,197,94,0.25)} }
+</style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="zh"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1">&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1">&lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"&gt;</p>
-<p class="p1">&lt;title&gt;ShadowLingo&lt;/title&gt;</p>
-<p class="p1">&lt;link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet"&gt;</p>
-<p class="p1">&lt;style&gt;</p>
-<p class="p1">* { box-sizing: border-box; margin: 0; padding: 0; }</p>
-<p class="p1">:root {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>--green: #22c55e;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>--bg: #080d14;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>--card: #0d1520;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>--border: #1a2540;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>--text: #e2e8f0;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>--muted: #4b5563;</p>
-<p class="p1">}</p>
-<p class="p1">body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; display: flex; justify-content: center; }</p>
-<p class="p1">.app { width: 100%; max-width: 480px; padding-bottom: 40px; }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Header */</p>
-<p class="p1">.header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; }</p>
-<p class="p1">.logo { display: flex; align-items: center; gap: 10px; }</p>
-<p class="p1">.logo-icon { width: 38px; height: 38px; background: var(--green); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }</p>
-<p class="p1">.logo-text { font-weight: 700; font-size: 18px; }</p>
-<p class="p1">.logo-sub { font-size: 11px; color: var(--muted); }</p>
-<p class="p1">.counter { font-size: 14px; color: var(--muted); }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Progress bar */</p>
-<p class="p1">.prog-bar { height: 3px; background: var(--border); margin: 0 20px 16px; border-radius: 99px; }</p>
-<p class="p1">.prog-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width 0.4s ease; width: 0%; }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Scene */</p>
-<p class="p1">.scene {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>margin: 0 16px 14px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>border-radius: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>min-height: 300px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>position: relative;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>overflow: hidden;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>flex-direction: column;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>justify-content: center;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>gap: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>background: radial-gradient(ellipse at 30% 40%, #0d2a4a 0%, #080d14 60%),</p>
-<p class="p1"><span class="Apple-converted-space">              </span>radial-gradient(ellipse at 70% 60%, #1a0a2e 0%, transparent 50%);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>border: 1px solid var(--border);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>padding: 20px 16px;</p>
-<p class="p1">}</p>
-<p class="p1">.scene-top { display: flex; justify-content: space-between; align-items: center; width: 100%; position: absolute; top: 12px; left: 0; padding: 0 14px; }</p>
-<p class="p1">.label { font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.06); padding: 4px 10px; border-radius: 20px; }</p>
-<p class="p1">.status { font-size: 11px; color: var(--green); }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Mascot */</p>
-<p class="p1">.mascot-wrap { position: relative; width: 140px; height: 140px; }</p>
-<p class="p1">.mascot-img { width: 140px; height: 140px; object-fit: contain; mix-blend-mode: screen; transition: transform 0.15s; }</p>
-<p class="p1">.mascot-ring { position: absolute; inset: -8px; border-radius: 50%; border: 3px solid var(--green); opacity: 0; transition: opacity 0.3s; }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Karaoke text */</p>
-<p class="p1">.kara-wrap { text-align: center; padding: 0 8px; min-height: 52px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1px; }</p>
-<p class="p1">.kc { font-family: 'Noto Serif SC', serif; font-size: 30px; font-weight: 700; color: #4b5563; position: relative; transition: color 0.05s; }</p>
-<p class="p1">.kc.done { color: var(--green); }</p>
-<p class="p1">.kc.active { color: var(--green); }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Info card */</p>
-<p class="p1">.info-card { background: rgba(13,21,32,0.85); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin: 0 16px 10px; }</p>
-<p class="p1">.pinyin { font-size: 14px; color: #60a5fa; margin-bottom: 4px; letter-spacing: 0.02em; }</p>
-<p class="p1">.eng { font-size: 13px; color: var(--muted); }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Tabs */</p>
-<p class="p1">.tabs { display: flex; border-bottom: 1px solid var(--border); margin: 0 16px 12px; }</p>
-<p class="p1">.tab { flex: 1; text-align: center; padding: 8px 4px; font-size: 11px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }</p>
-<p class="p1">.tab.active { color: var(--green); border-bottom-color: var(--green); }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Score card */</p>
-<p class="p1">.score-card { display: none; margin: 0 16px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; flex-direction: row; align-items: center; gap: 16px; }</p>
-<p class="p1">.score-card.show { display: flex; }</p>
-<p class="p1">.score-ring { position: relative; width: 72px; height: 72px; flex-shrink: 0; }</p>
-<p class="p1">.score-ring svg { transform: rotate(-90deg); }</p>
-<p class="p1">.score-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: var(--green); }</p>
-<p class="p1">.score-text { flex: 1; }</p>
-<p class="p1">.score-praise { font-size: 14px; font-weight: 600; margin-bottom: 4px; }</p>
-<p class="p1">.score-hint { font-size: 12px; color: var(--muted); line-height: 1.5; }</p>
-<p class="p2"><br></p>
-<p class="p1">/* Buttons */</p>
-<p class="p1">.btn-area { display: flex; flex-direction: column; gap: 8px; margin: 0 16px; }</p>
-<p class="p1">.btn {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>width: 100%; padding: 14px 16px; border-radius: 14px;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>border: 1px solid var(--border); background: var(--card);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>color: var(--text); font-size: 14px; font-family: inherit;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>cursor: pointer; transition: all 0.2s; text-align: center;</p>
-<p class="p1">}</p>
-<p class="p1">.btn:hover:not(:disabled) { border-color: var(--green); background: rgba(34,197,94,0.08); }</p>
-<p class="p1">.btn:disabled { opacity: 0.35; cursor: default; }</p>
-<p class="p1">.btn.active { border-color: var(--green); background: rgba(34,197,94,0.12); color: var(--green); }</p>
-<p class="p1">.btn-nav { display: flex; gap: 8px; }</p>
-<p class="p1">.btn-nav .btn { flex: 1; }</p>
-<p class="p1">.btn-done { background: var(--green); color: #000; font-weight: 700; border-color: var(--green); display: none; }</p>
-<p class="p1">.btn-done.show { display: block; }</p>
-<p class="p1">.btn-done:hover { background: #16a34a; }</p>
-<p class="p2"><br></p>
-<p class="p1">@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }</p>
-<p class="p1">@keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 14px 4px rgba(34,197,94,0.25)} }</p>
-<p class="p1">&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p1">&lt;div class="app"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="header"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="logo"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="logo-icon"&gt;影&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="logo-text"&gt;ShadowLingo&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="logo-sub"&gt;轻松学中文 · 开场白&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="counter" id="counter"&gt;1 / 5&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="prog-bar"&gt;&lt;div class="prog-fill" id="prog"&gt;&lt;/div&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="scene"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="scene-top"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;span class="label" id="lbl"&gt;第 1/5 句&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;span class="status" id="status"&gt;准备好了&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="mascot-wrap"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;img class="mascot-img" id="mascot"</p>
-<p class="p1"><span class="Apple-converted-space">        </span>src="https://raw.githubusercontent.com/xiaobei810-max/shadowlingo/main/_8a52ad6e-a68b-40b5-9e54-54f3ffeaa3f2.jpeg"</p>
-<p class="p1"><span class="Apple-converted-space">        </span>alt="mascot"/&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="mascot-ring" id="ring"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="kara-wrap" id="kara"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="info-card"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="pinyin" id="pinyin"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="eng" id="eng"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="tabs"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="tab active" id="t0"&gt;🎧 听&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="tab" id="t1"&gt;🐢 慢读&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="tab" id="t2"&gt;🚀 跟读&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="tab" id="t3"&gt;📊 分数&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="score-card" id="score-card"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="score-ring"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;svg width="72" height="72" viewBox="0 0 72 72"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;circle cx="36" cy="36" r="30" fill="none" stroke="#1a2540" stroke-width="6"/&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;circle id="sc" cx="36" cy="36" r="30" fill="none" stroke="#22c55e" stroke-width="6"</p>
-<p class="p1"><span class="Apple-converted-space">          </span>stroke-dasharray="0 188" stroke-linecap="round" style="transition:stroke-dasharray 0.8s ease"/&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/svg&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="score-num" id="sn"&gt;-&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="score-text"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="score-praise" id="praise"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="score-hint" id="hint"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="btn-area"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="btn-nav"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn" id="bback" onclick="doBack()"&gt;← Prev · 上一句&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn" id="bfwd" onclick="doNext()"&gt;下一句 Next →&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn" id="bl" onclick="doListen()"&gt;🎧 Step 1 · 听原声 Listen&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn" id="bs" onclick="doSlow()" disabled&gt;🐢 Step 2 · 慢速跟读 Slow&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn" id="bn" onclick="doNormal()" disabled&gt;🚀 Step 3 · 常速跟读 Normal&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn btn-done" id="bdone" onclick="doNext()"&gt;✅ 完成本句 · 下一句 Next →&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p1">&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1">const AUDIO_SRC = "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a";</p>
-<p class="p2"><br></p>
-<p class="p1">const SENTENCES = [</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ zh:"你好，很高兴认识你！", pinyin:"Ni3 hao3, hen3 gao1xing4 ren4shi ni3!", en:"Hello, nice to meet you!", start:1, end:4.5 },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ zh:"我是一个中国人，你也想成为一个中国人吗？", pinyin:"Wo3 shi4 yi1 ge4 Zhong1guo2 re2n, ni3 ye3 xiang3 cheng2wei2 yi1 ge4 Zhong1guo2 ren2 ma?", en:"I'm Chinese - do you want to become one too?", start:5, end:10.5 },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ zh:"首先，你得学会中文。", pinyin:"Shou3xian1, ni3 dei3 xue2hui4 Zhong1wen2.", en:"First of all, you need to learn Chinese.", start:11, end:14.5 },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ zh:"每天我会用一个轻松有趣的小故事来教你怎么说中文。", pinyin:"Mei3tian1 wo3 hui4 yong4 yi1 ge4 qing1song1 you3qu4 de xiao3 gu4shi lai2 jiao1 ni3 zen3me shuo1 Zhong1wen2.", en:"Every day I'll use a fun little story to teach you how to speak Chinese.", start:14.5, end:22.5 },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ zh:"赶快行动起来吧，和我一起轻松学中文！", pinyin:"Gan3kuai4 xing2dong4 qi3lai2 ba, he2 wo3 yi4qi3 qing1song1 xue2 Zhong1wen2!", en:"Take action now - let's learn Chinese together, the easy way!", start:22.5, end:28.5 }</p>
-<p class="p1">];</p>
-<p class="p2"><br></p>
-<p class="p1">const FEEDBACK = [</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ praise:"✨ 声调很自然！", hint:"💡 注意【高兴】是第四声+轻声，听一遍原声再试试" },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ praise:"💪 语速控制得好！", hint:"💡 【中国人】连读时注意【国】字轻读" },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ praise:"🎯 短句说得很干净！", hint:"💡 【首先】是三声+一声，不要把三声说成四声" },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ praise:"🔥 长句挑战完成！", hint:"💡 长句可分两段断气：小故事 / 来教你，会更自然" },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ praise:"🌟 收尾句气势很足！", hint:"💡 【赶快】要连读成一个词，中间不要停顿" }</p>
-<p class="p1">];</p>
-<p class="p2"><br></p>
-<p class="p1">const PRAISES = [</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ min:90, msgs:["🏆 完美！声调拿捏精准！","🌟 太棒了，说得非常地道！"] },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ min:75, msgs:["🔥 非常好，再练一遍就完美！","💪 发音很稳，越来越自然了！"] },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ min:60, msgs:["👏 不错，节奏感已经到位了！","💡 有进步，多听几遍能做到！"] },</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{ min:0,<span class="Apple-converted-space">  </span>msgs:["🌱 开口就是最大的勇气！","💫 每次练习都是进步！"] }</p>
-<p class="p1">];</p>
-<p class="p2"><br></p>
-<p class="p1">let idx = 0;</p>
-<p class="p1">let phase = "idle";</p>
-<p class="p1">let segTimer = null;</p>
-<p class="p1">let cdTimer = null;</p>
-<p class="p1">let hasRecorded = false;</p>
-<p class="p2"><br></p>
-<p class="p1">const audio = new Audio(AUDIO_SRC);</p>
-<p class="p1">audio.preload = "auto";</p>
-<p class="p2"><br></p>
-<p class="p1">function randScore() { return Math.floor(Math.random() * 14) + 85; }</p>
-<p class="p1">function getPraise(s) {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const b = PRAISES.find(p =&gt; s &gt;= p.min);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return b.msgs[Math.floor(Math.random() * b.msgs.length)];</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function speak(on) {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const ring = document.getElementById("ring");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const mascot = document.getElementById("mascot");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (on) {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ring.style.opacity = "1";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ring.style.animation = "glow 1.2s ease-in-out infinite";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>mascot.style.animation = "pulse 0.4s ease-in-out infinite alternate";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ring.style.opacity = "0";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ring.style.animation = "";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>mascot.style.animation = "";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function buildKara(text) {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const el = document.getElementById("kara");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>el.innerHTML = "";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (!text) return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>[...text].forEach(c =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const span = document.createElement("span");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>span.className = "kc";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>span.textContent = c;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>el.appendChild(span);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function completeKara() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.querySelectorAll(".kc").forEach(c =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>c.classList.remove("active");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>c.classList.add("done");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function setStatus(txt) {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("status").textContent = txt;</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function updateUI() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const s = SENTENCES[idx];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("counter").textContent = (idx+1) + " / " + SENTENCES.length;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("lbl").textContent = "第 " + (idx+1) + "/" + SENTENCES.length + " 句";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("prog").style.width = ((idx / SENTENCES.length) * 100) + "%";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("pinyin").textContent = s.pinyin;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("eng").textContent = s.en;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>const bl = document.getElementById("bl");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const bs = document.getElementById("bs");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const bn = document.getElementById("bn");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const bdone = document.getElementById("bdone");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const bback = document.getElementById("bback");</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>bs.disabled = (phase === "idle");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>bn.disabled = (phase === "idle" || phase === "listening");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>bback.disabled = (idx === 0);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>bl.className = "btn" + (phase === "listening" ? " active" : "");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>bs.className = "btn" + (phase === "slow" ? " active" : "");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>bn.className = "btn" + (phase === "normal" ? " active" : "");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>bdone.className = "btn btn-done" + (phase === "scored" ? " show" : "");</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>const tabs = ["t0","t1","t2","t3"];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const tabPhase = {idle:0, listening:0, slow:1, normal:2, scored:3};</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const cur = tabPhase[phase] || 0;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>tabs.forEach((id,i) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById(id).className = "tab" + (i === cur ? " active" : "");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>buildKara(s.zh);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("score-card").classList.remove("show");</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function playSegment(start, end, rate, onEnd) {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>clearTimeout(segTimer);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>audio.playbackRate = rate;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>audio.currentTime = start;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>audio.play().catch(() =&gt; {});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>speak(true);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dur = ((end - start) / rate) * 1000;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const fill = document.getElementById("bar-fill");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>segTimer = setTimeout(function() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>audio.pause();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>speak(false);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>completeKara();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (onEnd) onEnd();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}, dur + 100);</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">async function startRec(dur, onDone) {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>hasRecorded = false;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>try {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const stream = await navigator.mediaDevices.getUserMedia({ audio: true });</p>
-<p class="p1"><span class="Apple-converted-space">    </span>hasRecorded = true;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const mr = new MediaRecorder(stream);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>mr.start();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>setTimeout(function() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>mr.stop();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>stream.getTracks().forEach(t =&gt; t.stop());</p>
-<p class="p1"><span class="Apple-converted-space">      </span>onDone();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}, dur);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>} catch(e) {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>hasRecorded = false;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>showNoMic();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function showNoMic() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>phase = "scored";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>updateUI();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("praise").textContent = "🎙 需要麦克风权限 Mic needed";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 / Allow mic in browser settings";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("sn").textContent = "-";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("sc").setAttribute("stroke-dasharray", "0 188");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("score-card").classList.add("show");</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function showScore() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (!hasRecorded) { showNoMic(); return; }</p>
-<p class="p1"><span class="Apple-converted-space">  </span>phase = "scored";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>updateUI();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const s = randScore();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const fb = FEEDBACK[idx] || FEEDBACK[0];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const circ = 2 * Math.PI * 30;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dash = (s / 100) * circ;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const color = s &gt;= 85 ? "#22c55e" : s &gt;= 70 ? "#facc15" : "#f87171";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const sc = document.getElementById("sc");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>sc.setAttribute("stroke", color);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>setTimeout(function() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>sc.setAttribute("stroke-dasharray", dash + " " + circ);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}, 100);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("sn").textContent = s;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("sn").style.color = color;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("praise").textContent = fb.praise + "<span class="Apple-converted-space">  </span>" + getPraise(s);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("hint").textContent = fb.hint;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("score-card").classList.add("show");</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function doListen() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>clearTimeout(segTimer); audio.pause(); speak(false);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>phase = "listening"; setStatus("🎧 播放中..."); updateUI();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const s = SENTENCES[idx];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>playSegment(s.start, s.end, 1, function() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>phase = "listened"; setStatus("准备好了"); updateUI();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function doSlow() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (phase === "idle") return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>clearTimeout(segTimer); audio.pause(); speak(false);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>phase = "slow"; setStatus("🐢 慢速跟读..."); updateUI();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const s = SENTENCES[idx];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dur = ((s.end - s.start) / 0.65) * 1000;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>playSegment(s.start, s.end, 0.65, function() { setStatus("🎙 录音中..."); });</p>
-<p class="p1"><span class="Apple-converted-space">  </span>startRec(dur + 500, function() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>phase = "slowed"; setStatus("录音完成"); showScore();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function doNormal() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (phase === "idle" || phase === "listening") return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>clearTimeout(segTimer); audio.pause(); speak(false);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>phase = "normal"; setStatus("🚀 常速跟读..."); updateUI();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const s = SENTENCES[idx];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dur = (s.end - s.start) * 1000;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>playSegment(s.start, s.end, 1, function() { setStatus("🎙 录音中..."); });</p>
-<p class="p1"><span class="Apple-converted-space">  </span>startRec(dur + 500, function() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>phase = "normal_done"; setStatus("录音完成"); showScore();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function doBack() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (idx === 0) return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>clearTimeout(segTimer); audio.pause(); speak(false);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>idx--;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>phase = "idle";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>setStatus("准备好了");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>updateUI();</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function doNext() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>clearTimeout(segTimer); audio.pause(); speak(false);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (idx &gt;= SENTENCES.length - 1) {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>alert("🎉 恭喜完成本课！Congratulations!");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>idx++;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>phase = "idle";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>setStatus("准备好了");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>updateUI();</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">// Karaoke timeupdate sync</p>
-<p class="p1">const RATE_OFFSET = { fast: 0.15, slow: 0.3 };</p>
-<p class="p1">audio.addEventListener("timeupdate", function() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const s = SENTENCES[idx];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (!s || audio.paused) return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const offset = audio.playbackRate &lt; 0.8 ? RATE_OFFSET.slow : RATE_OFFSET.fast;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const elapsed = audio.currentTime - s.start - offset;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dur = s.end - s.start;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (elapsed &lt; 0) return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const progress = Math.min(elapsed / dur, 1);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const chars = document.querySelectorAll(".kc");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if (!chars.length) return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const charProgress = progress * chars.length;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const curIdx = Math.floor(charProgress);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>chars.forEach(function(c, i) {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (c.classList.contains("done")) return;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (i &lt; curIdx) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>c.classList.remove("active");</p>
-<p class="p1"><span class="Apple-converted-space">      </span>c.classList.add("done");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>} else if (i === curIdx) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>c.classList.add("active");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">audio.addEventListener("seeking", function() {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.querySelectorAll(".kc").forEach(function(c) {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>c.classList.remove("done","active");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">// Init</p>
-<p class="p1">updateUI();</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">影</div>
+      <div>
+        <div class="logo-text">ShadowLingo</div>
+        <div class="logo-sub">轻松学中文 · 开场白</div>
+      </div>
+    </div>
+    <div class="counter" id="counter">1 / 5</div>
+  </div>
+
+  <div class="prog-bar"><div class="prog-fill" id="prog"></div></div>
+
+  <div class="scene">
+    <div class="scene-top">
+      <span class="label" id="lbl">第 1/5 句</span>
+      <span class="status" id="status">准备好了</span>
+    </div>
+    <div class="mascot-wrap">
+      <img class="mascot-img" id="mascot"
+        src="https://raw.githubusercontent.com/xiaobei810-max/shadowlingo/main/_8a52ad6e-a68b-40b5-9e54-54f3ffeaa3f2.jpeg"
+        alt="mascot"/>
+      <div class="mascot-ring" id="ring"></div>
+    </div>
+    <div class="kara-wrap" id="kara"></div>
+  </div>
+
+  <div class="info-card">
+    <div class="pinyin" id="pinyin"></div>
+    <div class="eng" id="eng"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="t0">🎧 听</div>
+    <div class="tab" id="t1">🐢 慢读</div>
+    <div class="tab" id="t2">🚀 跟读</div>
+    <div class="tab" id="t3">📊 分数</div>
+  </div>
+
+  <div class="score-card" id="score-card">
+    <div class="score-ring">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="30" fill="none" stroke="#1a2540" stroke-width="6"/>
+        <circle id="sc" cx="36" cy="36" r="30" fill="none" stroke="#22c55e" stroke-width="6"
+          stroke-dasharray="0 188" stroke-linecap="round" style="transition:stroke-dasharray 0.8s ease"/>
+      </svg>
+      <div class="score-num" id="sn">-</div>
+    </div>
+    <div class="score-text">
+      <div class="score-praise" id="praise"></div>
+      <div class="score-hint" id="hint"></div>
+    </div>
+  </div>
+
+  <div class="btn-area">
+    <div class="btn-nav">
+      <button class="btn" id="bback" onclick="doBack()">← Prev · 上一句</button>
+      <button class="btn" id="bfwd" onclick="doNext()">下一句 Next →</button>
+    </div>
+    <button class="btn" id="bl" onclick="doListen()">🎧 Step 1 · 听原声 Listen</button>
+    <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 Step 2 · 慢速跟读 Slow</button>
+    <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 Step 3 · 常速跟读 Normal</button>
+    <button class="btn btn-done" id="bdone" onclick="doNext()">✅ 完成本句 · 下一句 Next →</button>
+  </div>
+</div>
+
+<script>
+const AUDIO_SRC = "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a";
+
+const SENTENCES = [
+  { zh:"你好，很高兴认识你！", pinyin:"Ni3 hao3, hen3 gao1xing4 ren4shi ni3!", en:"Hello, nice to meet you!", start:1, end:4.5 },
+  { zh:"我是一个中国人，你也想成为一个中国人吗？", pinyin:"Wo3 shi4 yi1 ge4 Zhong1guo2 re2n, ni3 ye3 xiang3 cheng2wei2 yi1 ge4 Zhong1guo2 ren2 ma?", en:"I'm Chinese - do you want to become one too?", start:5, end:10.5 },
+  { zh:"首先，你得学会中文。", pinyin:"Shou3xian1, ni3 dei3 xue2hui4 Zhong1wen2.", en:"First of all, you need to learn Chinese.", start:11, end:14.5 },
+  { zh:"每天我会用一个轻松有趣的小故事来教你怎么说中文。", pinyin:"Mei3tian1 wo3 hui4 yong4 yi1 ge4 qing1song1 you3qu4 de xiao3 gu4shi lai2 jiao1 ni3 zen3me shuo1 Zhong1wen2.", en:"Every day I'll use a fun little story to teach you how to speak Chinese.", start:14.5, end:22.5 },
+  { zh:"赶快行动起来吧，和我一起轻松学中文！", pinyin:"Gan3kuai4 xing2dong4 qi3lai2 ba, he2 wo3 yi4qi3 qing1song1 xue2 Zhong1wen2!", en:"Take action now - let's learn Chinese together, the easy way!", start:22.5, end:28.5 }
+];
+
+const FEEDBACK = [
+  { praise:"✨ 声调很自然！", hint:"💡 注意【高兴】是第四声+轻声，听一遍原声再试试" },
+  { praise:"💪 语速控制得好！", hint:"💡 【中国人】连读时注意【国】字轻读" },
+  { praise:"🎯 短句说得很干净！", hint:"💡 【首先】是三声+一声，不要把三声说成四声" },
+  { praise:"🔥 长句挑战完成！", hint:"💡 长句可分两段断气：小故事 / 来教你，会更自然" },
+  { praise:"🌟 收尾句气势很足！", hint:"💡 【赶快】要连读成一个词，中间不要停顿" }
+];
+
+const PRAISES = [
+  { min:90, msgs:["🏆 完美！声调拿捏精准！","🌟 太棒了，说得非常地道！"] },
+  { min:75, msgs:["🔥 非常好，再练一遍就完美！","💪 发音很稳，越来越自然了！"] },
+  { min:60, msgs:["👏 不错，节奏感已经到位了！","💡 有进步，多听几遍能做到！"] },
+  { min:0,  msgs:["🌱 开口就是最大的勇气！","💫 每次练习都是进步！"] }
+];
+
+let idx = 0;
+let phase = "idle";
+let segTimer = null;
+let cdTimer = null;
+let hasRecorded = false;
+
+const audio = new Audio(AUDIO_SRC);
+audio.preload = "auto";
+
+function randScore() { return Math.floor(Math.random() * 14) + 85; }
+function getPraise(s) {
+  const b = PRAISES.find(p => s >= p.min);
+  return b.msgs[Math.floor(Math.random() * b.msgs.length)];
+}
+
+function speak(on) {
+  const ring = document.getElementById("ring");
+  const mascot = document.getElementById("mascot");
+  if (on) {
+    ring.style.opacity = "1";
+    ring.style.animation = "glow 1.2s ease-in-out infinite";
+    mascot.style.animation = "pulse 0.4s ease-in-out infinite alternate";
+  } else {
+    ring.style.opacity = "0";
+    ring.style.animation = "";
+    mascot.style.animation = "";
+  }
+}
+
+function buildKara(text) {
+  const el = document.getElementById("kara");
+  el.innerHTML = "";
+  if (!text) return;
+  [...text].forEach(c => {
+    const span = document.createElement("span");
+    span.className = "kc";
+    span.textContent = c;
+    el.appendChild(span);
+  });
+}
+
+function completeKara() {
+  document.querySelectorAll(".kc").forEach(c => {
+    c.classList.remove("active");
+    c.classList.add("done");
+  });
+}
+
+function setStatus(txt) {
+  document.getElementById("status").textContent = txt;
+}
+
+function updateUI() {
+  const s = SENTENCES[idx];
+  document.getElementById("counter").textContent = (idx+1) + " / " + SENTENCES.length;
+  document.getElementById("lbl").textContent = "第 " + (idx+1) + "/" + SENTENCES.length + " 句";
+  document.getElementById("prog").style.width = ((idx / SENTENCES.length) * 100) + "%";
+  document.getElementById("pinyin").textContent = s.pinyin;
+  document.getElementById("eng").textContent = s.en;
+
+  const bl = document.getElementById("bl");
+  const bs = document.getElementById("bs");
+  const bn = document.getElementById("bn");
+  const bdone = document.getElementById("bdone");
+  const bback = document.getElementById("bback");
+
+  bs.disabled = (phase === "idle");
+  bn.disabled = (phase === "idle" || phase === "listening");
+  bback.disabled = (idx === 0);
+
+  bl.className = "btn" + (phase === "listening" ? " active" : "");
+  bs.className = "btn" + (phase === "slow" ? " active" : "");
+  bn.className = "btn" + (phase === "normal" ? " active" : "");
+  bdone.className = "btn btn-done" + (phase === "scored" ? " show" : "");
+
+  const tabs = ["t0","t1","t2","t3"];
+  const tabPhase = {idle:0, listening:0, slow:1, normal:2, scored:3};
+  const cur = tabPhase[phase] || 0;
+  tabs.forEach((id,i) => {
+    document.getElementById(id).className = "tab" + (i === cur ? " active" : "");
+  });
+
+  buildKara(s.zh);
+  document.getElementById("score-card").classList.remove("show");
+}
+
+function playSegment(start, end, rate, onEnd) {
+  clearTimeout(segTimer);
+  audio.playbackRate = rate;
+  audio.currentTime = start;
+  audio.play().catch(() => {});
+  speak(true);
+  const dur = ((end - start) / rate) * 1000;
+  const fill = document.getElementById("bar-fill");
+  segTimer = setTimeout(function() {
+    audio.pause();
+    speak(false);
+    completeKara();
+    if (onEnd) onEnd();
+  }, dur + 100);
+}
+
+async function startRec(dur, onDone) {
+  hasRecorded = false;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    hasRecorded = true;
+    const mr = new MediaRecorder(stream);
+    mr.start();
+    setTimeout(function() {
+      mr.stop();
+      stream.getTracks().forEach(t => t.stop());
+      onDone();
+    }, dur);
+  } catch(e) {
+    hasRecorded = false;
+    showNoMic();
+  }
+}
+
+function showNoMic() {
+  phase = "scored";
+  updateUI();
+  document.getElementById("praise").textContent = "🎙 需要麦克风权限 Mic needed";
+  document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 / Allow mic in browser settings";
+  document.getElementById("sn").textContent = "-";
+  document.getElementById("sc").setAttribute("stroke-dasharray", "0 188");
+  document.getElementById("score-card").classList.add("show");
+}
+
+function showScore() {
+  if (!hasRecorded) { showNoMic(); return; }
+  phase = "scored";
+  updateUI();
+  const s = randScore();
+  const fb = FEEDBACK[idx] || FEEDBACK[0];
+  const circ = 2 * Math.PI * 30;
+  const dash = (s / 100) * circ;
+  const color = s >= 85 ? "#22c55e" : s >= 70 ? "#facc15" : "#f87171";
+  const sc = document.getElementById("sc");
+  sc.setAttribute("stroke", color);
+  setTimeout(function() {
+    sc.setAttribute("stroke-dasharray", dash + " " + circ);
+  }, 100);
+  document.getElementById("sn").textContent = s;
+  document.getElementById("sn").style.color = color;
+  document.getElementById("praise").textContent = fb.praise + "  " + getPraise(s);
+  document.getElementById("hint").textContent = fb.hint;
+  document.getElementById("score-card").classList.add("show");
+}
+
+function doListen() {
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  phase = "listening"; setStatus("🎧 播放中..."); updateUI();
+  const s = SENTENCES[idx];
+  playSegment(s.start, s.end, 1, function() {
+    phase = "listened"; setStatus("准备好了"); updateUI();
+  });
+}
+
+function doSlow() {
+  if (phase === "idle") return;
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  phase = "slow"; setStatus("🐢 慢速跟读..."); updateUI();
+  const s = SENTENCES[idx];
+  const dur = ((s.end - s.start) / 0.65) * 1000;
+  playSegment(s.start, s.end, 0.65, function() { setStatus("🎙 录音中..."); });
+  startRec(dur + 500, function() {
+    phase = "slowed"; setStatus("录音完成"); showScore();
+  });
+}
+
+function doNormal() {
+  if (phase === "idle" || phase === "listening") return;
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  phase = "normal"; setStatus("🚀 常速跟读..."); updateUI();
+  const s = SENTENCES[idx];
+  const dur = (s.end - s.start) * 1000;
+  playSegment(s.start, s.end, 1, function() { setStatus("🎙 录音中..."); });
+  startRec(dur + 500, function() {
+    phase = "normal_done"; setStatus("录音完成"); showScore();
+  });
+}
+
+function doBack() {
+  if (idx === 0) return;
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  idx--;
+  phase = "idle";
+  setStatus("准备好了");
+  updateUI();
+}
+
+function doNext() {
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  if (idx >= SENTENCES.length - 1) {
+    alert("🎉 恭喜完成本课！Congratulations!");
+    return;
+  }
+  idx++;
+  phase = "idle";
+  setStatus("准备好了");
+  updateUI();
+}
+
+// Karaoke timeupdate sync
+const RATE_OFFSET = { fast: 0.15, slow: 0.3 };
+audio.addEventListener("timeupdate", function() {
+  const s = SENTENCES[idx];
+  if (!s || audio.paused) return;
+  const offset = audio.playbackRate < 0.8 ? RATE_OFFSET.slow : RATE_OFFSET.fast;
+  const elapsed = audio.currentTime - s.start - offset;
+  const dur = s.end - s.start;
+  if (elapsed < 0) return;
+  const progress = Math.min(elapsed / dur, 1);
+  const chars = document.querySelectorAll(".kc");
+  if (!chars.length) return;
+  const charProgress = progress * chars.length;
+  const curIdx = Math.floor(charProgress);
+  chars.forEach(function(c, i) {
+    if (c.classList.contains("done")) return;
+    if (i < curIdx) {
+      c.classList.remove("active");
+      c.classList.add("done");
+    } else if (i === curIdx) {
+      c.classList.add("active");
+    }
+  });
+});
+
+audio.addEventListener("seeking", function() {
+  document.querySelectorAll(".kc").forEach(function(c) {
+    c.classList.remove("done","active");
+  });
+});
+
+// Init
+updateUI();
+</script>
 </body>
 </html>
