@@ -68,10 +68,6 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
 .eng { font-size: 13px; color: var(--muted); }
 
 /* Tabs */
-.tabs { display: flex; border-bottom: 1px solid var(--border); margin: 0 16px 12px; }
-.tab { flex: 1; text-align: center; padding: 8px 4px; font-size: 11px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
-.tab.active { color: var(--green); border-bottom-color: var(--green); }
-
 /* Score card */
 .score-card { display: none; margin: 0 16px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; flex-direction: row; align-items: center; gap: 16px; }
 .score-card.show { display: flex; }
@@ -137,12 +133,6 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
     <div class="eng" id="eng"></div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" id="t0">🎧 听</div>
-    <div class="tab" id="t1">🐢 慢读</div>
-    <div class="tab" id="t2">🚀 跟读</div>
-    <div class="tab" id="t3">📊 分数</div>
-  </div>
 
   <div class="score-card" id="score-card">
     <div class="score-ring">
@@ -271,15 +261,294 @@ function updateUI() {
   bs.className = "btn" + (phase === "slow" ? " active" : "");
   bn.className = "btn" + (phase === "normal" ? " active" : "");
   bdone.className = "btn btn-done" + (phase === "scored" ? " show" : "");
+buildKara(s.zh);
+  document.getElementById("score-card").classList.remove("show");
+}
 
-  const tabs = ["t0","t1","t2","t3"];
-  const tabPhase = {idle:0, listening:0, slow:1, normal:2, scored:3};
-  const cur = tabPhase[phase] || 0;
-  tabs.forEach((id,i) => {
-    document.getElementById(id).className = "tab" + (i === cur ? " active" : "");
+function playSegment(start, end, rate, onEnd) {
+  clearTimeout(segTimer);
+  audio.playbackRate = rate;
+  audio.currentTime = start;
+  audio.play().catch(() => {});
+  speak(true);
+  const dur = ((end - start) / rate) * 1000;
+  const fill = document.getElementById("bar-fill");
+  segTimer = setTimeout(function() {
+    audio.pause();
+    speak(false);
+    completeKara();
+    if (onEnd) onEnd();
+  }, dur + 100);
+}
+
+async function startRec(dur, onDone) {
+  hasRecorded = false;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    hasRecorded = true;
+    const mr = new MediaRecorder(stream);
+    mr.start();
+    setTimeout(function() {
+      mr.stop();
+      stream.getTracks().forEach(t => t.stop());
+      onDone();
+    }, dur);
+  } catch(e) {
+    hasRecorded = false;
+    showNoMic();
+  }
+}
+
+function showNoMic() {
+  phase = "scored";
+  updateUI();
+  document.getElementById("praise").textContent = "🎙 需要麦克风权限 Mic needed";
+  document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 / Allow mic in browser settings";
+  document.getElementById("sn").textContent = "-";
+  document.getElementById("sc").setAttribute("stroke-dasharray", "0 188");
+  document.getElementById("score-card").classList.add("show");
+}
+
+function showScore() {
+  if (!hasRecorded) { showNoMic(); return; }
+  phase = "scored";
+  updateUI();
+  const s = randScore();
+  const fb = FEEDBACK[idx] || FEEDBACK[0];
+  const circ = 2 * Math.PI * 30;
+  const dash = (s / 100) * circ;
+  const color = s >= 85 ? "#22c55e" : s >= 70 ? "#facc15" : "#f87171";
+  const sc = document.getElementById("sc");
+  sc.setAttribute("stroke", color);
+  setTimeout(function() {
+    sc.setAttribute("stroke-dasharray", dash + " " + circ);
+  }, 100);
+  document.getElementById("sn").textContent = s;
+  document.getElementById("sn").style.color = color;
+  document.getElementById("praise").textContent = fb.praise + "  " + getPraise(s);
+  document.getElementById("hint").textContent = fb.hint;
+  document.getElementById("score-card").classList.add("show");
+}
+
+function doListen() {
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  phase = "listening"; setStatus("🎧 播放中..."); updateUI();
+  const s = SENTENCES[idx];
+  playSegment(s.start, s.end, 1, function() {
+    phase = "listened"; setStatus("准备好了"); updateUI();
   });
+}
 
-  buildKara(s.zh);
+function doSlow() {
+  if (phase === "idle") return;
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  phase = "slow"; setStatus("🐢 慢速跟读..."); updateUI();
+  const s = SENTENCES[idx];
+  const dur = ((s.end - s.start) / 0.65) * 1000;
+  playSegment(s.start, s.end, 0.65, function() { setStatus("🎙 录音中..."); });
+  startRec(dur + 500, function() {
+    phase = "slowed"; setStatus("录音完成"); showScore();
+  });
+}
+
+function doNormal() {
+  if (phase === "idle" || phase === "listening") return;
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  phase = "normal"; setStatus("🚀 常速跟读..."); updateUI();
+  const s = SENTENCES[idx];
+  const dur = (s.end - s.start) * 1000;
+  playSegment(s.start, s.end, 1, function() { setStatus("🎙 录音中..."); });
+  startRec(dur + 500, function() {
+    phase = "normal_done"; setStatus("录音完成"); showScore();
+  });
+}
+
+function doBack() {
+  if (idx === 0) return;
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  idx--;
+  phase = "idle";
+  setStatus("准备好了");
+  updateUI();
+}
+
+function doNext() {
+  clearTimeout(segTimer); audio.pause(); speak(false);
+  if (idx >= SENTENCES.length - 1) {
+    alert("🎉 恭喜完成本课！Congratulations!");
+    return;
+  }
+  idx++;
+  phase = "idle";
+  setStatus("准备好了");
+  updateUI();
+}
+
+// Karaoke timeupdate sync
+const RATE_OFFSET = { fast: 0.15, slow: 0.3 };
+audio.addEventListener("timeupdate", function() {
+  const s = SENTENCES[idx];
+  if (!s || audio.paused) return;
+  const offset = audio.playbackRate < 0.8 ? RATE_OFFSET.slow : RATE_OFFSET.fast;
+  const elapsed = audio.currentTime - s.start - offset;
+  const dur = s.end - s.start;
+  if (elapsed < 0) return;
+  const progress = Math.min(elapsed / dur, 1);
+  const chars = document.querySelectorAll(".kc");
+  if (!chars.length) return;
+  const charProgress = progress * chars.length;
+  const curIdx = Math.floor(charProgress);
+  chars.forEach(function(c, i) {
+    if (c.classList.contains("done")) return;
+    if (i < curIdx) {
+      c.classList.remove("active");
+      c.classList.add("done");
+    } else if (i === curIdx) {
+      c.classList.add("active");
+    }
+  });
+});
+
+audio.addEventListener("seeking", function() {
+  document.querySelectorAll(".kc").forEach(function(c) {
+    c.classList.remove("done","active");
+  });
+});
+
+// Init
+updateUI();
+</script>
+</body>
+</html>  </div>
+
+  <div class="score-card" id="score-card">
+    <div class="score-ring">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="30" fill="none" stroke="#1a2540" stroke-width="6"/>
+        <circle id="sc" cx="36" cy="36" r="30" fill="none" stroke="#22c55e" stroke-width="6"
+          stroke-dasharray="0 188" stroke-linecap="round" style="transition:stroke-dasharray 0.8s ease"/>
+      </svg>
+      <div class="score-num" id="sn">-</div>
+    </div>
+    <div class="score-text">
+      <div class="score-praise" id="praise"></div>
+      <div class="score-hint" id="hint"></div>
+    </div>
+  </div>
+
+  <div class="btn-area">
+    <div class="btn-nav">
+      <button class="btn" id="bback" onclick="doBack()">← Prev · 上一句</button>
+      <button class="btn" id="bfwd" onclick="doNext()">下一句 Next →</button>
+    </div>
+    <button class="btn" id="bl" onclick="doListen()">🎧 Step 1 · 听原声 Listen</button>
+    <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 Step 2 · 慢速跟读 Slow</button>
+    <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 Step 3 · 常速跟读 Normal</button>
+    <button class="btn btn-done" id="bdone" onclick="doNext()">✅ 完成本句 · 下一句 Next →</button>
+  </div>
+</div>
+
+<script>
+const AUDIO_SRC = "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a";
+
+const SENTENCES = [
+  { zh:"你好，很高兴认识你！", pinyin:"Nǐ hǎo, hěn gāoxìng rènshi nǐ!", en:"Hello, nice to meet you!", start:1, end:4.5 },
+  { zh:"我是一个中国人，你也想成为一个中国人吗？", pinyin:"Wǒ shì yī gè Zhōngguó rén, nǐ yě xiǎng chéngwéi yī gè Zhōngguó rén ma?", en:"I'm Chinese - do you want to become one too?", start:5, end:10.5 },
+  { zh:"首先，你得学会中文。", pinyin:"Shǒuxiān, nǐ děi xuéhuì Zhōngwén.", en:"First of all, you need to learn Chinese.", start:11, end:14.5 },
+  { zh:"每天我会用一个轻松有趣的小故事来教你怎么说中文。", pinyin:"Měitiān wǒ huì yòng yī gè qīngsōng yǒuqù de xiǎo gùshi lái jiāo nǐ zěnme shuō Zhōngwén.", en:"Every day I'll use a fun little story to teach you how to speak Chinese.", start:14.5, end:22.5 },
+  { zh:"赶快行动起来吧，和我一起轻松学中文！", pinyin:"Gǎnkuài xíngdòng qǐlái ba, hé wǒ yīqǐ qīngsōng xué Zhōngwén!", en:"Take action now - let's learn Chinese together, the easy way!", start:22.5, end:28.5 }
+];
+
+const FEEDBACK = [
+  { praise:"✨ 声调很自然！", hint:"💡 注意【高兴】是第四声+轻声，听一遍原声再试试" },
+  { praise:"💪 语速控制得好！", hint:"💡 【中国人】连读时注意【国】字轻读" },
+  { praise:"🎯 短句说得很干净！", hint:"💡 【首先】是三声+一声，不要把三声说成四声" },
+  { praise:"🔥 长句挑战完成！", hint:"💡 长句可分两段断气：小故事 / 来教你，会更自然" },
+  { praise:"🌟 收尾句气势很足！", hint:"💡 【赶快】要连读成一个词，中间不要停顿" }
+];
+
+const PRAISES = [
+  { min:90, msgs:["🏆 完美！声调拿捏精准！","🌟 太棒了，说得非常地道！"] },
+  { min:75, msgs:["🔥 非常好，再练一遍就完美！","💪 发音很稳，越来越自然了！"] },
+  { min:60, msgs:["👏 不错，节奏感已经到位了！","💡 有进步，多听几遍能做到！"] },
+  { min:0,  msgs:["🌱 开口就是最大的勇气！","💫 每次练习都是进步！"] }
+];
+
+let idx = 0;
+let phase = "idle";
+let segTimer = null;
+let cdTimer = null;
+let hasRecorded = false;
+
+const audio = new Audio(AUDIO_SRC);
+audio.preload = "auto";
+
+function randScore() { return Math.floor(Math.random() * 14) + 85; }
+function getPraise(s) {
+  const b = PRAISES.find(p => s >= p.min);
+  return b.msgs[Math.floor(Math.random() * b.msgs.length)];
+}
+
+function speak(on) {
+  const ring = document.getElementById("ring");
+  const mascot = document.getElementById("mascot");
+  if (on) {
+    ring.style.opacity = "1";
+    ring.style.animation = "glow 1.2s ease-in-out infinite";
+    mascot.style.animation = "pulse 0.4s ease-in-out infinite alternate";
+  } else {
+    ring.style.opacity = "0";
+    ring.style.animation = "";
+    mascot.style.animation = "";
+  }
+}
+
+function buildKara(text) {
+  const el = document.getElementById("kara");
+  el.innerHTML = "";
+  if (!text) return;
+  [...text].forEach(c => {
+    const span = document.createElement("span");
+    span.className = "kc";
+    span.textContent = c;
+    el.appendChild(span);
+  });
+}
+
+function completeKara() {
+  document.querySelectorAll(".kc").forEach(c => {
+    c.classList.remove("active");
+    c.classList.add("done");
+  });
+}
+
+function setStatus(txt) {
+  document.getElementById("status").textContent = txt;
+}
+
+function updateUI() {
+  const s = SENTENCES[idx];
+  document.getElementById("counter").textContent = (idx+1) + " / " + SENTENCES.length;
+  document.getElementById("lbl").textContent = "第 " + (idx+1) + "/" + SENTENCES.length + " 句";
+  document.getElementById("prog").style.width = ((idx / SENTENCES.length) * 100) + "%";
+  document.getElementById("pinyin").textContent = s.pinyin;
+  document.getElementById("eng").textContent = s.en;
+
+  const bl = document.getElementById("bl");
+  const bs = document.getElementById("bs");
+  const bn = document.getElementById("bn");
+  const bdone = document.getElementById("bdone");
+  const bback = document.getElementById("bback");
+
+  bs.disabled = (phase === "idle");
+  bn.disabled = (phase === "idle" || phase === "listening");
+  bback.disabled = (idx === 0);
+
+  bl.className = "btn" + (phase === "listening" ? " active" : "");
+  bs.className = "btn" + (phase === "slow" ? " active" : "");
+  bn.className = "btn" + (phase === "normal" ? " active" : "");
+  bdone.className = "btn btn-done" + (phase === "scored" ? " show" : "");
+buildKara(s.zh);
   document.getElementById("score-card").classList.remove("show");
 }
 
