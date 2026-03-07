@@ -130,6 +130,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
 .page-dots { display:flex; gap:6px; justify-content:center; margin-bottom:12px; }
 .page-dot { width:6px; height:6px; border-radius:99px; background:#1a2540; transition:background 0.3s; }
 .page-dot.active { background:#22c55e; width:18px; }
+
+/* SVG tongue animations */
+.svg-anim-tip { animation: svg-pulse 1.5s ease-in-out infinite; }
+@keyframes svg-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
 /* Fireworks */
 #fw-canvas { position:fixed; inset:0; z-index:1000; pointer-events:none; }
 </style>
@@ -202,7 +207,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
 <div class="overlay" id="overlay">
   <div class="completion-card">
     <!-- Page dots -->
-    <div class="page-dots">
+    <div class="page-dots" id="page-dots">
       <div class="page-dot active" id="dot0"></div>
       <div class="page-dot" id="dot1"></div>
     </div>
@@ -219,21 +224,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
         <div id="cat-bar-list"></div>
       </div>
       <div class="page-nav">
-        <button class="btn-next-page" onclick="goPage(2)">发音分析 Analysis →</button>
+        <button class="btn-next-page" id="page1-next-btn" onclick="goPage(2)">发音分析 Analysis →</button>
       </div>
     </div>
 
-    <!-- Page 2: Analysis -->
+    <!-- Page 2+: Analysis detail pages -->
     <div id="cp-page2" style="display:none;">
-      <div class="completion-title" style="font-size:20px;">📋 发音分析</div>
-      <div class="completion-sub">Pronunciation Analysis</div>
-      <div class="analysis-header">⚠️ 需要重点练习 Focus Areas</div>
-      <div id="weak-list"></div>
-      <div class="enc-msg" id="enc-msg"></div>
-      <div class="page-nav">
-        <button class="btn-prev-page" onclick="goPage(1)">← 返回评分 Score</button>
-        <button class="btn-restart" style="margin-top:0;" onclick="restartLesson()">🔄 再练一遍 Again</button>
-      </div>
+      <!-- dynamic content injected by JS -->
     </div>
   </div>
 </div>
@@ -464,59 +461,268 @@ function doNext() {
 // ── Pronunciation Weakness Analysis ─────────────────────
 
 
+// ── SVG tongue diagrams per phoneme key ─────────────────
+const TONGUE_SVG = {
+  // Retroflex zh/sh/r: tongue tip curled up
+  retroflex: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="80" cy="85" rx="60" ry="28" fill="#f87171" opacity="0.2"/>
+    <ellipse cx="80" cy="85" rx="60" ry="28" fill="none" stroke="#f87171" stroke-width="1.5"/>
+    <text x="80" y="90" text-anchor="middle" font-size="10" fill="#94a3b8">tongue body</text>
+    <path d="M55,85 Q65,55 80,45" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" class="svg-anim-tip"/>
+    <circle cx="80" cy="45" r="5" fill="#f87171" class="svg-anim-tip"/>
+    <path d="M30,60 Q50,30 75,28" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="83" y="43" font-size="9" fill="#f87171">tip curls up</text>
+    <text x="20" y="25" font-size="9" fill="#94a3b8">palate</text>
+    <path d="M28,28 Q80,10 132,28" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="80" y="15" text-anchor="middle" font-size="8" fill="#4b5563">RETROFLEX zh / sh / r</text>
+  </svg>`,
+
+  // Flat sibilant z/s: tongue tip flat/forward
+  flat: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="80" cy="85" rx="60" ry="28" fill="#60a5fa" opacity="0.2"/>
+    <ellipse cx="80" cy="85" rx="60" ry="28" fill="none" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="80" y="90" text-anchor="middle" font-size="10" fill="#94a3b8">tongue body</text>
+    <path d="M55,85 Q60,75 70,70" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" class="svg-anim-tip"/>
+    <circle cx="70" cy="70" r="5" fill="#60a5fa" class="svg-anim-tip"/>
+    <text x="74" y="68" font-size="9" fill="#60a5fa">tip stays flat</text>
+    <path d="M28,28 Q80,10 132,28" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="80" y="15" text-anchor="middle" font-size="8" fill="#4b5563">FLAT z / s / c</text>
+  </svg>`,
+
+  // x / q: tongue blade touches hard palate, lips spread
+  xq: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="80" cy="88" rx="58" ry="25" fill="#a78bfa" opacity="0.2"/>
+    <ellipse cx="80" cy="88" rx="58" ry="25" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="80" y="93" text-anchor="middle" font-size="10" fill="#94a3b8">tongue body</text>
+    <path d="M60,75 Q80,50 100,48" fill="none" stroke="#a78bfa" stroke-width="3" stroke-linecap="round" class="svg-anim-tip"/>
+    <text x="95" y="44" font-size="9" fill="#a78bfa">blade up</text>
+    <line x1="45" y1="35" x2="115" y2="35" stroke="#a78bfa" stroke-width="2" stroke-dasharray="3,2" class="svg-anim-tip"/>
+    <text x="80" y="32" text-anchor="middle" font-size="8" fill="#a78bfa">contact</text>
+    <path d="M28,28 Q80,10 132,28" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="80" y="15" text-anchor="middle" font-size="8" fill="#4b5563">PALATAL x / q  (spread lips)</text>
+  </svg>`,
+
+  // Nasal -ng: soft palate down, air through nose
+  ng_final: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="80" cy="88" rx="58" ry="25" fill="#22c55e" opacity="0.15"/>
+    <ellipse cx="80" cy="88" rx="58" ry="25" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="80" y="93" text-anchor="middle" font-size="10" fill="#94a3b8">tongue body raised</text>
+    <path d="M90,80 Q110,62 118,48" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" class="svg-anim-tip"/>
+    <text x="120" y="45" font-size="9" fill="#22c55e">back</text>
+    <path d="M95,20 Q110,30 118,48" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="70" y="20" font-size="9" fill="#22c55e">air → nose</text>
+    <path d="M55,18 L75,18" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arr)"/>
+    <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#22c55e"/></marker></defs>
+    <path d="M28,28 Q80,10 132,28" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="80" y="10" text-anchor="middle" font-size="8" fill="#4b5563">BACK NASAL -ng</text>
+  </svg>`,
+
+  // Nasal -n: tongue tip to gum ridge
+  n_final: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="80" cy="88" rx="58" ry="25" fill="#facc15" opacity="0.15"/>
+    <ellipse cx="80" cy="88" rx="58" ry="25" fill="none" stroke="#facc15" stroke-width="1.5"/>
+    <text x="80" y="93" text-anchor="middle" font-size="10" fill="#94a3b8">tongue body</text>
+    <path d="M55,85 Q62,68 68,58" fill="none" stroke="#facc15" stroke-width="3" stroke-linecap="round" class="svg-anim-tip"/>
+    <circle cx="68" cy="58" r="5" fill="#facc15" class="svg-anim-tip"/>
+    <text x="72" y="56" font-size="9" fill="#facc15">tip to gum</text>
+    <line x1="55" y1="52" x2="80" y2="52" stroke="#facc15" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="82" y="55" font-size="8" fill="#facc15">ridge</text>
+    <path d="M28,28 Q80,10 132,28" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="80" y="15" text-anchor="middle" font-size="8" fill="#4b5563">FRONT NASAL -n</text>
+  </svg>`,
+
+  // Tones: pitch contour diagram
+  tones: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+    <text x="8" y="18" font-size="9" fill="#94a3b8">High</text>
+    <text x="8" y="108" font-size="9" fill="#94a3b8">Low</text>
+    <line x1="30" y1="15" x2="30" y2="110" stroke="#1a2540" stroke-width="1"/>
+    <line x1="30" y1="110" x2="155" y2="110" stroke="#1a2540" stroke-width="1"/>
+    <!-- T1 flat high -->
+    <path d="M35,28 L60,28" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" class="svg-anim-tip"/>
+    <text x="47" y="22" text-anchor="middle" font-size="9" fill="#22c55e">T1</text>
+    <!-- T2 rising -->
+    <path d="M70,85 L90,28" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" class="svg-anim-tip"/>
+    <text x="80" y="22" text-anchor="middle" font-size="9" fill="#60a5fa">T2</text>
+    <!-- T3 dip -->
+    <path d="M100,45 Q108,95 116,42" stroke="#facc15" stroke-width="2.5" fill="none" stroke-linecap="round" class="svg-anim-tip"/>
+    <text x="108" y="22" text-anchor="middle" font-size="9" fill="#facc15">T3</text>
+    <!-- T4 falling -->
+    <path d="M126,22 L146,95" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" class="svg-anim-tip"/>
+    <text x="136" y="16" text-anchor="middle" font-size="9" fill="#f87171">T4</text>
+  </svg>`,
+
+  // Rhythm / breath: waveform-style
+  rhythm: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+    <text x="80" y="12" text-anchor="middle" font-size="8" fill="#4b5563">BREATH GROUPING</text>
+    <text x="12" y="45" font-size="8" fill="#f87171">Bad</text>
+    <rect x="35" y="35" width="14" height="14" rx="3" fill="#f87171" opacity="0.7"/>
+    <rect x="53" y="35" width="8" height="14" rx="3" fill="#f87171" opacity="0.5"/>
+    <rect x="65" y="35" width="18" height="14" rx="3" fill="#f87171" opacity="0.7"/>
+    <rect x="87" y="35" width="6" height="14" rx="3" fill="#f87171" opacity="0.5"/>
+    <rect x="97" y="35" width="20" height="14" rx="3" fill="#f87171" opacity="0.7"/>
+    <rect x="121" y="35" width="10" height="14" rx="3" fill="#f87171" opacity="0.5"/>
+    <text x="12" y="82" font-size="8" fill="#22c55e">Good</text>
+    <rect x="35" y="72" width="38" height="14" rx="3" fill="#22c55e" opacity="0.7"/>
+    <text x="54" y="83" text-anchor="middle" font-size="8" fill="#000">chunk 1</text>
+    <text x="91" y="83" font-size="8" fill="#94a3b8">breathe</text>
+    <rect x="107" y="72" width="38" height="14" rx="3" fill="#22c55e" opacity="0.7"/>
+    <text x="126" y="83" text-anchor="middle" font-size="8" fill="#000">chunk 2</text>
+    <text x="80" y="108" text-anchor="middle" font-size="8" fill="#94a3b8">Keep word groups intact</text>
+  </svg>`
+};
+
+// Map phoneme key -> SVG type + example words for TTS
+const PHONEME_META = {
+  tone3:     { svg:"tones",     examples:["你好","女儿","所以"] },
+  tone4:     { svg:"tones",     examples:["再见","对不起","是的"] },
+  tone2:     { svg:"tones",     examples:["来","人","中国"] },
+  tone3_chg: { svg:"tones",     examples:["首先","你好","可以"] },
+  tone3_mei: { svg:"tones",     examples:["每天","每年","美好"] },
+  renlabel:  { svg:"retroflex", examples:["认识","日","人"] },
+  zh_z:      { svg:"retroflex", examples:["中国","知道","这个"] },
+  sh_s:      { svg:"retroflex", examples:["首先","说话","是"] },
+  x_sound:   { svg:"xq",        examples:["学习","小","谢谢"] },
+  q_sound:   { svg:"xq",        examples:["轻松","请","去"] },
+  nasal_ng:  { svg:"ng_final",  examples:["中文","朋友","行"] },
+  nasal_n:   { svg:"n_final",   examples:["赶快","南方","安"] },
+  neutral:   { svg:"tones",     examples:["一个","吗","的"] },
+  rhythm:    { svg:"rhythm",    examples:["每天我会用一个故事","赶快行动起来吧"] },
+  liandu:    { svg:"rhythm",    examples:["赶快","行动","起来"] }
+};
+
+let cpCurrentPage = 1;
+let cpTotalPages = 1;
+let cpWeakest = [];
+
 function goPage(n) {
-  document.getElementById("cp-page1").style.display = n===1 ? "block" : "none";
-  document.getElementById("cp-page2").style.display = n===2 ? "block" : "none";
-  document.getElementById("dot0").className = "page-dot" + (n===1 ? " active" : "");
-  document.getElementById("dot1").className = "page-dot" + (n===2 ? " active" : "");
+  cpCurrentPage = n;
+  // Update dots
+  const dotsEl = document.getElementById("page-dots");
+  dotsEl.innerHTML = "";
+  for (let i = 0; i < cpTotalPages; i++) {
+    const d = document.createElement("div");
+    d.className = "page-dot" + (i === n-1 ? " active" : "");
+    dotsEl.appendChild(d);
+  }
+  // Show correct page
+  document.getElementById("cp-page1").style.display = n === 1 ? "block" : "none";
+  const p2 = document.getElementById("cp-page2");
+  if (n >= 2) {
+    p2.style.display = "block";
+    renderAnalysisPage(n - 2); // 0-indexed weakness
+  } else {
+    p2.style.display = "none";
+  }
+}
+
+function renderAnalysisPage(wi) {
+  const w = cpWeakest[wi];
+  const meta = PHONEME_META[w.key] || { svg:"tones", examples:["示例"] };
+  const svgStr = TONGUE_SVG[meta.svg] || TONGUE_SVG.tones;
+  const isLast = wi === cpWeakest.length - 1;
+  const c = w.score < 65 ? "#f87171" : "#facc15";
+
+  const tips = {
+    tone3:     "两个三声相连时前一个变二声。例：你好 → ní hǎo · Two tone 3s: the first rises to tone 2",
+    tone4:     "第四声从高处快速降下 · Tone 4 falls sharply from high to low",
+    renlabel:  "舌头卷起接近上颚但不贴上，气流从缝隙通过 · Curl tongue toward palate without touching",
+    zh_z:      "翘舌：舌尖翘起接触上颚后部。对比：知/资 · Retroflex: curl tip up. Contrast: zhī/zī",
+    tone2:     "第二声像问句一样从中调升到高调 · Tone 2 rises - pitch goes up!",
+    neutral:   "轻声短促模糊，不单独起调 · Neutral tone is short and toneless",
+    sh_s:      "sh- 翘舌对比练习：师/丝、书/苏 · Contrast: shī/sī, shū/sū",
+    tone3_chg: "三声变调是自然规则，多听多跟读 · Tone 3 sandhi is automatic - learn by listening",
+    x_sound:   "x- 发音时嘴角向两侧咧开 · Spread lips wide for x-",
+    nasal_ng:  "软颚抬起，气流从鼻腔通过。练习：冬、风、红 · Raise soft palate. Drill: dōng, fēng, hóng",
+    tone3_mei: "句首三声发完整低降升曲线 · Give sentence-initial tone 3 the full dip-rise",
+    rhythm:    "长句在动词或名词组后换气 · Breathe after verb/noun phrases",
+    nasal_n:   "前鼻音 -n：舌尖抵上牙龈收尾 · Tip touches gum ridge for -n",
+    q_sound:   "q- 发音：嘴角咧开，气流爆破而出 · q- needs spread lips and a burst of air",
+    liandu:    "整个词当成一个音节串，不要在词中间换气 · Treat the whole word as one breath"
+  };
+
+  document.getElementById("cp-page2").innerHTML = `
+    <div style="text-align:left;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:11px;color:#4b5563;">发音弱点 ${wi+1} / ${cpWeakest.length} &nbsp;·&nbsp; Focus Area</span>
+        <span style="font-size:10px;padding:2px 8px;border-radius:99px;background:${c}22;color:${c};">${w.score < 65 ? "重点突破 Priority" : "需要练习 Practice"}</span>
+      </div>
+      <div style="font-size:17px;font-weight:700;color:${c};margin-bottom:2px;">${w.name}</div>
+      <div style="font-size:12px;color:#4b5563;margin-bottom:12px;">${w.nameEn}</div>
+
+      <!-- SVG diagram -->
+      <div style="background:#060d18;border-radius:14px;padding:12px;margin-bottom:12px;text-align:center;">
+        <div style="width:140px;height:105px;margin:0 auto;">${svgStr}</div>
+        <div style="font-size:10px;color:#4b5563;margin-top:6px;">舌头位置示意 Tongue position</div>
+      </div>
+
+      <!-- Issue + tip -->
+      <div style="background:#0a1120;border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:13px;color:#e2e8f0;margin-bottom:6px;line-height:1.5;">${w.note}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;line-height:1.4;">${w.noteEn}</div>
+        <div style="font-size:12px;color:#60a5fa;line-height:1.5;">💡 ${tips[w.key] || "多听原声，反复跟读"}</div>
+      </div>
+
+      <!-- Example words with TTS buttons -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:#4b5563;margin-bottom:8px;">🔊 点击听示例 Tap to hear examples</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${meta.examples.map(ex => `
+            <button onclick="speakEx('${ex}')" style="background:#111827;border:1px solid #1a2540;border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:#e2e8f0;font-size:14px;font-family:inherit;">
+              <span style="font-size:16px;">▶</span> ${ex}
+            </button>`).join("")}
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn-prev-page" onclick="goPage(${wi+1})" style="flex:1;padding:11px;border-radius:12px;background:#1a2540;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;border:none;">
+          ← ${wi === 0 ? "返回评分 Score" : "上一个 Prev"}
+        </button>
+        ${isLast
+          ? `<button class="btn-restart" onclick="restartLesson()" style="flex:1;padding:11px;border-radius:12px;background:#22c55e;color:#000;font-size:13px;font-weight:700;cursor:pointer;border:none;">🔄 再练一遍 Again</button>`
+          : `<button onclick="goPage(${wi+3})" style="flex:1;padding:11px;border-radius:12px;background:#22c55e;color:#000;font-size:13px;font-weight:700;cursor:pointer;border:none;">下一个 Next →</button>`
+        }
+      </div>
+    </div>`;
+}
+
+function speakEx(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-CN";
+  u.rate = 0.85;
+  window.speechSynthesis.speak(u);
 }
 
 function showCompletion() {
   const sentencePhonetics = [
     { checks:[
-      { key:"tone3",    name:"-ng 后鼻音 (zhōng)",   nameEn:"Tone 3 sandhi (nǐ hǎo)",       note:"【你好】两个三声相连，前一个变二声",    noteEn:"Two tone 3s in a row - the first becomes tone 2" },
-      { key:"tone4",    name:"第四声 (gāoxìng)",      nameEn:"Tone 4 (gāoxìng)",              note:"【高兴】xìng 第四声，不要说成平调",    noteEn:"【高兴】xìng is tone 4 - don't flatten it" },
-      { key:"renlabel", name:"r- 声母 (rènshi)",      nameEn:"r- initial (rènshi)",           note:"【认识】r- 声母需翘舌，常被省略",       noteEn:"【认识】r- needs a curled tongue - often skipped" }
+      { key:"tone3",    name:"三声变调 (nǐ hǎo)",    nameEn:"Tone 3 sandhi (nǐ hǎo)",    note:"【你好】两个三声相连，前一个变二声",   noteEn:"Two tone 3s in a row - the first becomes tone 2" },
+      { key:"tone4",    name:"第四声 (gāo xìng)",     nameEn:"Tone 4 (gāo xìng)",          note:"【高兴】xìng 第四声，不要说成平调",  noteEn:"xìng is tone 4 - don't flatten it" },
+      { key:"renlabel", name:"r- 声母 (rèn shi)",     nameEn:"r- initial (rèn shi)",       note:"【认识】r- 声母需翘舌，常被省略",    noteEn:"r- needs a curled tongue - often skipped" }
     ]},
     { checks:[
-      { key:"zh_z",     name:"zh/z 翘平舌 (zhōng)",  nameEn:"zh vs z retroflex (zhōng)",     note:"【中国】zhōng 翘舌，易发成 zōng 平舌", noteEn:"【中国】zhōng needs a curled tongue, not flat z-" },
-      { key:"tone2",    name:"第二声 (rén)",           nameEn:"Tone 2 (rén)",                  note:"【人】rén 第二声，易说成第一声平调",    noteEn:"【人】rén rises - don't flatten it to tone 1" },
-      { key:"neutral",  name:"轻声 (yīge)",            nameEn:"Neutral tone (yīge)",           note:"【一个】ge 需轻读，不要加声调",         noteEn:"【一个】ge should be short and unstressed" }
+      { key:"zh_z",     name:"zh/z 翘平舌 (zhōng)",  nameEn:"Retroflex zh vs flat z",     note:"【中国】zhōng 翘舌，易发成 zōng",   noteEn:"zhōng needs a curled tongue, not flat z-" },
+      { key:"tone2",    name:"第二声 (rén)",           nameEn:"Tone 2 (rén)",               note:"【人】rén 第二声，易说成第一声",     noteEn:"rén rises - don't flatten it to tone 1" },
+      { key:"neutral",  name:"轻声 (yī ge)",           nameEn:"Neutral tone (yī ge)",       note:"【一个】ge 需轻读，不要加声调",      noteEn:"ge should be short and unstressed" }
     ]},
     { checks:[
-      { key:"sh_s",      name:"sh/s 翘平舌 (shǒu)",  nameEn:"sh vs s retroflex (shǒu)",      note:"【首先】shǒu 翘舌，常发成 sǒu 平舌",  noteEn:"【首先】shǒu needs the tongue curled up" },
-      { key:"tone3_chg", name:"三声变调 (shǒuxiān)", nameEn:"Tone 3 sandhi (shǒuxiān)",      note:"三声+一声时三声自然升调",              noteEn:"Tone 3 before tone 1 automatically rises" },
-      { key:"x_sound",   name:"x- 声母 (xuéhuì)",    nameEn:"x- initial (xuéhuì)",           note:"【学会】x- 需扁唇，不能圆唇",          noteEn:"【学会】x- needs spread lips, not rounded" }
+      { key:"sh_s",      name:"sh/s 翘平舌 (shǒu)",  nameEn:"Retroflex sh vs flat s",     note:"【首先】shǒu 翘舌，常发成 sǒu",    noteEn:"shǒu needs the tongue curled up" },
+      { key:"tone3_chg", name:"三声变调 (shǒu xiān)", nameEn:"Tone 3 sandhi (shǒu xiān)", note:"三声+一声时三声自然升调",           noteEn:"Tone 3 before tone 1 automatically rises" },
+      { key:"x_sound",   name:"x- 声母 (xué huì)",   nameEn:"x- initial (xué huì)",       note:"【学会】x- 需扁唇，不能圆唇",       noteEn:"x- needs spread lips, not rounded" }
     ]},
     { checks:[
-      { key:"nasal_ng",  name:"-ng 后鼻音 (zhōng)",  nameEn:"-ng final (zhōngwén)",          note:"【中文】zhōng 后鼻音，不要发成前鼻 -n", noteEn:"【中文】zhōng ends in -ng not -n" },
-      { key:"tone3_mei", name:"第三声 (měitiān)",     nameEn:"Tone 3 at start (měitiān)",     note:"【每天】měi 句首三声要完整发出",        noteEn:"Sentence-initial tone 3 needs the full dip" },
-      { key:"rhythm",    name:"长句节奏",              nameEn:"Long-sentence rhythm",          note:"长句注意在【故事/来教】处自然换气",    noteEn:"Pause naturally after 【故事】or 【来教】" }
+      { key:"nasal_ng",  name:"-ng 后鼻音 (zhōng)",  nameEn:"-ng back nasal (zhōng wén)", note:"【中文】zhōng 后鼻音，不要发成前鼻", noteEn:"zhōng ends in -ng not -n" },
+      { key:"tone3_mei", name:"第三声 (měi tiān)",    nameEn:"Tone 3 at start (měi tiān)", note:"【每天】měi 句首三声要完整发出",     noteEn:"Sentence-initial tone 3 needs the full dip" },
+      { key:"rhythm",    name:"长句节奏",              nameEn:"Long-sentence rhythm",       note:"长句注意在【故事/来教】处自然换气", noteEn:"Pause naturally after 【故事】or 【来教】" }
     ]},
     { checks:[
-      { key:"nasal_n",   name:"-n 前鼻音 (gǎn)",     nameEn:"-n final (gǎnkuài)",            note:"【赶快】gǎn 前鼻音，舌尖抵上牙龈",     noteEn:"【赶快】gǎn ends with the tongue tip on the gum ridge" },
-      { key:"q_sound",   name:"q- 声母 (qīngsōng)",  nameEn:"q- initial (qīngsōng)",         note:"【轻松】q- 配合 i 介音，不要发成 ch-",  noteEn:"【轻松】q- with spread lips - not ch-" },
-      { key:"liandu",    name:"词语连读 (gǎnkuài)",   nameEn:"Blending (gǎnkuài)",            note:"【赶快】需连读，中间不能有停顿",         noteEn:"Blend 【赶快】into one word - no gap" }
+      { key:"nasal_n",  name:"-n 前鼻音 (gǎn)",      nameEn:"-n front nasal (gǎn kuài)", note:"【赶快】gǎn 前鼻音，舌尖抵上牙龈",  noteEn:"gǎn ends with tongue tip on gum ridge" },
+      { key:"q_sound",  name:"q- 声母 (qīng sōng)",  nameEn:"q- initial (qīng sōng)",    note:"【轻松】q- 需配合扁唇，不要发成ch-", noteEn:"q- needs spread lips - not ch-" },
+      { key:"liandu",   name:"词语连读 (gǎn kuài)",   nameEn:"Blending (gǎn kuài)",       note:"【赶快】需连读，中间不能有停顿",    noteEn:"Blend 【赶快】into one word - no gap" }
     ]}
   ];
-
-  const tips = {
-    tone3:     "两个三声相连时前一个变二声。例：你好 → ní hǎo · When two tone 3s meet, the first rises to tone 2",
-    tone4:     "第四声从高处快速降下，像点头说「对！」· Tone 4 falls sharply - like a firm nod",
-    renlabel:  "舌头卷起接近上颚但不贴上，气流从缝隙通过 · Curl your tongue toward the palate without touching it",
-    zh_z:      "翘舌：舌尖翘起接触上颚后部。对比练习：知/资、书/苏 · Retroflex: curl tip up. Contrast: zhī/zī, shū/sū",
-    tone2:     "第二声像问句一样从中调升到高调 · Tone 2 rises - pitch goes up!",
-    neutral:   "轻声短促模糊，不单独起调 · Neutral tone is short, quiet, and toneless",
-    sh_s:      "sh- 翘舌对比练习：师/丝、书/苏、烧/骚 · Contrast sh/s: shī/sī, shū/sū, shāo/sāo",
-    tone3_chg: "三声变调是自然规则，多听多跟读自然掌握 · Tone 3 sandhi is automatic - learn it by listening",
-    x_sound:   "x- 发音时嘴角向两侧咧开，气流从舌面和上颚缝隙通过 · Spread lips wide for x-, air flows between tongue and palate",
-    nasal_ng:  "后鼻音 -ng：软颚抬起，气流从鼻腔通过。练习：冬、风、红 · Raise the soft palate for -ng. Drill: dōng, fēng, hóng",
-    tone3_mei: "句首三声发完整低降升曲线，不要简化成低平调 · Give sentence-initial tone 3 the full low dip-rise shape",
-    rhythm:    "长句可在动词或名词组后换气，保持词组内部不停顿 · Breathe after verb/noun phrases - never mid-word",
-    nasal_n:   "前鼻音 -n：舌尖抵上牙龈收尾。对比：南/娘、难/凉 · Tip touches gum ridge for -n. Contrast: nán/niáng",
-    q_sound:   "q- 发音：舌面贴上颚，嘴角咧开，气流爆破而出。练习：七、期、器 · q- needs spread lips and a burst of air: qī, qí, qì",
-    liandu:    "整个词当成一个音节串，不要在词中间换气 · Treat the whole word as one breath - no break inside"
-  };
 
   const categories = {
     tones:    { label:"声调 Tones",    icon:"🎵", keys:["tone3","tone4","tone2","tone3_chg","tone3_mei"] },
@@ -525,7 +731,6 @@ function showCompletion() {
     rhythm:   { label:"语流 Rhythm",   icon:"⏱", keys:["rhythm","liandu"] }
   };
 
-  // Build all checks with simulated scores
   let allChecks = [];
   sentencePhonetics.forEach((sent, si) => {
     const base = sessionScores[si] || (60 + Math.floor(Math.random() * 30));
@@ -535,7 +740,6 @@ function showCompletion() {
     });
   });
 
-  // Category scores
   const catScores = {};
   Object.entries(categories).forEach(([k, cat]) => {
     const rel = allChecks.filter(c => cat.keys.includes(c.key));
@@ -545,7 +749,10 @@ function showCompletion() {
   const overall = Math.round(Object.values(catScores).reduce((a,b)=>a+b,0)/Object.keys(catScores).length);
   const oColor = overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
 
-  // ── Page 1: Score ──────────────────────────────────────
+  cpWeakest = [...allChecks].sort((a,b) => a.score - b.score).slice(0,3);
+  cpTotalPages = 1 + cpWeakest.length;
+
+  // Page 1 score
   const avgEl = document.getElementById("avg-score");
   avgEl.textContent = overall;
   avgEl.style.color = oColor;
@@ -557,7 +764,6 @@ function showCompletion() {
   gradeEl.textContent = grade;
   gradeEl.style.color = oColor;
 
-  // Category bars
   const barList = document.getElementById("cat-bar-list");
   barList.innerHTML = Object.entries(categories).map(([k, cat]) => {
     const s = catScores[k];
@@ -572,33 +778,9 @@ function showCompletion() {
       "<div style='background:" + c + ";width:" + s + "%;height:100%;border-radius:99px;transition:width 1s ease;'></div></div></div>";
   }).join("");
 
-  // ── Page 2: Analysis ─────────────────────────────────────
-  const weakest = [...allChecks].sort((a,b) => a.score - b.score).slice(0,3);
-  const weakList = document.getElementById("weak-list");
-  weakList.innerHTML = "";
+  // Update page 1 nav button
+  document.getElementById("page1-next-btn").textContent = "发音分析 Analysis →";
 
-  weakest.forEach((w, i) => {
-    const c = w.score < 65 ? "#f87171" : "#facc15";
-    const urgency = w.score < 65 ? "重点突破 Priority" : "需要练习 Practice";
-    const div = document.createElement("div");
-    div.className = "weak-item";
-    div.style.borderLeft = "3px solid " + c;
-    div.innerHTML =
-      "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-      "<span class='weak-name' style='color:" + c + ";'>" + (i+1) + ". " + w.name + "</span>" +
-      "<span class='weak-badge' style='background:" + c + "22;color:" + c + ";'>" + urgency + "</span></div>" +
-      "<div style='font-size:11px;color:#4b5563;margin-bottom:4px;'>" + w.nameEn + "</div>" +
-      "<div class='weak-note'>" + w.note + "<br><span style='color:#94a3b8;font-size:12px;'>" + w.noteEn + "</span></div>" +
-      "<div class='weak-tip'>💡 " + (tips[w.key] || "多听原声，反复跟读 · Listen and shadow repeatedly") + "</div>";
-    weakList.appendChild(div);
-  });
-
-  const msg = overall >= 85 ? "发音非常棒！继续保持 🌟 · Outstanding! Keep it up!" :
-              overall >= 70 ? "打好了基础！重点练习上方弱点 💪 · Good foundation - drill the weak spots above!" :
-              "坚持练习，每天进步一点点 🎯 · Keep going - every session counts!";
-  document.getElementById("enc-msg").textContent = msg;
-
-  // Show page 1 first
   goPage(1);
   document.getElementById("overlay").classList.add("show");
   launchFireworks();
