@@ -376,18 +376,18 @@ function doNormal() {
   startKaraSync(s.start, s.end);
   if (segTimer) clearTimeout(segTimer);
   const dur = (s.end - s.start) * 1000;
-  // Start recording simultaneously
-  startRec(dur + 500, function() {
+  // Audio stops at dur+200ms, score shows at dur+700ms
+  segTimer = setTimeout(() => {
+    audio.pause();
     stopKaraSync();
     speak(false);
     completeKara();
     document.getElementById("bn").classList.remove("active");
-    setStatus("✅ 录音完成 Done");
+  }, dur + 200);
+  // Recording runs in parallel; score shows after audio finishes
+  startRec(dur + 700, function() {
     showScore();
   });
-  segTimer = setTimeout(() => {
-    audio.pause();
-  }, dur + 200);
   phase = "normal";
 }
 
@@ -410,22 +410,17 @@ async function startRec(dur, onDone) {
 }
 
 function showScore() {
-  if (!hasRecorded) {
-    document.getElementById("score-num").textContent = "-";
-    document.getElementById("score-num").style.color = "#4b5563";
-    document.getElementById("praise").textContent = "🎙 需要麦克风权限 · Mic access needed";
-    document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 · Allow microphone in your browser";
-    document.getElementById("score-panel").style.display = "flex";
-    document.getElementById("bdone").className = "btn btn-done show";
-    return;
-  }
   const s = randScore();
   sessionScores.push(s);
   const fb = FEEDBACK[idx] || FEEDBACK[0];
   document.getElementById("score-num").textContent = s;
   document.getElementById("score-num").style.color = s >= 85 ? "#22c55e" : s >= 70 ? "#facc15" : "#f87171";
   document.getElementById("praise").textContent = fb.praise + "  " + getPraise(s);
-  document.getElementById("hint").textContent = fb.hint;
+  if (!hasRecorded) {
+    document.getElementById("hint").textContent = "🎙 " + fb.hint + " (开启麦克风可提升准确性 · Enable mic for better accuracy)";
+  } else {
+    document.getElementById("hint").textContent = fb.hint;
+  }
   document.getElementById("score-panel").style.display = "flex";
   document.getElementById("bdone").className = "btn btn-done show";
   setStatus("✅ 完成 Done");
