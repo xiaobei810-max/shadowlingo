@@ -112,7 +112,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
     </div>
     <div class="mascot-ring" id="ring"></div>
     <div class="sentence-badge" id="badge">第 1/5 句</div>
-    <div class="status-badge" id="status">准备好了 Ready</div>
+
     <div class="sentence-box">
       <div class="kara-wrap" id="kara"></div>
       <div class="kara-bar"><div class="kara-bar-fill" id="bar-fill"></div></div>
@@ -186,6 +186,7 @@ let idx = 0;
 let phase = "idle";
 let segTimer = null;
 let sessionScores = [];
+let hasRecorded = false;
 
 const audio = new Audio(AUDIO_SRC);
 audio.preload = "auto";
@@ -375,19 +376,49 @@ function doNormal() {
   startKaraSync(s.start, s.end);
   if (segTimer) clearTimeout(segTimer);
   const dur = (s.end - s.start) * 1000;
-  segTimer = setTimeout(() => {
-    audio.pause();
+  // Start recording simultaneously
+  startRec(dur + 500, function() {
     stopKaraSync();
     speak(false);
     completeKara();
     document.getElementById("bn").classList.remove("active");
-    setStatus("录音完成 Done");
+    setStatus("✅ 录音完成 Done");
     showScore();
+  });
+  segTimer = setTimeout(() => {
+    audio.pause();
   }, dur + 200);
   phase = "normal";
 }
 
+async function startRec(dur, onDone) {
+  hasRecorded = false;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    hasRecorded = true;
+    const mr = new MediaRecorder(stream);
+    mr.start();
+    setTimeout(function() {
+      mr.stop();
+      stream.getTracks().forEach(t => t.stop());
+      onDone();
+    }, dur);
+  } catch(e) {
+    hasRecorded = false;
+    onDone(); // still show score even without mic
+  }
+}
+
 function showScore() {
+  if (!hasRecorded) {
+    document.getElementById("score-num").textContent = "-";
+    document.getElementById("score-num").style.color = "#4b5563";
+    document.getElementById("praise").textContent = "🎙 需要麦克风权限 · Mic access needed";
+    document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 · Allow microphone in your browser";
+    document.getElementById("score-panel").style.display = "flex";
+    document.getElementById("bdone").className = "btn btn-done show";
+    return;
+  }
   const s = randScore();
   sessionScores.push(s);
   const fb = FEEDBACK[idx] || FEEDBACK[0];
