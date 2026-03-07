@@ -368,45 +368,44 @@ function doNormal() {
   setStatus("🚀 常速跟读 Shadow (normal)...");
   document.getElementById("bn").classList.add("active");
   const s = SENTENCES[idx];
+  const dur = (s.end - s.start) * 1000;
+
+  // Start audio
   audio.currentTime = s.start;
   audio.playbackRate = 1;
   audio.play();
   speak(true);
   resetKara();
   startKaraSync(s.start, s.end);
+
+  // Try to record mic in background (non-blocking)
+  hasRecorded = false;
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(function(stream) {
+      hasRecorded = true;
+      const mr = new MediaRecorder(stream);
+      mr.start();
+      setTimeout(function() {
+        mr.stop();
+        stream.getTracks().forEach(function(t) { t.stop(); });
+      }, dur + 300);
+    })
+    .catch(function() {
+      hasRecorded = false;
+    });
+
+  // After audio ends: stop everything and show score
   if (segTimer) clearTimeout(segTimer);
-  const dur = (s.end - s.start) * 1000;
-  // Audio stops at dur+200ms, score shows at dur+700ms
-  segTimer = setTimeout(() => {
+  segTimer = setTimeout(function() {
     audio.pause();
     stopKaraSync();
     speak(false);
     completeKara();
     document.getElementById("bn").classList.remove("active");
-  }, dur + 200);
-  // Recording runs in parallel; score shows after audio finishes
-  startRec(dur + 700, function() {
     showScore();
-  });
-  phase = "normal";
-}
+  }, dur + 500);
 
-async function startRec(dur, onDone) {
-  hasRecorded = false;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    hasRecorded = true;
-    const mr = new MediaRecorder(stream);
-    mr.start();
-    setTimeout(function() {
-      mr.stop();
-      stream.getTracks().forEach(t => t.stop());
-      onDone();
-    }, dur);
-  } catch(e) {
-    hasRecorded = false;
-    onDone(); // still show score even without mic
-  }
+  phase = "normal";
 }
 
 function showScore() {
