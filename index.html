@@ -464,226 +464,254 @@ function doNext() {
 // ── SVG tongue diagrams per phoneme key ─────────────────
 const TONGUE_SVG = {
 
-  // Retroflex zh/sh/r: tongue tip curls up toward palate
-  retroflex: `<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-    <!-- Background -->
-    <rect width="240" height="180" fill="#060d18" rx="12"/>
-    <!-- Title -->
-    <text x="120" y="18" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">翘舌音 Retroflex  zh / sh / r</text>
-    <!-- Palate arc -->
-    <path d="M30,50 Q120,10 210,50" fill="none" stroke="#4b5563" stroke-width="2"/>
-    <text x="36" y="46" font-size="10" fill="#4b5563" font-family="sans-serif">上颚 palate</text>
-    <!-- Mouth outline -->
-    <path d="M20,80 Q120,160 220,80" fill="#1a2540" stroke="#1a2540" stroke-width="1"/>
-    <!-- Tongue body -->
-    <ellipse cx="120" cy="130" rx="80" ry="35" fill="#b91c1c" opacity="0.5"/>
-    <ellipse cx="120" cy="130" rx="80" ry="35" fill="none" stroke="#f87171" stroke-width="2"/>
-    <text x="120" y="134" text-anchor="middle" font-size="11" fill="#fca5a5" font-family="sans-serif">舌体 tongue body</text>
-    <!-- Tongue tip animated - curls up -->
+  // ── RETROFLEX zh/sh/r: tongue tip curls up ──────────────
+  retroflex: `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="260" height="200" fill="#060d18" rx="14"/>
+    <text x="130" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">翘舌音 Retroflex  zh · sh · r</text>
+    <!-- Skull/jaw outline -->
+    <path d="M20,30 Q20,10 50,10 Q180,10 220,40 Q240,60 238,100 Q235,140 210,155 Q190,165 160,162 L100,162 Q70,162 55,148 Q35,130 32,100 Z" fill="#1a1028" stroke="#4b5563" stroke-width="1.5"/>
+    <!-- Upper palate (pink) -->
+    <path d="M50,10 Q180,10 220,40 Q200,38 160,36 Q120,34 80,36 Q60,37 50,42 Z" fill="#e879a0" opacity="0.7"/>
+    <!-- Hard palate line -->
+    <path d="M50,42 Q120,30 220,40" fill="none" stroke="#f9a8d4" stroke-width="2"/>
+    <!-- Soft palate / velum -->
+    <path d="M185,42 Q205,55 208,80 Q210,100 200,115" fill="none" stroke="#f9a8d4" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="212" y="80" font-size="9" fill="#f9a8d4" font-family="sans-serif">软颚</text>
+    <!-- Throat -->
+    <path d="M200,115 Q205,140 200,160" fill="none" stroke="#4b5563" stroke-width="1.5"/>
+    <!-- Tongue body (pink blob) -->
+    <path d="M40,155 Q50,120 70,105 Q100,88 135,90 Q165,92 180,108 Q195,122 192,148 Q180,158 130,160 Q80,162 40,155 Z" fill="#e879a0" opacity="0.75"/>
+    <path d="M40,155 Q50,120 70,105 Q100,88 135,90 Q165,92 180,108 Q195,122 192,148" fill="none" stroke="#f9a8d4" stroke-width="1.5"/>
+    <!-- Tongue tip CURLED UP (animated) -->
     <g class="tongue-tip-anim">
-      <path d="M75,118 Q90,85 108,62" fill="none" stroke="#f87171" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="108" cy="62" r="7" fill="#f87171"/>
+      <path d="M70,105 Q72,80 85,62 Q95,48 108,44" fill="none" stroke="#f87171" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="108" cy="44" r="8" fill="#f87171"/>
+      <text x="116" y="42" font-size="10" fill="#fbbf24" font-family="sans-serif" font-weight="bold">舌尖翘起</text>
+      <text x="116" y="54" font-size="9" fill="#fbbf24" font-family="sans-serif">tip curls UP</text>
     </g>
-    <!-- Arrow pointing to palate -->
-    <path d="M108,55 Q115,38 125,32" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowY)"/>
-    <defs>
-      <marker id="arrowY" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-        <path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/>
-      </marker>
-    </defs>
-    <text x="130" y="30" font-size="10" fill="#fbbf24" font-family="sans-serif">舌尖翘起</text>
-    <text x="130" y="42" font-size="10" fill="#fbbf24" font-family="sans-serif">tip curls UP</text>
+    <!-- Air flow arrow -->
+    <path d="M30,90 Q20,75 22,60" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#af1)" stroke-dasharray="4,3"/>
+    <defs><marker id="af1" markerWidth="7" markerHeight="7" refX="3" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#60a5fa"/></marker></defs>
+    <text x="8" y="58" font-size="8" fill="#60a5fa" font-family="sans-serif">气流</text>
     <!-- Lips -->
-    <ellipse cx="120" cy="80" rx="30" ry="8" fill="none" stroke="#6b7280" stroke-width="1.5"/>
-    <text x="120" y="170" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">气流从舌尖与上颚间通过</text>
+    <ellipse cx="32" cy="115" rx="14" ry="7" fill="#e879a0" opacity="0.6"/>
+    <text x="130" y="185" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">舌尖翘向上颚，不完全接触</text>
+    <text x="130" y="196" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">Tongue tip curls toward palate without touching</text>
   </svg>`,
 
-  // Flat sibilant z/s: tongue tip stays flat/forward
-  flat: `<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-    <rect width="240" height="180" fill="#060d18" rx="12"/>
-    <text x="120" y="18" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">平舌音 Flat  z / s / c</text>
-    <path d="M30,50 Q120,10 210,50" fill="none" stroke="#4b5563" stroke-width="2"/>
-    <text x="36" y="46" font-size="10" fill="#4b5563" font-family="sans-serif">上颚 palate</text>
-    <path d="M20,80 Q120,160 220,80" fill="#1a2540" stroke="#1a2540" stroke-width="1"/>
-    <ellipse cx="120" cy="130" rx="80" ry="35" fill="#1e3a5f" opacity="0.6"/>
-    <ellipse cx="120" cy="130" rx="80" ry="35" fill="none" stroke="#60a5fa" stroke-width="2"/>
-    <text x="120" y="134" text-anchor="middle" font-size="11" fill="#93c5fd" font-family="sans-serif">舌体 tongue body</text>
-    <!-- Tongue tip stays flat/forward -->
+  // ── FLAT z/s/c: tongue tip stays flat/forward ───────────
+  flat: `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="260" height="200" fill="#060d18" rx="14"/>
+    <text x="130" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">平舌音 Flat Sibilant  z · s · c</text>
+    <path d="M20,30 Q20,10 50,10 Q180,10 220,40 Q240,60 238,100 Q235,140 210,155 Q190,165 160,162 L100,162 Q70,162 55,148 Q35,130 32,100 Z" fill="#1a1028" stroke="#4b5563" stroke-width="1.5"/>
+    <path d="M50,10 Q180,10 220,40 Q200,38 160,36 Q120,34 80,36 Q60,37 50,42 Z" fill="#1e40af" opacity="0.5"/>
+    <path d="M50,42 Q120,30 220,40" fill="none" stroke="#93c5fd" stroke-width="2"/>
+    <path d="M185,42 Q205,55 208,80 Q210,100 200,115" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <path d="M200,115 Q205,140 200,160" fill="none" stroke="#4b5563" stroke-width="1.5"/>
+    <!-- Tongue body -->
+    <path d="M40,155 Q50,120 70,108 Q100,94 135,94 Q165,96 180,112 Q195,126 192,150 Q180,160 130,162 Q80,164 40,155 Z" fill="#3b82f6" opacity="0.6"/>
+    <path d="M40,155 Q50,120 70,108 Q100,94 135,94 Q165,96 180,112 Q195,126 192,150" fill="none" stroke="#93c5fd" stroke-width="1.5"/>
+    <!-- Tongue tip FLAT/FORWARD (animated) -->
     <g class="tongue-tip-anim">
-      <path d="M75,118 Q88,108 100,100" fill="none" stroke="#60a5fa" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="100" cy="100" r="7" fill="#60a5fa"/>
+      <path d="M70,108 Q65,98 55,92" fill="none" stroke="#60a5fa" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="55" cy="92" r="8" fill="#60a5fa"/>
+      <text x="18" y="82" font-size="10" fill="#fbbf24" font-family="sans-serif" font-weight="bold">舌尖平放</text>
+      <text x="18" y="94" font-size="9" fill="#fbbf24" font-family="sans-serif">tip stays FLAT</text>
     </g>
-    <path d="M100,93 Q100,75 115,68" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowB)"/>
-    <defs>
-      <marker id="arrowB" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-        <path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/>
-      </marker>
-    </defs>
-    <text x="118" y="67" font-size="10" fill="#fbbf24" font-family="sans-serif">舌尖平放</text>
-    <text x="118" y="79" font-size="10" fill="#fbbf24" font-family="sans-serif">tip stays FLAT</text>
-    <ellipse cx="120" cy="80" rx="30" ry="8" fill="none" stroke="#6b7280" stroke-width="1.5"/>
-    <text x="120" y="170" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">气流从平舌与上齿龈间通过</text>
+    <!-- Upper teeth marker -->
+    <line x1="42" y1="82" x2="58" y2="82" stroke="#e5e7eb" stroke-width="2" stroke-linecap="round"/>
+    <text x="62" y="85" font-size="8" fill="#9ca3af" font-family="sans-serif">上齿</text>
+    <path d="M30,90 Q18,78 18,64" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#af2)" stroke-dasharray="4,3"/>
+    <defs><marker id="af2" markerWidth="7" markerHeight="7" refX="3" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#60a5fa"/></marker></defs>
+    <text x="5" y="62" font-size="8" fill="#60a5fa" font-family="sans-serif">气流</text>
+    <ellipse cx="32" cy="115" rx="14" ry="7" fill="#3b82f6" opacity="0.5"/>
+    <text x="130" y="185" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">舌尖平放靠近上齿，不卷起</text>
+    <text x="130" y="196" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">Tongue tip stays flat near upper teeth, not curled</text>
   </svg>`,
 
-  // x / q: tongue blade touches hard palate, lips spread wide
-  xq: `<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-    <rect width="240" height="180" fill="#060d18" rx="12"/>
-    <text x="120" y="18" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">舌面音 Palatal  x / q / j</text>
-    <path d="M30,50 Q120,10 210,50" fill="none" stroke="#4b5563" stroke-width="2"/>
-    <text x="36" y="46" font-size="10" fill="#4b5563" font-family="sans-serif">上颚 palate</text>
-    <path d="M20,80 Q120,160 220,80" fill="#1a2540" stroke="#1a2540" stroke-width="1"/>
-    <ellipse cx="120" cy="125" rx="78" ry="32" fill="#3b0764" opacity="0.5"/>
-    <ellipse cx="120" cy="125" rx="78" ry="32" fill="none" stroke="#a78bfa" stroke-width="2"/>
-    <text x="120" y="129" text-anchor="middle" font-size="11" fill="#c4b5fd" font-family="sans-serif">舌体前部抬起</text>
-    <!-- Tongue blade up touching palate -->
+  // ── PALATAL x/q/j: tongue blade up, lips spread ─────────
+  xq: `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="260" height="200" fill="#060d18" rx="14"/>
+    <text x="130" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">舌面音 Palatal  x · q · j</text>
+    <path d="M20,30 Q20,10 50,10 Q180,10 220,40 Q240,60 238,100 Q235,140 210,155 Q190,165 160,162 L100,162 Q70,162 55,148 Q35,130 32,100 Z" fill="#1a1028" stroke="#4b5563" stroke-width="1.5"/>
+    <path d="M50,10 Q180,10 220,40 Q200,38 160,36 Q120,34 80,36 Q60,37 50,42 Z" fill="#4c1d95" opacity="0.6"/>
+    <path d="M50,42 Q120,30 220,40" fill="none" stroke="#c4b5fd" stroke-width="2"/>
+    <path d="M185,42 Q205,55 208,80 Q210,100 200,115" fill="none" stroke="#c4b5fd" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <path d="M200,115 Q205,140 200,160" fill="none" stroke="#4b5563" stroke-width="1.5"/>
+    <!-- Tongue body raised at front -->
+    <path d="M40,155 Q48,115 72,96 Q105,75 145,76 Q175,78 185,100 Q195,122 190,150 Q178,160 130,162 Q80,164 40,155 Z" fill="#7c3aed" opacity="0.55"/>
+    <path d="M40,155 Q48,115 72,96 Q105,75 145,76 Q175,78 185,100 Q195,122 190,150" fill="none" stroke="#c4b5fd" stroke-width="1.5"/>
+    <!-- Tongue BLADE touching palate (animated) -->
     <g class="tongue-tip-anim">
-      <path d="M80,115 Q100,80 125,55" fill="none" stroke="#a78bfa" stroke-width="4" stroke-linecap="round"/>
-      <!-- Contact line on palate -->
-      <line x1="95" y1="46" x2="145" y2="46" stroke="#a78bfa" stroke-width="3" stroke-linecap="round"/>
+      <path d="M72,96 Q90,70 112,52" fill="none" stroke="#a78bfa" stroke-width="4" stroke-linecap="round"/>
+      <!-- Contact area on palate -->
+      <line x1="95" y1="38" x2="145" y2="35" stroke="#a78bfa" stroke-width="4" stroke-linecap="round"/>
+      <text x="105" y="28" font-size="10" fill="#fbbf24" font-family="sans-serif" font-weight="bold">舌面贴上颚</text>
+      <text x="105" y="39" font-size="9" fill="#fbbf24" font-family="sans-serif">blade contact</text>
     </g>
-    <text x="150" y="44" font-size="10" fill="#fbbf24" font-family="sans-serif">舌面接触</text>
-    <text x="150" y="56" font-size="10" fill="#fbbf24" font-family="sans-serif">blade contact</text>
-    <!-- Lips spread indicator -->
-    <path d="M85,80 L75,80 M155,80 L165,80" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
-    <text x="40" y="84" font-size="10" fill="#22c55e" font-family="sans-serif">←</text>
-    <text x="190" y="84" font-size="10" fill="#22c55e" font-family="sans-serif">→</text>
-    <text x="120" y="170" text-anchor="middle" font-size="10" fill="#22c55e" font-family="sans-serif">嘴角向两侧咧开 spread lips wide</text>
+    <!-- Lips SPREAD indicator -->
+    <ellipse cx="32" cy="112" rx="14" ry="6" fill="#7c3aed" opacity="0.5"/>
+    <path d="M20,112 L10,112 M44,112 L54,112" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="0" y="126" font-size="9" fill="#22c55e" font-family="sans-serif">←咧</text>
+    <text x="42" y="126" font-size="9" fill="#22c55e" font-family="sans-serif">咧→</text>
+    <path d="M30,95 Q18,80 18,65" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#af3)" stroke-dasharray="4,3"/>
+    <defs><marker id="af3" markerWidth="7" markerHeight="7" refX="3" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#60a5fa"/></marker></defs>
+    <text x="130" y="185" text-anchor="middle" font-size="10" fill="#22c55e" font-family="sans-serif">嘴角向两侧咧开，舌面贴硬颚</text>
+    <text x="130" y="196" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">Spread lips wide, tongue blade touches hard palate</text>
   </svg>`,
 
-  // Nasal -ng: tongue back raised, air through nose
-  ng_final: `<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-    <rect width="240" height="180" fill="#060d18" rx="12"/>
-    <text x="120" y="18" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">后鼻音 Back Nasal  -ng</text>
-    <path d="M30,50 Q120,10 210,50" fill="none" stroke="#4b5563" stroke-width="2"/>
-    <!-- Nasal passage -->
-    <path d="M170,50 Q185,20 200,10" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="5,3"/>
-    <text x="170" y="10" font-size="10" fill="#22c55e" font-family="sans-serif">→鼻腔 nose</text>
-    <!-- Air flow arrows through nose -->
+  // ── BACK NASAL -ng: tongue back raised, air thru nose ───
+  ng_final: `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="260" height="200" fill="#060d18" rx="14"/>
+    <text x="130" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">后鼻音 Back Nasal  -ng</text>
+    <!-- Nasal cavity -->
+    <path d="M130,10 Q180,10 220,35 Q240,50 238,80 Q210,65 185,42" fill="#14532d" opacity="0.3" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="185" y="22" font-size="9" fill="#22c55e" font-family="sans-serif">鼻腔 nasal</text>
+    <!-- Nasal air flow (animated) -->
     <g class="tongue-tip-anim">
-      <path d="M155,40 Q175,20 195,12" fill="none" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowG)"/>
-      <path d="M148,44 Q168,24 188,16" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.6"/>
+      <path d="M195,70 Q205,45 210,25" fill="none" stroke="#22c55e" stroke-width="2.5" marker-end="url(#afn)" stroke-dasharray="5,3"/>
+      <path d="M188,75 Q198,50 203,30" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.5" stroke-dasharray="4,3"/>
     </g>
-    <defs>
-      <marker id="arrowG" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-        <path d="M0,0 L8,4 L0,8 Z" fill="#22c55e"/>
-      </marker>
-    </defs>
-    <path d="M20,80 Q120,160 220,80" fill="#1a2540" stroke="#1a2540" stroke-width="1"/>
-    <!-- Tongue body - back raised -->
-    <ellipse cx="130" cy="128" rx="75" ry="32" fill="#14532d" opacity="0.5"/>
-    <ellipse cx="130" cy="128" rx="75" ry="32" fill="none" stroke="#22c55e" stroke-width="2"/>
-    <text x="130" y="132" text-anchor="middle" font-size="11" fill="#86efac" font-family="sans-serif">舌根抬起</text>
-    <!-- Tongue back raised toward velum -->
+    <defs><marker id="afn" markerWidth="7" markerHeight="7" refX="3" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#22c55e"/></marker></defs>
+    <text x="214" y="24" font-size="9" fill="#22c55e" font-family="sans-serif">↑气流</text>
+    <!-- Skull outline -->
+    <path d="M20,30 Q20,10 50,10 Q130,10 185,42 Q205,55 208,80 Q210,100 200,115 Q190,165 160,162 L100,162 Q70,162 55,148 Q35,130 32,100 Z" fill="#1a1028" stroke="#4b5563" stroke-width="1.5"/>
+    <path d="M50,42 Q120,30 185,42" fill="none" stroke="#f9a8d4" stroke-width="1.5"/>
+    <!-- Velum lowered for nasal -->
+    <path d="M185,42 Q205,55 208,80 Q210,95 200,108" fill="none" stroke="#f87171" stroke-width="2.5"/>
+    <text x="212" y="90" font-size="9" fill="#f87171" font-family="sans-serif">软颚↓</text>
+    <text x="212" y="100" font-size="8" fill="#f87171" font-family="sans-serif">velum</text>
+    <text x="212" y="110" font-size="8" fill="#f87171" font-family="sans-serif">lowers</text>
+    <!-- Tongue body - BACK raised toward velum -->
+    <path d="M40,155 Q50,130 65,118 Q90,104 120,102 Q150,100 172,110 Q192,120 192,148 Q178,160 130,162 Q80,164 40,155 Z" fill="#14532d" opacity="0.6"/>
+    <path d="M40,155 Q50,130 65,118 Q90,104 120,102 Q150,100 172,110 Q192,120 192,148" fill="none" stroke="#4ade80" stroke-width="1.5"/>
+    <!-- Tongue BACK raised (animated) -->
     <g class="tongue-tip-anim">
-      <path d="M160,118 Q175,95 182,72" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="182" cy="72" r="7" fill="#22c55e"/>
+      <path d="M165,108 Q178,90 185,72" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="185" cy="72" r="8" fill="#22c55e"/>
+      <text x="148" y="65" font-size="10" fill="#fbbf24" font-family="sans-serif" font-weight="bold">舌根抬起</text>
+      <text x="148" y="76" font-size="9" fill="#fbbf24" font-family="sans-serif">back raises</text>
     </g>
-    <text x="188" y="70" font-size="10" fill="#fbbf24" font-family="sans-serif">舌根</text>
-    <text x="188" y="82" font-size="10" fill="#fbbf24" font-family="sans-serif">back UP</text>
-    <ellipse cx="120" cy="80" rx="30" ry="8" fill="none" stroke="#6b7280" stroke-width="1.5"/>
-    <text x="120" y="170" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">软颚下降，气流从鼻腔通过</text>
+    <ellipse cx="32" cy="115" rx="14" ry="7" fill="#14532d" opacity="0.5"/>
+    <text x="130" y="185" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">舌根抬起接触软颚，气流走鼻腔</text>
+    <text x="130" y="196" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">Tongue back raises to velum, air exits through nose</text>
   </svg>`,
 
-  // Nasal -n: tongue tip to upper gum ridge
-  n_final: `<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-    <rect width="240" height="180" fill="#060d18" rx="12"/>
-    <text x="120" y="18" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">前鼻音 Front Nasal  -n</text>
-    <path d="M30,50 Q120,10 210,50" fill="none" stroke="#4b5563" stroke-width="2"/>
-    <text x="36" y="46" font-size="10" fill="#4b5563" font-family="sans-serif">上颚 palate</text>
-    <!-- Gum ridge marker -->
-    <path d="M62,56 Q75,48 90,46" fill="none" stroke="#facc15" stroke-width="2.5"/>
-    <text x="56" y="64" font-size="10" fill="#facc15" font-family="sans-serif">齿龈</text>
-    <text x="56" y="75" font-size="10" fill="#facc15" font-family="sans-serif">gum ridge</text>
-    <path d="M20,80 Q120,160 220,80" fill="#1a2540" stroke="#1a2540" stroke-width="1"/>
-    <ellipse cx="115" cy="130" rx="78" ry="33" fill="#713f12" opacity="0.4"/>
-    <ellipse cx="115" cy="130" rx="78" ry="33" fill="none" stroke="#facc15" stroke-width="2"/>
-    <text x="115" y="134" text-anchor="middle" font-size="11" fill="#fde68a" font-family="sans-serif">舌体 tongue body</text>
-    <!-- Tongue tip touches gum ridge -->
+  // ── FRONT NASAL -n: tongue tip to gum ridge ─────────────
+  n_final: `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="260" height="200" fill="#060d18" rx="14"/>
+    <text x="130" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">前鼻音 Front Nasal  -n</text>
+    <!-- Nasal cavity hint -->
+    <path d="M130,10 Q180,10 220,35 Q240,50 238,80 Q210,65 185,42" fill="#713f12" opacity="0.25" stroke="#facc15" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="185" y="22" font-size="9" fill="#facc15" font-family="sans-serif">鼻腔 nasal</text>
     <g class="tongue-tip-anim">
-      <path d="M72,120 Q75,90 78,72" fill="none" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="78" cy="72" r="7" fill="#facc15"/>
+      <path d="M195,70 Q205,45 210,25" fill="none" stroke="#facc15" stroke-width="2" marker-end="url(#afnn)" stroke-dasharray="5,3"/>
     </g>
-    <!-- Contact indicator -->
-    <line x1="72" y1="58" x2="90" y2="52" stroke="#facc15" stroke-width="2" stroke-dasharray="3,2"/>
-    <text x="78" y="62" font-size="10" fill="#fbbf24" font-family="sans-serif">舌尖触齿龈</text>
-    <text x="78" y="74" font-size="10" fill="#fbbf24" font-family="sans-serif">tip to ridge</text>
-    <ellipse cx="120" cy="80" rx="30" ry="8" fill="none" stroke="#6b7280" stroke-width="1.5"/>
-    <text x="120" y="170" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">舌尖抵上牙龈，气流从鼻腔通过</text>
+    <defs><marker id="afnn" markerWidth="7" markerHeight="7" refX="3" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#facc15"/></marker></defs>
+    <!-- Skull outline -->
+    <path d="M20,30 Q20,10 50,10 Q130,10 185,42 Q205,55 208,80 Q210,100 200,115 Q190,165 160,162 L100,162 Q70,162 55,148 Q35,130 32,100 Z" fill="#1a1028" stroke="#4b5563" stroke-width="1.5"/>
+    <path d="M50,42 Q120,30 185,42" fill="none" stroke="#f9a8d4" stroke-width="1.5"/>
+    <!-- Gum ridge highlighted -->
+    <path d="M52,44 Q65,38 82,36" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+    <text x="52" y="32" font-size="9" fill="#facc15" font-family="sans-serif">齿龈 gum ridge</text>
+    <!-- Soft palate neutral -->
+    <path d="M185,42 Q205,55 208,80 Q210,100 200,115" fill="none" stroke="#f9a8d4" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <!-- Tongue body -->
+    <path d="M40,155 Q50,120 68,108 Q95,92 130,92 Q162,92 178,108 Q192,124 190,150 Q178,160 130,162 Q80,164 40,155 Z" fill="#92400e" opacity="0.5"/>
+    <path d="M40,155 Q50,120 68,108 Q95,92 130,92 Q162,92 178,108 Q192,124 190,150" fill="none" stroke="#fde68a" stroke-width="1.5"/>
+    <!-- Tongue TIP to gum ridge (animated) -->
+    <g class="tongue-tip-anim">
+      <path d="M68,108 Q65,88 66,70" fill="none" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="66" cy="70" r="8" fill="#facc15"/>
+      <!-- Contact indicator -->
+      <line x1="58" y1="44" x2="74" y2="44" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+      <text x="78" y="68" font-size="10" fill="#fbbf24" font-family="sans-serif" font-weight="bold">舌尖触齿龈</text>
+      <text x="78" y="79" font-size="9" fill="#fbbf24" font-family="sans-serif">tip to ridge</text>
+    </g>
+    <ellipse cx="32" cy="115" rx="14" ry="7" fill="#92400e" opacity="0.5"/>
+    <text x="130" y="185" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">舌尖抵上牙龈，软颚下降走鼻腔</text>
+    <text x="130" y="196" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">Tongue tip touches gum ridge, air exits through nose</text>
   </svg>`,
 
-  // Tone contour: all 4 tones shown, used for tone-related weaknesses
-  tones: `<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-    <rect width="240" height="180" fill="#060d18" rx="12"/>
-    <text x="120" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">普通话四声 The 4 Tones of Mandarin</text>
+  // ── TONES: pitch contour chart ───────────────────────────
+  tones: `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="260" height="200" fill="#060d18" rx="14"/>
+    <text x="130" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">普通话四声 The 4 Tones of Mandarin</text>
     <!-- Axes -->
-    <line x1="30" y1="28" x2="30" y2="138" stroke="#1a2540" stroke-width="1.5"/>
-    <line x1="30" y1="138" x2="225" y2="138" stroke="#1a2540" stroke-width="1.5"/>
-    <text x="16" y="32" font-size="9" fill="#6b7280" font-family="sans-serif">高</text>
-    <text x="16" y="138" font-size="9" fill="#6b7280" font-family="sans-serif">低</text>
-    <!-- Dashed pitch levels -->
-    <line x1="30" y1="45" x2="225" y2="45" stroke="#1a2540" stroke-width="1" stroke-dasharray="4,4"/>
-    <line x1="30" y1="90" x2="225" y2="90" stroke="#1a2540" stroke-width="1" stroke-dasharray="4,4"/>
+    <line x1="32" y1="28" x2="32" y2="148" stroke="#1a2540" stroke-width="1.5"/>
+    <line x1="32" y1="148" x2="248" y2="148" stroke="#1a2540" stroke-width="1.5"/>
+    <text x="18" y="32" font-size="9" fill="#6b7280" font-family="sans-serif">高</text>
+    <text x="18" y="148" font-size="9" fill="#6b7280" font-family="sans-serif">低</text>
+    <line x1="32" y1="48" x2="248" y2="48" stroke="#1a2540" stroke-width="1" stroke-dasharray="4,4"/>
+    <line x1="32" y1="98" x2="248" y2="98" stroke="#1a2540" stroke-width="1" stroke-dasharray="4,4"/>
     <!-- T1 flat high -->
     <g class="tongue-tip-anim">
-      <line x1="42" y1="45" x2="82" y2="45" stroke="#22c55e" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="44" y1="48" x2="86" y2="48" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
     </g>
-    <text x="62" y="39" text-anchor="middle" font-size="14" fill="#22c55e" font-family="sans-serif" font-weight="bold">ā</text>
-    <text x="62" y="150" text-anchor="middle" font-size="10" fill="#22c55e" font-family="sans-serif">一声</text>
-    <text x="62" y="161" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">high-flat</text>
+    <text x="65" y="40" text-anchor="middle" font-size="15" fill="#22c55e" font-family="sans-serif" font-weight="bold">ā</text>
+    <text x="65" y="158" text-anchor="middle" font-size="10" fill="#22c55e" font-family="sans-serif">一声</text>
+    <text x="65" y="169" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">high-flat</text>
     <!-- T2 rising -->
     <g class="tongue-tip-anim">
-      <line x1="95" y1="118" x2="135" y2="42" stroke="#60a5fa" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="100" y1="128" x2="142" y2="44" stroke="#60a5fa" stroke-width="4" stroke-linecap="round"/>
     </g>
-    <text x="115" y="38" text-anchor="middle" font-size="14" fill="#60a5fa" font-family="sans-serif" font-weight="bold">á</text>
-    <text x="115" y="150" text-anchor="middle" font-size="10" fill="#60a5fa" font-family="sans-serif">二声</text>
-    <text x="115" y="161" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">rising</text>
+    <text x="121" y="38" text-anchor="middle" font-size="15" fill="#60a5fa" font-family="sans-serif" font-weight="bold">á</text>
+    <text x="121" y="158" text-anchor="middle" font-size="10" fill="#60a5fa" font-family="sans-serif">二声</text>
+    <text x="121" y="169" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">rising</text>
     <!-- T3 dip-rise -->
     <g class="tongue-tip-anim">
-      <path d="M148,68 Q163,130 178,55" fill="none" stroke="#facc15" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M155,68 Q170,138 185,58" fill="none" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
     </g>
-    <text x="163" y="38" text-anchor="middle" font-size="14" fill="#facc15" font-family="sans-serif" font-weight="bold">ǎ</text>
-    <text x="163" y="150" text-anchor="middle" font-size="10" fill="#facc15" font-family="sans-serif">三声</text>
-    <text x="163" y="161" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">dip-rise</text>
+    <text x="170" y="38" text-anchor="middle" font-size="15" fill="#facc15" font-family="sans-serif" font-weight="bold">ǎ</text>
+    <text x="170" y="158" text-anchor="middle" font-size="10" fill="#facc15" font-family="sans-serif">三声</text>
+    <text x="170" y="169" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">dip-rise</text>
     <!-- T4 falling -->
     <g class="tongue-tip-anim">
-      <line x1="192" y1="40" x2="218" y2="128" stroke="#f87171" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="198" y1="40" x2="236" y2="138" stroke="#f87171" stroke-width="4" stroke-linecap="round"/>
     </g>
-    <text x="205" y="36" text-anchor="middle" font-size="14" fill="#f87171" font-family="sans-serif" font-weight="bold">à</text>
-    <text x="205" y="150" text-anchor="middle" font-size="10" fill="#f87171" font-family="sans-serif">四声</text>
-    <text x="205" y="161" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">falling</text>
-    <!-- Bottom note -->
-    <text x="120" y="174" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">每条线代表声调的音高走向 Each line = pitch movement</text>
+    <text x="217" y="36" text-anchor="middle" font-size="15" fill="#f87171" font-family="sans-serif" font-weight="bold">à</text>
+    <text x="217" y="158" text-anchor="middle" font-size="10" fill="#f87171" font-family="sans-serif">四声</text>
+    <text x="217" y="169" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">falling</text>
+    <text x="130" y="185" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">每条线代表该声调的音高走向</text>
+    <text x="130" y="196" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">Each line shows the pitch movement of that tone</text>
   </svg>`,
 
-  // Rhythm: breath grouping visual
-  rhythm: `<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-    <rect width="240" height="180" fill="#060d18" rx="12"/>
-    <text x="120" y="18" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">断句换气 Breath Grouping</text>
-    <!-- Bad example -->
-    <text x="16" y="42" font-size="10" fill="#f87171" font-family="sans-serif">✗ 错误</text>
-    <rect x="50" y="30" width="22" height="18" rx="4" fill="#f87171" opacity="0.7"/>
-    <rect x="75" y="30" width="14" height="18" rx="4" fill="#f87171" opacity="0.5"/>
-    <rect x="92" y="30" width="20" height="18" rx="4" fill="#f87171" opacity="0.7"/>
-    <rect x="115" y="30" width="10" height="18" rx="4" fill="#f87171" opacity="0.5"/>
-    <rect x="128" y="30" width="24" height="18" rx="4" fill="#f87171" opacity="0.7"/>
-    <rect x="155" y="30" width="16" height="18" rx="4" fill="#f87171" opacity="0.5"/>
-    <rect x="174" y="30" width="20" height="18" rx="4" fill="#f87171" opacity="0.7"/>
-    <text x="145" y="65" text-anchor="middle" font-size="9" fill="#f87171" font-family="sans-serif">每个字都停顿 pausing after every word</text>
-    <!-- Good example -->
-    <text x="16" y="98" font-size="10" fill="#22c55e" font-family="sans-serif">✓ 正确</text>
-    <rect x="50" y="85" width="65" height="20" rx="6" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
-    <text x="82" y="99" text-anchor="middle" font-size="10" fill="#86efac" font-family="sans-serif">每天我会用</text>
-    <!-- breath mark -->
-    <text x="123" y="96" font-size="14" fill="#94a3b8" font-family="sans-serif">/</text>
-    <rect x="132" y="85" width="80" height="20" rx="6" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
-    <text x="172" y="99" text-anchor="middle" font-size="10" fill="#86efac" font-family="sans-serif">一个故事来教你</text>
-    <text x="120" y="123" text-anchor="middle" font-size="9" fill="#22c55e" font-family="sans-serif">词组内部不停顿，组间自然换气</text>
-    <!-- Waveform animation -->
+  // ── RHYTHM: breath grouping visual ──────────────────────
+  rhythm: `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="260" height="200" fill="#060d18" rx="14"/>
+    <text x="130" y="16" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="sans-serif">断句换气 Breath Grouping</text>
+    <!-- Bad row label -->
+    <text x="14" y="46" font-size="10" fill="#f87171" font-family="sans-serif">✗ 错</text>
+    <!-- Bad: chopped up -->
+    <rect x="38" y="32" width="24" height="20" rx="5" fill="#f87171" opacity="0.7"/>
+    <rect x="66" y="32" width="16" height="20" rx="5" fill="#f87171" opacity="0.5"/>
+    <rect x="86" y="32" width="26" height="20" rx="5" fill="#f87171" opacity="0.7"/>
+    <rect x="116" y="32" width="14" height="20" rx="5" fill="#f87171" opacity="0.5"/>
+    <rect x="134" y="32" width="28" height="20" rx="5" fill="#f87171" opacity="0.7"/>
+    <rect x="166" y="32" width="18" height="20" rx="5" fill="#f87171" opacity="0.5"/>
+    <rect x="188" y="32" width="24" height="20" rx="5" fill="#f87171" opacity="0.7"/>
+    <rect x="216" y="32" width="20" height="20" rx="5" fill="#f87171" opacity="0.5"/>
+    <text x="130" y="68" text-anchor="middle" font-size="9" fill="#fca5a5" font-family="sans-serif">每个字都停顿 — pause after every character</text>
+    <!-- Divider -->
+    <line x1="20" y1="78" x2="240" y2="78" stroke="#1a2540" stroke-width="1"/>
+    <!-- Good row label -->
+    <text x="14" y="104" text-anchor="middle" font-size="10" fill="#22c55e" font-family="sans-serif">✓ 对</text>
+    <!-- Good: chunked -->
+    <rect x="38" y="88" width="82" height="24" rx="7" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="79" y="104" text-anchor="middle" font-size="11" fill="#86efac" font-family="sans-serif">每天我会用</text>
+    <!-- breath slash -->
+    <text x="128" y="104" font-size="18" fill="#94a3b8" font-family="sans-serif">/</text>
+    <rect x="142" y="88" width="98" height="24" rx="7" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="191" y="104" text-anchor="middle" font-size="11" fill="#86efac" font-family="sans-serif">一个故事来教你</text>
+    <text x="130" y="128" text-anchor="middle" font-size="9" fill="#22c55e" font-family="sans-serif">词组内部不停顿，组间换气</text>
+    <text x="130" y="140" text-anchor="middle" font-size="9" fill="#4b5563" font-family="sans-serif">No pause within chunks — breathe between them</text>
+    <!-- Waveform animated -->
     <g class="tongue-tip-anim">
-      <path d="M30,148 Q50,138 70,148 Q90,158 110,148 Q115,145 120,148 Q140,138 160,148 Q180,158 200,148 Q210,145 220,148" 
-            fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.6"/>
+      <path d="M20,162 Q40,150 60,162 Q80,174 100,162 Q108,156 114,162 Q134,150 154,162 Q174,174 194,162 Q214,150 240,162"
+            fill="none" stroke="#22c55e" stroke-width="2" opacity="0.5"/>
     </g>
-    <text x="120" y="170" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">Keep word groups intact, breathe between them</text>
+    <text x="130" y="185" text-anchor="middle" font-size="10" fill="#4b5563" font-family="sans-serif">节奏自然流畅，听起来像母语者</text>
+    <text x="130" y="196" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">Natural rhythm makes you sound like a native speaker</text>
   </svg>`
 };
 
@@ -707,8 +735,17 @@ const PHONEME_META = {
   nasal_ng:  { svg:"ng_final",  diagramLabel:"舌位示意 Tongue Position", examples:["中文","朋友","行"] },
   nasal_n:   { svg:"n_final",   diagramLabel:"舌位示意 Tongue Position", examples:["赶快","南方","安"] },
   // rhythm → flow diagram
-  rhythm:    { svg:"rhythm",    diagramLabel:"节奏示意 Rhythm Pattern",  examples:["每天我会用一个故事","赶快行动起来吧"] },
-  liandu:    { svg:"rhythm",    diagramLabel:"节奏示意 Rhythm Pattern",  examples:["赶快","行动","起来"] }
+  rhythm:    { svg:"rhythm",    diagramLabel:"节奏示意 Rhythm Pattern",
+    examples:[
+      { text:"每天我会用一个故事来教你", chunks:["每天我会用","一个故事","来教你"], pause:800 },
+      { text:"赶快行动起来吧", chunks:["赶快","行动起来吧"], pause:600 }
+    ]},
+  liandu:    { svg:"rhythm",    diagramLabel:"节奏示意 Rhythm Pattern",
+    examples:[
+      { text:"赶快行动起来", chunks:["赶快","行动","起来"], pause:400 },
+      { text:"中国人", chunks:["中国人"], pause:0 },
+      { text:"轻松学中文", chunks:["轻松学","中文"], pause:500 }
+    ]}
 };
 
 let cpCurrentPage = 1;
@@ -772,7 +809,7 @@ function renderAnalysisPage(wi) {
 
       <!-- SVG diagram -->
       <div style="background:#060d18;border-radius:14px;padding:12px;margin-bottom:12px;text-align:center;">
-        <div style="width:100%;max-width:240px;height:180px;margin:0 auto;">${svgStr}</div>
+        <div style="width:100%;max-width:260px;height:200px;margin:0 auto;">${svgStr}</div>
         <div style="font-size:10px;color:#4b5563;margin-top:6px;">${meta.diagramLabel}</div>
       </div>
 
@@ -787,10 +824,10 @@ function renderAnalysisPage(wi) {
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;color:#4b5563;margin-bottom:8px;">🔊 点击听示例 Tap to hear examples</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          ${meta.examples.map(ex => `
-            <button onclick="speakEx('${ex}')" style="background:#111827;border:1px solid #1a2540;border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:#e2e8f0;font-size:14px;font-family:inherit;">
-              <span style="font-size:16px;">▶</span> ${ex}
-            </button>`).join("")}
+          ${meta.examples.map(ex => {
+            const label = typeof ex === "object" ? ex.text : ex;
+            return "<button onclick=\"speakEx('" + label.replace(/'/g, "\\'") + "')\" style=\"background:#111827;border:1px solid #1a2540;border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:#e2e8f0;font-size:14px;font-family:inherit;\"><span style='font-size:16px;'>▶</span> " + label + "</button>";
+          }).join("")}
         </div>
       </div>
 
@@ -807,12 +844,108 @@ function renderAnalysisPage(wi) {
     </div>`;
 }
 
+function speakRhythm(wi, ei, btnId) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const meta = PHONEME_META[cpWeakest[wi].key];
+  const ex = meta.examples[ei];
+  // Highlight active button
+  document.querySelectorAll("[id^='ex-btn-']").forEach(b => {
+    b.style.borderColor = "#1a2540"; b.style.background = "#111827";
+  });
+  const btn = document.getElementById(btnId);
+  if (btn) { btn.style.borderColor = "#22c55e"; btn.style.background = "#14532d"; }
+
+  if (typeof ex === "object") {
+    // Rhythm example: update SVG and speak with pauses between chunks
+    updateRhythmSVG(ex.chunks);
+    speakChunks(ex.chunks, ex.pause);
+  } else {
+    // Simple word
+    const u = new SpeechSynthesisUtterance(ex);
+    u.lang = "zh-CN"; u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function speakChunks(chunks, pauseMs) {
+  let i = 0;
+  function next() {
+    if (i >= chunks.length) return;
+    // Highlight current chunk in SVG
+    document.querySelectorAll(".rhythm-chunk").forEach((el, ci) => {
+      el.style.opacity = ci === i ? "1" : "0.35";
+      el.querySelector("rect").style.stroke = ci === i ? "#22c55e" : "#1a2540";
+    });
+    const u = new SpeechSynthesisUtterance(chunks[i]);
+    u.lang = "zh-CN"; u.rate = 0.82;
+    u.onend = () => { i++; setTimeout(next, pauseMs); };
+    window.speechSynthesis.speak(u);
+  }
+  next();
+}
+
+function updateRhythmSVG(chunks) {
+  const g = document.getElementById("rhythm-groups");
+  if (!g) return;
+  g.innerHTML = "";
+  const totalW = 200;
+  const startX = 20;
+  const y = 75;
+  const h = 40;
+  const gap = 8;
+  // Calculate widths proportional to text length
+  const totalChars = chunks.reduce((a, c) => a + c.length, 0);
+  const totalGap = gap * (chunks.length - 1);
+  let x = startX;
+  chunks.forEach((chunk, i) => {
+    const w = Math.round((chunk.length / totalChars) * (totalW - totalGap));
+    // Chunk block
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x); rect.setAttribute("y", y);
+    rect.setAttribute("width", w); rect.setAttribute("height", h);
+    rect.setAttribute("rx", "8");
+    rect.setAttribute("fill", "#14532d");
+    rect.setAttribute("stroke", "#1a2540");
+    rect.setAttribute("stroke-width", "1.5");
+    rect.style.transition = "stroke 0.2s";
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", x + w/2); text.setAttribute("y", y + h/2 + 4);
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("font-size", "13");
+    text.setAttribute("fill", "#86efac");
+    text.setAttribute("font-family", "sans-serif");
+    text.textContent = chunk;
+    const div = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    div.setAttribute("class", "rhythm-chunk");
+    div.appendChild(rect); div.appendChild(text);
+    // Breath mark between chunks
+    if (i < chunks.length - 1) {
+      const slash = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      slash.setAttribute("x", x + w + gap/2 - 2); slash.setAttribute("y", y + h/2 + 5);
+      slash.setAttribute("text-anchor", "middle");
+      slash.setAttribute("font-size", "18"); slash.setAttribute("fill", "#94a3b8");
+      slash.setAttribute("font-family", "sans-serif");
+      slash.textContent = "/";
+      g.appendChild(slash);
+    }
+    g.appendChild(div);
+    x += w + gap;
+  });
+  // Label
+  const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  lbl.setAttribute("x", "120"); lbl.setAttribute("y", "130");
+  lbl.setAttribute("text-anchor", "middle"); lbl.setAttribute("font-size", "9");
+  lbl.setAttribute("fill", "#22c55e"); lbl.setAttribute("font-family", "sans-serif");
+  lbl.textContent = "/ = 自然换气点  natural breath point";
+  g.appendChild(lbl);
+}
+
 function speakEx(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "zh-CN";
-  u.rate = 0.85;
+  u.lang = "zh-CN"; u.rate = 0.85;
   window.speechSynthesis.speak(u);
 }
 
