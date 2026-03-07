@@ -32,11 +32,22 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 /* Stage card */
 .stage { background: var(--card); border-radius: 20px; margin: 16px 20px 0; overflow: hidden; position: relative; }
 .mascot-wrap { display: flex; justify-content: center; align-items: flex-end; padding: 20px 20px 0; height: 190px; }
-.mascot-img { width: 160px; height: 190px; object-fit: contain; mix-blend-mode: screen; }
+.mascot-img { width: 160px; height: 190px; object-fit: contain; mix-blend-mode: screen; transition: transform 0.15s; }
+.mascot-ring { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 176px; height: 206px; border-radius: 50%; border: 3px solid var(--green); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
 .sentence-badge { position: absolute; top: 14px; left: 14px; background: rgba(0,0,0,0.5); border-radius: 99px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
 .status-badge { position: absolute; top: 14px; right: 14px; font-size: 13px; color: var(--green); font-weight: 600; }
 .sentence-box { padding: 20px 20px 24px; text-align: center; }
-.sentence-zh { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 12px; }
+
+/* Karaoke text */
+.kara-wrap { font-size: 28px; font-weight: 700; line-height: 1.4; margin-bottom: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+.kchar { color: #4b5563; transition: color 0.1s; }
+.kchar.active { color: var(--text); }
+.kchar.done { color: var(--green); }
+
+/* Karaoke progress bar */
+.kara-bar { height: 3px; background: var(--border); border-radius: 99px; margin: 0 0 12px; overflow: hidden; }
+.kara-bar-fill { height: 100%; background: var(--green); width: 0%; }
+
 .info-box { background: #0a1120; border-radius: 14px; padding: 14px 16px; text-align: left; }
 .pinyin { font-size: 14px; color: #60a5fa; margin-bottom: 4px; letter-spacing: 0.02em; }
 .en { font-size: 13px; color: var(--muted); }
@@ -50,7 +61,6 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 
 /* Buttons */
 .controls { padding: 0 20px; margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-.btn-row { display: flex; gap: 10px; }
 .btn { width: 100%; padding: 16px; background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn:hover:not(:disabled) { border-color: var(--green); background: rgba(34,197,94,0.08); }
 .btn:disabled { opacity: 0.35; cursor: default; }
@@ -96,12 +106,16 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 
   <div class="stage">
     <div class="mascot-wrap">
-      <img class="mascot-img" src="https://raw.githubusercontent.com/xiaobei810-max/shadowlingo/main/OIG3_munWfA_ym-removebg-preview.png" alt="mascot"/>
+      <img class="mascot-img" id="mascot"
+        src="https://raw.githubusercontent.com/xiaobei810-max/shadowlingo/main/OIG3_munWfA_ym-removebg-preview.png"
+        alt="mascot"/>
     </div>
+    <div class="mascot-ring" id="ring"></div>
     <div class="sentence-badge" id="badge">第 1/5 句</div>
     <div class="status-badge" id="status">准备好了 Ready</div>
     <div class="sentence-box">
-      <div class="sentence-zh" id="zh"></div>
+      <div class="kara-wrap" id="kara"></div>
+      <div class="kara-bar"><div class="kara-bar-fill" id="bar-fill"></div></div>
       <div class="info-box">
         <div class="pinyin" id="pinyin"></div>
         <div class="en" id="en"></div>
@@ -171,7 +185,7 @@ const PRAISES = [
 let idx = 0;
 let phase = "idle";
 let segTimer = null;
-let hasRecorded = false;
+let karTimer = null;
 let sessionScores = [];
 
 const audio = new Audio(AUDIO_SRC);
@@ -184,11 +198,77 @@ function getPraise(s) {
   return b ? b.msgs[Math.floor(Math.random() * b.msgs.length)] : "";
 }
 
+// ── Mascot animation ─────────────────────────────────────
+function speak(on) {
+  const ring = document.getElementById("ring");
+  const mascot = document.getElementById("mascot");
+  if (on) {
+    ring.style.opacity = "1";
+    ring.style.animation = "glow 1.2s ease-in-out infinite";
+    mascot.style.animation = "pulse 0.4s ease-in-out infinite alternate";
+  } else {
+    ring.style.opacity = "0";
+    ring.style.animation = "";
+    mascot.style.animation = "";
+  }
+}
+
+// ── Karaoke engine ───────────────────────────────────────
+function buildKara(text) {
+  const el = document.getElementById("kara");
+  el.innerHTML = "";
+  if (!text) return;
+  [...text].forEach(c => {
+    const span = document.createElement("span");
+    span.className = "kchar";
+    span.textContent = c;
+    el.appendChild(span);
+  });
+}
+
+function animateKara(durationMs) {
+  const chars = document.querySelectorAll(".kchar");
+  const total = chars.length;
+  if (!total) return;
+  const perChar = durationMs / total;
+  if (karTimer) clearTimeout(karTimer);
+  chars.forEach((c, i) => {
+    setTimeout(() => { c.classList.add("active"); }, i * perChar);
+    setTimeout(() => { c.classList.remove("active"); c.classList.add("done"); }, (i + 1) * perChar);
+  });
+  const fill = document.getElementById("bar-fill");
+  fill.style.transition = "none";
+  fill.style.width = "0%";
+  setTimeout(() => {
+    fill.style.transition = "width " + durationMs + "ms linear";
+    fill.style.width = "100%";
+  }, 50);
+  karTimer = setTimeout(() => {
+    fill.style.transition = "none";
+    fill.style.width = "0%";
+  }, durationMs + 300);
+}
+
+function completeKara() {
+  document.querySelectorAll(".kchar").forEach(c => {
+    c.classList.remove("active");
+    c.classList.add("done");
+  });
+}
+
+function resetKara() {
+  document.querySelectorAll(".kchar").forEach(c => { c.className = "kchar"; });
+  const fill = document.getElementById("bar-fill");
+  fill.style.transition = "none";
+  fill.style.width = "0%";
+}
+
 function setStatus(t) { document.getElementById("status").textContent = t; }
 
 function updateUI() {
   const s = SENTENCES[idx];
-  document.getElementById("zh").textContent = s.zh;
+  buildKara(s.zh);
+  resetKara();
   document.getElementById("pinyin").textContent = s.pinyin;
   document.getElementById("en").textContent = s.en;
   document.getElementById("badge").textContent = "第 " + (idx+1) + "/5 句";
@@ -200,6 +280,7 @@ function updateUI() {
   document.getElementById("bn").disabled = true;
   document.getElementById("bl").disabled = false;
   document.getElementById("bprev").disabled = idx === 0;
+  speak(false);
   phase = "idle";
   setStatus("准备好了 Ready");
 }
@@ -215,10 +296,15 @@ function doListen() {
   audio.currentTime = s.start;
   audio.playbackRate = 1;
   audio.play();
-  if (segTimer) clearTimeout(segTimer);
+  speak(true);
+  resetKara();
   const dur = (s.end - s.start) * 1000;
+  animateKara(dur);
+  if (segTimer) clearTimeout(segTimer);
   segTimer = setTimeout(() => {
     audio.pause();
+    speak(false);
+    completeKara();
     document.getElementById("bl").classList.remove("active");
     document.getElementById("bs").disabled = false;
     setStatus("准备好了 Ready");
@@ -233,11 +319,16 @@ function doSlow() {
   audio.currentTime = s.start;
   audio.playbackRate = 0.7;
   audio.play();
-  if (segTimer) clearTimeout(segTimer);
+  speak(true);
+  resetKara();
   const dur = (s.end - s.start) / 0.7 * 1000;
+  animateKara(dur);
+  if (segTimer) clearTimeout(segTimer);
   segTimer = setTimeout(() => {
     audio.pause();
     audio.playbackRate = 1;
+    speak(false);
+    completeKara();
     document.getElementById("bs").classList.remove("active");
     document.getElementById("bn").disabled = false;
     setStatus("准备好了 Ready");
@@ -252,10 +343,15 @@ function doNormal() {
   audio.currentTime = s.start;
   audio.playbackRate = 1;
   audio.play();
-  if (segTimer) clearTimeout(segTimer);
+  speak(true);
+  resetKara();
   const dur = (s.end - s.start) * 1000;
+  animateKara(dur);
+  if (segTimer) clearTimeout(segTimer);
   segTimer = setTimeout(() => {
     audio.pause();
+    speak(false);
+    completeKara();
     document.getElementById("bn").classList.remove("active");
     setStatus("录音完成 Done");
     showScore();
@@ -279,13 +375,13 @@ function showScore() {
 function doNext() {
   if (segTimer) clearTimeout(segTimer);
   audio.pause();
+  speak(false);
   if (idx >= SENTENCES.length - 1) {
     showCompletion();
     return;
   }
   idx++;
   phase = "idle";
-  setStatus("准备好了 Ready");
   updateUI();
 }
 
@@ -293,27 +389,20 @@ function showCompletion() {
   const overall = sessionScores.length
     ? Math.round(sessionScores.reduce((a,b)=>a+b,0)/sessionScores.length)
     : Math.floor(Math.random()*20)+72;
-
   const oColor = overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
-  const avgEl = document.getElementById("avg-score");
-  avgEl.textContent = overall;
-  avgEl.style.color = oColor;
-
+  document.getElementById("avg-score").textContent = overall;
+  document.getElementById("avg-score").style.color = oColor;
   const grade = overall >= 90 ? "🏆 优秀 Excellent" :
                 overall >= 80 ? "🌟 良好 Great" :
                 overall >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
-  const gradeEl = document.getElementById("score-grade");
-  gradeEl.textContent = grade;
-  gradeEl.style.color = oColor;
-
+  document.getElementById("score-grade").textContent = grade;
+  document.getElementById("score-grade").style.color = oColor;
   const fb = FEEDBACK[Math.min(idx, FEEDBACK.length-1)];
   const best = PRAISES.find(p => overall >= p.min);
   const praiseMsg = best ? best.msgs[Math.floor(Math.random()*best.msgs.length)] : "";
-
   document.getElementById("praise-block").innerHTML =
     "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>" + praiseMsg + "</div>" +
     "<div style='font-size:13px;color:#94a3b8;'>" + fb.hint + "</div>";
-
   document.getElementById("overlay").classList.add("show");
   launchFireworks();
 }
@@ -321,83 +410,42 @@ function showCompletion() {
 function restartLesson() {
   document.getElementById("overlay").classList.remove("show");
   stopFireworks();
-  idx = 0;
-  phase = "idle";
-  sessionScores = [];
-  setStatus("准备好了 Ready");
+  idx = 0; phase = "idle"; sessionScores = [];
   updateUI();
 }
 
 // ── Fireworks ────────────────────────────────────────────
 const fwCanvas = document.getElementById("fw-canvas");
 const fwCtx = fwCanvas.getContext("2d");
-let fwParticles = [];
-let fwAnimId = null;
-let fwStopTimer = null;
+let fwParticles = [], fwAnimId = null, fwStopTimer = null;
 const FW_COLORS = ["#22c55e","#60a5fa","#fbbf24","#f87171","#a78bfa","#fb923c"];
-
-function resizeFW() {
-  fwCanvas.width = window.innerWidth;
-  fwCanvas.height = window.innerHeight;
-}
-window.addEventListener("resize", resizeFW);
-resizeFW();
-
+function resizeFW() { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; }
+window.addEventListener("resize", resizeFW); resizeFW();
 function burst(x, y) {
   const color = FW_COLORS[Math.floor(Math.random()*FW_COLORS.length)];
-  for (let i = 0; i < 60; i++) {
-    const angle = (Math.PI * 2 / 60) * i;
-    const speed = 2 + Math.random() * 5;
-    fwParticles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      alpha: 1,
-      color,
-      r: 2 + Math.random() * 2
-    });
+  for (let i=0;i<60;i++) {
+    const angle=(Math.PI*2/60)*i, speed=2+Math.random()*5;
+    fwParticles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,alpha:1,color,r:2+Math.random()*2});
   }
 }
-
 function animateFW() {
-  fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
-  fwParticles.forEach(p => {
-    p.x += p.vx; p.y += p.vy;
-    p.vy += 0.08;
-    p.alpha -= 0.015;
-    fwCtx.globalAlpha = Math.max(0, p.alpha);
-    fwCtx.fillStyle = p.color;
-    fwCtx.beginPath();
-    fwCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-    fwCtx.fill();
-  });
-  fwCtx.globalAlpha = 1;
-  fwParticles = fwParticles.filter(p => p.alpha > 0);
-  fwAnimId = requestAnimationFrame(animateFW);
+  fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height);
+  fwParticles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.alpha-=0.015;fwCtx.globalAlpha=Math.max(0,p.alpha);fwCtx.fillStyle=p.color;fwCtx.beginPath();fwCtx.arc(p.x,p.y,p.r,0,Math.PI*2);fwCtx.fill();});
+  fwCtx.globalAlpha=1;
+  fwParticles=fwParticles.filter(p=>p.alpha>0);
+  fwAnimId=requestAnimationFrame(animateFW);
 }
-
 function launchFireworks() {
-  fwParticles = [];
-  if (fwAnimId) cancelAnimationFrame(fwAnimId);
-  if (fwStopTimer) clearTimeout(fwStopTimer);
-  animateFW();
-  let count = 0;
-  function fire() {
-    burst(Math.random()*window.innerWidth, Math.random()*window.innerHeight*0.6);
-    count++;
-    if (count < 12) setTimeout(fire, 400);
-  }
-  fire();
-  fwStopTimer = setTimeout(stopFireworks, 5000);
+  fwParticles=[];if(fwAnimId)cancelAnimationFrame(fwAnimId);if(fwStopTimer)clearTimeout(fwStopTimer);
+  animateFW();let count=0;
+  function fire(){burst(Math.random()*window.innerWidth,Math.random()*window.innerHeight*0.6);count++;if(count<12)setTimeout(fire,400);}
+  fire();fwStopTimer=setTimeout(stopFireworks,5000);
 }
-
 function stopFireworks() {
-  if (fwAnimId) { cancelAnimationFrame(fwAnimId); fwAnimId = null; }
-  fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
-  fwParticles = [];
+  if(fwAnimId){cancelAnimationFrame(fwAnimId);fwAnimId=null;}
+  fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height);fwParticles=[];
 }
 
-// ── Init ─────────────────────────────────────────────────
 updateUI();
 </script>
 </body>
