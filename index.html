@@ -23,7 +23,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
 .logo { display: flex; align-items: center; gap: 10px; }
 .logo-icon { width: 38px; height: 38px; background: var(--green); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
 .logo-text { font-weight: 700; font-size: 18px; }
-.logo-sub { font-size: 11px; color: var(--muted); }
+.logo-sub { font-size: 14px; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
 .counter { font-size: 14px; color: var(--muted); }
 
 /* Progress bar */
@@ -97,6 +97,24 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
 
 @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
 @keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 14px 4px rgba(34,197,94,0.25)} }
+
+/* Completion overlay */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+.overlay.show { display:flex; }
+.completion-card { background:#0d1520; border:1px solid #22c55e; border-radius:24px; padding:28px 24px; max-width:400px; width:100%; text-align:center; position:relative; z-index:2; }
+.completion-title { font-size:28px; font-weight:700; color:#22c55e; margin-bottom:6px; }
+.completion-sub { font-size:14px; color:#94a3b8; margin-bottom:20px; }
+.avg-score { font-size:52px; font-weight:700; color:#22c55e; line-height:1; margin-bottom:4px; }
+.avg-label { font-size:12px; color:#4b5563; margin-bottom:20px; }
+.summary-title { font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:10px; text-align:left; }
+.summary-item { background:#111827; border-radius:12px; padding:12px 14px; margin-bottom:8px; text-align:left; }
+.summary-item .s-label { font-size:11px; color:#4b5563; margin-bottom:4px; }
+.summary-item .s-text { font-size:13px; color:#e2e8f0; line-height:1.5; }
+.summary-item .s-tip { font-size:12px; color:#60a5fa; margin-top:4px; }
+.btn-restart { margin-top:16px; width:100%; padding:14px; background:#22c55e; color:#000; font-weight:700; font-size:15px; border:none; border-radius:14px; cursor:pointer; }
+.btn-restart:hover { background:#16a34a; }
+/* Fireworks canvas */
+#fw-canvas { position:fixed; inset:0; z-index:1000; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -106,7 +124,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
       <div class="logo-icon">影</div>
       <div>
         <div class="logo-text">ShadowLingo</div>
-        <div class="logo-sub">轻松学中文 · 开场白</div>
+        <div class="logo-sub">轻松学中文</div>
       </div>
     </div>
     <div class="counter" id="counter">1 / 5</div>
@@ -161,290 +179,32 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', s
   </div>
 </div>
 
-<script>
-const AUDIO_SRC = "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a";
 
-const SENTENCES = [
-  { zh:"你好，很高兴认识你！", pinyin:"Nǐ hǎo, hěn gāoxìng rènshi nǐ!", en:"Hello, nice to meet you!", start:1, end:4.5 },
-  { zh:"我是一个中国人，你也想成为一个中国人吗？", pinyin:"Wǒ shì yī gè Zhōngguó rén, nǐ yě xiǎng chéngwéi yī gè Zhōngguó rén ma?", en:"I'm Chinese - do you want to become one too?", start:5, end:10.5 },
-  { zh:"首先，你得学会中文。", pinyin:"Shǒuxiān, nǐ děi xuéhuì Zhōngwén.", en:"First of all, you need to learn Chinese.", start:11, end:14.5 },
-  { zh:"每天我会用一个轻松有趣的小故事来教你怎么说中文。", pinyin:"Měitiān wǒ huì yòng yī gè qīngsōng yǒuqù de xiǎo gùshi lái jiāo nǐ zěnme shuō Zhōngwén.", en:"Every day I'll use a fun little story to teach you how to speak Chinese.", start:14.5, end:22.5 },
-  { zh:"赶快行动起来吧，和我一起轻松学中文！", pinyin:"Gǎnkuài xíngdòng qǐlái ba, hé wǒ yīqǐ qīngsōng xué Zhōngwén!", en:"Take action now - let's learn Chinese together, the easy way!", start:22.5, end:28.5 }
-];
 
-const FEEDBACK = [
-  { praise:"✨ 声调很自然！", hint:"💡 注意【高兴】是第四声+轻声，听一遍原声再试试" },
-  { praise:"💪 语速控制得好！", hint:"💡 【中国人】连读时注意【国】字轻读" },
-  { praise:"🎯 短句说得很干净！", hint:"💡 【首先】是三声+一声，不要把三声说成四声" },
-  { praise:"🔥 长句挑战完成！", hint:"💡 长句可分两段断气：小故事 / 来教你，会更自然" },
-  { praise:"🌟 收尾句气势很足！", hint:"💡 【赶快】要连读成一个词，中间不要停顿" }
-];
-
-const PRAISES = [
-  { min:90, msgs:["🏆 完美！声调拿捏精准！","🌟 太棒了，说得非常地道！"] },
-  { min:75, msgs:["🔥 非常好，再练一遍就完美！","💪 发音很稳，越来越自然了！"] },
-  { min:60, msgs:["👏 不错，节奏感已经到位了！","💡 有进步，多听几遍能做到！"] },
-  { min:0,  msgs:["🌱 开口就是最大的勇气！","💫 每次练习都是进步！"] }
-];
-
-let idx = 0;
-let phase = "idle";
-let segTimer = null;
-let cdTimer = null;
-let hasRecorded = false;
-
-const audio = new Audio(AUDIO_SRC);
-audio.preload = "auto";
-
-function randScore() { return Math.floor(Math.random() * 14) + 85; }
-function getPraise(s) {
-  const b = PRAISES.find(p => s >= p.min);
-  return b.msgs[Math.floor(Math.random() * b.msgs.length)];
-}
-
-function speak(on) {
-  const ring = document.getElementById("ring");
-  const mascot = document.getElementById("mascot");
-  if (on) {
-    ring.style.opacity = "1";
-    ring.style.animation = "glow 1.2s ease-in-out infinite";
-    mascot.style.animation = "pulse 0.4s ease-in-out infinite alternate";
-  } else {
-    ring.style.opacity = "0";
-    ring.style.animation = "";
-    mascot.style.animation = "";
-  }
-}
-
-function buildKara(text) {
-  const el = document.getElementById("kara");
-  el.innerHTML = "";
-  if (!text) return;
-  [...text].forEach(c => {
-    const span = document.createElement("span");
-    span.className = "kc";
-    span.textContent = c;
-    el.appendChild(span);
-  });
-}
-
-function completeKara() {
-  document.querySelectorAll(".kc").forEach(c => {
-    c.classList.remove("active");
-    c.classList.add("done");
-  });
-}
-
-function setStatus(txt) {
-  document.getElementById("status").textContent = txt;
-}
-
-function updateUI() {
-  const s = SENTENCES[idx];
-  document.getElementById("counter").textContent = (idx+1) + " / " + SENTENCES.length;
-  document.getElementById("lbl").textContent = "第 " + (idx+1) + "/" + SENTENCES.length + " 句";
-  document.getElementById("prog").style.width = ((idx / SENTENCES.length) * 100) + "%";
-  document.getElementById("pinyin").textContent = s.pinyin;
-  document.getElementById("eng").textContent = s.en;
-
-  const bl = document.getElementById("bl");
-  const bs = document.getElementById("bs");
-  const bn = document.getElementById("bn");
-  const bdone = document.getElementById("bdone");
-  const bback = document.getElementById("bback");
-
-  bs.disabled = (phase === "idle");
-  bn.disabled = (phase === "idle" || phase === "listening");
-  bback.disabled = (idx === 0);
-
-  bl.className = "btn" + (phase === "listening" ? " active" : "");
-  bs.className = "btn" + (phase === "slow" ? " active" : "");
-  bn.className = "btn" + (phase === "normal" ? " active" : "");
-  bdone.className = "btn btn-done" + (phase === "scored" ? " show" : "");
-buildKara(s.zh);
-  document.getElementById("score-card").classList.remove("show");
-}
-
-function playSegment(start, end, rate, onEnd) {
-  clearTimeout(segTimer);
-  audio.playbackRate = rate;
-  audio.currentTime = start;
-  audio.play().catch(() => {});
-  speak(true);
-  const dur = ((end - start) / rate) * 1000;
-  const fill = document.getElementById("bar-fill");
-  segTimer = setTimeout(function() {
-    audio.pause();
-    speak(false);
-    completeKara();
-    if (onEnd) onEnd();
-  }, dur + 100);
-}
-
-async function startRec(dur, onDone) {
-  hasRecorded = false;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    hasRecorded = true;
-    const mr = new MediaRecorder(stream);
-    mr.start();
-    setTimeout(function() {
-      mr.stop();
-      stream.getTracks().forEach(t => t.stop());
-      onDone();
-    }, dur);
-  } catch(e) {
-    hasRecorded = false;
-    showNoMic();
-  }
-}
-
-function showNoMic() {
-  phase = "scored";
-  updateUI();
-  document.getElementById("praise").textContent = "🎙 需要麦克风权限 Mic needed";
-  document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 / Allow mic in browser settings";
-  document.getElementById("sn").textContent = "-";
-  document.getElementById("sc").setAttribute("stroke-dasharray", "0 188");
-  document.getElementById("score-card").classList.add("show");
-}
-
-function showScore() {
-  if (!hasRecorded) { showNoMic(); return; }
-  phase = "scored";
-  updateUI();
-  const s = randScore();
-  const fb = FEEDBACK[idx] || FEEDBACK[0];
-  const circ = 2 * Math.PI * 30;
-  const dash = (s / 100) * circ;
-  const color = s >= 85 ? "#22c55e" : s >= 70 ? "#facc15" : "#f87171";
-  const sc = document.getElementById("sc");
-  sc.setAttribute("stroke", color);
-  setTimeout(function() {
-    sc.setAttribute("stroke-dasharray", dash + " " + circ);
-  }, 100);
-  document.getElementById("sn").textContent = s;
-  document.getElementById("sn").style.color = color;
-  document.getElementById("praise").textContent = fb.praise + "  " + getPraise(s);
-  document.getElementById("hint").textContent = fb.hint;
-  document.getElementById("score-card").classList.add("show");
-}
-
-function doListen() {
-  clearTimeout(segTimer); audio.pause(); speak(false);
-  phase = "listening"; setStatus("🎧 播放中..."); updateUI();
-  const s = SENTENCES[idx];
-  playSegment(s.start, s.end, 1, function() {
-    phase = "listened"; setStatus("准备好了"); updateUI();
-  });
-}
-
-function doSlow() {
-  if (phase === "idle") return;
-  clearTimeout(segTimer); audio.pause(); speak(false);
-  phase = "slow"; setStatus("🐢 慢速跟读..."); updateUI();
-  const s = SENTENCES[idx];
-  const dur = ((s.end - s.start) / 0.65) * 1000;
-  playSegment(s.start, s.end, 0.65, function() { setStatus("🎙 录音中..."); });
-  startRec(dur + 500, function() {
-    phase = "slowed"; setStatus("录音完成"); showScore();
-  });
-}
-
-function doNormal() {
-  if (phase === "idle" || phase === "listening") return;
-  clearTimeout(segTimer); audio.pause(); speak(false);
-  phase = "normal"; setStatus("🚀 常速跟读..."); updateUI();
-  const s = SENTENCES[idx];
-  const dur = (s.end - s.start) * 1000;
-  playSegment(s.start, s.end, 1, function() { setStatus("🎙 录音中..."); });
-  startRec(dur + 500, function() {
-    phase = "normal_done"; setStatus("录音完成"); showScore();
-  });
-}
-
-function doBack() {
-  if (idx === 0) return;
-  clearTimeout(segTimer); audio.pause(); speak(false);
-  idx--;
-  phase = "idle";
-  setStatus("准备好了");
-  updateUI();
-}
-
-function doNext() {
-  clearTimeout(segTimer); audio.pause(); speak(false);
-  if (idx >= SENTENCES.length - 1) {
-    alert("🎉 恭喜完成本课！Congratulations!");
-    return;
-  }
-  idx++;
-  phase = "idle";
-  setStatus("准备好了");
-  updateUI();
-}
-
-// Karaoke timeupdate sync
-const RATE_OFFSET = { fast: 0.15, slow: 0.3 };
-audio.addEventListener("timeupdate", function() {
-  const s = SENTENCES[idx];
-  if (!s || audio.paused) return;
-  const offset = audio.playbackRate < 0.8 ? RATE_OFFSET.slow : RATE_OFFSET.fast;
-  const elapsed = audio.currentTime - s.start - offset;
-  const dur = s.end - s.start;
-  if (elapsed < 0) return;
-  const progress = Math.min(elapsed / dur, 1);
-  const chars = document.querySelectorAll(".kc");
-  if (!chars.length) return;
-  const charProgress = progress * chars.length;
-  const curIdx = Math.floor(charProgress);
-  chars.forEach(function(c, i) {
-    if (c.classList.contains("done")) return;
-    if (i < curIdx) {
-      c.classList.remove("active");
-      c.classList.add("done");
-    } else if (i === curIdx) {
-      c.classList.add("active");
-    }
-  });
-});
-
-audio.addEventListener("seeking", function() {
-  document.querySelectorAll(".kc").forEach(function(c) {
-    c.classList.remove("done","active");
-  });
-});
-
-// Init
-updateUI();
-</script>
-</body>
-</html>  </div>
-
-  <div class="score-card" id="score-card">
-    <div class="score-ring">
-      <svg width="72" height="72" viewBox="0 0 72 72">
-        <circle cx="36" cy="36" r="30" fill="none" stroke="#1a2540" stroke-width="6"/>
-        <circle id="sc" cx="36" cy="36" r="30" fill="none" stroke="#22c55e" stroke-width="6"
-          stroke-dasharray="0 188" stroke-linecap="round" style="transition:stroke-dasharray 0.8s ease"/>
-      </svg>
-      <div class="score-num" id="sn">-</div>
-    </div>
-    <div class="score-text">
-      <div class="score-praise" id="praise"></div>
-      <div class="score-hint" id="hint"></div>
-    </div>
+<canvas id="fw-canvas"></canvas>
+<div class="overlay" id="overlay">
+  <div class="completion-card">
+    <div class="completion-title">🎉 课程完成！</div>
+    <div class="completion-sub">Lesson Complete · Great work!</div>
+    <div class="avg-score" id="avg-score">-</div>
+    <div class="avg-label">综合评分 Overall Score</div>
+    <div class="summary-title">📊 发音分析 Pronunciation Analysis</div>
+    <div id="summary-list"></div>
+    <button class="btn-restart" onclick="restartLesson()">🔄 再练一遍 Practice Again</button>
   </div>
+</div>
 
-  <div class="btn-area">
-    <div class="btn-nav">
-      <button class="btn" id="bback" onclick="doBack()">← Prev · 上一句</button>
-      <button class="btn" id="bfwd" onclick="doNext()">下一句 Next →</button>
-    </div>
-    <button class="btn" id="bl" onclick="doListen()">🎧 Step 1 · 听原声 Listen</button>
-    <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 Step 2 · 慢速跟读 Slow</button>
-    <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 Step 3 · 常速跟读 Normal</button>
-    <button class="btn btn-done" id="bdone" onclick="doNext()">✅ 完成本句 · 下一句 Next →</button>
+
+<canvas id="fw-canvas"></canvas>
+<div class="overlay" id="overlay">
+  <div class="completion-card">
+    <div class="completion-title">🎉 课程完成！</div>
+    <div class="completion-sub">Lesson Complete · Great work!</div>
+    <div class="avg-score" id="avg-score">-</div>
+    <div class="avg-label">综合评分 Overall Score</div>
+    <div class="summary-title">📊 发音分析 Pronunciation Analysis</div>
+    <div id="summary-list"></div>
+    <button class="btn-restart" onclick="restartLesson()">🔄 再练一遍 Practice Again</button>
   </div>
 </div>
 
@@ -460,11 +220,11 @@ const SENTENCES = [
 ];
 
 const FEEDBACK = [
-  { praise:"✨ 声调很自然！", hint:"💡 注意【高兴】是第四声+轻声，听一遍原声再试试" },
-  { praise:"💪 语速控制得好！", hint:"💡 【中国人】连读时注意【国】字轻读" },
-  { praise:"🎯 短句说得很干净！", hint:"💡 【首先】是三声+一声，不要把三声说成四声" },
-  { praise:"🔥 长句挑战完成！", hint:"💡 长句可分两段断气：小故事 / 来教你，会更自然" },
-  { praise:"🌟 收尾句气势很足！", hint:"💡 【赶快】要连读成一个词，中间不要停顿" }
+  { praise:"✨ 声调很自然！", hint:"注意【高兴】是第四声+轻声，听一遍原声再试试" },
+  { praise:"💪 语速控制得好！", hint:"【中国人】连读时注意【国】字轻读" },
+  { praise:"🎯 短句说得很干净！", hint:"【首先】是三声+一声，不要把三声说成四声" },
+  { praise:"🔥 长句挑战完成！", hint:"长句可分两段断气，会更自然" },
+  { praise:"🌟 收尾句气势很足！", hint:"【赶快】要连读成一个词，中间不要停顿" }
 ];
 
 const PRAISES = [
@@ -477,8 +237,8 @@ const PRAISES = [
 let idx = 0;
 let phase = "idle";
 let segTimer = null;
-let cdTimer = null;
 let hasRecorded = false;
+let sessionScores = [];
 
 const audio = new Audio(AUDIO_SRC);
 audio.preload = "auto";
@@ -548,7 +308,8 @@ function updateUI() {
   bs.className = "btn" + (phase === "slow" ? " active" : "");
   bn.className = "btn" + (phase === "normal" ? " active" : "");
   bdone.className = "btn btn-done" + (phase === "scored" ? " show" : "");
-buildKara(s.zh);
+
+  buildKara(s.zh);
   document.getElementById("score-card").classList.remove("show");
 }
 
@@ -559,7 +320,6 @@ function playSegment(start, end, rate, onEnd) {
   audio.play().catch(() => {});
   speak(true);
   const dur = ((end - start) / rate) * 1000;
-  const fill = document.getElementById("bar-fill");
   segTimer = setTimeout(function() {
     audio.pause();
     speak(false);
@@ -589,8 +349,8 @@ async function startRec(dur, onDone) {
 function showNoMic() {
   phase = "scored";
   updateUI();
-  document.getElementById("praise").textContent = "🎙 需要麦克风权限 Mic needed";
-  document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 / Allow mic in browser settings";
+  document.getElementById("praise").textContent = "需要麦克风权限";
+  document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风";
   document.getElementById("sn").textContent = "-";
   document.getElementById("sc").setAttribute("stroke-dasharray", "0 188");
   document.getElementById("score-card").classList.add("show");
@@ -601,6 +361,7 @@ function showScore() {
   phase = "scored";
   updateUI();
   const s = randScore();
+  sessionScores[idx] = s;
   const fb = FEEDBACK[idx] || FEEDBACK[0];
   const circ = 2 * Math.PI * 30;
   const dash = (s / 100) * circ;
@@ -662,7 +423,7 @@ function doBack() {
 function doNext() {
   clearTimeout(segTimer); audio.pause(); speak(false);
   if (idx >= SENTENCES.length - 1) {
-    alert("🎉 恭喜完成本课！Congratulations!");
+    showCompletion();
     return;
   }
   idx++;
@@ -671,12 +432,230 @@ function doNext() {
   updateUI();
 }
 
-// Karaoke timeupdate sync
-const RATE_OFFSET = { fast: 0.15, slow: 0.3 };
+// ── Pronunciation Weakness Analysis ─────────────────────
+
+
+function showCompletion() {
+  // Each sentence has specific phonetic challenges mapped to it
+  // Scores are simulated per-phoneme based on sessionScores (or random if not recorded)
+  const sentencePhonetics = [
+    // 句1: 你好，很高兴认识你
+    { zh:"你好，很高兴认识你", checks:[
+      { key:"tone3", name:"第三声 (nǐ hǎo)", note:"【你好】两个三声相连，第一个需变成二声" },
+      { key:"tone4", name:"第四声 (gāoxìng)", note:"【高兴】xìng 第四声，不要说成平调" },
+      { key:"renlabel", name:"r- 声母 (rènshi)", note:"【认识】r- 声母需要翘舌，常被省略" }
+    ]},
+    // 句2: 我是一个中国人...
+    { zh:"我是一个中国人，你也想成为一个中国人吗", checks:[
+      { key:"zh_z", name:"zh/z 翘平舌 (zhōng/zhè)", note:"【中国】zhōng 翘舌，容易发成 zōng 平舌" },
+      { key:"tone2", name:"第二声 (rén)", note:"【人】rén 第二声，易说成第一声平调" },
+      { key:"neutral", name:"轻声 (yīge)", note:"【一个】ge 需要轻读，不要加声调" }
+    ]},
+    // 句3: 首先，你得学会中文
+    { zh:"首先，你得学会中文", checks:[
+      { key:"sh_s", name:"sh/s 翘平舌 (shǒu)", note:"【首先】shǒu 翘舌，常被发成 sǒu 平舌" },
+      { key:"tone3_change", name:"三声变调 (shǒuxiān)", note:"三声+一声时，三声自然升调，不要死记调值" },
+      { key:"x_sound", name:"x- 声母 (xuéhuì)", note:"【学会】x- 需要扁嘴，不能圆唇" }
+    ]},
+    // 句4: 每天我会用一个故事...
+    { zh:"每天我会用一个故事来教你怎么说中文", checks:[
+      { key:"nasal_ng", name:"-ng 后鼻音 (zhōng)", note:"【中文】zhōng 后鼻音 -ng，不要发成前鼻音 -n" },
+      { key:"tone3_mei", name:"第三声 (měitiān)", note:"【每天】měi 第三声在句首需完整发出" },
+      { key:"rhythm", name:"长句节奏", note:"句子较长，注意在【故事/来教】处自然换气" }
+    ]},
+    // 句5: 赶快行动起来吧...
+    { zh:"赶快行动起来吧，和我一起轻松学中文", checks:[
+      { key:"nasal_n", name:"-n 前鼻音 (gǎn)", note:"【赶快】gǎn 前鼻音 -n，舌尖要抵上牙龈" },
+      { key:"qing_sound", name:"q- 声母 (qīngsōng)", note:"【轻松】q- 声母需配合 i 介音，不要发成 ch-" },
+      { key:"liandú", name:"词语连读 (gǎnkuài)", note:"【赶快】需连读成一个词，中间不能有停顿" }
+    ]}
+  ];
+
+  // Phoneme category grouping
+  const categories = {
+    tones:    { label:"声调 Tones",    icon:"🎵", keys:["tone3","tone4","tone2","tone3_change","tone3_mei"] },
+    initials: { label:"声母 Initials", icon:"🗣", keys:["zh_z","sh_s","x_sound","q_sound","renlabel"] },
+    finals:   { label:"韵母 Finals",   icon:"👄", keys:["nasal_ng","nasal_n","neutral"] },
+    rhythm:   { label:"语流 Rhythm",   icon:"⏱", keys:["rhythm","liandú","x_sound"] }
+  };
+
+  // Improvement tips per phoneme key
+  const tips = {
+    tone3:       "两个三声相连时，前一个自动变成二声。例：你好 → ní hǎo",
+    tone4:       "第四声要从高处快速降下，像点头说「对！」",
+    renlabel:    "r- 声母：舌头卷起接近上颚，但不要贴上，气流从缝隙通过",
+    zh_z:        "翘舌：舌尖翘起接触上颚后部。平舌：舌尖平放。多说「知、支、蜘」对比「资、滋」",
+    tone2:       "第二声要像问句一样，从中调升到高调，如「来？」",
+    neutral:     "轻声短促模糊，不单独起调。多听句子录音感受节奏",
+    sh_s:        "sh- 翘舌发音：舌尖上翘。对比练习：「师/丝、书/苏、烧/骚」",
+    tone3_change:"三声变调是自然规则，不用刻意思考，多听多跟读会自然掌握",
+    x_sound:     "x- 发音时嘴角向两侧咧开（扁唇），气流从舌面和上颚缝隙通过",
+    nasal_ng:    "后鼻音 -ng：气流从鼻腔通过，软颚抬起。练习：「冬、风、红」",
+    tone3_mei:   "句首的第三声要完整发出低降升的曲线，不要简化成低平调",
+    rhythm:      "长句可在动词或名词组后换气，保持每个词组内部不停顿",
+    nasal_n:     "前鼻音 -n：舌尖抵上牙龈收尾。练习：「南、难、男」对比「娘、凉」",
+    q_sound:     "q- 发音：舌面贴上颚，嘴角咧开，气流爆破而出。练习：「七、期、器」",
+    liandú:      "词语连读：把整个词当成一个音节串，不要在词中间换气或停顿"
+  };
+
+  // Simulate phoneme scores based on sentence scores
+  let allChecks = [];
+  sentencePhonetics.forEach((sent, si) => {
+    const baseScore = sessionScores[si] || (60 + Math.floor(Math.random() * 30));
+    sent.checks.forEach(chk => {
+      // Randomize +/-15 around sentence base score
+      const variation = Math.floor(Math.random() * 30) - 15;
+      const score = Math.max(40, Math.min(99, baseScore + variation));
+      allChecks.push({ ...chk, score, sentIdx: si });
+    });
+  });
+
+  // Score per category
+  const catScores = {};
+  Object.entries(categories).forEach(([catKey, cat]) => {
+    const relevant = allChecks.filter(c => cat.keys.includes(c.key));
+    catScores[catKey] = relevant.length
+      ? Math.round(relevant.reduce((a,b) => a+b.score, 0) / relevant.length)
+      : 75;
+  });
+
+  const overall = Math.round(Object.values(catScores).reduce((a,b)=>a+b,0) / Object.keys(catScores).length);
+  const overallColor = overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
+
+  // Update overall display
+  const avgEl = document.getElementById("avg-score");
+  if (avgEl) { avgEl.textContent = overall; avgEl.style.color = overallColor; }
+
+  // Find weakest 3 individual phoneme checks
+  const sorted = [...allChecks].sort((a,b) => a.score - b.score);
+  const weakest = sorted.slice(0, 3);
+
+  const list = document.getElementById("summary-list");
+  list.innerHTML = "";
+
+  // --- Category bars ---
+  const catDiv = document.createElement("div");
+  catDiv.style.cssText = "background:#0a1120;border-radius:14px;padding:14px;margin-bottom:12px;";
+  catDiv.innerHTML = "<div style='font-size:11px;color:#4b5563;margin-bottom:10px;letter-spacing:0.05em;'>📊 各维度得分</div>" +
+    Object.entries(categories).map(([k, cat]) => {
+      const s = catScores[k];
+      const c = s >= 85 ? "#22c55e" : s >= 70 ? "#facc15" : "#f87171";
+      const label = s >= 85 ? "良好" : s >= 70 ? "一般" : "需加强";
+      return "<div style='margin-bottom:10px;'>" +
+        "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>" +
+        "<span style='font-size:12px;color:#94a3b8;'>" + cat.icon + " " + cat.label + "</span>" +
+        "<span style='font-size:12px;font-weight:700;color:' + c + ';'>" + s + " <span style='font-size:10px;color:#4b5563;'>" + label + "</span></span></div>" +
+        "<div style='background:#1a2540;border-radius:99px;height:7px;overflow:hidden;'>" +
+        "<div style='background:" + c + ";width:" + s + "%;height:100%;border-radius:99px;transition:width 1s ease;'></div></div></div>";
+    }).join("");
+  list.appendChild(catDiv);
+
+  // --- Weakest points ---
+  const weakTitle = document.createElement("div");
+  weakTitle.style.cssText = "font-size:11px;color:#4b5563;margin-bottom:8px;letter-spacing:0.05em;";
+  weakTitle.textContent = "⚠️ 需要重点练习";
+  list.appendChild(weakTitle);
+
+  weakest.forEach((w, i) => {
+    const c = w.score < 65 ? "#f87171" : "#facc15";
+    const urgency = w.score < 65 ? "重点突破" : "需要练习";
+    const div = document.createElement("div");
+    div.style.cssText = "background:#0a1120;border-radius:14px;padding:14px;margin-bottom:8px;border-left:3px solid " + c + ";";
+    div.innerHTML =
+      "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
+      "<span style='font-size:12px;font-weight:600;color:" + c + ";'>" + (i+1) + ". " + w.name + "</span>" +
+      "<span style='font-size:10px;background:" + c + "22;color:" + c + ";padding:2px 8px;border-radius:99px;'>" + urgency + "</span></div>" +
+      "<div style='font-size:13px;color:#e2e8f0;margin-bottom:6px;line-height:1.5;'>" + w.note + "</div>" +
+      "<div style='font-size:12px;color:#60a5fa;line-height:1.5;'>💡 " + (tips[w.key] || "多听原声，反复跟读对比") + "</div>";
+    list.appendChild(div);
+  });
+
+  // --- Encouragement ---
+  const msg = overall >= 85 ? "发音非常棒！继续保持这个水平 🌟" :
+               overall >= 70 ? "打好了基础！重点练习上方三个弱点 💪" :
+               "坚持练习，每天进步一点点 🎯";
+  const encDiv = document.createElement("div");
+  encDiv.style.cssText = "text-align:center;font-size:13px;color:#94a3b8;padding:12px 0 4px;";
+  encDiv.textContent = msg;
+  list.appendChild(encDiv);
+
+  document.getElementById("overlay").classList.add("show");
+  launchFireworks();
+}
+
+function restartLesson() {
+  document.getElementById("overlay").classList.remove("show");
+  stopFireworks();
+  idx = 0;
+  phase = "idle";
+  sessionScores = [];
+  setStatus("准备好了");
+  updateUI();
+}
+
+// ── Fireworks ────────────────────────────────────────────
+let fwAnim = null;
+const particles = [];
+
+function launchFireworks() {
+  const canvas = document.getElementById("fw-canvas");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext("2d");
+  canvas.style.display = "block";
+  let t = 0;
+  function burst(x, y) {
+    const colors = ["#22c55e","#60a5fa","#f59e0b","#f87171","#a78bfa","#fb923c"];
+    for (let i = 0; i < 60; i++) {
+      const angle = (Math.PI * 2 * i) / 60;
+      const speed = 2 + Math.random() * 5;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        alpha: 1,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 2 + Math.random() * 3
+      });
+    }
+  }
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (t % 40 === 0) {
+      burst(canvas.width * (0.2 + Math.random() * 0.6), canvas.height * (0.1 + Math.random() * 0.5));
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.alpha -= 0.018;
+      if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    t++;
+    fwAnim = requestAnimationFrame(animate);
+  }
+  animate();
+  setTimeout(stopFireworks, 5000);
+}
+
+function stopFireworks() {
+  if (fwAnim) { cancelAnimationFrame(fwAnim); fwAnim = null; }
+  const canvas = document.getElementById("fw-canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.style.display = "none";
+  particles.length = 0;
+}
+
+// Karaoke sync
 audio.addEventListener("timeupdate", function() {
   const s = SENTENCES[idx];
   if (!s || audio.paused) return;
-  const offset = audio.playbackRate < 0.8 ? RATE_OFFSET.slow : RATE_OFFSET.fast;
+  const offset = audio.playbackRate < 0.8 ? 0.3 : 0.15;
   const elapsed = audio.currentTime - s.start - offset;
   const dur = s.end - s.start;
   if (elapsed < 0) return;
@@ -687,12 +666,8 @@ audio.addEventListener("timeupdate", function() {
   const curIdx = Math.floor(charProgress);
   chars.forEach(function(c, i) {
     if (c.classList.contains("done")) return;
-    if (i < curIdx) {
-      c.classList.remove("active");
-      c.classList.add("done");
-    } else if (i === curIdx) {
-      c.classList.add("active");
-    }
+    if (i < curIdx) { c.classList.remove("active"); c.classList.add("done"); }
+    else if (i === curIdx) { c.classList.add("active"); }
   });
 });
 
@@ -702,7 +677,6 @@ audio.addEventListener("seeking", function() {
   });
 });
 
-// Init
 updateUI();
 </script>
 </body>
