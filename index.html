@@ -220,18 +220,18 @@ const SENTENCES = [
 ];
 
 const FEEDBACK = [
-  { praise:"✨ 声调很自然！", hint:"注意【高兴】是第四声+轻声，听一遍原声再试试" },
-  { praise:"💪 语速控制得好！", hint:"【中国人】连读时注意【国】字轻读" },
-  { praise:"🎯 短句说得很干净！", hint:"【首先】是三声+一声，不要把三声说成四声" },
-  { praise:"🔥 长句挑战完成！", hint:"长句可分两段断气，会更自然" },
-  { praise:"🌟 收尾句气势很足！", hint:"【赶快】要连读成一个词，中间不要停顿" }
+  { praise:"✨ 声调很自然！Tones sounded natural!", hint:"注意【高兴】是第四声+轻声，听一遍原声再试试 · Watch the tones in 【高兴】- try listening once more" },
+  { praise:"💪 语速控制得好！Great rhythm control!", hint:"【中国人】连读时注意【国】字轻读 · In 【中国人】, keep 【国】light and unstressed" },
+  { praise:"🎯 短句说得很干净！Clean and clear!", hint:"【首先】是三声+一声，不要把三声说成四声 · In 【首先】, tone 3 before tone 1 - don't drop it to tone 4" },
+  { praise:"🔥 长句挑战完成！Long sentence nailed!", hint:"长句可分两段断气，会更自然 · Try pausing naturally mid-sentence to keep your breath steady" },
+  { praise:"🌟 收尾句气势很足！Strong finish!", hint:"【赶快】要连读成一个词，中间不要停顿 · Blend 【赶快】into one smooth word - no gap in between" }
 ];
 
 const PRAISES = [
-  { min:90, msgs:["🏆 完美！声调拿捏精准！","🌟 太棒了，说得非常地道！"] },
-  { min:75, msgs:["🔥 非常好，再练一遍就完美！","💪 发音很稳，越来越自然了！"] },
-  { min:60, msgs:["👏 不错，节奏感已经到位了！","💡 有进步，多听几遍能做到！"] },
-  { min:0,  msgs:["🌱 开口就是最大的勇气！","💫 每次练习都是进步！"] }
+  { min:90, msgs:["🏆 完美！声调拿捏精准！Perfect tones!", "🌟 太棒了，说得非常地道！So natural!"] },
+  { min:75, msgs:["🔥 非常好，再练一遍就完美！Almost perfect!", "💪 发音很稳，越来越自然了！Getting smoother!"] },
+  { min:60, msgs:["👏 不错，节奏感已经到位了！Good rhythm!", "💡 有进步，多听几遍能做到！Keep it up!"] },
+  { min:0,  msgs:["🌱 开口就是最大的勇气！Brave start!", "💫 每次练习都是进步！Every rep counts!"] }
 ];
 
 let idx = 0;
@@ -349,8 +349,8 @@ async function startRec(dur, onDone) {
 function showNoMic() {
   phase = "scored";
   updateUI();
-  document.getElementById("praise").textContent = "需要麦克风权限";
-  document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风";
+  document.getElementById("praise").textContent = "需要麦克风权限 · Mic access needed";
+  document.getElementById("hint").textContent = "请在浏览器地址栏允许麦克风 · Please allow microphone access in your browser";
   document.getElementById("sn").textContent = "-";
   document.getElementById("sc").setAttribute("stroke-dasharray", "0 188");
   document.getElementById("score-card").classList.add("show");
@@ -571,9 +571,9 @@ function showCompletion() {
   });
 
   // --- Encouragement ---
-  const msg = overall >= 85 ? "发音非常棒！继续保持这个水平 🌟" :
-               overall >= 70 ? "打好了基础！重点练习上方三个弱点 💪" :
-               "坚持练习，每天进步一点点 🎯";
+  const msg = overall >= 85 ? "发音非常棒！继续保持这个水平 🌟  Great pronunciation! Keep it up!" :
+               overall >= 70 ? "打好了基础！重点练习上方三个弱点 💪  Good foundation - focus on the 3 weak points above!" :
+               "坚持练习，每天进步一点点 🎯  Keep practicing - every day is progress!";
   const encDiv = document.createElement("div");
   encDiv.style.cssText = "text-align:center;font-size:13px;color:#94a3b8;padding:12px 0 4px;";
   encDiv.textContent = msg;
