@@ -289,7 +289,7 @@ function resetKara() {
   fill.style.width = "0%";
 }
 
-function setStatus(t) { document.getElementById("status").textContent = t; }
+function setStatus(t) { const el = document.getElementById("status"); if (el) el.textContent = t; }
 
 function updateUI() {
   const s = SENTENCES[idx];
