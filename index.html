@@ -109,6 +109,8 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .btn-retry { background: rgba(251,191,36,0.1); border-color: #d97706; color: #fbbf24; display: none; }
 .btn-retry.show { display: block; }
 .btn-retry:hover:not(:disabled) { background: rgba(251,191,36,0.18); border-color: #fbbf24; }
+.btn-submit { background: rgba(34,197,94,0.15); border-color: var(--green); color: var(--green); font-size: 17px; font-weight: 700; display: none; }
+.btn-submit:hover:not(:disabled) { background: rgba(34,197,94,0.25); }
 
 @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
 @keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 14px 4px rgba(34,197,94,0.25)} }
@@ -163,7 +165,6 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
       <div class="mascot-ring" id="ring"></div>
     </div>
     <div class="sentence-badge" id="badge">第 1/5 句</div>
-    <div class="status-badge" id="status">准备好了</div>
 
     <div class="countdown-panel" id="countdown-panel">
       <div class="countdown-num" id="countdown-num">3</div>
@@ -212,6 +213,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
     <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 慢速跟读 Slow Shadow</button>
     <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 常速跟读 Shadow</button>
     <button class="btn btn-retry" id="bretry" onclick="doRetry()">↩ 再练一次 Retry</button>
+    <button class="btn btn-submit" id="bsubmit" onclick="doSubmit()" style="display:none">✅ 提交评分 Submit</button>
     <div class="btn-nav">
       <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一句</button>
       <button class="btn btn-done" id="bdone" onclick="doNext()">下一句 ▶</button>
@@ -367,23 +369,24 @@ let recTimeout = null;
 if (SpeechRecognition) {
   recognition = new SpeechRecognition();
   recognition.lang = "zh-CN";
-  recognition.continuous = false;
+  recognition.continuous = true;
   recognition.interimResults = false;
   recognition.maxAlternatives = 3;
 
   recognition.onresult = function(e) {
-    recognizedText = e.results[0][0].transcript;
-    if (recTimeout) { clearTimeout(recTimeout); recTimeout = null; }
-    finishRecording();
+    // Accumulate all results as user speaks
+    var transcript = "";
+    for (var i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    recognizedText = transcript;
   };
 
   recognition.onerror = function() {
-    if (recTimeout) { clearTimeout(recTimeout); recTimeout = null; }
-    if (phase === "recording") finishRecording();
+    // Ignore errors — user will submit manually
   };
 
   recognition.onend = function() {
-    if (recTimeout) { clearTimeout(recTimeout); recTimeout = null; }
     if (phase === "recording") finishRecording();
   };
 }
@@ -501,8 +504,8 @@ function resetKara() {
 
 // ── Helpers ───────────────────────────────────────────────
 function setStatus(t) {
-  document.getElementById("status").textContent = t;
-  document.getElementById("status-text").textContent = t;
+  var el = document.getElementById("status-text");
+  if (el) el.textContent = t;
 }
 
 function clearTimers() {
@@ -713,19 +716,14 @@ function startRecording() {
   recognizedText = "";
   setStatus("🎙 跟读中 Shadow now...");
   document.getElementById("speech-indicator").classList.add("active");
+  document.getElementById("bsubmit").style.display = "block";
   resetKara();
 
   var s = LESSONS[lessonIdx].sentences[idx];
-  var segDur = (s.end - s.start) * 1000 + 1000;
   var timings = computeCharTimings(s);
 
   if (recognition) {
     try { recognition.start(); } catch(e) {}
-    recTimeout = setTimeout(function() {
-      try { recognition.stop(); } catch(e) {}
-    }, segDur);
-  } else {
-    recTimeout = setTimeout(finishRecording, segDur);
   }
 
   // Animate karaoke without audio so user can follow along
@@ -755,6 +753,7 @@ function finishRecording() {
   busy = false;
 
   document.getElementById("speech-indicator").classList.remove("active");
+  document.getElementById("bsubmit").style.display = "none";
   completeKara();
 
   var s = LESSONS[lessonIdx].sentences[idx];
@@ -797,6 +796,17 @@ function showScorePanel(score, sentence, transcript, showTranscript) {
   document.getElementById("bdone").className = "btn btn-done show";
   document.getElementById("bretry").className = "btn btn-retry show";
   setStatus("✅ 完成 Done");
+}
+
+function doSubmit() {
+  if (phase !== "recording") return;
+  document.getElementById("bsubmit").disabled = true;
+  document.getElementById("bsubmit").textContent = "评分中...";
+  if (recognition) {
+    try { recognition.stop(); } catch(e) { finishRecording(); }
+  } else {
+    finishRecording();
+  }
 }
 
 function doRetry() {
