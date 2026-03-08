@@ -467,45 +467,54 @@ async function convertToPCM(blob) {
 }
 
 // 通过 WebSocket 发送音频，返回 XML 评测结果
+// 协议：两阶段——先发业务参数帧（cmd:ssb），再发音频帧（cmd:auw）
+// 音频字段为 data.data（非 data.audio），aus=1/2/4 控制首/中/末帧
 function evaluateWithIse(pcmBuf, refText) {
   return buildIseUrl().then(function(url) {
     return new Promise(function(resolve, reject) {
       var ws = new WebSocket(url);
       var xmlResult = '';
-      var timer = setTimeout(function() { ws.close(); reject(new Error('评测超时')); }, 20000);
+      var timer = setTimeout(function() { ws.close(); reject(new Error('评测超时')); }, 25000);
 
       ws.onopen = function() {
-        // text 字段：BOM + 句子文本，编码为 UTF-8 字节再转 base64
-        var textB64 = u8ToB64(new TextEncoder().encode('\uFEFF' + refText));
+        // ── 第一帧：业务参数（ssb），不含音频 ──────────────────
+        var frame1 = {
+          common: { app_id: ISE_APPID },
+          business: {
+            sub: 'ise',
+            ent: 'cn_vip',
+            category: 'read_sentence',
+            cmd: 'ssb',
+            text: '\uFEFF' + refText,   // 明文 UTF-8，BOM 前缀，无需 base64
+            tte: 'utf-8',
+            ttp_skip: true,
+            aue: 'raw',
+            auf: 'audio/L16;rate=16000',
+            rstcd: 'utf8'
+          },
+          data: { status: 0 }
+        };
+        ws.send(JSON.stringify(frame1));
+
+        // ── 第二阶段：音频帧（auw），data.data 存 base64 音频 ──
         var pcm = new Uint8Array(pcmBuf);
         var chunkSize = 1280;
         var offset = 0;
-        function sendNext() {
+        function sendAudio() {
           var end = Math.min(offset + chunkSize, pcm.length);
           var chunk = pcm.subarray(offset, end);
           var isFirst = offset === 0;
           var isLast  = end >= pcm.length;
-          // status: 0=首帧, 1=中间帧, 2=末帧（含实际音频数据，不发空帧）
-          var status = isFirst ? (isLast ? 2 : 0) : (isLast ? 2 : 1);
-          var frame = { data: { status: status, audio: u8ToB64(chunk) } };
-          if (isFirst) {
-            frame.common = { app_id: ISE_APPID };
-            frame.business = {
-              category: 'read_sentence',
-              sub: 'ise',
-              ent: 'cn_vip',
-              group: 'pupil',
-              auf: 'audio/L16;rate=16000',
-              aue: 'raw',
-              rstcd: 'utf8',
-              text: textB64
-            };
-          }
+          var aus = isFirst ? 1 : (isLast ? 4 : 2);  // 1=首帧 2=中间 4=末帧
+          var frame = {
+            business: { cmd: 'auw', aus: aus },
+            data: { status: isLast ? 2 : 1, data: u8ToB64(chunk) }
+          };
           offset = end;
           ws.send(JSON.stringify(frame));
-          if (!isLast) setTimeout(sendNext, 40);
+          if (!isLast) setTimeout(sendAudio, 40);
         }
-        sendNext();
+        setTimeout(sendAudio, 100); // 短暂等待服务端处理 ssb 帧
       };
 
       ws.onmessage = function(e) {
@@ -515,10 +524,14 @@ function evaluateWithIse(pcmBuf, refText) {
             clearTimeout(timer); ws.close();
             reject(new Error('ISE ' + resp.code + ': ' + resp.message)); return;
           }
-          if (resp.data && resp.data.result) {
-            var r = resp.data.result;
-            if (typeof r === 'string') xmlResult = r;
-            else if (r.xml_result) xmlResult = r.xml_result;
+          // 服务端返回的 data.data 是 base64 编码的 XML
+          if (resp.data && resp.data.data) {
+            try {
+              var bytes = Uint8Array.from(atob(resp.data.data), function(c) { return c.charCodeAt(0); });
+              xmlResult = new TextDecoder('utf-8').decode(bytes);
+            } catch(_) {
+              xmlResult = resp.data.data; // 降级：直接当字符串用
+            }
           }
           if (resp.data && resp.data.status === 2) {
             clearTimeout(timer); ws.close(); resolve(xmlResult);
