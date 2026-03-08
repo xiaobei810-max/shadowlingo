@@ -579,12 +579,12 @@ function updateUI() {
 
   document.getElementById("bl").disabled = false;
   document.getElementById("bl").classList.remove("active");
-  document.getElementById("bs").disabled = true;
+  document.getElementById("bs").disabled = false;
   document.getElementById("bs").classList.remove("active");
-  document.getElementById("bn").disabled = true;
+  document.getElementById("bn").disabled = false;
   document.getElementById("bn").classList.remove("active");
   document.getElementById("bprev").disabled = idx === 0;
-  document.getElementById("bdone").className = "btn btn-done";
+  document.getElementById("bdone").className = "btn btn-done show";
   document.getElementById("bretry").className = "btn btn-retry";
 
   setStatus("准备好了 Ready");
@@ -593,7 +593,7 @@ function updateUI() {
 
 // ── Actions ───────────────────────────────────────────────
 function doListen() {
-  if (busy) return;
+  if (recognition) { try { recognition.abort(); } catch(e) {} }
   clearTimers();
   busy = true;
   phase = "listen";
@@ -604,8 +604,6 @@ function doListen() {
 
   setStatus("▶ 听原声 Listening...");
   document.getElementById("bl").classList.add("active");
-  document.getElementById("bs").disabled = true;
-  document.getElementById("bn").disabled = true;
 
   audio.currentTime = s.start;
   audio.playbackRate = 1;
@@ -619,7 +617,6 @@ function doListen() {
     speak(false);
     completeKara();
     document.getElementById("bl").classList.remove("active");
-    document.getElementById("bs").disabled = false;
     setStatus("准备好了 Ready");
     busy = false;
     phase = "idle";
@@ -627,7 +624,7 @@ function doListen() {
 }
 
 function doSlow() {
-  if (busy) return;
+  if (recognition) { try { recognition.abort(); } catch(e) {} }
   clearTimers();
   busy = true;
   phase = "slow";
@@ -638,7 +635,6 @@ function doSlow() {
 
   setStatus("🐢 慢速跟读 Shadow (slow)...");
   document.getElementById("bs").classList.add("active");
-  document.getElementById("bn").disabled = true;
 
   audio.currentTime = s.start;
   audio.playbackRate = slowSpeed;
@@ -653,7 +649,6 @@ function doSlow() {
     speak(false);
     completeKara();
     document.getElementById("bs").classList.remove("active");
-    document.getElementById("bn").disabled = false;
     setStatus("准备好了 Ready");
     busy = false;
     phase = "idle";
@@ -661,7 +656,7 @@ function doSlow() {
 }
 
 function doNormal() {
-  if (busy) return;
+  if (recognition) { try { recognition.abort(); } catch(e) {} }
   clearTimers();
   busy = true;
   phase = "normal";
@@ -815,10 +810,6 @@ function doRetry() {
   // Remove the last score so the retry score replaces it
   if (sessionScores.length > 0) sessionScores.pop();
   updateUI();
-  // Unlock all buttons for a fresh attempt
-  document.getElementById("bl").disabled = false;
-  document.getElementById("bs").disabled = true;
-  document.getElementById("bn").disabled = true;
 }
 
 function doPrev() {
