@@ -449,6 +449,9 @@ async function convertToPCM(blob) {
   var ctx = new AudioContext();
   var decoded = await ctx.decodeAudioData(buf);
   await ctx.close();
+  console.log('[ISE] 原始录音 — 时长:', decoded.duration.toFixed(2) + 's',
+    '采样率:', decoded.sampleRate + 'Hz', '声道数:', decoded.numberOfChannels,
+    'Blob大小:', (blob.size / 1024).toFixed(1) + 'KB', 'mimeType:', blob.type);
   var rate = 16000;
   var len  = Math.ceil(decoded.duration * rate);
   var off  = new OfflineAudioContext(1, len, rate);
@@ -463,6 +466,8 @@ async function convertToPCM(blob) {
     var s = Math.max(-1, Math.min(1, f32[i]));
     i16[i] = s < 0 ? s * 32768 : s * 32767;
   }
+  console.log('[ISE] 转换后PCM — 16kHz 16bit mono, 字节数:', i16.byteLength,
+    '时长:', (i16.length / 16000).toFixed(2) + 's');
   return i16.buffer;
 }
 
@@ -520,6 +525,9 @@ function evaluateWithIse(pcmBuf, refText) {
       ws.onmessage = function(e) {
         try {
           var resp = JSON.parse(e.data);
+          console.log('[ISE] 服务端响应 code=' + resp.code +
+            ' status=' + (resp.data && resp.data.status) +
+            ' 原始:', JSON.stringify(resp).slice(0, 300));
           if (resp.code !== 0) {
             clearTimeout(timer); ws.close();
             reject(new Error('ISE ' + resp.code + ': ' + resp.message)); return;
@@ -528,12 +536,15 @@ function evaluateWithIse(pcmBuf, refText) {
           if (resp.data && resp.data.data) {
             try {
               var bytes = Uint8Array.from(atob(resp.data.data), function(c) { return c.charCodeAt(0); });
-              xmlResult = new TextDecoder('utf-8').decode(bytes);
+              var decoded = new TextDecoder('utf-8').decode(bytes);
+              xmlResult += decoded; // 可能分多帧返回，追加
+              console.log('[ISE] 解码XML片段:', decoded.slice(0, 200));
             } catch(_) {
-              xmlResult = resp.data.data; // 降级：直接当字符串用
+              xmlResult += resp.data.data;
             }
           }
           if (resp.data && resp.data.status === 2) {
+            console.log('[ISE] 完整XML:\n', xmlResult);
             clearTimeout(timer); ws.close(); resolve(xmlResult);
           }
         } catch(err) { clearTimeout(timer); reject(err); }
@@ -547,18 +558,36 @@ function evaluateWithIse(pcmBuf, refText) {
 function parseIseResult(xmlStr) {
   try {
     var doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
+    // 检查 XML 解析错误
+    var parseErr = doc.querySelector('parsererror');
+    if (parseErr) {
+      console.error('[ISE] XML解析错误:', parseErr.textContent, '\n输入XML:', xmlStr.slice(0, 500));
+      return { totalScore: 0, wordResults: [] };
+    }
+    // 尝试多种总分字段（不同版本API返回格式不同）
     var sent = doc.querySelector('sent');
-    var total = sent ? Math.round(parseFloat(sent.getAttribute('total_score') || '0')) : 0;
+    var rec  = doc.querySelector('rec');
+    var totalRaw = (sent && (sent.getAttribute('total_score') || sent.getAttribute('score')))
+                || (rec  && rec.getAttribute('total_score'))
+                || '0';
+    var total = Math.round(parseFloat(totalRaw));
+    console.log('[ISE] sent节点:', sent && sent.outerHTML ? sent.outerHTML.slice(0,200) : sent);
+    console.log('[ISE] total_score原始值:', totalRaw, '→ 四舍五入:', total);
     var words = Array.from(doc.querySelectorAll('word')).map(function(w) {
+      var scoreRaw = w.getAttribute('total_score') || w.getAttribute('score') || '0';
       return {
         content: w.getAttribute('content') || w.textContent.trim(),
-        score:   Math.round(parseFloat(w.getAttribute('total_score') || '0')),
+        score:   Math.round(parseFloat(scoreRaw)),
         dp:      parseInt(w.getAttribute('dp_message') || '0', 10),
         symbol:  w.getAttribute('symbol') || ''
       };
     });
+    console.log('[ISE] word节点数:', words.length, '各字分数:', words.map(function(w){ return w.content+'='+w.score; }).join(' '));
     return { totalScore: total, wordResults: words };
-  } catch(e) { return { totalScore: 0, wordResults: [] }; }
+  } catch(e) {
+    console.error('[ISE] parseIseResult异常:', e, '\nXML:', xmlStr.slice(0, 500));
+    return { totalScore: 0, wordResults: [] };
+  }
 }
 
 // ISE word → 字符注释
@@ -615,11 +644,15 @@ async function evaluateAudio(blob) {
     var refText = s.zh.replace(/[，。！？,.!?\s]/g, '');
     var xmlStr  = await evaluateWithIse(pcmBuf, refText);
     var iseData = parseIseResult(xmlStr);
+    // 拼出"你说的"：用 symbol（讯飞拼音）有则用，否则用汉字 content
+    var recText = iseData.wordResults.map(function(w) {
+      return w.dp === 2 ? '【漏读】' : (w.symbol || w.content);
+    }).join(' ');
     sessionScores.push(iseData.totalScore);
     incPracticeCount(lessonIdx, idx);
     document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
     fillEvalResult(iseData.totalScore, iseAnnotations(iseData.wordResults),
-                   iseHintText(iseData.wordResults, s.hint), s, null);
+                   iseHintText(iseData.wordResults, s.hint), s, null, recText);
   } catch(err) {
     console.error('ISE 评测失败:', err);
     var fb = Math.floor(Math.random() * 15) + 75;
@@ -978,7 +1011,7 @@ function showEvalPageLoading(sentence) {
 }
 
 // 填入实际评测结果
-function fillEvalResult(score, annotations, hintText, sentence, errMsg) {
+function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText) {
   var color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
 
   document.getElementById("eval-loading").style.display = "none";
@@ -1005,7 +1038,7 @@ function fillEvalResult(score, annotations, hintText, sentence, errMsg) {
       return '<span class="anno-char ' + a.type + '"' + tip + '>' + a.char + '</span>';
     }).join('');
     document.getElementById("eval-anno-chars").innerHTML = html;
-    document.getElementById("eval-rec-text").textContent = "";
+    document.getElementById("eval-rec-text").textContent = recText || '';
     compareCard.style.display = "block";
   } else {
     compareCard.style.display = "none";
