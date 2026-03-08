@@ -555,87 +555,115 @@ function evaluateWithIse(pcmBuf, refText) {
   });
 }
 
+// 打印元素的全部属性（诊断用）
+function logAllAttrs(tag, el) {
+  var attrs = {};
+  for (var i = 0; i < el.attributes.length; i++) {
+    var a = el.attributes[i];
+    attrs[a.name] = a.value;
+  }
+  console.log('[ISE]', tag, JSON.stringify(attrs));
+}
+
+// dp_message 位字段解码
+function decodeDp(dp) {
+  if (!dp) return '';
+  var errs = [];
+  if (dp & 64)  errs.push('声调');
+  if (dp & 16)  errs.push('声母(平翘舌/送气)');
+  if (dp & 32)  errs.push('韵母');
+  if (dp & 8)   errs.push('发音');
+  if (dp & 1)   errs.push('读音替换');
+  if (dp & 2)   errs.push('漏读');
+  if (dp & 4)   errs.push('多读');
+  return errs.join('/');
+}
+
 // 解析讯飞 ISE XML 结果
 function parseIseResult(xmlStr) {
   try {
     var doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
-    // 检查 XML 解析错误
-    var parseErr = doc.querySelector('parsererror');
-    if (parseErr) {
-      console.error('[ISE] XML解析错误:', parseErr.textContent, '\n输入XML:', xmlStr.slice(0, 500));
+    if (doc.querySelector('parsererror')) {
+      console.error('[ISE] XML解析失败，完整原文:\n', xmlStr);
       return { totalScore: 0, wordResults: [] };
     }
-    // 尝试多种总分字段（不同版本API返回格式不同）
+
+    // ── 顶层节点诊断 ──────────────────────────────────────
+    console.log('[ISE] ===== 完整XML =====\n', xmlStr);
     var sent = doc.querySelector('sent');
     var rec  = doc.querySelector('rec');
-    var totalRaw = (sent && (sent.getAttribute('total_score') || sent.getAttribute('score')))
-                || (rec  && rec.getAttribute('total_score'))
-                || '0';
-    var total = Math.round(parseFloat(totalRaw));
-    console.log('[ISE] sent节点:', sent && sent.outerHTML ? sent.outerHTML.slice(0,200) : sent);
-    console.log('[ISE] total_score原始值:', totalRaw, '→ 四舍五入:', total);
+    if (sent) logAllAttrs('sent', sent);
+    if (rec)  logAllAttrs('rec',  rec);
+
     var words = Array.from(doc.querySelectorAll('word')).map(function(w) {
-      // 读取音节级别的 dp_message（多维度评测才有 syll 子节点）
-      var sylls = Array.from(w.querySelectorAll('syll')).map(function(s) {
-        return {
-          content: s.getAttribute('content') || '',
-          dp:      parseInt(s.getAttribute('dp_message') || '0', 10)
-        };
+      logAllAttrs('  word', w);
+
+      // ── 读取 syll 子节点 ──────────────────────────────
+      var syllMsgs = [];
+      Array.from(w.querySelectorAll('syll')).forEach(function(s) {
+        logAllAttrs('    syll', s);
+        var dp  = parseInt(s.getAttribute('dp_message') || '0', 10);
+        var sym = s.getAttribute('symbol') || s.getAttribute('content') || '';
+        var pm  = s.getAttribute('perr_msg') || '';
+        var decoded = decodeDp(dp);
+        if (decoded) syllMsgs.push((sym || '') + '：' + decoded + (pm ? '(' + pm + ')' : ''));
+        else if (pm)  syllMsgs.push((sym || '') + '：' + pm);
+
+        // ── 读取 phone 子节点 ─────────────────────────
+        Array.from(s.querySelectorAll('phone')).forEach(function(p) {
+          logAllAttrs('      phone', p);
+        });
       });
-      // 从 syll dp_message 位运算提取具体问题
-      var syllErrors = [];
-      sylls.forEach(function(s) {
-        if (s.dp === 0) return;
-        var errs = [];
-        if (s.dp & 64)  errs.push('声调');
-        if (s.dp & 16)  errs.push('声母（平翘舌/送气）');
-        if (s.dp & 32)  errs.push('韵母');
-        if (s.dp & 8)   errs.push('发音');
-        if (s.dp & 1)   errs.push('读音替换');
-        if (s.dp & 2)   errs.push('漏读');
-        if (s.dp & 4)   errs.push('多读');
-        if (errs.length) syllErrors.push(s.content + '：' + errs.join('/'));
-      });
-      var perrLevel = parseInt(w.getAttribute('perr_level_msg') || '0', 10);
-      // 有 syll 错误时也视为有问题
-      if (syllErrors.length) perrLevel = 1;
-      var perrMsg = w.getAttribute('perr_msg') || '';
-      // 把 syll 级别的错误追加进去
-      if (syllErrors.length) perrMsg = (perrMsg ? perrMsg + '；' : '') + syllErrors.join('；');
+
+      // ── 字级别判断 ────────────────────────────────────
+      var wordDp       = parseInt(w.getAttribute('dp_message')    || '0', 10);
+      var perrLevel    = parseInt(w.getAttribute('perr_level_msg')|| '0', 10);
+      var wordPerrMsg  = w.getAttribute('perr_msg') || '';
+      var wordDecoded  = decodeDp(wordDp);
+
+      // 汇总：优先用 perr_msg，补充 dp_message 解码，再补 syll 详情
+      var msgs = [];
+      if (wordPerrMsg)  msgs.push(wordPerrMsg);
+      if (wordDecoded)  msgs.push(wordDecoded);
+      if (syllMsgs.length) msgs.push(syllMsgs.join('；'));
+      var finalMsg = msgs.join('；');
+
+      // 只要 word-dp 或 perrLevel 或 syll 有任何问题，就标为有问题
+      var hasError = perrLevel !== 0 || wordDp !== 0 || syllMsgs.length > 0;
+
       return {
         content:   w.getAttribute('content') || w.textContent.trim(),
-        perrLevel: perrLevel,
-        perrMsg:   perrMsg
+        perrLevel: hasError ? 1 : 0,
+        perrMsg:   finalMsg
       };
     });
+
     // 总分 = 正确字数 / 总字数 × 100
     var correctCount = words.filter(function(w) { return w.perrLevel === 0; }).length;
     var calcTotal = words.length > 0 ? Math.round(correctCount / words.length * 100) : 0;
-    console.log('[ISE] word节点数:', words.length, '正确:', correctCount,
-      '各字:', words.map(function(w){ return w.content + '(' + w.perrLevel + (w.perrMsg ? ',' + w.perrMsg : '') + ')'; }).join(' '));
+    console.log('[ISE] 汇总 — 总字:', words.length, '正确:', correctCount, '得分:', calcTotal);
     return { totalScore: calcTotal, wordResults: words };
   } catch(e) {
-    console.error('[ISE] parseIseResult异常:', e, '\nXML:', xmlStr.slice(0, 500));
+    console.error('[ISE] parseIseResult异常:', e, '\n原XML:', xmlStr);
     return { totalScore: 0, wordResults: [] };
   }
 }
 
-// ISE word → 字符注释（基于 perr_level_msg）
+// ISE word → 字符注释
 function iseAnnotations(words) {
   return words.map(function(w) {
-    var type = w.perrLevel === 0 ? 'correct' : 'miss';
-    return { char: w.content, type: type, perrMsg: w.perrMsg };
+    return { char: w.content, type: w.perrLevel === 0 ? 'correct' : 'miss', perrMsg: w.perrMsg };
   });
 }
 
-// 生成详细问题说明（基于 perr_msg）
-function iseHintText(words, baseHint) {
-  var errors = words.filter(function(w) { return w.perrLevel !== 0 && w.perrMsg; });
-  if (!errors.length) return baseHint;
+// 发音提示：完全基于讯飞返回的数据，不使用写死文字
+function iseHintText(words) {
+  var errors = words.filter(function(w) { return w.perrLevel !== 0; });
+  if (!errors.length) return '发音准确，每个字均通过评测！';
   var lines = errors.map(function(w) {
-    return '「' + w.content + '」' + w.perrMsg;
+    return '「' + w.content + '」' + (w.perrMsg || '发音有误');
   });
-  return baseHint + '\n\n发现问题：\n' + lines.join('\n');
+  return '发现 ' + errors.length + ' 处问题：\n' + lines.join('\n');
 }
 
 // 停止 MediaRecorder（如果正在录音）
@@ -669,7 +697,7 @@ async function evaluateAudio(blob) {
     incPracticeCount(lessonIdx, idx);
     document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
     fillEvalResult(iseData.totalScore, iseAnnotations(iseData.wordResults),
-                   iseHintText(iseData.wordResults, s.hint), s, null, recText);
+                   iseHintText(iseData.wordResults), s, null, recText);
   } catch(err) {
     console.error('ISE 评测失败:', err);
     var fb = Math.floor(Math.random() * 15) + 75;
