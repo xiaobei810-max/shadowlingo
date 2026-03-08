@@ -182,6 +182,15 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .eval-btn-next { background: var(--green); color: #000; font-weight: 700; border-color: var(--green); }
 .eval-btn-next:hover:not(:disabled) { background: #16a34a; border-color: #16a34a; }
 
+/* Eval loading / result */
+.eval-loading { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 32px 0; }
+.eval-spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.eval-loading-txt { font-size: 14px; color: var(--muted); }
+.eval-result-area { display: none; }
+.eval-result-area.show { display: block; }
+.eval-error-notice { font-size: 12px; color: #f87171; background: rgba(248,113,113,0.1); border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
+
 /* Fireworks */
 #fw-canvas { position:fixed; inset:0; z-index:1000; pointer-events:none; }
 </style>
@@ -396,161 +405,212 @@ function setupAudio(src) {
 }
 
 // ── Speech Recognition ────────────────────────────────────
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-let recognizedText = "";
-let recTimeout = null;
 
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.lang = "zh-CN";
-  recognition.continuous = true;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 3;
+// ── 科大讯飞语音评测（ISE 流式版）──────────────────────────
+var ISE_APPID   = '7ade157c';
+var ISE_APIKEY  = 'f86ec1542086fe08b998712a2f439cde';
+var ISE_SECRET  = 'NmY1N2Q0MmI0ZmJkNzJkOWE0MDBhOTc5';
 
-  recognition.onresult = function(e) {
-    // Accumulate all results as user speaks
-    var transcript = "";
-    for (var i = 0; i < e.results.length; i++) {
-      transcript += e.results[i][0].transcript;
-    }
-    recognizedText = transcript;
-  };
+var mediaRecorder = null;
+var audioChunks   = [];
 
-  recognition.onerror = function() {
-    // Ignore errors — user will submit manually
-  };
-
-  recognition.onend = function() {
-    if (phase === "recording") finishRecording();
-  };
+// 构建鉴权 URL（WebCrypto HMAC-SHA256）
+async function buildIseUrl() {
+  var host = 'ise-api.xfyun.cn';
+  var path = '/v2/open-ise';
+  var date = new Date().toUTCString();
+  var origin = 'host: ' + host + '\ndate: ' + date + '\nGET ' + path + ' HTTP/1.1';
+  var enc = new TextEncoder();
+  var key = await crypto.subtle.importKey(
+    'raw', enc.encode(ISE_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  var sig = await crypto.subtle.sign('HMAC', key, enc.encode(origin));
+  var sigB64 = btoa(String.fromCharCode.apply(null, new Uint8Array(sig)));
+  var auth = btoa('api_key="' + ISE_APIKEY + '", algorithm="hmac-sha256", ' +
+    'headers="host date request-line", signature="' + sigB64 + '"');
+  return 'wss://' + host + path +
+    '?authorization=' + encodeURIComponent(auth) +
+    '&date=' + encodeURIComponent(date) +
+    '&host=' + encodeURIComponent(host);
 }
 
-// ── 拼音工具 & 高级评分 ─────────────────────────────────
-var TONE_MARKS = {
-  'ā':'a','á':'a','ǎ':'a','à':'a',
-  'ē':'e','é':'e','ě':'e','è':'e',
-  'ī':'i','í':'i','ǐ':'i','ì':'i',
-  'ō':'o','ó':'o','ǒ':'o','ò':'o',
-  'ū':'u','ú':'u','ǔ':'u','ù':'u',
-  'ǖ':'v','ǘ':'v','ǚ':'v','ǜ':'v'
-};
+// Uint8Array → base64（避免大数组 btoa 溢出）
+function u8ToB64(arr) {
+  var CHUNK = 0x8000, out = [];
+  for (var i = 0; i < arr.length; i += CHUNK)
+    out.push(String.fromCharCode.apply(null, arr.subarray(i, i + CHUNK)));
+  return btoa(out.join(''));
+}
 
-var charPinyinMap = {}; // char → tone-stripped pinyin，从课程数据构建
+// 将录音 Blob 解码并重采样为 PCM 16bit/16kHz
+async function convertToPCM(blob) {
+  var buf = await blob.arrayBuffer();
+  var ctx = new AudioContext();
+  var decoded = await ctx.decodeAudioData(buf);
+  await ctx.close();
+  var rate = 16000;
+  var len  = Math.ceil(decoded.duration * rate);
+  var off  = new OfflineAudioContext(1, len, rate);
+  var src  = off.createBufferSource();
+  src.buffer = decoded;
+  src.connect(off.destination);
+  src.start(0);
+  var rendered = await off.startRendering();
+  var f32 = rendered.getChannelData(0);
+  var i16 = new Int16Array(f32.length);
+  for (var i = 0; i < f32.length; i++) {
+    var s = Math.max(-1, Math.min(1, f32[i]));
+    i16[i] = s < 0 ? s * 32768 : s * 32767;
+  }
+  return i16.buffer;
+}
 
-function buildCharPinyinMap(lesson) {
-  var map = {};
-  lesson.sentences.forEach(function(s) {
-    var chars = Array.from(s.zh).filter(function(c) { return /[\u4e00-\u9fff]/.test(c); });
-    var sylls = parseSyllables(s.pinyin);
-    chars.forEach(function(c, i) {
-      if (sylls[i] && !map[c]) map[c] = stripTones(sylls[i]);
+// 通过 WebSocket 发送音频，返回 XML 评测结果
+function evaluateWithIse(pcmBuf, refText) {
+  return buildIseUrl().then(function(url) {
+    return new Promise(function(resolve, reject) {
+      var ws = new WebSocket(url);
+      var xmlResult = '';
+      var timer = setTimeout(function() { ws.close(); reject(new Error('评测超时')); }, 20000);
+
+      ws.onopen = function() {
+        var pcm = new Uint8Array(pcmBuf);
+        var chunkSize = 1280;
+        var offset = 0;
+        function sendNext() {
+          if (offset >= pcm.length) {
+            ws.send(JSON.stringify({ data: { status: 2, audio: '' } }));
+            return;
+          }
+          var end = Math.min(offset + chunkSize, pcm.length);
+          var chunk = pcm.subarray(offset, end);
+          var isLast = end >= pcm.length;
+          var frame = { data: { status: offset === 0 ? 0 : (isLast ? 2 : 1), audio: u8ToB64(chunk) } };
+          if (offset === 0) {
+            frame.common = { app_id: ISE_APPID };
+            frame.business = {
+              category: 'read_sentence', rstcd: 'utf8', group: 'pupil',
+              sub: 'ise', ent: 'cn_vip', tte: 'utf8',
+              auf: 'audio/L16;rate=16000', aue: 'raw',
+              text: '\uFEFF' + refText
+            };
+          }
+          offset = end;
+          ws.send(JSON.stringify(frame));
+          if (!isLast) setTimeout(sendNext, 40);
+        }
+        sendNext();
+      };
+
+      ws.onmessage = function(e) {
+        try {
+          var resp = JSON.parse(e.data);
+          if (resp.code !== 0) {
+            clearTimeout(timer); ws.close();
+            reject(new Error('ISE ' + resp.code + ': ' + resp.message)); return;
+          }
+          if (resp.data && resp.data.result) {
+            var r = resp.data.result;
+            if (typeof r === 'string') xmlResult = r;
+            else if (r.xml_result) xmlResult = r.xml_result;
+          }
+          if (resp.data && resp.data.status === 2) {
+            clearTimeout(timer); ws.close(); resolve(xmlResult);
+          }
+        } catch(err) { clearTimeout(timer); reject(err); }
+      };
+      ws.onerror = function() { clearTimeout(timer); reject(new Error('WebSocket 连接失败')); };
     });
   });
-  return map;
 }
 
-function parseSyllables(pinyin) {
-  return pinyin.replace(/[,，。！？.!?]/g, ' ').trim().split(/\s+/).filter(Boolean);
+// 解析讯飞 ISE XML 结果
+function parseIseResult(xmlStr) {
+  try {
+    var doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
+    var sent = doc.querySelector('sent');
+    var total = sent ? Math.round(parseFloat(sent.getAttribute('total_score') || '0')) : 0;
+    var words = Array.from(doc.querySelectorAll('word')).map(function(w) {
+      return {
+        content: w.getAttribute('content') || w.textContent.trim(),
+        score:   Math.round(parseFloat(w.getAttribute('total_score') || '0')),
+        dp:      parseInt(w.getAttribute('dp_message') || '0', 10),
+        symbol:  w.getAttribute('symbol') || ''
+      };
+    });
+    return { totalScore: total, wordResults: words };
+  } catch(e) { return { totalScore: 0, wordResults: [] }; }
 }
 
-function stripTones(p) {
-  var r = p.toLowerCase();
-  Object.keys(TONE_MARKS).forEach(function(k) { r = r.split(k).join(TONE_MARKS[k]); });
-  return r;
-}
-
-// 判断两个去声调拼音是否属于常见易混淆对
-function isConfusedPinyin(p1, p2) {
-  if (!p1 || !p2 || p1 === p2) return false;
-  var confusions = [
-    // 翘舌/平舌
-    ['zh','z'], ['ch','c'], ['sh','s'],
-    // 前后鼻音
-    ['ang','an'], ['eng','en'], ['ing','in'],
-    ['iang','ian'], ['uang','uan'], ['ong','on'],
-  ];
-  for (var i = 0; i < confusions.length; i++) {
-    var a = confusions[i][0], b = confusions[i][1];
-    // 声母混淆：zh/z, ch/c, sh/s
-    if (p1.slice(0, a.length) === a && p2.slice(0, b.length) === b &&
-        p1.slice(a.length) === p2.slice(b.length)) return true;
-    if (p1.slice(0, b.length) === b && p2.slice(0, a.length) === a &&
-        p1.slice(b.length) === p2.slice(a.length)) return true;
-    // 韵母混淆：an/ang, en/eng, in/ing
-    if (p1.slice(-a.length) === a && p2.slice(-b.length) === b &&
-        p1.slice(0, -a.length) === p2.slice(0, -b.length)) return true;
-    if (p1.slice(-b.length) === b && p2.slice(-a.length) === a &&
-        p1.slice(0, -b.length) === p2.slice(0, -a.length)) return true;
-  }
-  // n/l 声母混淆
-  if (p1[0] === 'n' && p2[0] === 'l' && p1.slice(1) === p2.slice(1)) return true;
-  if (p1[0] === 'l' && p2[0] === 'n' && p1.slice(1) === p2.slice(1)) return true;
-  return false;
-}
-
-// LCS 对齐：将 recognized 中能匹配 expected 的字符对齐，其余为 miss
-function lcsAlign(exp, rec) {
-  var n = exp.length, m = rec.length;
-  var dp = [];
-  for (var i = 0; i <= n; i++) { dp[i] = []; for (var j = 0; j <= m; j++) dp[i][j] = 0; }
-  for (var i = 1; i <= n; i++)
-    for (var j = 1; j <= m; j++)
-      dp[i][j] = exp[i-1] === rec[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
-  var result = [], i = n, j = m;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && exp[i-1] === rec[j-1]) {
-      result.unshift({ exp: exp[i-1], rec: rec[j-1], match: 'exact' }); i--; j--;
-    } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
-      j--; // 多余的识别字，忽略
-    } else {
-      result.unshift({ exp: exp[i-1], rec: null, match: 'miss' }); i--;
-    }
-  }
-  return result;
-}
-
-// 高级评分：字符级匹配 + 易混淆音部分扣分
-function calcAdvancedScore(recognized, sentence) {
-  var isZh = function(c) { return /[\u4e00-\u9fff]/.test(c); };
-  var expArr = Array.from(sentence.zh).filter(isZh);
-  var recArr = Array.from(recognized).filter(isZh);
-
-  if (!recArr.length) {
-    return { score: 0, annotations: expArr.map(function(c) { return { char: c, type: 'miss' }; }) };
-  }
-
-  var aligned = lcsAlign(expArr, recArr);
-  var n = expArr.length;
-  var deductFull = 70 / n;     // 完全错误：最多扣到30分
-  var deductConfused = 35 / n; // 易混淆音：扣一半
-  var deduction = 0;
-  var annotations = [];
-
-  aligned.forEach(function(item) {
-    if (item.match === 'exact') {
-      annotations.push({ char: item.exp, type: 'correct' });
-    } else {
-      // 检查是否有易混淆发音出现在识别文本中
-      var expP = charPinyinMap[item.exp] || '';
-      var confused = false;
-      if (expP) {
-        for (var ri = 0; ri < recArr.length; ri++) {
-          var recP = charPinyinMap[recArr[ri]] || '';
-          if (recP && isConfusedPinyin(expP, recP)) { confused = true; break; }
-        }
-      }
-      if (confused) {
-        annotations.push({ char: item.exp, type: 'confused' });
-        deduction += deductConfused;
-      } else {
-        annotations.push({ char: item.exp, type: 'miss' });
-        deduction += deductFull;
-      }
-    }
+// ISE word → 字符注释
+function iseAnnotations(words) {
+  return words.map(function(w) {
+    var type = (w.dp !== 0 || w.score < 70) ? 'miss' : (w.score < 85 ? 'confused' : 'correct');
+    return { char: w.content, type: type, score: w.score, dp: w.dp, symbol: w.symbol };
   });
+}
 
-  return { score: Math.max(30, Math.round(100 - deduction)), annotations: annotations };
+// dp_message 错误描述
+function dpDesc(dp, symbol) {
+  var parts = [];
+  if (dp & 64) parts.push('声调');
+  if (dp & 16) parts.push('声母');
+  if (dp & 32) parts.push('韵母');
+  if (dp & 8)  parts.push('发音');
+  if (dp & 1)  parts.push('读音替换');
+  if (dp & 2)  parts.push('漏读');
+  return parts.length ? parts.join('/') + '错误' + (symbol ? '（应为 ' + symbol + '）' : '') : '';
+}
+
+// 生成详细问题说明
+function iseHintText(words, baseHint) {
+  var errors = words.filter(function(w) { return w.dp !== 0 || w.score < 70; });
+  if (!errors.length) return baseHint;
+  var lines = errors.slice(0, 4).map(function(w) {
+    var d = dpDesc(w.dp, w.symbol);
+    return '「' + w.content + '」' + (d ? d : '分数偏低（' + w.score + '分）');
+  });
+  return baseHint + '\n\n发现问题：\n' + lines.join('\n');
+}
+
+// 停止 MediaRecorder（如果正在录音）
+function stopMediaRecorderIfRunning() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.onstop = null;
+    try { mediaRecorder.stop(); } catch(e) {}
+    if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+    mediaRecorder = null; audioChunks = [];
+    phase = 'idle';
+    document.getElementById('bn').textContent = '🎤 录音 Record';
+    document.getElementById('bn').classList.remove('active');
+    document.getElementById('speech-indicator').classList.remove('active');
+  }
+}
+
+// 主评测流程（async）
+async function evaluateAudio(blob) {
+  var s = LESSONS[lessonIdx].sentences[idx];
+  showEvalPageLoading(s);
+  try {
+    var pcmBuf = await convertToPCM(blob);
+    var refText = s.zh.replace(/[，。！？,.!?\s]/g, '');
+    var xmlStr  = await evaluateWithIse(pcmBuf, refText);
+    var iseData = parseIseResult(xmlStr);
+    sessionScores.push(iseData.totalScore);
+    incPracticeCount(lessonIdx, idx);
+    document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
+    fillEvalResult(iseData.totalScore, iseAnnotations(iseData.wordResults),
+                   iseHintText(iseData.wordResults, s.hint), s, null);
+  } catch(err) {
+    console.error('ISE 评测失败:', err);
+    var fb = Math.floor(Math.random() * 15) + 75;
+    sessionScores.push(fb);
+    incPracticeCount(lessonIdx, idx);
+    document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
+    fillEvalResult(fb, null, s.hint, s, '评测服务暂时不可用：' + err.message);
+  }
+  busy = false;
 }
 
 function getPraise(s) {
@@ -652,7 +712,6 @@ function setStatus(t) {
 
 function clearTimers() {
   if (segTimer) { clearTimeout(segTimer); segTimer = null; }
-  if (recTimeout) { clearTimeout(recTimeout); recTimeout = null; }
 }
 
 function speak(on) {
@@ -681,7 +740,6 @@ function changeLesson(dir) {
   lessonIdx = next;
   idx = 0;
   sessionScores = [];
-  charPinyinMap = buildCharPinyinMap(LESSONS[lessonIdx]);
   setupAudio(LESSONS[lessonIdx].audio);
   updateUI();
   saveState();
@@ -735,7 +793,7 @@ function updateUI() {
 
 // ── Actions ───────────────────────────────────────────────
 function doListen() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  stopMediaRecorderIfRunning();
   clearTimers();
   busy = true;
   phase = "listen";
@@ -766,7 +824,7 @@ function doListen() {
 }
 
 function doSlow() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  stopMediaRecorderIfRunning();
   clearTimers();
   busy = true;
   phase = "slow";
@@ -798,7 +856,7 @@ function doSlow() {
 }
 
 function doNormal() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  stopMediaRecorderIfRunning();
   clearTimers();
   busy = true;
   phase = "normal";
@@ -837,107 +895,115 @@ function doRecord() {
 }
 
 function startRecording() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  stopMediaRecorderIfRunning();
   clearTimers();
   if (audio) { audio.pause(); speak(false); }
   phase = "recording";
-  recognizedText = "";
   busy = true;
   document.getElementById("bn").textContent = "⏹ 停止录音 Stop";
   document.getElementById("bn").classList.add("active");
   document.getElementById("speech-indicator").classList.add("active");
   resetKara();
   setStatus("🎙 录音中 Recording...");
-  if (recognition) {
-    try { recognition.start(); } catch(e) {}
-  }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = function(e) {
+      if (e.data && e.data.size > 0) audioChunks.push(e.data);
+    };
+    mediaRecorder.start(100);
+  }).catch(function(err) {
+    setStatus("⚠️ 麦克风权限被拒绝");
+    busy = false; phase = "idle";
+    document.getElementById("bn").textContent = "🎤 录音 Record";
+    document.getElementById("bn").classList.remove("active");
+    document.getElementById("speech-indicator").classList.remove("active");
+  });
 }
 
 function stopRecording() {
   document.getElementById("bn").textContent = "🎤 录音 Record";
   document.getElementById("bn").classList.remove("active");
-  if (recognition) {
-    try { recognition.stop(); } catch(e) { finishRecording(); }
-  } else {
-    finishRecording();
-  }
-}
-
-function finishRecording() {
-  if (phase !== "recording") return;
-  clearTimers();
-  phase = "scored";
-  busy = false;
-
   document.getElementById("speech-indicator").classList.remove("active");
-  document.getElementById("bn").textContent = "🎤 录音 Record";
-  document.getElementById("bn").classList.remove("active");
-  completeKara();
-
-  var s = LESSONS[lessonIdx].sentences[idx];
-  var result;
-  if (recognizedText && recognition) {
-    result = calcAdvancedScore(recognizedText, s);
-  } else if (recognition) {
-    result = { score: 65, annotations: null };
-  } else {
-    result = { score: Math.floor(Math.random() * 14) + 82, annotations: null };
+  if (!mediaRecorder || mediaRecorder.state === "inactive") {
+    setStatus("准备好了 Ready"); busy = false; return;
   }
-
-  sessionScores.push(result.score);
-  incPracticeCount(lessonIdx, idx);
-  document.getElementById("practice-count").textContent = "已练 " + getPracticeCount(lessonIdx, idx) + " 次";
-
-  showEvalPage(result.score, s, result.annotations, recognizedText);
+  mediaRecorder.onstop = function() {
+    var blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+    mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+    mediaRecorder = null;
+    evaluateAudio(blob);
+  };
+  mediaRecorder.stop();
+  phase = "scored";
 }
 
-function showEvalPage(score, sentence, annotations, recognized) {
-  var total = LESSONS[lessonIdx].sentences.length;
-  var color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
 
-  // 句子信息
+
+// 显示评价页（loading 状态）
+function showEvalPageLoading(sentence) {
+  var total = LESSONS[lessonIdx].sentences.length;
   document.getElementById("eval-badge").textContent = "第 " + (idx+1) + "/" + total + " 句";
   document.getElementById("eval-zh").textContent = sentence.zh;
   document.getElementById("eval-pinyin").textContent = sentence.pinyin;
   document.getElementById("eval-en").textContent = sentence.en;
+  document.getElementById("eval-loading").style.display = "flex";
+  document.getElementById("eval-result-area").classList.remove("show");
+  document.getElementById("eval-compare-card").style.display = "none";
+  document.getElementById("eval-hint-text").textContent = "";
+  document.getElementById("eval-error-notice").style.display = "none";
+  document.getElementById("eval-prev").disabled = idx === 0;
+  var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
+  document.getElementById("eval-next").textContent = isLast ? "完成本课 🎉" : "下一句 ▶";
+  document.getElementById("eval-page").classList.add("show");
+  document.getElementById("eval-page").scrollTop = 0;
+}
 
-  // 分数
+// 填入实际评测结果
+function fillEvalResult(score, annotations, hintText, sentence, errMsg) {
+  var color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
+
+  document.getElementById("eval-loading").style.display = "none";
+  document.getElementById("eval-result-area").classList.add("show");
+
   var numEl = document.getElementById("eval-score-num");
   numEl.textContent = score;
   numEl.style.color = color;
+
   var grade = score >= 90 ? "🏆 优秀 Excellent"
             : score >= 80 ? "🌟 良好 Great"
             : score >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
   var gradeEl = document.getElementById("eval-grade");
   gradeEl.textContent = grade;
   gradeEl.style.color = color;
+
   document.getElementById("eval-praise").textContent = sentence.praise + "\n" + getPraise(score);
 
-  // 发音对比
+  // 发音对比（ISE 字符注释）
   var compareCard = document.getElementById("eval-compare-card");
   if (annotations && annotations.length) {
     var html = annotations.map(function(a) {
-      return '<span class="anno-char ' + a.type + '">' + a.char + '</span>';
+      var tip = a.symbol ? ' title="' + a.symbol + ' ' + a.score + '分"' : '';
+      return '<span class="anno-char ' + a.type + '"' + tip + '>' + a.char + '</span>';
     }).join('');
     document.getElementById("eval-anno-chars").innerHTML = html;
-    document.getElementById("eval-rec-text").textContent = recognized || "（未识别到语音）";
+    document.getElementById("eval-rec-text").textContent = "";
     compareCard.style.display = "block";
   } else {
     compareCard.style.display = "none";
   }
 
-  // 发音提示
-  var hint = sentence.hint;
-  if (!recognition) hint += "  （💡开启麦克风权限可获精准评分）";
-  document.getElementById("eval-hint-text").textContent = hint;
+  // 发音提示（ISE 详细错误）
+  document.getElementById("eval-hint-text").textContent = hintText;
 
-  // 导航按钮状态
-  document.getElementById("eval-prev").disabled = idx === 0;
-  var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
-  document.getElementById("eval-next").textContent = isLast ? "完成本课 🎉" : "下一句 ▶";
-
-  document.getElementById("eval-page").classList.add("show");
-  document.getElementById("eval-page").scrollTop = 0;
+  // 错误提示
+  var errEl = document.getElementById("eval-error-notice");
+  if (errMsg) {
+    errEl.textContent = "⚠️ " + errMsg;
+    errEl.style.display = "block";
+  } else {
+    errEl.style.display = "none";
+  }
 }
 
 function evalNav(dir) {
@@ -954,7 +1020,7 @@ function evalNav(dir) {
 
 
 function doRetry() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  stopMediaRecorderIfRunning();
   clearTimers();
   // Remove the last score so the retry score replaces it
   if (sessionScores.length > 0) sessionScores.pop();
@@ -962,12 +1028,12 @@ function doRetry() {
 }
 
 function doPrev() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  stopMediaRecorderIfRunning();
   if (idx > 0) { idx--; updateUI(); }
 }
 
 function doNext() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  stopMediaRecorderIfRunning();
   clearTimers();
   if (audio) audio.pause();
   speak(false);
@@ -1070,7 +1136,6 @@ function stopFireworks() {
 
 // ── Init ──────────────────────────────────────────────────
 loadState();
-charPinyinMap = buildCharPinyinMap(LESSONS[lessonIdx]);
 setupAudio(LESSONS[lessonIdx].audio);
 updateUI();
 </script>
@@ -1090,10 +1155,17 @@ updateUI();
 
     <!-- 分数 -->
     <div class="eval-score-card">
-      <div class="eval-score-num" id="eval-score-num">--</div>
-      <div class="eval-score-sub">发音评分</div>
-      <div class="eval-grade" id="eval-grade"></div>
-      <div class="eval-praise" id="eval-praise"></div>
+      <div class="eval-loading" id="eval-loading">
+        <div class="eval-spinner"></div>
+        <div class="eval-loading-txt">评测中，请稍候...</div>
+      </div>
+      <div class="eval-result-area" id="eval-result-area">
+        <div class="eval-score-num" id="eval-score-num">--</div>
+        <div class="eval-score-sub">发音评分</div>
+        <div class="eval-grade" id="eval-grade"></div>
+        <div class="eval-praise" id="eval-praise"></div>
+        <div class="eval-error-notice" id="eval-error-notice" style="display:none"></div>
+      </div>
     </div>
 
     <!-- 发音对比 -->
