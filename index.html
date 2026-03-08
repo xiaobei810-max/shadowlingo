@@ -199,6 +199,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
   <div class="controls">
     <button class="btn" id="bl" onclick="doListen()">▶ 听原声 Listen</button>
     <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 慢速跟读 Slow Shadow</button>
+    <button class="btn" id="bm" onclick="doNormal()">🚀 常速跟读 Shadow</button>
     <button class="btn" id="bn" onclick="doRecord()">🎤 录音 Record</button>
     <button class="btn btn-retry" id="bretry" onclick="doRetry()">↩ 再练一次 Retry</button>
     <div class="btn-nav">
@@ -566,6 +567,7 @@ function updateUI() {
   document.getElementById("bl").classList.remove("active");
   document.getElementById("bs").disabled = false;
   document.getElementById("bs").classList.remove("active");
+  document.getElementById("bm").classList.remove("active");
   document.getElementById("bn").disabled = false;
   document.getElementById("bn").classList.remove("active");
   document.getElementById("bprev").disabled = idx === 0;
@@ -634,6 +636,37 @@ function doSlow() {
     speak(false);
     completeKara();
     document.getElementById("bs").classList.remove("active");
+    setStatus("准备好了 Ready");
+    busy = false;
+    phase = "idle";
+  }, dur + 200);
+}
+
+function doNormal() {
+  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  clearTimers();
+  busy = true;
+  phase = "normal";
+
+  var s = LESSONS[lessonIdx].sentences[idx];
+  var timings = computeCharTimings(s);
+  var dur = (s.end - s.start) * 1000;
+
+  setStatus("🚀 常速跟读 Shadow...");
+  document.getElementById("bm").classList.add("active");
+
+  audio.currentTime = s.start;
+  audio.playbackRate = 1;
+  audio.play();
+  speak(true);
+  resetKara();
+  startKaraSync(s.start, s.end, timings);
+
+  segTimer = setTimeout(function() {
+    audio.pause();
+    speak(false);
+    completeKara();
+    document.getElementById("bm").classList.remove("active");
     setStatus("准备好了 Ready");
     busy = false;
     phase = "idle";
