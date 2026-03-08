@@ -29,13 +29,11 @@ function azureAssess(pcmBase64, refText) {
     const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
     console.log('[Azure] WAV大小:', wavBuf.length, '字节，refText:', refText);
 
-    // 注意：EnableMiscue 用字符串 "True"，Dimension 用 "Comprehensive"
     const cfg = Buffer.from(JSON.stringify({
       ReferenceText: refText,
       GradingSystem: 'HundredMark',
       Granularity:   'Phoneme',
-      Dimension:     'Comprehensive',
-      EnableMiscue:  'True'
+      Dimension:     'Comprehensive'
     })).toString('base64');
 
     const options = {
@@ -129,13 +127,13 @@ function parseAzureResult(resp, chars) {
       msgs.push('多读'); hasError = true;
     } else if (errType === 'Mispronunciation') {
       // 仅在准确度明显偏低时才标红，避免误报
-      if (accuracy < 60) { hasError = true; msgs.push(`发音有误（${accuracy}分）`); }
+      if (accuracy < 50) { hasError = true; msgs.push(`发音有误（${accuracy}分）`); }
     }
 
-    // 音素级：声母/韵母低于 50 分时才报错（更宽松阈值）
+    // 音素级：低于 40 分时才报错（宽松阈值，避免误判正常口音）
     for (const p of (w.Phonemes || [])) {
       const pAcc = Math.round((p.PronunciationAssessment || {}).AccuracyScore || 0);
-      if (pAcc < 50) {
+      if (pAcc < 40) {
         msgs.push(`音素「${p.Phoneme}」偏差（${pAcc}分）`);
         hasError = true;
       }
@@ -160,7 +158,7 @@ function parseAzureResult(resp, chars) {
           if ((correctInit === retro && recog === flat) || (correctInit === flat && recog === retro)) {
             msgs.push(`平翘舌混淆：应读【${correctInit}】实读【${recog}】（${correctPy}）`);
             hasError = true;
-          } else if (iAcc < 50) {
+          } else if (iAcc < 40) {
             msgs.push(`声母「${correctInit}」发音不准（${iAcc}分）`);
             hasError = true;
           }

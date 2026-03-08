@@ -1304,9 +1304,11 @@ function stopFireworks() {
 }
 
 // ── Init ──────────────────────────────────────────────────
-loadState();
-setupAudio(LESSONS[lessonIdx].audio);
-updateUI();
+document.addEventListener('DOMContentLoaded', function() {
+  loadState();
+  setupAudio(LESSONS[lessonIdx].audio);
+  updateUI();
+});
 </script>
 <!-- 评价页面 -->
 <div class="eval-page" id="eval-page">
