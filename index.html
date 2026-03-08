@@ -52,11 +52,6 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .sentence-box { padding: 20px 20px 24px; text-align: center; }
 
 /* Countdown overlay */
-.countdown-panel { display: none; position: absolute; inset: 0; background: rgba(10,15,26,0.92); z-index: 10; flex-direction: column; align-items: center; justify-content: center; }
-.countdown-panel.show { display: flex; }
-.countdown-num { font-size: 72px; font-weight: 800; color: var(--green); line-height: 1; }
-.countdown-label { font-size: 15px; color: #94a3b8; margin-top: 8px; }
-.countdown-mic { font-size: 32px; margin-top: 12px; }
 
 /* Karaoke text */
 .kara-wrap { font-size: 28px; font-weight: 700; line-height: 1.4; margin-bottom: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
@@ -109,8 +104,6 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .btn-retry { background: rgba(251,191,36,0.1); border-color: #d97706; color: #fbbf24; display: none; }
 .btn-retry.show { display: block; }
 .btn-retry:hover:not(:disabled) { background: rgba(251,191,36,0.18); border-color: #fbbf24; }
-.btn-submit { background: rgba(34,197,94,0.15); border-color: var(--green); color: var(--green); font-size: 17px; font-weight: 700; display: none; }
-.btn-submit:hover:not(:disabled) { background: rgba(34,197,94,0.25); }
 
 @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
 @keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 14px 4px rgba(34,197,94,0.25)} }
@@ -166,11 +159,6 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
     </div>
     <div class="sentence-badge" id="badge">第 1/5 句</div>
 
-    <div class="countdown-panel" id="countdown-panel">
-      <div class="countdown-num" id="countdown-num">3</div>
-      <div class="countdown-label">准备跟读 Get ready to shadow</div>
-      <div class="countdown-mic">🎙</div>
-    </div>
 
     <div class="sentence-box">
       <div class="kara-wrap" id="kara"></div>
@@ -211,9 +199,8 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
   <div class="controls">
     <button class="btn" id="bl" onclick="doListen()">▶ 听原声 Listen</button>
     <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 慢速跟读 Slow Shadow</button>
-    <button class="btn" id="bn" onclick="doNormal()" disabled>🚀 常速跟读 Shadow</button>
+    <button class="btn" id="bn" onclick="doRecord()">🎤 录音 Record</button>
     <button class="btn btn-retry" id="bretry" onclick="doRetry()">↩ 再练一次 Retry</button>
-    <button class="btn btn-submit" id="bsubmit" onclick="doSubmit()" style="display:none">✅ 提交评分 Submit</button>
     <div class="btn-nav">
       <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一句</button>
       <button class="btn btn-done" id="bdone" onclick="doNext()">下一句 ▶</button>
@@ -300,7 +287,6 @@ let idx = 0;
 let phase = "idle"; // idle | listen | slow | countdown | recording | scored
 let busy = false;
 let segTimer = null;
-let countdownTimer = null;
 let sessionScores = [];
 let slowSpeed = 0.7;
 
@@ -510,7 +496,6 @@ function setStatus(t) {
 
 function clearTimers() {
   if (segTimer) { clearTimeout(segTimer); segTimer = null; }
-  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
   if (recTimeout) { clearTimeout(recTimeout); recTimeout = null; }
 }
 
@@ -575,7 +560,7 @@ function updateUI() {
   document.getElementById("score-panel").style.display = "none";
   document.getElementById("transcript-panel").style.display = "none";
   document.getElementById("speech-indicator").classList.remove("active");
-  document.getElementById("countdown-panel").classList.remove("show");
+  document.getElementById("bn").textContent = "🎤 录音 Record";
 
   document.getElementById("bl").disabled = false;
   document.getElementById("bl").classList.remove("active");
@@ -655,90 +640,39 @@ function doSlow() {
   }, dur + 200);
 }
 
-function doNormal() {
-  if (recognition) { try { recognition.abort(); } catch(e) {} }
-  clearTimers();
-  busy = true;
-  phase = "normal";
-
-  var s = LESSONS[lessonIdx].sentences[idx];
-  var timings = computeCharTimings(s);
-  var dur = (s.end - s.start) * 1000;
-
-  setStatus("🚀 听原声 Listening...");
-  document.getElementById("bn").classList.add("active");
-
-  audio.currentTime = s.start;
-  audio.playbackRate = 1;
-  audio.play();
-  speak(true);
-  resetKara();
-  startKaraSync(s.start, s.end, timings);
-
-  segTimer = setTimeout(function() {
-    audio.pause();
-    speak(false);
-    completeKara();
-    document.getElementById("bn").classList.remove("active");
-    startCountdown();
-  }, dur + 200);
-}
-
-function startCountdown() {
-  phase = "countdown";
-  var count = 3;
-  var panel = document.getElementById("countdown-panel");
-  var numEl = document.getElementById("countdown-num");
-  panel.classList.add("show");
-  numEl.textContent = count;
-  setStatus("准备跟读...");
-
-  function tick() {
-    count--;
-    if (count > 0) {
-      numEl.textContent = count;
-      countdownTimer = setTimeout(tick, 600);
-    } else {
-      panel.classList.remove("show");
-      startRecording();
-    }
+function doRecord() {
+  if (phase === "recording") {
+    stopRecording();
+  } else {
+    startRecording();
   }
-  countdownTimer = setTimeout(tick, 600);
 }
 
 function startRecording() {
+  if (recognition) { try { recognition.abort(); } catch(e) {} }
+  clearTimers();
+  if (audio) { audio.pause(); speak(false); }
   phase = "recording";
   recognizedText = "";
-  setStatus("🎙 跟读中 Shadow now...");
+  busy = true;
+  document.getElementById("bn").textContent = "⏹ 停止录音 Stop";
+  document.getElementById("bn").classList.add("active");
   document.getElementById("speech-indicator").classList.add("active");
-  document.getElementById("bsubmit").style.display = "block";
   resetKara();
-
-  var s = LESSONS[lessonIdx].sentences[idx];
-  var timings = computeCharTimings(s);
-
+  setStatus("🎙 录音中 Recording...");
   if (recognition) {
     try { recognition.start(); } catch(e) {}
   }
+}
 
-  // Animate karaoke without audio so user can follow along
-  var kStart = performance.now();
-  var kDur = s.end - s.start;
-  function animKara(now) {
-    if (phase !== "recording") return;
-    var elapsed = (now - kStart) / 1000;
-    var chars = document.querySelectorAll(".kchar");
-    chars.forEach(function(el, i) {
-      var t = timings[i];
-      if (!t) return;
-      if (elapsed >= t.end) { el.className = "kchar done"; }
-      else if (elapsed >= t.start) { el.className = "kchar active"; }
-      else { el.className = "kchar"; }
-    });
-    document.getElementById("bar-fill").style.width = Math.min(100, (elapsed / kDur) * 100) + "%";
-    if (elapsed < kDur + 0.5) requestAnimationFrame(animKara);
+function stopRecording() {
+  document.getElementById("bn").textContent = "🎤 录音 Record";
+  document.getElementById("bn").classList.remove("active");
+  if (recognition) {
+    try { recognition.stop(); } catch(e) { finishRecording(); }
+  } else {
+    finishRecording();
   }
-  requestAnimationFrame(animKara);
 }
 
 function finishRecording() {
@@ -748,7 +682,8 @@ function finishRecording() {
   busy = false;
 
   document.getElementById("speech-indicator").classList.remove("active");
-  document.getElementById("bsubmit").style.display = "none";
+  document.getElementById("bn").textContent = "🎤 录音 Record";
+  document.getElementById("bn").classList.remove("active");
   completeKara();
 
   var s = LESSONS[lessonIdx].sentences[idx];
@@ -793,16 +728,6 @@ function showScorePanel(score, sentence, transcript, showTranscript) {
   setStatus("✅ 完成 Done");
 }
 
-function doSubmit() {
-  if (phase !== "recording") return;
-  document.getElementById("bsubmit").disabled = true;
-  document.getElementById("bsubmit").textContent = "评分中...";
-  if (recognition) {
-    try { recognition.stop(); } catch(e) { finishRecording(); }
-  } else {
-    finishRecording();
-  }
-}
 
 function doRetry() {
   if (recognition) { try { recognition.abort(); } catch(e) {} }
