@@ -121,6 +121,21 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .btn-restart { margin-top:16px; width:100%; padding:14px; background:#22c55e; color:#000; font-weight:700; font-size:15px; border:none; border-radius:14px; cursor:pointer; }
 .btn-restart:hover { background:#16a34a; }
 
+/* Annotation panel */
+.annotation-panel { border-radius: 12px; padding: 10px 0 2px; }
+.anno-legend { font-size: 11px; margin-bottom: 8px; display: flex; gap: 12px; }
+.anno-legend span { display: flex; align-items: center; gap: 4px; }
+.anno-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.anno-dot.correct { background: #22c55e; }
+.anno-dot.confused { background: #fbbf24; }
+.anno-dot.miss { background: #f87171; }
+.anno-chars { font-size: 26px; font-weight: 700; letter-spacing: 4px; margin-bottom: 8px; line-height: 1.5; }
+.anno-char { display: inline-block; border-radius: 4px; padding: 0 1px; }
+.anno-char.correct { color: #22c55e; }
+.anno-char.confused { color: #fbbf24; border-bottom: 2px solid #fbbf24; }
+.anno-char.miss { color: #f87171; border-bottom: 2px solid #f87171; text-decoration-line: underline; text-decoration-style: wavy; }
+.anno-rec { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
 /* Fireworks */
 #fw-canvas { position:fixed; inset:0; z-index:1000; pointer-events:none; }
 </style>
@@ -190,9 +205,14 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
         <div class="score-hint" id="hint"></div>
       </div>
     </div>
-    <div class="score-transcript" id="transcript-panel" style="display:none">
-      <span class="label">🎙 识别到：</span>
-      <span id="transcript-text"></span>
+    <div class="annotation-panel" id="annotation-panel" style="display:none">
+      <div class="anno-legend">
+        <span><i class="anno-dot correct"></i>正确</span>
+        <span><i class="anno-dot confused"></i>易混淆</span>
+        <span><i class="anno-dot miss"></i>错误/漏字</span>
+      </div>
+      <div class="anno-chars" id="anno-chars"></div>
+      <div class="anno-rec" id="anno-rec"></div>
     </div>
   </div>
 
@@ -378,24 +398,131 @@ if (SpeechRecognition) {
   };
 }
 
-function calcSpeechScore(recognized, expected) {
-  var clean = function(s) { return s.replace(/[，。！？,.!?\s]/g, ""); };
-  var a = Array.from(clean(recognized));
-  var b = Array.from(clean(expected));
-  if (!a.length) return 0;
-  var matches = 0;
-  var used = new Set();
-  for (var i = 0; i < a.length; i++) {
-    var found = -1;
-    for (var j = 0; j < b.length; j++) {
-      if (b[j] === a[i] && !used.has(j)) { found = j; break; }
-    }
-    if (found !== -1) { matches++; used.add(found); }
+// ── 拼音工具 & 高级评分 ─────────────────────────────────
+var TONE_MARKS = {
+  'ā':'a','á':'a','ǎ':'a','à':'a',
+  'ē':'e','é':'e','ě':'e','è':'e',
+  'ī':'i','í':'i','ǐ':'i','ì':'i',
+  'ō':'o','ó':'o','ǒ':'o','ò':'o',
+  'ū':'u','ú':'u','ǔ':'u','ù':'u',
+  'ǖ':'v','ǘ':'v','ǚ':'v','ǜ':'v'
+};
+
+var charPinyinMap = {}; // char → tone-stripped pinyin，从课程数据构建
+
+function buildCharPinyinMap(lesson) {
+  var map = {};
+  lesson.sentences.forEach(function(s) {
+    var chars = Array.from(s.zh).filter(function(c) { return /[\u4e00-\u9fff]/.test(c); });
+    var sylls = parseSyllables(s.pinyin);
+    chars.forEach(function(c, i) {
+      if (sylls[i] && !map[c]) map[c] = stripTones(sylls[i]);
+    });
+  });
+  return map;
+}
+
+function parseSyllables(pinyin) {
+  return pinyin.replace(/[,，。！？.!?]/g, ' ').trim().split(/\s+/).filter(Boolean);
+}
+
+function stripTones(p) {
+  var r = p.toLowerCase();
+  Object.keys(TONE_MARKS).forEach(function(k) { r = r.split(k).join(TONE_MARKS[k]); });
+  return r;
+}
+
+// 判断两个去声调拼音是否属于常见易混淆对
+function isConfusedPinyin(p1, p2) {
+  if (!p1 || !p2 || p1 === p2) return false;
+  var confusions = [
+    // 翘舌/平舌
+    ['zh','z'], ['ch','c'], ['sh','s'],
+    // 前后鼻音
+    ['ang','an'], ['eng','en'], ['ing','in'],
+    ['iang','ian'], ['uang','uan'], ['ong','on'],
+  ];
+  for (var i = 0; i < confusions.length; i++) {
+    var a = confusions[i][0], b = confusions[i][1];
+    // 声母混淆：zh/z, ch/c, sh/s
+    if (p1.slice(0, a.length) === a && p2.slice(0, b.length) === b &&
+        p1.slice(a.length) === p2.slice(b.length)) return true;
+    if (p1.slice(0, b.length) === b && p2.slice(0, a.length) === a &&
+        p1.slice(b.length) === p2.slice(a.length)) return true;
+    // 韵母混淆：an/ang, en/eng, in/ing
+    if (p1.slice(-a.length) === a && p2.slice(-b.length) === b &&
+        p1.slice(0, -a.length) === p2.slice(0, -b.length)) return true;
+    if (p1.slice(-b.length) === b && p2.slice(-a.length) === a &&
+        p1.slice(0, -b.length) === p2.slice(0, -a.length)) return true;
   }
-  var precision = matches / a.length;
-  var recall = matches / (b.length || 1);
-  var f1 = (precision + recall) / 2;
-  return Math.round(62 + f1 * 38);
+  // n/l 声母混淆
+  if (p1[0] === 'n' && p2[0] === 'l' && p1.slice(1) === p2.slice(1)) return true;
+  if (p1[0] === 'l' && p2[0] === 'n' && p1.slice(1) === p2.slice(1)) return true;
+  return false;
+}
+
+// LCS 对齐：将 recognized 中能匹配 expected 的字符对齐，其余为 miss
+function lcsAlign(exp, rec) {
+  var n = exp.length, m = rec.length;
+  var dp = [];
+  for (var i = 0; i <= n; i++) { dp[i] = []; for (var j = 0; j <= m; j++) dp[i][j] = 0; }
+  for (var i = 1; i <= n; i++)
+    for (var j = 1; j <= m; j++)
+      dp[i][j] = exp[i-1] === rec[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
+  var result = [], i = n, j = m;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && exp[i-1] === rec[j-1]) {
+      result.unshift({ exp: exp[i-1], rec: rec[j-1], match: 'exact' }); i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+      j--; // 多余的识别字，忽略
+    } else {
+      result.unshift({ exp: exp[i-1], rec: null, match: 'miss' }); i--;
+    }
+  }
+  return result;
+}
+
+// 高级评分：字符级匹配 + 易混淆音部分扣分
+function calcAdvancedScore(recognized, sentence) {
+  var isZh = function(c) { return /[\u4e00-\u9fff]/.test(c); };
+  var expArr = Array.from(sentence.zh).filter(isZh);
+  var recArr = Array.from(recognized).filter(isZh);
+
+  if (!recArr.length) {
+    return { score: 0, annotations: expArr.map(function(c) { return { char: c, type: 'miss' }; }) };
+  }
+
+  var aligned = lcsAlign(expArr, recArr);
+  var n = expArr.length;
+  var deductFull = 70 / n;     // 完全错误：最多扣到30分
+  var deductConfused = 35 / n; // 易混淆音：扣一半
+  var deduction = 0;
+  var annotations = [];
+
+  aligned.forEach(function(item) {
+    if (item.match === 'exact') {
+      annotations.push({ char: item.exp, type: 'correct' });
+    } else {
+      // 检查是否有易混淆发音出现在识别文本中
+      var expP = charPinyinMap[item.exp] || '';
+      var confused = false;
+      if (expP) {
+        for (var ri = 0; ri < recArr.length; ri++) {
+          var recP = charPinyinMap[recArr[ri]] || '';
+          if (recP && isConfusedPinyin(expP, recP)) { confused = true; break; }
+        }
+      }
+      if (confused) {
+        annotations.push({ char: item.exp, type: 'confused' });
+        deduction += deductConfused;
+      } else {
+        annotations.push({ char: item.exp, type: 'miss' });
+        deduction += deductFull;
+      }
+    }
+  });
+
+  return { score: Math.max(30, Math.round(100 - deduction)), annotations: annotations };
 }
 
 function getPraise(s) {
@@ -526,6 +653,7 @@ function changeLesson(dir) {
   lessonIdx = next;
   idx = 0;
   sessionScores = [];
+  charPinyinMap = buildCharPinyinMap(LESSONS[lessonIdx]);
   setupAudio(LESSONS[lessonIdx].audio);
   updateUI();
   saveState();
@@ -559,7 +687,7 @@ function updateUI() {
   document.getElementById("practice-count").textContent = cnt > 0 ? "已练 " + cnt + " 次" : "";
 
   document.getElementById("score-panel").style.display = "none";
-  document.getElementById("transcript-panel").style.display = "none";
+  document.getElementById("annotation-panel").style.display = "none";
   document.getElementById("speech-indicator").classList.remove("active");
   document.getElementById("bn").textContent = "🎤 录音 Record";
 
@@ -720,26 +848,23 @@ function finishRecording() {
   completeKara();
 
   var s = LESSONS[lessonIdx].sentences[idx];
-  var score;
-  var showTranscript = false;
-
+  var result;
   if (recognizedText && recognition) {
-    score = calcSpeechScore(recognizedText, s.zh);
-    showTranscript = true;
+    result = calcAdvancedScore(recognizedText, s);
   } else if (recognition) {
-    score = 65; // recognition available but no speech detected
+    result = { score: 65, annotations: null };
   } else {
-    score = Math.floor(Math.random() * 14) + 82; // fallback
+    result = { score: Math.floor(Math.random() * 14) + 82, annotations: null };
   }
 
-  sessionScores.push(score);
+  sessionScores.push(result.score);
   incPracticeCount(lessonIdx, idx);
   document.getElementById("practice-count").textContent = "已练 " + getPracticeCount(lessonIdx, idx) + " 次";
 
-  showScorePanel(score, s, recognizedText, showTranscript);
+  showScorePanel(result.score, s, result.annotations, recognizedText);
 }
 
-function showScorePanel(score, sentence, transcript, showTranscript) {
+function showScorePanel(score, sentence, annotations, recognized) {
   var el = document.getElementById("score-num");
   el.textContent = score;
   el.style.color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
@@ -750,9 +875,17 @@ function showScorePanel(score, sentence, transcript, showTranscript) {
   if (!recognition) hintText += "  (💡开启麦克风可获精准评分 · Enable mic for accurate scoring)";
   document.getElementById("hint").textContent = hintText;
 
-  if (showTranscript && transcript) {
-    document.getElementById("transcript-text").textContent = transcript;
-    document.getElementById("transcript-panel").style.display = "block";
+  // 渲染字符级注释
+  var annoPanel = document.getElementById("annotation-panel");
+  if (annotations && annotations.length) {
+    var html = annotations.map(function(a) {
+      return '<span class="anno-char ' + a.type + '">' + a.char + '</span>';
+    }).join('');
+    document.getElementById("anno-chars").innerHTML = html;
+    document.getElementById("anno-rec").textContent = recognized ? "🎙 " + recognized : "";
+    annoPanel.style.display = "block";
+  } else {
+    annoPanel.style.display = "none";
   }
 
   document.getElementById("score-panel").style.display = "flex";
@@ -879,6 +1012,7 @@ function stopFireworks() {
 
 // ── Init ──────────────────────────────────────────────────
 loadState();
+charPinyinMap = buildCharPinyinMap(LESSONS[lessonIdx]);
 setupAudio(LESSONS[lessonIdx].audio);
 updateUI();
 </script>
