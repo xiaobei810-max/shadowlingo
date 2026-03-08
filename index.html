@@ -136,6 +136,52 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .anno-char.miss { color: #f87171; border-bottom: 2px solid #f87171; text-decoration-line: underline; text-decoration-style: wavy; }
 .anno-rec { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 
+/* ── 评价页面 ─────────────────────────────── */
+.eval-page {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: var(--bg); overflow-y: auto;
+  flex-direction: column; align-items: center;
+  padding: 24px 20px 48px;
+}
+.eval-page.show { display: flex; }
+.eval-inner { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; }
+
+/* 顶部句子信息 */
+.eval-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.eval-badge { background: rgba(255,255,255,0.06); border-radius: 99px; padding: 4px 14px; font-size: 12px; color: var(--muted); }
+
+.eval-sentence-card { background: var(--card); border-radius: 20px; padding: 20px 20px 16px; text-align: center; }
+.eval-zh { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 8px; }
+.eval-pinyin { font-size: 13px; color: #60a5fa; letter-spacing: 0.03em; }
+.eval-en { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* 分数卡片 */
+.eval-score-card { background: var(--card); border-radius: 20px; padding: 24px 20px; text-align: center; }
+.eval-score-num { font-size: 80px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.eval-score-sub { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.eval-grade { font-size: 18px; font-weight: 700; }
+.eval-praise { font-size: 14px; color: #94a3b8; margin-top: 10px; line-height: 1.5; padding: 0 8px; }
+
+/* 发音对比卡片 */
+.eval-compare-card { background: var(--card); border-radius: 20px; padding: 18px 20px; }
+.eval-compare-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+.eval-compare-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.eval-compare-row:last-child { margin-bottom: 0; }
+.eval-tag { font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.06); border-radius: 6px; padding: 2px 8px; white-space: nowrap; margin-top: 4px; }
+.eval-anno-wrap { font-size: 24px; font-weight: 700; letter-spacing: 3px; line-height: 1.5; flex: 1; }
+.eval-rec-text { font-size: 16px; color: #94a3b8; flex: 1; line-height: 1.6; padding-top: 2px; }
+
+/* 发音提示 */
+.eval-hint-card { background: rgba(96,165,250,0.07); border: 1px solid rgba(96,165,250,0.2); border-radius: 20px; padding: 16px 20px; }
+.eval-hint-title { font-size: 12px; font-weight: 700; color: #60a5fa; margin-bottom: 8px; }
+.eval-hint-text { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+
+/* 底部导航 */
+.eval-nav { display: flex; gap: 12px; margin-top: 4px; }
+.eval-nav .btn { flex: 1; padding: 16px; }
+.eval-btn-next { background: var(--green); color: #000; font-weight: 700; border-color: var(--green); }
+.eval-btn-next:hover:not(:disabled) { background: #16a34a; border-color: #16a34a; }
+
 /* Fireworks */
 #fw-canvas { position:fixed; inset:0; z-index:1000; pointer-events:none; }
 </style>
@@ -197,24 +243,6 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
     <span class="speech-indicator" id="speech-indicator">🎙 聆听中...</span>
   </div>
 
-  <div class="score-panel" id="score-panel" style="display:none">
-    <div class="score-top">
-      <div class="score-num" id="score-num">92</div>
-      <div class="score-right">
-        <div class="score-praise" id="praise"></div>
-        <div class="score-hint" id="hint"></div>
-      </div>
-    </div>
-    <div class="annotation-panel" id="annotation-panel" style="display:none">
-      <div class="anno-legend">
-        <span><i class="anno-dot correct"></i>正确</span>
-        <span><i class="anno-dot confused"></i>易混淆</span>
-        <span><i class="anno-dot miss"></i>错误/漏字</span>
-      </div>
-      <div class="anno-chars" id="anno-chars"></div>
-      <div class="anno-rec" id="anno-rec"></div>
-    </div>
-  </div>
 
   <div class="controls">
     <button class="btn" id="bl" onclick="doListen()">▶ 听原声 Listen</button>
@@ -686,8 +714,7 @@ function updateUI() {
   var cnt = getPracticeCount(lessonIdx, idx);
   document.getElementById("practice-count").textContent = cnt > 0 ? "已练 " + cnt + " 次" : "";
 
-  document.getElementById("score-panel").style.display = "none";
-  document.getElementById("annotation-panel").style.display = "none";
+  document.getElementById("eval-page").classList.remove("show");
   document.getElementById("speech-indicator").classList.remove("active");
   document.getElementById("bn").textContent = "🎤 录音 Record";
 
@@ -861,37 +888,68 @@ function finishRecording() {
   incPracticeCount(lessonIdx, idx);
   document.getElementById("practice-count").textContent = "已练 " + getPracticeCount(lessonIdx, idx) + " 次";
 
-  showScorePanel(result.score, s, result.annotations, recognizedText);
+  showEvalPage(result.score, s, result.annotations, recognizedText);
 }
 
-function showScorePanel(score, sentence, annotations, recognized) {
-  var el = document.getElementById("score-num");
-  el.textContent = score;
-  el.style.color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
+function showEvalPage(score, sentence, annotations, recognized) {
+  var total = LESSONS[lessonIdx].sentences.length;
+  var color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
 
-  document.getElementById("praise").textContent = sentence.praise + "  " + getPraise(score);
+  // 句子信息
+  document.getElementById("eval-badge").textContent = "第 " + (idx+1) + "/" + total + " 句";
+  document.getElementById("eval-zh").textContent = sentence.zh;
+  document.getElementById("eval-pinyin").textContent = sentence.pinyin;
+  document.getElementById("eval-en").textContent = sentence.en;
 
-  var hintText = sentence.hint;
-  if (!recognition) hintText += "  (💡开启麦克风可获精准评分 · Enable mic for accurate scoring)";
-  document.getElementById("hint").textContent = hintText;
+  // 分数
+  var numEl = document.getElementById("eval-score-num");
+  numEl.textContent = score;
+  numEl.style.color = color;
+  var grade = score >= 90 ? "🏆 优秀 Excellent"
+            : score >= 80 ? "🌟 良好 Great"
+            : score >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
+  var gradeEl = document.getElementById("eval-grade");
+  gradeEl.textContent = grade;
+  gradeEl.style.color = color;
+  document.getElementById("eval-praise").textContent = sentence.praise + "  " + getPraise(score);
 
-  // 渲染字符级注释
-  var annoPanel = document.getElementById("annotation-panel");
+  // 发音对比
+  var compareCard = document.getElementById("eval-compare-card");
   if (annotations && annotations.length) {
     var html = annotations.map(function(a) {
       return '<span class="anno-char ' + a.type + '">' + a.char + '</span>';
     }).join('');
-    document.getElementById("anno-chars").innerHTML = html;
-    document.getElementById("anno-rec").textContent = recognized ? "🎙 " + recognized : "";
-    annoPanel.style.display = "block";
+    document.getElementById("eval-anno-chars").innerHTML = html;
+    document.getElementById("eval-rec-text").textContent = recognized || "（未识别到语音）";
+    compareCard.style.display = "block";
   } else {
-    annoPanel.style.display = "none";
+    compareCard.style.display = "none";
   }
 
-  document.getElementById("score-panel").style.display = "flex";
-  document.getElementById("bdone").className = "btn btn-done show";
-  document.getElementById("bretry").className = "btn btn-retry show";
-  setStatus("✅ 完成 Done");
+  // 发音提示
+  var hint = sentence.hint;
+  if (!recognition) hint += "  （💡开启麦克风权限可获精准评分）";
+  document.getElementById("eval-hint-text").textContent = hint;
+
+  // 导航按钮状态
+  document.getElementById("eval-prev").disabled = idx === 0;
+  var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
+  document.getElementById("eval-next").textContent = isLast ? "完成本课 🎉" : "下一句 ▶";
+
+  document.getElementById("eval-page").classList.add("show");
+  document.getElementById("eval-page").scrollTop = 0;
+}
+
+function evalNav(dir) {
+  document.getElementById("eval-page").classList.remove("show");
+  if (dir === 1) {
+    var lesson = LESSONS[lessonIdx];
+    if (idx >= lesson.sentences.length - 1) { showCompletion(); return; }
+    idx++;
+  } else {
+    if (idx > 0) idx--;
+  }
+  updateUI();
 }
 
 
@@ -1016,5 +1074,54 @@ charPinyinMap = buildCharPinyinMap(LESSONS[lessonIdx]);
 setupAudio(LESSONS[lessonIdx].audio);
 updateUI();
 </script>
+<!-- 评价页面 -->
+<div class="eval-page" id="eval-page">
+  <div class="eval-inner">
+    <div class="eval-header">
+      <div class="eval-badge" id="eval-badge">第 1/5 句</div>
+    </div>
+
+    <!-- 原句展示 -->
+    <div class="eval-sentence-card">
+      <div class="eval-zh" id="eval-zh"></div>
+      <div class="eval-pinyin" id="eval-pinyin"></div>
+      <div class="eval-en" id="eval-en"></div>
+    </div>
+
+    <!-- 分数 -->
+    <div class="eval-score-card">
+      <div class="eval-score-num" id="eval-score-num">--</div>
+      <div class="eval-score-sub">发音评分</div>
+      <div class="eval-grade" id="eval-grade"></div>
+      <div class="eval-praise" id="eval-praise"></div>
+    </div>
+
+    <!-- 发音对比 -->
+    <div class="eval-compare-card" id="eval-compare-card">
+      <div class="eval-compare-title">发音对比</div>
+      <div class="eval-compare-row">
+        <span class="eval-tag">原 文</span>
+        <div class="eval-anno-wrap" id="eval-anno-chars"></div>
+      </div>
+      <div class="eval-compare-row">
+        <span class="eval-tag">你说的</span>
+        <div class="eval-rec-text" id="eval-rec-text"></div>
+      </div>
+    </div>
+
+    <!-- 发音提示 -->
+    <div class="eval-hint-card">
+      <div class="eval-hint-title">💡 发音提示</div>
+      <div class="eval-hint-text" id="eval-hint-text"></div>
+    </div>
+
+    <!-- 导航按钮 -->
+    <div class="eval-nav">
+      <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ 上一句</button>
+      <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">下一句 ▶</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
