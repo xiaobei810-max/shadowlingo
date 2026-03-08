@@ -160,7 +160,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .eval-score-num { font-size: 80px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
 .eval-score-sub { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
 .eval-grade { font-size: 18px; font-weight: 700; }
-.eval-praise { font-size: 14px; color: #94a3b8; margin-top: 10px; line-height: 1.5; padding: 0 8px; }
+.eval-praise { font-size: 14px; color: #94a3b8; margin-top: 10px; line-height: 1.8; padding: 0 8px; white-space: pre-line; }
 
 /* 发音对比卡片 */
 .eval-compare-card { background: var(--card); border-radius: 20px; padding: 18px 20px; }
@@ -911,7 +911,7 @@ function showEvalPage(score, sentence, annotations, recognized) {
   var gradeEl = document.getElementById("eval-grade");
   gradeEl.textContent = grade;
   gradeEl.style.color = color;
-  document.getElementById("eval-praise").textContent = sentence.praise + "  " + getPraise(score);
+  document.getElementById("eval-praise").textContent = sentence.praise + "\n" + getPraise(score);
 
   // 发音对比
   var compareCard = document.getElementById("eval-compare-card");
