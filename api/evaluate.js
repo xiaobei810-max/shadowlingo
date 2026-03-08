@@ -208,6 +208,15 @@ module.exports = async function handler(req, res) {
 
     const azureResp = await azureAssess(audioBase64, refText);
     const result    = parseAzureResult(azureResp, chars || []);
+    // _debug 字段仅用于排查，不影响前端评分逻辑
+    result._debug = {
+      RecognitionStatus: azureResp.RecognitionStatus,
+      PronScore: (azureResp.NBest && azureResp.NBest[0] &&
+                  azureResp.NBest[0].PronunciationAssessment &&
+                  azureResp.NBest[0].PronunciationAssessment.PronScore) || null,
+      WordCount: (azureResp.NBest && azureResp.NBest[0] &&
+                  azureResp.NBest[0].Words && azureResp.NBest[0].Words.length) || 0
+    };
     res.status(200).json(result);
   } catch (err) {
     console.error('[evaluate] error:', err.message);

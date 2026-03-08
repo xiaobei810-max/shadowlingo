@@ -915,6 +915,8 @@ function changeLesson(dir) {
 }
 
 // ── UI Update ─────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+
 function updateUI() {
   clearTimers();
   if (audio) { audio.pause(); audio.playbackRate = 1; }
@@ -926,35 +928,32 @@ function updateUI() {
   var s = lesson.sentences[idx];
   var total = lesson.sentences.length;
 
-  document.getElementById("lesson-title-text").textContent = lesson.title;
-  document.getElementById("btn-lesson-prev").disabled = lessonIdx === 0;
-  document.getElementById("btn-lesson-next").disabled = lessonIdx === LESSONS.length - 1;
+  if (el("lesson-title-text")) el("lesson-title-text").textContent = lesson.title;
+  if (el("btn-lesson-prev")) el("btn-lesson-prev").disabled = lessonIdx === 0;
+  if (el("btn-lesson-next")) el("btn-lesson-next").disabled = lessonIdx === LESSONS.length - 1;
 
   buildKara(s.zh);
   resetKara();
-  document.getElementById("pinyin").textContent = s.pinyin;
-  document.getElementById("en").textContent = s.en;
-  document.getElementById("badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
-  document.getElementById("counter").textContent = (idx + 1) + " / " + total;
-  document.getElementById("progress").style.width = ((idx + 1) / total * 100) + "%";
+  if (el("pinyin")) el("pinyin").textContent = s.pinyin;
+  if (el("en")) el("en").textContent = s.en;
+  if (el("badge")) el("badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
+  if (el("counter")) el("counter").textContent = (idx + 1) + " / " + total;
+  if (el("progress")) el("progress").style.width = ((idx + 1) / total * 100) + "%";
 
   var cnt = getPracticeCount(lessonIdx, idx);
-  document.getElementById("practice-count").textContent = cnt > 0 ? "已练 " + cnt + " 次" : "";
+  if (el("practice-count")) el("practice-count").textContent = cnt > 0 ? "已练 " + cnt + " 次" : "";
 
-  document.getElementById("eval-page").classList.remove("show");
-  document.getElementById("speech-indicator").classList.remove("active");
-  document.getElementById("bn").textContent = "🎤 录音 Record";
+  if (el("eval-page")) el("eval-page").classList.remove("show");
+  if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
+  if (el("bn")) el("bn").textContent = "🎤 录音 Record";
 
-  document.getElementById("bl").disabled = false;
-  document.getElementById("bl").classList.remove("active");
-  document.getElementById("bs").disabled = false;
-  document.getElementById("bs").classList.remove("active");
-  document.getElementById("bm").classList.remove("active");
-  document.getElementById("bn").disabled = false;
-  document.getElementById("bn").classList.remove("active");
-  document.getElementById("bprev").disabled = idx === 0;
-  document.getElementById("bdone").className = "btn btn-done show";
-  document.getElementById("bretry").className = "btn btn-retry";
+  if (el("bl")) { el("bl").disabled = false; el("bl").classList.remove("active"); }
+  if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); }
+  if (el("bm")) el("bm").classList.remove("active");
+  if (el("bn")) { el("bn").disabled = false; el("bn").classList.remove("active"); }
+  if (el("bprev")) el("bprev").disabled = idx === 0;
+  if (el("bdone")) el("bdone").className = "btn btn-done show";
+  if (el("bretry")) el("bretry").className = "btn btn-retry";
 
   setStatus("准备好了 Ready");
   saveState();
