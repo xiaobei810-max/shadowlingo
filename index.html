@@ -574,49 +574,38 @@ function parseIseResult(xmlStr) {
     console.log('[ISE] sent节点:', sent && sent.outerHTML ? sent.outerHTML.slice(0,200) : sent);
     console.log('[ISE] total_score原始值:', totalRaw, '→ 四舍五入:', total);
     var words = Array.from(doc.querySelectorAll('word')).map(function(w) {
-      var scoreRaw = w.getAttribute('total_score') || w.getAttribute('score') || '0';
       return {
-        content: w.getAttribute('content') || w.textContent.trim(),
-        score:   Math.round(parseFloat(scoreRaw)),
-        dp:      parseInt(w.getAttribute('dp_message') || '0', 10),
-        symbol:  w.getAttribute('symbol') || ''
+        content:    w.getAttribute('content') || w.textContent.trim(),
+        perrLevel:  parseInt(w.getAttribute('perr_level_msg') || '0', 10), // 0=正确 1=有问题
+        perrMsg:    w.getAttribute('perr_msg') || ''   // 具体发音问题描述
       };
     });
-    console.log('[ISE] word节点数:', words.length, '各字分数:', words.map(function(w){ return w.content+'='+w.score; }).join(' '));
-    return { totalScore: total, wordResults: words };
+    // 总分 = 正确字数 / 总字数 × 100
+    var correctCount = words.filter(function(w) { return w.perrLevel === 0; }).length;
+    var calcTotal = words.length > 0 ? Math.round(correctCount / words.length * 100) : 0;
+    console.log('[ISE] word节点数:', words.length, '正确:', correctCount,
+      '各字:', words.map(function(w){ return w.content + '(' + w.perrLevel + ')'; }).join(' '));
+    return { totalScore: calcTotal, wordResults: words };
   } catch(e) {
     console.error('[ISE] parseIseResult异常:', e, '\nXML:', xmlStr.slice(0, 500));
     return { totalScore: 0, wordResults: [] };
   }
 }
 
-// ISE word → 字符注释
+// ISE word → 字符注释（基于 perr_level_msg）
 function iseAnnotations(words) {
   return words.map(function(w) {
-    var type = (w.dp !== 0 || w.score < 70) ? 'miss' : (w.score < 85 ? 'confused' : 'correct');
-    return { char: w.content, type: type, score: w.score, dp: w.dp, symbol: w.symbol };
+    var type = w.perrLevel === 0 ? 'correct' : 'miss';
+    return { char: w.content, type: type, perrMsg: w.perrMsg };
   });
 }
 
-// dp_message 错误描述
-function dpDesc(dp, symbol) {
-  var parts = [];
-  if (dp & 64) parts.push('声调');
-  if (dp & 16) parts.push('声母');
-  if (dp & 32) parts.push('韵母');
-  if (dp & 8)  parts.push('发音');
-  if (dp & 1)  parts.push('读音替换');
-  if (dp & 2)  parts.push('漏读');
-  return parts.length ? parts.join('/') + '错误' + (symbol ? '（应为 ' + symbol + '）' : '') : '';
-}
-
-// 生成详细问题说明
+// 生成详细问题说明（基于 perr_msg）
 function iseHintText(words, baseHint) {
-  var errors = words.filter(function(w) { return w.dp !== 0 || w.score < 70; });
+  var errors = words.filter(function(w) { return w.perrLevel !== 0 && w.perrMsg; });
   if (!errors.length) return baseHint;
-  var lines = errors.slice(0, 4).map(function(w) {
-    var d = dpDesc(w.dp, w.symbol);
-    return '「' + w.content + '」' + (d ? d : '分数偏低（' + w.score + '分）');
+  var lines = errors.map(function(w) {
+    return '「' + w.content + '」' + w.perrMsg;
   });
   return baseHint + '\n\n发现问题：\n' + lines.join('\n');
 }
@@ -644,10 +633,10 @@ async function evaluateAudio(blob) {
     var refText = s.zh.replace(/[，。！？,.!?\s]/g, '');
     var xmlStr  = await evaluateWithIse(pcmBuf, refText);
     var iseData = parseIseResult(xmlStr);
-    // 拼出"你说的"：用 symbol（讯飞拼音）有则用，否则用汉字 content
+    // 拼出"你说的"：读出的字拼在一起，有问题的字加★标记
     var recText = iseData.wordResults.map(function(w) {
-      return w.dp === 2 ? '【漏读】' : (w.symbol || w.content);
-    }).join(' ');
+      return w.perrLevel === 0 ? w.content : (w.content + '★');
+    }).join('');
     sessionScores.push(iseData.totalScore);
     incPracticeCount(lessonIdx, idx);
     document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
@@ -1034,7 +1023,7 @@ function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText)
   var compareCard = document.getElementById("eval-compare-card");
   if (annotations && annotations.length) {
     var html = annotations.map(function(a) {
-      var tip = a.symbol ? ' title="' + a.symbol + ' ' + a.score + '分"' : '';
+      var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
       return '<span class="anno-char ' + a.type + '"' + tip + '>' + a.char + '</span>';
     }).join('');
     document.getElementById("eval-anno-chars").innerHTML = html;
