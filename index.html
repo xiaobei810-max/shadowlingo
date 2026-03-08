@@ -292,7 +292,12 @@ const LESSONS = [
         en: "Hello, nice to meet you!",
         start: 1, end: 4.5,
         praise: "✨ 声调很自然！Tones sounded natural!",
-        hint: "注意【高兴】是第四声+轻声 · Watch the tones in 【高兴】"
+        hint: "注意【高兴】是第四声+轻声 · Watch the tones in 【高兴】",
+        // 每个汉字对应的标准拼音（声调数字式）
+        chars: [
+          {c:"你",p:"ni3"},{c:"好",p:"hao3"},{c:"很",p:"hen3"},{c:"高",p:"gao1"},
+          {c:"兴",p:"xing4"},{c:"认",p:"ren4"},{c:"识",p:"shi4"},{c:"你",p:"ni3"}
+        ]
       },
       {
         zh: "我是一个中国人，你也想成为一个中国人吗？",
@@ -300,7 +305,14 @@ const LESSONS = [
         en: "I'm Chinese - do you want to become one too?",
         start: 5, end: 10.5,
         praise: "💪 语速控制得好！Great rhythm control!",
-        hint: "【中国人】连读时注意【国】字轻读 · Keep 【国】light in 【中国人】"
+        hint: "【中国人】连读时注意【国】字轻读 · Keep 【国】light in 【中国人】",
+        chars: [
+          {c:"我",p:"wo3"},{c:"是",p:"shi4"},{c:"一",p:"yi1"},{c:"个",p:"ge4"},
+          {c:"中",p:"zhong1"},{c:"国",p:"guo2"},{c:"人",p:"ren2"},{c:"你",p:"ni3"},
+          {c:"也",p:"ye3"},{c:"想",p:"xiang3"},{c:"成",p:"cheng2"},{c:"为",p:"wei2"},
+          {c:"一",p:"yi1"},{c:"个",p:"ge4"},{c:"中",p:"zhong1"},{c:"国",p:"guo2"},
+          {c:"人",p:"ren2"},{c:"吗",p:"ma5"}
+        ]
       },
       {
         zh: "首先，你得学会中文。",
@@ -308,7 +320,11 @@ const LESSONS = [
         en: "First of all, you need to learn Chinese.",
         start: 11, end: 14.5,
         praise: "🎯 短句说得很干净！Clean and clear!",
-        hint: "【首先】三声+一声，注意不要把三声说成四声 · In 【首先】, tone 3 before tone 1"
+        hint: "【首先】三声+一声，注意不要把三声说成四声 · In 【首先】, tone 3 before tone 1",
+        chars: [
+          {c:"首",p:"shou3"},{c:"先",p:"xian1"},{c:"你",p:"ni3"},{c:"得",p:"dei3"},
+          {c:"学",p:"xue2"},{c:"会",p:"hui4"},{c:"中",p:"zhong1"},{c:"文",p:"wen2"}
+        ]
       },
       {
         zh: "每天我会用一个轻松有趣的小故事来教你怎么说中文。",
@@ -316,7 +332,15 @@ const LESSONS = [
         en: "Every day I'll use a fun little story to teach you how to speak Chinese.",
         start: 14.5, end: 22.5,
         praise: "🔥 长句挑战完成！Long sentence nailed!",
-        hint: "长句可分两段断气，会更自然 · Try pausing mid-sentence to keep breath steady"
+        hint: "长句可分两段断气，会更自然 · Try pausing mid-sentence to keep breath steady",
+        chars: [
+          {c:"每",p:"mei3"},{c:"天",p:"tian1"},{c:"我",p:"wo3"},{c:"会",p:"hui4"},
+          {c:"用",p:"yong4"},{c:"一",p:"yi1"},{c:"个",p:"ge4"},{c:"轻",p:"qing1"},
+          {c:"松",p:"song1"},{c:"有",p:"you3"},{c:"趣",p:"qu4"},{c:"的",p:"de5"},
+          {c:"小",p:"xiao3"},{c:"故",p:"gu4"},{c:"事",p:"shi4"},{c:"来",p:"lai2"},
+          {c:"教",p:"jiao4"},{c:"你",p:"ni3"},{c:"怎",p:"zen3"},{c:"么",p:"me5"},
+          {c:"说",p:"shuo1"},{c:"中",p:"zhong1"},{c:"文",p:"wen2"}
+        ]
       },
       {
         zh: "赶快行动起来吧，和我一起轻松学中文！",
@@ -324,7 +348,13 @@ const LESSONS = [
         en: "Take action now - let's learn Chinese together, the easy way!",
         start: 22.5, end: 28.5,
         praise: "🌟 收尾句气势很足！Strong finish!",
-        hint: "【赶快】要连读成一个词，中间不要停顿 · Blend 【赶快】into one smooth word"
+        hint: "【赶快】要连读成一个词，中间不要停顿 · Blend 【赶快】into one smooth word",
+        chars: [
+          {c:"赶",p:"gan3"},{c:"快",p:"kuai4"},{c:"行",p:"xing2"},{c:"动",p:"dong4"},
+          {c:"起",p:"qi3"},{c:"来",p:"lai2"},{c:"吧",p:"ba5"},{c:"和",p:"he2"},
+          {c:"我",p:"wo3"},{c:"一",p:"yi1"},{c:"起",p:"qi3"},{c:"轻",p:"qing1"},
+          {c:"松",p:"song1"},{c:"学",p:"xue2"},{c:"中",p:"zhong1"},{c:"文",p:"wen2"}
+        ]
       }
     ]
   }
@@ -631,10 +661,16 @@ function parseIseResult(xmlStr) {
       // 只要 word-dp 或 perrLevel 或 syll 有任何问题，就标为有问题
       var hasError = perrLevel !== 0 || wordDp !== 0 || syllMsgs.length > 0;
 
+      // 取第一个 syll 的 symbol 作为讯飞识别到的拼音
+      var syllSymbol = '';
+      var firstSyll = w.querySelector('syll');
+      if (firstSyll) syllSymbol = firstSyll.getAttribute('symbol') || firstSyll.getAttribute('content') || '';
+
       return {
-        content:   w.getAttribute('content') || w.textContent.trim(),
-        perrLevel: hasError ? 1 : 0,
-        perrMsg:   finalMsg
+        content:     w.getAttribute('content') || w.textContent.trim(),
+        perrLevel:   hasError ? 1 : 0,
+        perrMsg:     finalMsg,
+        syllSymbol:  syllSymbol.toLowerCase()  // 讯飞识别到的拼音（小写）
       };
     });
 
@@ -666,6 +702,62 @@ function iseHintText(words) {
   return '发现 ' + errors.length + ' 处问题：\n' + lines.join('\n');
 }
 
+// ── 平翘舌检测 ───────────────────────────────────────────
+// 从拼音字符串中提取声母（优先匹配两字母声母）
+function getInitial(py) {
+  py = py.toLowerCase().replace(/\d/g, '').trim();
+  var two = ['zh','ch','sh'];
+  for (var i = 0; i < two.length; i++) {
+    if (py.slice(0, 2) === two[i]) return two[i];
+  }
+  var one = ['b','p','m','f','d','t','n','l','g','k','h','j','q','x','r','z','c','s','y','w'];
+  for (var j = 0; j < one.length; j++) {
+    if (py.slice(0, 1) === one[j]) return one[j];
+  }
+  return ''; // 零声母
+}
+
+// 平翘舌互换对
+var RETRO_PAIRS = [['zh','z'], ['ch','c'], ['sh','s']];
+
+// 给 wordResults 附加平翘舌对比错误（需要 sentence.chars 数据）
+function applyRetroflexCheck(wordResults, sentence) {
+  if (!sentence.chars) return;
+  // 建立 char → correctPinyin 的顺序队列（同字多次出现按顺序匹配）
+  var queue = {};
+  sentence.chars.forEach(function(item) {
+    if (!queue[item.c]) queue[item.c] = [];
+    queue[item.c].push(item.p);
+  });
+  var used = {};
+  wordResults.forEach(function(w) {
+    if (!w.syllSymbol) return;
+    var ch = w.content;
+    if (!queue[ch] || !queue[ch].length) return;
+    var usedIdx = used[ch] || 0;
+    var correctPy = queue[ch][usedIdx] || queue[ch][queue[ch].length - 1];
+    used[ch] = usedIdx + 1;
+
+    var correctInit = getInitial(correctPy);
+    var recogInit   = getInitial(w.syllSymbol);
+    console.log('[retro] 「' + ch + '」 正确声母:', correctInit, ' 识别声母:', recogInit,
+      '(正确:', correctPy, ' 识别:', w.syllSymbol + ')');
+
+    for (var i = 0; i < RETRO_PAIRS.length; i++) {
+      var retro = RETRO_PAIRS[i][0], flat = RETRO_PAIRS[i][1];
+      if ((correctInit === retro && recogInit === flat) ||
+          (correctInit === flat  && recogInit === retro)) {
+        var note = '声母混淆：应读【' + correctInit + '】实读【' + recogInit +
+                   '】（' + correctPy + ' ≠ ' + w.syllSymbol + '）';
+        w.perrLevel = 1;
+        w.perrMsg = (w.perrMsg ? w.perrMsg + '；' : '') + note;
+        console.log('[retro] 检测到平翘舌混淆！' + ch + ':' + note);
+        break;
+      }
+    }
+  });
+}
+
 // 停止 MediaRecorder（如果正在录音）
 function stopMediaRecorderIfRunning() {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
@@ -689,6 +781,12 @@ async function evaluateAudio(blob) {
     var refText = s.zh.replace(/[，。！？,.!?\s]/g, '');
     var xmlStr  = await evaluateWithIse(pcmBuf, refText);
     var iseData = parseIseResult(xmlStr);
+    // 平翘舌对比（用标准拼音 vs 讯飞识别拼音）
+    applyRetroflexCheck(iseData.wordResults, s);
+    // 重新计算总分（平翘舌检测可能改变 perrLevel）
+    var correctCount2 = iseData.wordResults.filter(function(w) { return w.perrLevel === 0; }).length;
+    if (iseData.wordResults.length > 0)
+      iseData.totalScore = Math.round(correctCount2 / iseData.wordResults.length * 100);
     // 拼出"你说的"：读出的字拼在一起，有问题的字加★标记
     var recText = iseData.wordResults.map(function(w) {
       return w.perrLevel === 0 ? w.content : (w.content + '★');
