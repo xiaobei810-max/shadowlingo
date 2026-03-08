@@ -1,9 +1,9 @@
 const crypto    = require('crypto');
 const WebSocket = require('ws');
 
-const ISE_APPID  = '7ade157c';
-const ISE_APIKEY = 'f86ec1542086fe08b998712a2f439cde';
-const ISE_SECRET = 'NmY1N2Q0MmI0ZmJkNzJkOWE0MDBhOTc5';
+const ISE_APPID  = process.env.XFYUN_APPID;
+const ISE_APIKEY = process.env.XFYUN_APIKEY;
+const ISE_SECRET = process.env.XFYUN_APISECRET;
 
 // ── 鉴权 URL ────────────────────────────────────────────────────
 function buildIseUrl() {
