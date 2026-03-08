@@ -434,36 +434,8 @@ function setupAudio(src) {
   audio.addEventListener("timeupdate", onTimeUpdate);
 }
 
-// ── Speech Recognition ────────────────────────────────────
-
-// ── 科大讯飞语音评测（ISE 流式版）──────────────────────────
-var ISE_APPID   = '7ade157c';
-var ISE_APIKEY  = 'f86ec1542086fe08b998712a2f439cde';
-var ISE_SECRET  = 'NmY1N2Q0MmI0ZmJkNzJkOWE0MDBhOTc5';
-
 var mediaRecorder = null;
 var audioChunks   = [];
-
-// 构建鉴权 URL（WebCrypto HMAC-SHA256）
-async function buildIseUrl() {
-  var host = 'ise-api.xfyun.cn';
-  var path = '/v2/open-ise';
-  var date = new Date().toUTCString();
-  var origin = 'host: ' + host + '\ndate: ' + date + '\nGET ' + path + ' HTTP/1.1';
-  var enc = new TextEncoder();
-  var key = await crypto.subtle.importKey(
-    'raw', enc.encode(ISE_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  );
-  var sig = await crypto.subtle.sign('HMAC', key, enc.encode(origin));
-  var sigB64 = btoa(String.fromCharCode.apply(null, new Uint8Array(sig)));
-  var auth = btoa('api_key="' + ISE_APIKEY + '", algorithm="hmac-sha256", ' +
-    'headers="host date request-line", signature="' + sigB64 + '"');
-  return 'wss://' + host + path +
-    '?authorization=' + encodeURIComponent(auth) +
-    '&date=' + encodeURIComponent(date) +
-    '&host=' + encodeURIComponent(host);
-}
 
 // Uint8Array → base64（避免大数组 btoa 溢出）
 function u8ToB64(arr) {
@@ -501,10 +473,30 @@ async function convertToPCM(blob) {
   return i16.buffer;
 }
 
-// 通过 WebSocket 发送音频，返回 XML 评测结果
-// 协议：两阶段——先发业务参数帧（cmd:ssb），再发音频帧（cmd:auw）
-// 音频字段为 data.data（非 data.audio），aus=1/2/4 控制首/中/末帧
-function evaluateWithIse(pcmBuf, refText) {
+// ── 以下函数已移至 api/evaluate.js，前端仅保留展示逻辑 ──────────
+
+// ISE word → 字符注释
+function iseAnnotations(words) {
+  return words.map(function(w) {
+    return { char: w.content, type: w.perrLevel === 0 ? 'correct' : 'miss', perrMsg: w.perrMsg };
+  });
+}
+
+// 发音提示（后端已处理，直接展示）
+function iseHintText(words) {
+  var errors = words.filter(function(w) { return w.perrLevel !== 0; });
+  if (!errors.length) return '发音准确，每个字均通过评测！';
+  var lines = errors.map(function(w) {
+    return '「' + w.content + '」' + (w.perrMsg || '发音有误');
+  });
+  return '发现 ' + errors.length + ' 处问题：\n' + lines.join('\n');
+}
+
+// ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
+// （原 evaluateWithIse、buildIseUrl、parseIseResult、
+//   logAllAttrs、decodeDp、getInitial、applyRetroflexCheck 均移入后端）
+
+function _DELETED_evaluateWithIse(pcmBuf, refText) {
   return buildIseUrl().then(function(url) {
     return new Promise(function(resolve, reject) {
       var ws = new WebSocket(url);
@@ -585,8 +577,7 @@ function evaluateWithIse(pcmBuf, refText) {
   });
 }
 
-// 打印元素的全部属性（诊断用）
-function logAllAttrs(tag, el) {
+function _DELETED_logAllAttrs(tag, el) {
   var attrs = {};
   for (var i = 0; i < el.attributes.length; i++) {
     var a = el.attributes[i];
@@ -595,8 +586,7 @@ function logAllAttrs(tag, el) {
   console.log('[ISE]', tag, JSON.stringify(attrs));
 }
 
-// dp_message 位字段解码
-function decodeDp(dp) {
+function _DELETED_decodeDp(dp) {
   if (!dp) return '';
   var errs = [];
   if (dp & 64)  errs.push('声调');
@@ -609,8 +599,7 @@ function decodeDp(dp) {
   return errs.join('/');
 }
 
-// 解析讯飞 ISE XML 结果
-function parseIseResult(xmlStr) {
+function _DELETED_parseIseResult(xmlStr) {
   try {
     var doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
     if (doc.querySelector('parsererror')) {
@@ -685,26 +674,7 @@ function parseIseResult(xmlStr) {
   }
 }
 
-// ISE word → 字符注释
-function iseAnnotations(words) {
-  return words.map(function(w) {
-    return { char: w.content, type: w.perrLevel === 0 ? 'correct' : 'miss', perrMsg: w.perrMsg };
-  });
-}
-
-// 发音提示：完全基于讯飞返回的数据，不使用写死文字
-function iseHintText(words) {
-  var errors = words.filter(function(w) { return w.perrLevel !== 0; });
-  if (!errors.length) return '发音准确，每个字均通过评测！';
-  var lines = errors.map(function(w) {
-    return '「' + w.content + '」' + (w.perrMsg || '发音有误');
-  });
-  return '发现 ' + errors.length + ' 处问题：\n' + lines.join('\n');
-}
-
-// ── 平翘舌检测 ───────────────────────────────────────────
-// 从拼音字符串中提取声母（优先匹配两字母声母）
-function getInitial(py) {
+function _DELETED_getInitial(py) {
   py = py.toLowerCase().replace(/\d/g, '').trim();
   var two = ['zh','ch','sh'];
   for (var i = 0; i < two.length; i++) {
@@ -717,11 +687,7 @@ function getInitial(py) {
   return ''; // 零声母
 }
 
-// 平翘舌互换对
-var RETRO_PAIRS = [['zh','z'], ['ch','c'], ['sh','s']];
-
-// 给 wordResults 附加平翘舌对比错误（需要 sentence.chars 数据）
-function applyRetroflexCheck(wordResults, sentence) {
+function _DELETED_applyRetroflexCheck(wordResults, sentence) {
   if (!sentence.chars) return;
   // 建立 char → correctPinyin 的顺序队列（同字多次出现按顺序匹配）
   var queue = {};
@@ -772,39 +738,48 @@ function stopMediaRecorderIfRunning() {
   }
 }
 
-// 主评测流程（async）
+// 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
 async function evaluateAudio(blob) {
   var s = LESSONS[lessonIdx].sentences[idx];
   showEvalPageLoading(s);
   try {
-    var pcmBuf = await convertToPCM(blob);
+    // 1. 本地转换为 16kHz/16bit/mono PCM
+    var pcmBuf  = await convertToPCM(blob);
     var refText = s.zh.replace(/[，。！？,.!?\s]/g, '');
-    var xmlStr  = await evaluateWithIse(pcmBuf, refText);
-    var iseData = parseIseResult(xmlStr);
-    // 平翘舌对比（用标准拼音 vs 讯飞识别拼音）
-    applyRetroflexCheck(iseData.wordResults, s);
-    // 重新计算总分（平翘舌检测可能改变 perrLevel）
-    var correctCount2 = iseData.wordResults.filter(function(w) { return w.perrLevel === 0; }).length;
-    if (iseData.wordResults.length > 0)
-      iseData.totalScore = Math.round(correctCount2 / iseData.wordResults.length * 100);
-    // 拼出"你说的"：读出的字拼在一起，有问题的字加★标记
-    var recText = iseData.wordResults.map(function(w) {
+
+    // 2. 发送到后端 /api/evaluate
+    setStatus('⏳ 评测中...');
+    var resp = await fetch('/api/evaluate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        audioBase64: u8ToB64(new Uint8Array(pcmBuf)),
+        refText:     refText,
+        chars:       s.chars || []
+      })
+    });
+    if (!resp.ok) throw new Error('服务器错误 ' + resp.status);
+    var result = await resp.json();
+    if (result.error) throw new Error(result.error);
+
+    // 3. 展示结果
+    var recText = result.wordResults.map(function(w) {
       return w.perrLevel === 0 ? w.content : (w.content + '★');
     }).join('');
-    sessionScores.push(iseData.totalScore);
+    sessionScores.push(result.totalScore);
     incPracticeCount(lessonIdx, idx);
     document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
-    fillEvalResult(iseData.totalScore, iseAnnotations(iseData.wordResults),
-                   iseHintText(iseData.wordResults), s, null, recText);
+    fillEvalResult(result.totalScore, iseAnnotations(result.wordResults),
+                   iseHintText(result.wordResults), s, null, recText);
   } catch(err) {
-    console.error('ISE 评测失败:', err);
-    var fb = Math.floor(Math.random() * 15) + 75;
-    sessionScores.push(fb);
+    console.error('评测失败:', err);
+    sessionScores.push(0);
     incPracticeCount(lessonIdx, idx);
     document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
-    fillEvalResult(fb, null, s.hint, s, '评测服务暂时不可用：' + err.message);
+    fillEvalResult(0, null, '', s, '评测失败：' + err.message);
   }
   busy = false;
+  setStatus('准备好了 Ready');
 }
 
 function getPraise(s) {
