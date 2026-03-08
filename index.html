@@ -475,25 +475,30 @@ function evaluateWithIse(pcmBuf, refText) {
       var timer = setTimeout(function() { ws.close(); reject(new Error('评测超时')); }, 20000);
 
       ws.onopen = function() {
+        // text 字段：BOM + 句子文本，编码为 UTF-8 字节再转 base64
+        var textB64 = u8ToB64(new TextEncoder().encode('\uFEFF' + refText));
         var pcm = new Uint8Array(pcmBuf);
         var chunkSize = 1280;
         var offset = 0;
         function sendNext() {
-          if (offset >= pcm.length) {
-            ws.send(JSON.stringify({ data: { status: 2, audio: '' } }));
-            return;
-          }
           var end = Math.min(offset + chunkSize, pcm.length);
           var chunk = pcm.subarray(offset, end);
-          var isLast = end >= pcm.length;
-          var frame = { data: { status: offset === 0 ? 0 : (isLast ? 2 : 1), audio: u8ToB64(chunk) } };
-          if (offset === 0) {
+          var isFirst = offset === 0;
+          var isLast  = end >= pcm.length;
+          // status: 0=首帧, 1=中间帧, 2=末帧（含实际音频数据，不发空帧）
+          var status = isFirst ? (isLast ? 2 : 0) : (isLast ? 2 : 1);
+          var frame = { data: { status: status, audio: u8ToB64(chunk) } };
+          if (isFirst) {
             frame.common = { app_id: ISE_APPID };
             frame.business = {
-              category: 'read_sentence', rstcd: 'utf8', group: 'pupil',
-              sub: 'ise', ent: 'cn_vip', tte: 'utf8',
-              auf: 'audio/L16;rate=16000', aue: 'raw',
-              text: '\uFEFF' + refText
+              category: 'read_sentence',
+              sub: 'ise',
+              ent: 'cn_vip',
+              group: 'pupil',
+              auf: 'audio/L16;rate=16000',
+              aue: 'raw',
+              rstcd: 'utf8',
+              text: textB64
             };
           }
           offset = end;
