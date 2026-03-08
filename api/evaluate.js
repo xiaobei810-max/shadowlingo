@@ -1,241 +1,224 @@
-const crypto    = require('crypto');
-const WebSocket = require('ws');
+const https = require('https');
 
-const ISE_APPID  = process.env.XFYUN_APPID;
-const ISE_APIKEY = process.env.XFYUN_APIKEY;
-const ISE_SECRET = process.env.XFYUN_APISECRET;
+const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
+const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
 
-// ── 鉴权 URL ────────────────────────────────────────────────────
-function buildIseUrl() {
-  const host   = 'ise-api.xfyun.cn';
-  const path   = '/v2/open-ise';
-  const date   = new Date().toUTCString();
-  const origin = `host: ${host}\ndate: ${date}\nGET ${path} HTTP/1.1`;
-  const sig    = crypto.createHmac('sha256', ISE_SECRET).update(origin).digest('base64');
-  const auth   = Buffer.from(
-    `api_key="${ISE_APIKEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${sig}"`
-  ).toString('base64');
-  return `wss://${host}${path}?authorization=${encodeURIComponent(auth)}&date=${encodeURIComponent(date)}&host=${encodeURIComponent(host)}`;
+// ── PCM → WAV（添加 44 字节 RIFF 头）────────────────────────────
+function pcmToWav(pcmBuf) {
+  const wav = Buffer.alloc(44 + pcmBuf.length);
+  wav.write('RIFF', 0);
+  wav.writeUInt32LE(36 + pcmBuf.length, 4);
+  wav.write('WAVE', 8);
+  wav.write('fmt ', 12);
+  wav.writeUInt32LE(16, 16);      // PCM chunk size
+  wav.writeUInt16LE(1,  20);      // format: PCM
+  wav.writeUInt16LE(1,  22);      // channels: mono
+  wav.writeUInt32LE(16000, 24);   // sample rate
+  wav.writeUInt32LE(32000, 28);   // byte rate
+  wav.writeUInt16LE(2,  32);      // block align
+  wav.writeUInt16LE(16, 34);      // bits per sample
+  wav.write('data', 36);
+  wav.writeUInt32LE(pcmBuf.length, 40);
+  pcmBuf.copy(wav, 44);
+  return wav;
 }
 
-// ── XML 属性读取（不引入外部解析器）──────────────────────────────
-function attr(str, name) {
-  const m = new RegExp(`\\b${name}="([^"]*)"`, 'i').exec(str);
-  return m ? m[1] : '';
-}
+// ── Azure 发音评测 REST API ──────────────────────────────────────
+function azureAssess(pcmBase64, refText) {
+  return new Promise((resolve, reject) => {
+    const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
 
-// ── dp_message 位字段解码 ────────────────────────────────────────
-function decodeDp(dp) {
-  if (!dp) return '';
-  const errs = [];
-  if (dp & 64) errs.push('声调');
-  if (dp & 16) errs.push('声母');
-  if (dp & 32) errs.push('韵母');
-  if (dp & 8)  errs.push('发音');
-  if (dp & 1)  errs.push('读音替换');
-  if (dp & 2)  errs.push('漏读');
-  if (dp & 4)  errs.push('多读');
-  return errs.join('/');
+    // Pronunciation-Assessment 配置（base64 编码）
+    const cfg = Buffer.from(JSON.stringify({
+      ReferenceText:           refText,
+      GradingSystem:           'HundredMark',
+      Granularity:             'Phoneme',    // word + phoneme 双层评分
+      Dimension:               'Comprehensive', // 含 Fluency / Prosody
+      EnableMiscue:            true,         // 检测漏读/多读
+      EnableProsodyAssessment: true          // 声调/语调评测
+    })).toString('base64');
+
+    const options = {
+      hostname: `${AZURE_REGION}.stt.speech.microsoft.com`,
+      path:     '/speech/recognition/conversation/cognitiveservices/v1' +
+                '?language=zh-CN&format=detailed',
+      method:   'POST',
+      headers:  {
+        'Ocp-Apim-Subscription-Key': AZURE_KEY,
+        'Content-Type':              'audio/wav; codecs=audio/pcm; samplerate=16000',
+        'Pronunciation-Assessment':  cfg,
+        'Content-Length':            wavBuf.length
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        console.log('[Azure] HTTP', res.statusCode, raw.slice(0, 400));
+        if (res.statusCode !== 200)
+          return reject(new Error(`Azure HTTP ${res.statusCode}: ${raw.slice(0, 200)}`));
+        try { resolve(JSON.parse(raw)); }
+        catch(e) { reject(new Error('JSON parse error: ' + raw.slice(0, 200))); }
+      });
+    });
+    req.on('error', reject);
+    req.write(wavBuf);
+    req.end();
+  });
 }
 
 // ── 提取拼音声母 ─────────────────────────────────────────────────
 function getInitial(py) {
-  py = py.toLowerCase().replace(/\d/g, '').trim();
-  for (const two of ['zh', 'ch', 'sh']) {
-    if (py.startsWith(two)) return two;
-  }
-  for (const one of 'b p m f d t n l g k h j q x r z c s y w'.split(' ')) {
+  py = (py || '').toLowerCase().replace(/\d/g, '').trim();
+  for (const two of ['zh', 'ch', 'sh']) if (py.startsWith(two)) return two;
+  for (const one of 'b p m f d t n l g k h j q x r z c s y w'.split(' '))
     if (py.startsWith(one)) return one;
-  }
   return '';
 }
+const RETRO_PAIRS = [['zh','z'], ['ch','c'], ['sh','s']];
 
-const RETRO_PAIRS = [['zh', 'z'], ['ch', 'c'], ['sh', 's']];
+// ── 解析 Azure 响应 + 平翘舌检测 ────────────────────────────────
+function parseAzureResult(resp, chars) {
+  console.log('[Azure] 完整响应:', JSON.stringify(resp).slice(0, 800));
 
-// ── 解析 ISE XML + 平翘舌检测 ────────────────────────────────────
-function parseXml(xmlStr, chars) {
-  console.log('[ISE] 完整XML:\n', xmlStr);
+  const nbest = resp.NBest && resp.NBest[0];
+  if (!nbest) {
+    console.error('[Azure] 无 NBest，RecognitionStatus:', resp.RecognitionStatus);
+    return { totalScore: 0, wordResults: [] };
+  }
 
-  // 构建正确拼音队列（同字按出现顺序匹配）
+  const pa           = nbest.PronunciationAssessment || {};
+  const overallPron  = Math.round(pa.PronScore || pa.AccuracyScore || 0);
+  const prosody      = nbest.ProsodyAssessment || {};
+  console.log('[Azure] 整体评分 PronScore:', overallPron,
+    'Accuracy:', pa.AccuracyScore, 'Fluency:', pa.FluencyScore,
+    'Prosody PitchScore:', prosody.PitchScore);
+
+  // 正确拼音队列
   const queue = {}, usedIdx = {};
-  (chars || []).forEach(({ c, p }) => {
-    (queue[c] = queue[c] || []).push(p);
-  });
+  (chars || []).forEach(({ c, p }) => (queue[c] = queue[c] || []).push(p));
 
   const wordResults = [];
-  const wordRe = /<word([^>]*)>([\s\S]*?)<\/word>/gi;
-  let wm;
 
-  while ((wm = wordRe.exec(xmlStr)) !== null) {
-    const wAttrs   = wm[1];
-    const wInner   = wm[2];
-    const content  = attr(wAttrs, 'content');
-    const perrLv   = parseInt(attr(wAttrs, 'perr_level_msg') || '0', 10);
-    const wordDp   = parseInt(attr(wAttrs, 'dp_message')     || '0', 10);
-    const wordPErr = attr(wAttrs, 'perr_msg');
+  for (const w of (nbest.Words || [])) {
+    const text    = w.Word || '';
+    const wpa     = w.PronunciationAssessment || {};
+    const accuracy = Math.round(wpa.AccuracyScore  || 0);
+    const errType  = wpa.ErrorType || 'None';        // None / Omission / Insertion / Mispronunciation
+    const toneScore = Math.round(wpa.ToneScore || 0); // 声调分（部分区域支持）
 
-    const msgs      = [];
-    const phoneMsgs = [];
-    let   syllSymbol = '';
+    const msgs = [];
+    let hasError = false;
 
-    // ── syll 解析 ─────────────────────────────────────────────
-    const syllRe = /<syll([^>]*)>([\s\S]*?)<\/syll>/gi;
-    let sm, firstSyll = true;
-    while ((sm = syllRe.exec(wInner)) !== null) {
-      const sAttrs = sm[1];
-      const sInner = sm[2];
-      const sym    = attr(sAttrs, 'symbol') || attr(sAttrs, 'content');
-      const syllDp = parseInt(attr(sAttrs, 'dp_message') || '0', 10);
-      const sPErr  = attr(sAttrs, 'perr_msg');
-
-      if (firstSyll) { syllSymbol = sym.toLowerCase(); firstSyll = false; }
-
-      // ── phone 解析（最细粒度）────────────────────────────────
-      const phoneRe = /<phone([^>]*?)\s*\/?>/gi;
-      let pm, hasPhoneErr = false;
-      while ((pm = phoneRe.exec(sInner)) !== null) {
-        const pAttrs   = pm[1];
-        const pContent = attr(pAttrs, 'content');
-        const pDp      = parseInt(attr(pAttrs, 'dp_message') || '0', 10);
-        const pPErr    = attr(pAttrs, 'perr_msg');
-        const isYun    = attr(pAttrs, 'is_yun');
-
-        console.log('[phone]', JSON.stringify({ content: pContent, is_yun: isYun, dp_message: pDp, perr_msg: pPErr }));
-
-        if (pDp !== 0) {
-          hasPhoneErr = true;
-          const decoded = decodeDp(pDp);
-          const part    = isYun === '0' ? '声母' : '韵母';
-          phoneMsgs.push(`${part}「${pContent}」：${decoded}${pPErr ? '(' + pPErr + ')' : ''}`);
-        }
-      }
-
-      // syll 级别兜底（没有 phone 细节时）
-      if (!hasPhoneErr) {
-        const decoded = decodeDp(syllDp);
-        if (decoded) phoneMsgs.push(`音节「${sym}」：${decoded}`);
-        if (sPErr)   phoneMsgs.push(sPErr);
-      }
+    // 错误类型
+    if (errType === 'Omission') {
+      msgs.push('漏读'); hasError = true;
+    } else if (errType === 'Insertion') {
+      msgs.push('多读'); hasError = true;
+    } else if (errType === 'Mispronunciation') {
+      hasError = true;
     }
 
-    if (wordPErr)        msgs.push(wordPErr);
-    if (decodeDp(wordDp)) msgs.push(decodeDp(wordDp));
-    if (phoneMsgs.length) msgs.push(...phoneMsgs);
+    // 声调评分
+    if (toneScore > 0 && toneScore < 70) {
+      msgs.push(`声调偏差（${toneScore}分）`); hasError = true;
+    }
 
-    let hasError = perrLv !== 0 || wordDp !== 0 || phoneMsgs.length > 0;
+    // 音素级评分（声母/韵母）
+    const phonemes = w.Phonemes || [];
+    console.log(`[Azure] word="${text}" accuracy=${accuracy} errType=${errType}`,
+      phonemes.map(p => `${p.Phoneme}=${Math.round((p.PronunciationAssessment||{}).AccuracyScore||0)}`).join(' '));
 
-    // ── 平翘舌对比（phone 声母 content vs 正确拼音） ────────────
-    if (syllSymbol && content && queue[content]) {
-      const ui       = usedIdx[content] || 0;
-      const correctPy = queue[content][ui] ?? queue[content][queue[content].length - 1];
-      usedIdx[content] = ui + 1;
+    const badPhones = phonemes.filter(p =>
+      Math.round((p.PronunciationAssessment || {}).AccuracyScore || 0) < 60
+    );
+    for (const p of badPhones) {
+      const sc = Math.round((p.PronunciationAssessment || {}).AccuracyScore || 0);
+      msgs.push(`音素「${p.Phoneme}」发音偏差（${sc}分）`);
+      hasError = true;
+    }
 
+    // 整体准确度过低
+    if (!hasError && accuracy < 75) {
+      msgs.push(`准确度偏低（${accuracy}分）`); hasError = true;
+    }
+
+    // ── 平翘舌检测：chars 正确声母 vs Azure 识别声母 ────────────
+    if (queue[text]) {
+      const ui        = usedIdx[text] || 0;
+      const correctPy = queue[text][ui] ?? queue[text][queue[text].length - 1];
+      usedIdx[text]   = ui + 1;
       const correctInit = getInitial(correctPy);
-      const recogInit   = getInitial(syllSymbol);
-
-      console.log(`[retro] 「${content}」 正确: ${correctPy}(${correctInit})  识别: ${syllSymbol}(${recogInit})`);
 
       for (const [retro, flat] of RETRO_PAIRS) {
-        if ((correctInit === retro && recogInit === flat) ||
-            (correctInit === flat  && recogInit === retro)) {
-          msgs.push(`声母混淆：应读【${correctInit}】实读【${recogInit}】（${correctPy} ≠ ${syllSymbol}）`);
-          hasError = true;
-          break;
+        if (correctInit !== retro && correctInit !== flat) continue;
+
+        // 从 Azure phonemes 找出声母对应的音素
+        const initPhone = phonemes.find(p => {
+          const ph = (p.Phoneme || '').toLowerCase();
+          return ph === retro || ph === flat;
+        });
+
+        if (initPhone) {
+          const initAcc    = Math.round((initPhone.PronunciationAssessment || {}).AccuracyScore || 0);
+          const recogPhone = (initPhone.Phoneme || '').toLowerCase();
+
+          // 如果识别出的音素与正确声母不一致（平翘舌互换）
+          if ((correctInit === retro && recogPhone === flat) ||
+              (correctInit === flat  && recogPhone === retro)) {
+            msgs.push(`平翘舌混淆：应读【${correctInit}】实读【${recogPhone}】（${correctPy}）`);
+            hasError = true;
+          } else if (initAcc < 60) {
+            // 声母准确度低但未直接混淆
+            msgs.push(`声母「${correctInit}」发音不准（${initAcc}分）`);
+            hasError = true;
+          }
         }
       }
     }
 
-    wordResults.push({
-      content,
-      perrLevel: hasError ? 1 : 0,
-      perrMsg:   msgs.join('；')
+    // 多字词拆分为单字（Chinese word segmentation）
+    const chars2 = Array.from(text);
+    chars2.forEach((ch, i) => {
+      wordResults.push({
+        content:   ch,
+        perrLevel: hasError ? 1 : 0,
+        perrMsg:   i === 0 ? msgs.join('；') : ''   // 问题描述只挂在第一个字上
+      });
     });
   }
 
+  // 总分：以正确字数/总字数为主，参考 Azure PronScore
   const correct    = wordResults.filter(w => w.perrLevel === 0).length;
-  const totalScore = wordResults.length > 0
+  const charScore  = wordResults.length > 0
     ? Math.round(correct / wordResults.length * 100) : 0;
+  // 两者取均值，避免全靠字数导致分数偏极端
+  const totalScore = wordResults.length > 0
+    ? Math.round((charScore + overallPron) / 2) : overallPron;
 
-  console.log(`[ISE] 汇总 总字:${wordResults.length} 正确:${correct} 分:${totalScore}`);
+  console.log(`[Azure] 汇总 总字:${wordResults.length} 正确:${correct} 字符分:${charScore} Azure总分:${overallPron} 最终:${totalScore}`);
   return { totalScore, wordResults };
 }
 
-// ── 讯飞 WebSocket 评测（两阶段流式协议）─────────────────────────
-function evaluateWithIse(pcmBase64, refText) {
-  return new Promise((resolve, reject) => {
-    const ws  = new WebSocket(buildIseUrl());
-    let xml   = '';
-    const t   = setTimeout(() => { ws.close(); reject(new Error('评测超时')); }, 30000);
-
-    ws.on('open', () => {
-      // 第一帧：业务参数
-      ws.send(JSON.stringify({
-        common:   { app_id: ISE_APPID },
-        business: {
-          sub: 'ise', ent: 'cn_vip', category: 'read_chapter',
-          extra_ability: 'multi_dimension', cmd: 'ssb',
-          text: '\uFEFF' + refText, tte: 'utf-8', ttp_skip: true,
-          aue: 'raw', auf: 'audio/L16;rate=16000', rstcd: 'utf8'
-        },
-        data: { status: 0 }
-      }));
-
-      // 音频帧（aus: 1=首 2=中 4=末，data.data=base64音频）
-      const pcm   = Buffer.from(pcmBase64, 'base64');
-      const CHUNK = 1280;
-      let   offset = 0;
-
-      function sendNext() {
-        const end     = Math.min(offset + CHUNK, pcm.length);
-        const chunk   = pcm.slice(offset, end);
-        const isFirst = offset === 0;
-        const isLast  = end >= pcm.length;
-        ws.send(JSON.stringify({
-          business: { cmd: 'auw', aus: isFirst ? 1 : (isLast ? 4 : 2) },
-          data:     { status: isLast ? 2 : 1, data: chunk.toString('base64') }
-        }));
-        offset = end;
-        if (!isLast) setTimeout(sendNext, 40);
-      }
-      setTimeout(sendNext, 100);
-    });
-
-    ws.on('message', (raw) => {
-      try {
-        const resp = JSON.parse(raw.toString());
-        console.log(`[ISE] resp code=${resp.code} status=${resp.data && resp.data.status}`);
-        if (resp.code !== 0) {
-          clearTimeout(t); ws.close();
-          return reject(new Error(`ISE ${resp.code}: ${resp.message}`));
-        }
-        if (resp.data && resp.data.data) {
-          xml += Buffer.from(resp.data.data, 'base64').toString('utf-8');
-        }
-        if (resp.data && resp.data.status === 2) {
-          clearTimeout(t); ws.close(); resolve(xml);
-        }
-      } catch (e) { clearTimeout(t); reject(e); }
-    });
-
-    ws.on('error', (err) => { clearTimeout(t); reject(err); });
-  });
-}
-
-// ── Vercel Serverless 入口 ────────────────────────────────────────
+// ── Vercel Serverless 入口 ───────────────────────────────────────
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
+
+  if (!AZURE_KEY)
+    return res.status(500).json({ error: 'AZURE_SPEECH_KEY env var not configured' });
 
   try {
     const { audioBase64, refText, chars } = req.body;
-    if (!audioBase64 || !refText) {
+    if (!audioBase64 || !refText)
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
-    }
-    const xml    = await evaluateWithIse(audioBase64, refText);
-    const result = parseXml(xml, chars || []);
+
+    const azureResp = await azureAssess(audioBase64, refText);
+    const result    = parseAzureResult(azureResp, chars || []);
     res.status(200).json(result);
   } catch (err) {
     console.error('[evaluate] error:', err);
