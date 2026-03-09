@@ -122,8 +122,15 @@ async function getPinyinMapSafe(refText) {
   try {
     return { map: await getPinyinMap(refText), error: null };
   } catch(e) {
-    console.error('[Claude] 拼音请求失败:', e.message, e.status, JSON.stringify(e.error));
-    return { map: {}, error: `${e.status || ''} ${e.message}`.trim() };
+    // Anthropic SDK errors: e.status (HTTP code), e.message, e.error (API body)
+    const detail = {
+      status:  e.status  ?? null,
+      message: e.message ?? String(e),
+      body:    e.error   ?? null,   // raw API error body, e.g. { type, error: { type, message } }
+    };
+    console.error('[Claude] 拼音请求失败 status=%s message=%s body=%s',
+      detail.status, detail.message, JSON.stringify(detail.body));
+    return { map: {}, error: detail };
   }
 }
 
