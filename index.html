@@ -483,18 +483,58 @@ function iseAnnotations(words) {
   });
 }
 
-// 发音提示：每个有问题的字单独一行，红色在前黄色在后
+// 把后端 perrMsg 转成「中文 / English」双语一行
+function buildHintLine(w, isRed) {
+  // 去掉括号里的分数，拆分多条消息
+  var parts = (w.perrMsg || '').split('；').map(function(p) {
+    return p.replace(/（\d+分）/g, '').trim();
+  }).filter(Boolean);
+
+  var zh = parts.join('，') || (isRed ? '发音有误，注意声调/发音' : '发音需改进');
+
+  // 逐条翻译，取最具体的英文说明
+  var en = [];
+  parts.forEach(function(p) {
+    var rm = p.match(/声母混淆：应【(.+?)】实【(.+?)】/);
+    if (rm) { en.push('wrong initial: should be 【' + rm[1] + '】, got 【' + rm[2] + '】'); return; }
+
+    var tm = p.match(/声调偏差：应第(\d)声/);
+    if (tm) {
+      var names = ['', '1st', '2nd', '3rd', '4th', 'neutral'];
+      en.push('wrong tone: should be ' + (names[+tm[1]] || tm[1]+'th') + ' tone'); return;
+    }
+
+    if (p.indexOf('漏读')      >= 0) { en.push('missed syllable'); return; }
+    if (p.indexOf('多读')      >= 0) { en.push('extra syllable spoken'); return; }
+    if (p.indexOf('发音有误')  >= 0) { en.push('mispronounced, check tone & sounds'); return; }
+    if (p.indexOf('准确度过低')>= 0) { en.push('accuracy too low'); return; }
+    if (p.indexOf('发音需改进')>= 0) { en.push('needs improvement'); return; }
+  });
+
+  // 有具体英文说明时，去掉泛化的"mispronounced"
+  if (en.length > 1) en = en.filter(function(e) { return e !== 'mispronounced, check tone & sounds'; });
+
+  var enStr = '"' + w.content + '" ' + (en.join(', ') || (isRed ? 'pronunciation error' : 'needs practice'));
+  return (isRed ? '🔴' : '🟡') + ' 「' + w.content + '」' + zh + ' / ' + enStr;
+}
+
+// 发音提示：去重 + 每字一行 + 双语
 function iseHintText(words) {
   var reds    = words.filter(function(w) { return w.perrLevel === 2; });
   var yellows = words.filter(function(w) { return w.perrLevel === 1; });
-  if (!reds.length && !yellows.length) return '发音准确，每个字均通过评测！';
-  var lines = [];
+  if (!reds.length && !yellows.length)
+    return '发音准确，每个字均通过评测！\nPronunciation accurate — well done!';
+
+  var seen = {}, lines = [];
   reds.forEach(function(w) {
-    // perrMsg 已由后端生成具体描述，直接展示
-    lines.push('🔴 「' + w.content + '」' + (w.perrMsg || '发音有误'));
+    if (seen[w.content]) return;
+    seen[w.content] = true;
+    lines.push(buildHintLine(w, true));
   });
   yellows.forEach(function(w) {
-    lines.push('🟡 「' + w.content + '」' + (w.perrMsg || '发音需改进'));
+    if (seen[w.content]) return;
+    seen[w.content] = true;
+    lines.push(buildHintLine(w, false));
   });
   return lines.join('\n');
 }
