@@ -125,11 +125,14 @@ function parseAzureResult(resp, chars) {
     const cLevel = charArr.map(() => 0);   // 0=绿 1=黄 2=红
 
     // ── 三色评级辅助 ─────────────────────────────────────────────
-    // acc >= 80 → 0(绿)；60-79 → 1(黄)；<60 或 Mispronunciation/Omission → 2(红)
+    // 绿：acc >= 75 且 err = None
+    // 黄：acc 50-74，或 Mispronunciation 且 acc >= 50
+    // 红：acc < 50，或 Omission
     const levelOf = (acc, err) => {
-      if (err === 'Omission' || err === 'Insertion' || err === 'Mispronunciation') return 2;
-      if (acc < 60) return 2;
-      if (acc < 80) return 1;
+      if (err === 'Omission') return 2;
+      if (acc < 50) return 2;
+      if (err === 'Mispronunciation') return 1;
+      if (acc < 75) return 1;
       return 0;
     };
 
@@ -145,12 +148,12 @@ function parseAzureResult(resp, chars) {
 
       // ── 基础消息（根据等级和错误类型）────────────────────────
       if (cLevel[i] === 2) {
-        if (errType === 'Omission')              cMsgs[i].push('漏读');
-        else if (errType === 'Insertion')        cMsgs[i].push('多读');
-        else if (errType === 'Mispronunciation') cMsgs[i].push('发音有误，注意声调/发音');
-        else                                     cMsgs[i].push(`准确度过低（${charAcc}分）`);
+        if (errType === 'Omission') cMsgs[i].push('漏读');
+        else                        cMsgs[i].push(`准确度过低（${charAcc}分）`);
       } else if (cLevel[i] === 1) {
-        cMsgs[i].push(`发音需改进（${charAcc}分）`);
+        if (errType === 'Mispronunciation') cMsgs[i].push('发音有误，注意声调/发音');
+        else if (errType === 'Insertion')   cMsgs[i].push('多读');
+        else                                cMsgs[i].push(`发音需改进（${charAcc}分）`);
       }
 
       // ── 拼音级详细检测（声母混淆 + 声调偏差）────────────────
@@ -192,12 +195,8 @@ function parseAzureResult(resp, chars) {
     });
   }
 
-  // ── 最终得分：Azure PronScore 70% + 绿色字占比 30% ──────────
-  let totalScore = pronScore;
-  if (wordResults.length > 0) {
-    const charRatio = wordResults.filter(w => w.perrLevel === 0).length / wordResults.length;
-    totalScore = Math.round(pronScore * 0.7 + charRatio * 100 * 0.3);
-  }
+  // ── 最终得分：直接使用 Azure PronScore ──────────────────────
+  const totalScore = pronScore;
 
   console.log(`[parse] totalScore=${totalScore} wordResults=${wordResults.length}`);
   return { totalScore, wordResults };
