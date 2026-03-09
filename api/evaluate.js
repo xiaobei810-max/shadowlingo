@@ -226,23 +226,26 @@ module.exports = async function handler(req, res) {
 
     // ── _debug：Azure 原始返回数据，直接在 Network 面板可见 ──────────
     const nbest0 = azureResp.NBest && azureResp.NBest[0];
+    const w0 = nbest0 && nbest0.Words && nbest0.Words[0];
+    const w1 = nbest0 && nbest0.Words && nbest0.Words[1];
     result._debug = {
-      // 1. 顶层识别状态
       RecognitionStatus: azureResp.RecognitionStatus,
-
-      // 2. NBest[0].PronunciationAssessment 完整对象（Azure 综合评分）
       'NBest[0].PronunciationAssessment': nbest0 ? nbest0.PronunciationAssessment : null,
-
-      // 3. NBest[0].Words[0] 第一个词的完整数据（含音素）
-      'NBest[0].Words[0]': nbest0 && nbest0.Words && nbest0.Words[0]
-        ? nbest0.Words[0]
-        : null,
-
-      // 4. 本次识别的完整文本
       'NBest[0].Lexical': nbest0 ? nbest0.Lexical : null,
+      WordCount: nbest0 && nbest0.Words ? nbest0.Words.length : 0,
 
-      // 5. 共识别到几个词
-      WordCount: nbest0 && nbest0.Words ? nbest0.Words.length : 0
+      // 第一个词完整结构（含 Phonemes / Syllables 原始数据）
+      'Words[0]_full': w0 || null,
+
+      // 第一个词的每个 Phoneme 完整对象（重点看有哪些字段）
+      'Words[0].Phonemes_full': w0 ? w0.Phonemes : null,
+
+      // 第一个词的每个 Syllable 完整对象
+      'Words[0].Syllables_full': w0 ? w0.Syllables : null,
+
+      // 第二个词同样输出，多一个样本
+      'Words[1]_full': w1 || null,
+      'Words[1].Phonemes_full': w1 ? w1.Phonemes : null,
     };
     res.status(200).json(result);
   } catch (err) {
