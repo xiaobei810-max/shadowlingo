@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "pinyin-pro": "^3.26.0"
+    "@anthropic-ai/sdk": "^0.39.0"
   }
 }
