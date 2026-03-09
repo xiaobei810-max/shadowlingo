@@ -133,8 +133,9 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .anno-dot.correct { background: #22c55e; }
 .anno-dot.confused { background: #fbbf24; }
 .anno-dot.miss { background: #f87171; }
-.anno-chars { font-size: 26px; font-weight: 700; letter-spacing: 4px; margin-bottom: 8px; line-height: 1.5; }
-.anno-char { display: inline-block; border-radius: 4px; padding: 0 1px; }
+.anno-chars { font-size: 26px; font-weight: 700; margin-bottom: 8px; line-height: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 4px; }
+ruby.anno-char { display: inline-flex; flex-direction: column; align-items: center; border-radius: 4px; padding: 0 1px; ruby-position: over; }
+ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: inherit; opacity: 0.85; letter-spacing: 0; }
 .anno-char.correct { color: #22c55e; }
 .anno-char.confused { color: #fbbf24; border-bottom: 2px solid #fbbf24; }
 .anno-char.miss { color: #f87171; border-bottom: 2px solid #f87171; text-decoration-line: underline; text-decoration-style: wavy; }
@@ -157,7 +158,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .eval-sentence-card { background: var(--card); border-radius: 20px; padding: 20px 20px 16px; text-align: center; }
 .eval-zh { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 8px; }
 .eval-pinyin { font-size: 13px; color: #60a5fa; letter-spacing: 0.03em; }
-.eval-en { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.eval-en { font-size: 14px; color: var(--muted); }
 
 /* 分数卡片 */
 .eval-score-card { background: var(--card); border-radius: 20px; padding: 24px 20px; text-align: center; }
@@ -480,10 +481,15 @@ async function convertToPCM(blob) {
 // ── 以下函数已移至 api/evaluate.js，前端仅保留展示逻辑 ──────────
 
 // perrLevel: 0=绿(正确) 1=黄(需改进) 2=红(错误)
-function iseAnnotations(words) {
+function iseAnnotations(words, chars) {
+  var pyQ = {}, pyI = {};
+  (chars || []).forEach(function(c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
   return words.map(function(w) {
     var type = w.perrLevel === 0 ? 'correct' : w.perrLevel === 1 ? 'confused' : 'miss';
-    return { char: w.content, type: type, perrMsg: w.perrMsg };
+    var idx = pyI[w.content] || 0;
+    var py = pyQ[w.content] ? (pyQ[w.content][idx] || '') : '';
+    pyI[w.content] = idx + 1;
+    return { char: w.content, type: type, perrMsg: w.perrMsg, py: py };
   });
 }
 
@@ -816,7 +822,7 @@ async function evaluateAudio(blob) {
     sessionScores.push(result.totalScore);
     incPracticeCount(lessonIdx, idx);
     document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
-    fillEvalResult(result.totalScore, iseAnnotations(result.wordResults),
+    fillEvalResult(result.totalScore, iseAnnotations(result.wordResults, s.chars),
                    iseHintText(result.wordResults), s, null, recText);
   } catch(err) {
     console.error('评测失败:', err);
@@ -1191,8 +1197,6 @@ function stopRecording() {
 function showEvalPageLoading(sentence) {
   var total = LESSONS[lessonIdx].sentences.length;
   document.getElementById("eval-badge").textContent = "第 " + (idx+1) + "/" + total + " 句";
-  document.getElementById("eval-zh").textContent = sentence.zh;
-  document.getElementById("eval-pinyin").textContent = sentence.pinyin;
   document.getElementById("eval-en").textContent = sentence.en;
   document.getElementById("eval-loading").style.display = "flex";
   document.getElementById("eval-result-area").classList.remove("show");
@@ -1231,7 +1235,8 @@ function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText)
   if (annotations && annotations.length) {
     var html = annotations.map(function(a) {
       var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
-      return '<span class="anno-char ' + a.type + '"' + tip + '>' + a.char + '</span>';
+      var rt = toToneMark(a.py);
+      return '<ruby class="anno-char ' + a.type + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
     }).join('');
     document.getElementById("eval-anno-chars").innerHTML = html;
     compareCard.style.display = "block";
@@ -1396,8 +1401,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- 原句展示 -->
     <div class="eval-sentence-card">
-      <div class="eval-zh" id="eval-zh"></div>
-      <div class="eval-pinyin" id="eval-pinyin"></div>
       <div class="eval-en" id="eval-en"></div>
     </div>
 
