@@ -1202,7 +1202,6 @@ function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText)
       return '<span class="anno-char ' + a.type + '"' + tip + '>' + a.char + '</span>';
     }).join('');
     document.getElementById("eval-anno-chars").innerHTML = html;
-    document.getElementById("eval-rec-text").textContent = recText || '';
     compareCard.style.display = "block";
   } else {
     compareCard.style.display = "none";
@@ -1391,10 +1390,6 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="eval-compare-row">
         <span class="eval-tag">原 文</span>
         <div class="eval-anno-wrap" id="eval-anno-chars"></div>
-      </div>
-      <div class="eval-compare-row">
-        <span class="eval-tag">你说的</span>
-        <div class="eval-rec-text" id="eval-rec-text"></div>
       </div>
     </div>
 
