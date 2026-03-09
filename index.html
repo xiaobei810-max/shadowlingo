@@ -134,7 +134,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .anno-dot.confused { background: #fbbf24; }
 .anno-dot.miss { background: #f87171; }
 .anno-chars { font-size: 26px; font-weight: 700; margin-bottom: 8px; line-height: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 4px; }
-ruby.anno-char { display: inline-flex; flex-direction: column; align-items: center; border-radius: 4px; padding: 0 1px; ruby-position: over; }
+ruby.anno-char { display: inline-flex; flex-direction: column-reverse; align-items: center; border-radius: 4px; padding: 0 1px; }
 ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: inherit; opacity: 0.85; letter-spacing: 0; }
 .anno-char.correct { color: #22c55e; }
 .anno-char.confused { color: #fbbf24; border-bottom: 2px solid #fbbf24; }
@@ -1197,7 +1197,6 @@ function stopRecording() {
 function showEvalPageLoading(sentence) {
   var total = LESSONS[lessonIdx].sentences.length;
   document.getElementById("eval-badge").textContent = "第 " + (idx+1) + "/" + total + " 句";
-  document.getElementById("eval-en").textContent = sentence.en;
   document.getElementById("eval-loading").style.display = "flex";
   document.getElementById("eval-result-area").classList.remove("show");
   document.getElementById("eval-compare-card").style.display = "none";
@@ -1397,11 +1396,6 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="eval-inner">
     <div class="eval-header">
       <div class="eval-badge" id="eval-badge">第 1/5 句</div>
-    </div>
-
-    <!-- 原句展示 -->
-    <div class="eval-sentence-card">
-      <div class="eval-en" id="eval-en"></div>
     </div>
 
     <!-- 分数 -->
