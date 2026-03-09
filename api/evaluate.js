@@ -125,12 +125,15 @@ function parseAzureResult(resp, chars) {
     const cErr    = charArr.map(() => false); // 每个字是否有错
 
     // ── 词级错误 → 挂到第一个字 ───────────────────────────────
+    // 判断规则：AccuracyScore < 75 或 ErrorType = Mispronunciation → 标红
     if (errType === 'Omission') {
       cMsgs[0].push('漏读'); cErr[0] = true;
     } else if (errType === 'Insertion') {
       cMsgs[0].push('多读'); cErr[0] = true;
-    } else if (errType === 'Mispronunciation' && accuracy < 50) {
+    } else if (errType === 'Mispronunciation') {
       cMsgs[0].push(`发音有误（${accuracy}分）`); cErr[0] = true;
+    } else if (accuracy < 75) {
+      cMsgs[0].push(`准确度偏低（${accuracy}分）`); cErr[0] = true;
     }
 
     // ── 逐字分析（音节准确度 + 平翘舌检测）────────────────────
