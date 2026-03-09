@@ -120,12 +120,19 @@ function parseAzureResult(resp, refText) {
   console.log('[parse] pronScore:', pronScore, '| 词数:', (nbest.Words || []).length);
 
   // ── 用 pinyin-pro 生成期望拼音（带上下文变调）─────────────────
-  const cleanRef  = (refText || '').replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
-  const pyArr     = pinyinGet(cleanRef, { toneType: 'num', type: 'array' });
-  const refChars  = Array.from(cleanRef);
-  // 按字建队列，保留出现顺序（同一个字可能多音）
+  // 重要：传入原始 refText（含标点/空格）而非去标点版本。
+  // 标点和空格是词语分割的天然边界，帮助 pinyin-pro 正确判断多音字。
+  // 例如"来教你"中"教"应为 jiāo(1声)而非 jiào(4声)，需要完整上下文才能判断。
+  // type:'array' 逐字输出（含非汉字占位），用 CJK 范围过滤保留汉字对应拼音。
+  const fullChars = Array.from(refText || '');
+  const pyAll     = pinyinGet(refText || '', { toneType: 'num', type: 'array' });
   const pyQueue = {}, pyUsed = {};
-  refChars.forEach((c, i) => { (pyQueue[c] = pyQueue[c] || []).push(pyArr[i] || ''); });
+  fullChars.forEach((c, i) => {
+    if (/[\u4e00-\u9fff]/.test(c)) {
+      (pyQueue[c] = pyQueue[c] || []).push(pyAll[i] || '');
+    }
+  });
+  console.log('[pinyin-pro] refText:', refText, '→ pyAll:', JSON.stringify(pyAll).slice(0, 300));
 
   const wordResults = [];
 
