@@ -36,7 +36,9 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .lesson-nav button { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
 .lesson-nav button:hover:not(:disabled) { color: var(--green); }
 .lesson-nav button:disabled { opacity: 0.2; cursor: default; }
-.lesson-title-text { font-size: 17px; color: #94a3b8; font-weight: 700; }
+.lesson-title-text { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.lesson-title-zh { font-size: 17px; color: #e2e8f0; font-weight: 700; line-height: 1.2; }
+.lesson-title-en { font-size: 12px; color: #94a3b8; font-weight: 500; line-height: 1.2; }
 
 /* Audio error */
 .audio-error { display: none; background: rgba(248,113,113,0.1); border: 1px solid #f87171; border-radius: 12px; padding: 10px 14px; margin: 10px 20px 0; font-size: 13px; color: #f87171; text-align: center; }
@@ -265,8 +267,8 @@ ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: 
     <button class="btn" id="bn" onclick="doRecord()">🎤 录音 Record</button>
     <button class="btn btn-retry" id="bretry" onclick="doRetry()">↩ 再练一次 Retry</button>
     <div class="btn-nav">
-      <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ Prev</button>
-      <button class="btn btn-done" id="bdone" onclick="doNext()">Next ▶</button>
+      <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一句 Prev</button>
+      <button class="btn btn-done" id="bdone" onclick="doNext()">下一句 Next ▶</button>
     </div>
   </div>
 </div>
@@ -288,7 +290,7 @@ ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: 
 const LESSONS = [
   {
     id: "lesson-1",
-    title: "第一课：打招呼 Lesson 1: Greetings",
+    titleZh: "第一课：打招呼", titleEn: "Lesson 1: Greetings",
     audio: "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a",
     sentences: [
       {
@@ -1013,7 +1015,9 @@ function updateUI() {
   var s = lesson.sentences[idx];
   var total = lesson.sentences.length;
 
-  if (el("lesson-title-text")) el("lesson-title-text").textContent = lesson.title;
+  if (el("lesson-title-text")) el("lesson-title-text").innerHTML =
+    '<span class="lesson-title-zh">' + lesson.titleZh + '</span>' +
+    '<span class="lesson-title-en">' + lesson.titleEn + '</span>';
   if (el("btn-lesson-prev")) el("btn-lesson-prev").disabled = lessonIdx === 0;
   if (el("btn-lesson-next")) el("btn-lesson-next").disabled = lessonIdx === LESSONS.length - 1;
 
@@ -1204,7 +1208,7 @@ function showEvalPageLoading(sentence) {
   document.getElementById("eval-error-notice").style.display = "none";
   document.getElementById("eval-prev").disabled = idx === 0;
   var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
-  document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "Next ▶";
+  document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一句 Next ▶";
   document.getElementById("eval-page").classList.add("show");
   document.getElementById("eval-page").scrollTop = 0;
 }
@@ -1429,8 +1433,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- 导航按钮 -->
     <div class="eval-nav">
-      <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ Prev</button>
-      <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">Next ▶</button>
+      <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ 上一句 Prev</button>
+      <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">下一句 Next ▶</button>
     </div>
   </div>
 </div>
