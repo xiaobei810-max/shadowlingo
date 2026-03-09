@@ -1,5 +1,8 @@
 {
   "name": "shadowlingo",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "pinyin-pro": "^3.26.0"
+  }
 }

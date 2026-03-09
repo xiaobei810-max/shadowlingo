@@ -1,4 +1,5 @@
-const https = require('https');
+const https      = require('https');
+const { pinyin: pinyinGet } = require('pinyin-pro');
 
 const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
@@ -14,7 +15,7 @@ function pcmToWav(pcmBuf) {
   wav.writeUInt16LE(1, 20);       // PCM
   wav.writeUInt16LE(1, 22);       // mono
   wav.writeUInt32LE(16000, 24);   // sample rate
-  wav.writeUInt32LE(32000, 28);   // byte rate = 16000*1*2
+  wav.writeUInt32LE(32000, 28);   // byte rate
   wav.writeUInt16LE(2, 32);       // block align
   wav.writeUInt16LE(16, 34);      // bits per sample
   wav.write('data', 36);
@@ -27,7 +28,6 @@ function pcmToWav(pcmBuf) {
 function azureAssess(pcmBase64, refText) {
   return new Promise((resolve, reject) => {
     const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
-    // 去掉标点，避免影响 Azure 对中文的评分
     const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
     console.log('[Azure] WAV大小:', wavBuf.length, '字节，refText:', cleanRef);
 
@@ -58,7 +58,7 @@ function azureAssess(pcmBase64, refText) {
       res.on('end', () => {
         const raw = Buffer.concat(chunks).toString('utf-8');
         console.log('[Azure] HTTP状态:', res.statusCode);
-        console.log('[Azure] 原始响应:', raw);   // ← 完整打印，便于排查
+        console.log('[Azure] 原始响应:', raw);
         if (res.statusCode !== 200)
           return reject(new Error(`Azure HTTP ${res.statusCode}: ${raw.slice(0, 300)}`));
         try { resolve(JSON.parse(raw)); }
@@ -71,25 +71,37 @@ function azureAssess(pcmBase64, refText) {
   });
 }
 
-// ── 提取拼音声母 ─────────────────────────────────────────────────
+// ── 拼音辅助函数 ──────────────────────────────────────────────────
+// "shou 3" / "shou3" → "shou3"
+function normalizePy(py) {
+  return (py || '').toLowerCase().replace(/\s+(\d)/, '$1').trim();
+}
+
+function getTone(py) {
+  const m = py.match(/(\d)$/);
+  return m ? m[1] : '';
+}
+
 function getInitial(py) {
-  py = (py || '').toLowerCase().replace(/\d/g, '').trim();
+  py = (py || '').replace(/\d$/, '').toLowerCase().trim();
   for (const two of ['zh', 'ch', 'sh']) if (py.startsWith(two)) return two;
   for (const one of 'b p m f d t n l g k h j q x r z c s y w'.split(' '))
     if (py.startsWith(one)) return one;
   return '';
 }
-const RETRO_PAIRS = [['zh','z'], ['ch','c'], ['sh','s']];
+
+function getFinal(py) {
+  const base = py.replace(/\d$/, '');
+  return base.slice(getInitial(base).length) || base;
+}
 
 // ── 兼容 Azure 两种响应格式的辅助函数 ───────────────────────────
-// 文档格式：w.PronunciationAssessment.AccuracyScore
-// 实测格式：w.AccuracyScore（扁平）
 function wordAcc(w)    { return Math.round((w.PronunciationAssessment || {}).AccuracyScore ?? w.AccuracyScore ?? 0); }
 function wordErr(w)    { return (w.PronunciationAssessment || {}).ErrorType || w.ErrorType || 'None'; }
 function subAcc(p)     { return Math.round((p.PronunciationAssessment || {}).AccuracyScore ?? p.AccuracyScore ?? 0); }
 
 // ── 解析 Azure 响应 ──────────────────────────────────────────────
-function parseAzureResult(resp, chars) {
+function parseAzureResult(resp, refText) {
   console.log('[parse] RecognitionStatus:', resp.RecognitionStatus);
 
   const nbest = resp.NBest && resp.NBest[0];
@@ -98,7 +110,7 @@ function parseAzureResult(resp, chars) {
     return { totalScore: 0, wordResults: [], debugInfo: resp.RecognitionStatus || 'NoNBest' };
   }
 
-  // ── 总分：嵌套式 → 扁平式 → 词级平均 三级兜底 ──────────────
+  // ── 总分 ──────────────────────────────────────────────────────
   const pa = nbest.PronunciationAssessment || {};
   let pronScore = Math.round(pa.PronScore ?? pa.AccuracyScore ?? nbest.AccuracyScore ?? 0);
   if (pronScore === 0 && nbest.Words && nbest.Words.length > 0) {
@@ -107,9 +119,13 @@ function parseAzureResult(resp, chars) {
   }
   console.log('[parse] pronScore:', pronScore, '| 词数:', (nbest.Words || []).length);
 
-  // ── 正确拼音队列（每个字 → 期望拼音列表，用于平翘舌检测）──
-  const queue = {}, usedIdx = {};
-  (chars || []).forEach(({ c, p }) => (queue[c] = queue[c] || []).push(p));
+  // ── 用 pinyin-pro 生成期望拼音（带上下文变调）─────────────────
+  const cleanRef  = (refText || '').replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+  const pyArr     = pinyinGet(cleanRef, { toneType: 'num', type: 'array' });
+  const refChars  = Array.from(cleanRef);
+  // 按字建队列，保留出现顺序（同一个字可能多音）
+  const pyQueue = {}, pyUsed = {};
+  refChars.forEach((c, i) => { (pyQueue[c] = pyQueue[c] || []).push(pyArr[i] || ''); });
 
   const wordResults = [];
 
@@ -117,20 +133,16 @@ function parseAzureResult(resp, chars) {
     const text     = w.Word || '';
     const accuracy = wordAcc(w);
     const errType  = wordErr(w);
-    // Azure 中文：Phonemes 包含完整拼音串（如 "shou 3"），Syllables 含每字得分
     const phonemes  = w.Phonemes  || [];
     const syllables = w.Syllables || [];
 
-    console.log(`[parse] word="${text}" acc=${accuracy} err=${errType} phonemes=${phonemes.length} syl=${syllables.length}`);
+    console.log(`[parse] word="${text}" acc=${accuracy} err=${errType} ph=${phonemes.length} syl=${syllables.length}`);
 
     const charArr = Array.from(text);
-    const cMsgs  = charArr.map(() => []);  // 每个字的消息列表
-    const cLevel = charArr.map(() => 0);   // 0=绿 1=黄 2=红
+    const cMsgs   = charArr.map(() => []);
+    const cLevel  = charArr.map(() => 0);
 
-    // ── 三色评级辅助 ─────────────────────────────────────────────
-    // 绿：acc >= 75 且 err = None
-    // 黄：acc 50-74，或 Mispronunciation 且 acc >= 50
-    // 红：acc < 50，或 Omission
+    // 绿：acc>=75 且 None；黄：acc 50-74 或 Mispronunciation；红：acc<50 或 Omission
     const levelOf = (acc, err) => {
       if (err === 'Omission') return 2;
       if (acc < 50) return 2;
@@ -139,57 +151,53 @@ function parseAzureResult(resp, chars) {
       return 0;
     };
 
-    // ── 逐字分析 ─────────────────────────────────────────────────
     charArr.forEach((ch, i) => {
       const ph  = phonemes.find(p => p.Grapheme === ch)  || phonemes[i]  || null;
       const syl = syllables.find(s => s.Grapheme === ch) || syllables[i] || null;
 
-      // 每字准确度：优先用音节分，无则用词级分
       const charAcc = syl ? subAcc(syl) : (ph ? subAcc(ph) : accuracy);
-      // 词级 ErrorType 对词内所有字生效
       cLevel[i] = levelOf(charAcc, errType);
 
-      // ── 基础消息（根据等级和错误类型）────────────────────────
+      // ── 基础错误消息 ──────────────────────────────────────────
       if (cLevel[i] === 2) {
         if (errType === 'Omission') cMsgs[i].push('漏读');
         else                        cMsgs[i].push(`准确度过低（${charAcc}分）`);
       } else if (cLevel[i] === 1) {
-        if (errType === 'Mispronunciation') cMsgs[i].push('发音有误，注意声调/发音');
+        if (errType === 'Mispronunciation') cMsgs[i].push('发音有误');
         else if (errType === 'Insertion')   cMsgs[i].push('多读');
         else                                cMsgs[i].push(`发音需改进（${charAcc}分）`);
       }
 
-      // ── 拼音级详细检测（声母混淆 + 声调偏差）────────────────
-      const correctPyArr = queue[ch];
-      if (correctPyArr && ph && ph.Phoneme) {
-        const ui        = usedIdx[ch] || 0;
-        const correctPy = correctPyArr[ui] ?? correctPyArr[correctPyArr.length - 1];
-        usedIdx[ch]     = ui + 1;
+      // ── 拼音级精确比对（pinyin-pro 期望 vs Azure 实测）────────
+      const ui      = pyUsed[ch] || 0;
+      const wantRaw = (pyQueue[ch] || [])[ui] || '';
+      pyUsed[ch]    = ui + 1;
 
-        const wantInit = getInitial(correctPy);
-        const gotInit  = getInitial(ph.Phoneme);
-        console.log(`[拼音] "${ch}": 期望=${correctPy}(声母:${wantInit}) 识别=${ph.Phoneme}(声母:${gotInit})`);
+      const wantPy = normalizePy(wantRaw);
+      const gotPy  = ph ? normalizePy(ph.Phoneme) : '';
 
-        // 平翘舌混淆 → 红色
-        for (const [retro, flat] of RETRO_PAIRS) {
-          if (wantInit !== retro && wantInit !== flat) continue;
-          if (!gotInit) continue;
-          if ((wantInit === retro && gotInit === flat) ||
-              (wantInit === flat  && gotInit === retro)) {
-            cMsgs[i].push(`声母混淆：应【${wantInit}】实【${gotInit}】`);
-            cLevel[i] = 2;
-          }
+      console.log(`[拼音] "${ch}" 期望=${wantPy} 实测=${gotPy}`);
+
+      if (wantPy && gotPy && errType !== 'Omission') {
+        const wantInit  = getInitial(wantPy);
+        const gotInit   = getInitial(gotPy);
+        const wantFinal = getFinal(wantPy);
+        const gotFinal  = getFinal(gotPy);
+        const wantTone  = getTone(wantPy);
+        const gotTone   = getTone(gotPy);
+
+        if (wantInit !== gotInit) {
+          cMsgs[i].push(`声母错误：应【${wantInit || '零声母'}】实【${gotInit || '零声母'}】`);
+          cLevel[i] = Math.max(cLevel[i], 2);
+        } else if (wantFinal !== gotFinal) {
+          cMsgs[i].push(`韵母错误：应【${wantFinal}】实【${gotFinal}】`);
+          cLevel[i] = Math.max(cLevel[i], 2);
         }
 
-        // 声调偏差检测（从拼音字符串末尾的数字提取声调）
-        const wantTone = (correctPy.match(/\d/) || [''])[0];
-        const gotTone  = (ph.Phoneme.match(/\d/) || [''])[0];
         if (wantTone && gotTone && wantTone !== gotTone) {
           cMsgs[i].push(`声调偏差：应第${wantTone}声，识别第${gotTone}声`);
-          if (cLevel[i] === 0) cLevel[i] = 1; // 仅声调偏差升级到黄色
+          if (cLevel[i] === 0) cLevel[i] = 1;
         }
-      } else if (correctPyArr) {
-        usedIdx[ch] = (usedIdx[ch] || 0) + 1;
       }
     });
 
@@ -198,9 +206,7 @@ function parseAzureResult(resp, chars) {
     });
   }
 
-  // ── 最终得分：直接使用 Azure PronScore ──────────────────────
   const totalScore = pronScore;
-
   console.log(`[parse] totalScore=${totalScore} wordResults=${wordResults.length}`);
   return { totalScore, wordResults };
 }
@@ -217,14 +223,14 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'AZURE_SPEECH_KEY env var not configured' });
 
   try {
-    const { audioBase64, refText, chars } = req.body;
+    const { audioBase64, refText } = req.body;
     if (!audioBase64 || !refText)
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
 
     const azureResp = await azureAssess(audioBase64, refText);
-    const result    = parseAzureResult(azureResp, chars || []);
+    const result    = parseAzureResult(azureResp, refText);
 
-    // ── _debug：Azure 原始返回数据，直接在 Network 面板可见 ──────────
+    // ── _debug ──────────────────────────────────────────────────
     const nbest0 = azureResp.NBest && azureResp.NBest[0];
     const w0 = nbest0 && nbest0.Words && nbest0.Words[0];
     const w1 = nbest0 && nbest0.Words && nbest0.Words[1];
@@ -233,17 +239,9 @@ module.exports = async function handler(req, res) {
       'NBest[0].PronunciationAssessment': nbest0 ? nbest0.PronunciationAssessment : null,
       'NBest[0].Lexical': nbest0 ? nbest0.Lexical : null,
       WordCount: nbest0 && nbest0.Words ? nbest0.Words.length : 0,
-
-      // 第一个词完整结构（含 Phonemes / Syllables 原始数据）
       'Words[0]_full': w0 || null,
-
-      // 第一个词的每个 Phoneme 完整对象（重点看有哪些字段）
       'Words[0].Phonemes_full': w0 ? w0.Phonemes : null,
-
-      // 第一个词的每个 Syllable 完整对象
       'Words[0].Syllables_full': w0 ? w0.Syllables : null,
-
-      // 第二个词同样输出，多一个样本
       'Words[1]_full': w1 || null,
       'Words[1].Phonemes_full': w1 ? w1.Phonemes : null,
     };

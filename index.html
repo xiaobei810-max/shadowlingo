@@ -503,8 +503,11 @@ function buildHintLine(w, isRed) {
 
   var en = [];
   parts.forEach(function(p) {
-    var rm = p.match(/声母混淆：应【(.+?)】实【(.+?)】/);
-    if (rm) { en.push('wrong initial: should be ' + rm[1] + ', got ' + rm[2]); return; }
+    var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/);
+    if (ri) { en.push('wrong initial consonant: should be "' + ri[1] + '", got "' + ri[2] + '"'); return; }
+
+    var rf = p.match(/韵母错误：应【(.+?)】实【(.+?)】/);
+    if (rf) { en.push('wrong vowel sound: should be "' + rf[1] + '", got "' + rf[2] + '"'); return; }
 
     var tm = p.match(/声调偏差：应第(\d)声/);
     if (tm) {
