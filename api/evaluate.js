@@ -208,14 +208,24 @@ module.exports = async function handler(req, res) {
 
     const azureResp = await azureAssess(audioBase64, refText);
     const result    = parseAzureResult(azureResp, chars || []);
-    // _debug 字段仅用于排查，不影响前端评分逻辑
+
+    // ── _debug：把 Azure 原始关键字段暴露到 Network 面板，便于排查 ──
+    const nbest0 = azureResp.NBest && azureResp.NBest[0];
+    const pa0    = nbest0 && nbest0.PronunciationAssessment;
     result._debug = {
       RecognitionStatus: azureResp.RecognitionStatus,
-      PronScore: (azureResp.NBest && azureResp.NBest[0] &&
-                  azureResp.NBest[0].PronunciationAssessment &&
-                  azureResp.NBest[0].PronunciationAssessment.PronScore) || null,
-      WordCount: (azureResp.NBest && azureResp.NBest[0] &&
-                  azureResp.NBest[0].Words && azureResp.NBest[0].Words.length) || 0
+      // Azure 顶层评分（有则有值，无则 undefined，不用 || null 避免掩盖 0 分）
+      PronScore:         pa0 ? pa0.PronScore         : undefined,
+      AccuracyScore:     pa0 ? pa0.AccuracyScore     : undefined,
+      FluencyScore:      pa0 ? pa0.FluencyScore       : undefined,
+      CompletenessScore: pa0 ? pa0.CompletenessScore  : undefined,
+      WordCount:         nbest0 && nbest0.Words ? nbest0.Words.length : 0,
+      // 第一个词的原始数据，方便对照
+      FirstWord: nbest0 && nbest0.Words && nbest0.Words[0] ? {
+        Word:      nbest0.Words[0].Word,
+        ErrorType: nbest0.Words[0].PronunciationAssessment && nbest0.Words[0].PronunciationAssessment.ErrorType,
+        AccScore:  nbest0.Words[0].PronunciationAssessment && nbest0.Words[0].PronunciationAssessment.AccuracyScore
+      } : null
     };
     res.status(200).json(result);
   } catch (err) {
