@@ -81,9 +81,11 @@ async function getPinyinMap(refText) {
     return pinyinCache.get(refText);
   }
 
-  console.log('[Claude] 请求拼音 for:', refText);
+  const MODEL = 'claude-haiku-4-5-20251001';
+  console.log('[Claude] 请求拼音 model=%s for: %s', MODEL, refText);
+
   const msg = await anthropic.messages.create({
-    model:      'claude-haiku-4-5-20251001',
+    model:      MODEL,
     max_tokens: 512,
     system:
       '你是中文拼音专家。给定一个中文句子，返回每个汉字对应的拼音（含声调数字1-4，轻声用0）。\n' +
@@ -113,6 +115,16 @@ async function getPinyinMap(refText) {
 
   pinyinCache.set(refText, pyMap);
   return pyMap;
+}
+
+// 带降级的包装：Claude 失败时返回空 map，让 Azure 评测仍能进行
+async function getPinyinMapSafe(refText) {
+  try {
+    return { map: await getPinyinMap(refText), error: null };
+  } catch(e) {
+    console.error('[Claude] 拼音请求失败:', e.message, e.status, JSON.stringify(e.error));
+    return { map: {}, error: `${e.status || ''} ${e.message}`.trim() };
+  }
 }
 
 // ── 拼音辅助函数 ─────────────────────────────────────────────────
@@ -260,9 +272,9 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
 
     // 并行请求：Azure 评测 + Claude 拼音（两者互不依赖）
-    const [azureResp, pyMap] = await Promise.all([
+    const [azureResp, { map: pyMap, error: claudeErr }] = await Promise.all([
       azureAssess(audioBase64, refText),
-      getPinyinMap(refText)
+      getPinyinMapSafe(refText)
     ]);
 
     const result = await parseAzureResult(azureResp, refText, pyMap);
@@ -277,6 +289,7 @@ module.exports = async function handler(req, res) {
       'NBest[0].Lexical':  nbest0 ? nbest0.Lexical : null,
       WordCount:           nbest0 && nbest0.Words ? nbest0.Words.length : 0,
       pyMap,
+      claudeError: claudeErr || null,
       'Words[0]_full':          w0 || null,
       'Words[0].Phonemes_full': w0 ? w0.Phonemes : null,
       'Words[0].Syllables_full':w0 ? w0.Syllables : null,
