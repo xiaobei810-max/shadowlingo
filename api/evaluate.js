@@ -91,8 +91,8 @@ function parseAzureResult(resp, chars) {
   }
 
   const pa = nbest.PronunciationAssessment || {};
-  // Azure 直接给出的综合分，作为 totalScore 主要来源
-  const pronScore = Math.round(pa.PronScore || pa.AccuracyScore || 0);
+  // 用 ?? 而非 ||，避免 PronScore=0 被误判为 falsy
+  const pronScore = Math.round(pa.PronScore ?? pa.AccuracyScore ?? 0);
   console.log('[parse] PronScore:', pronScore,
     '| AccuracyScore:', pa.AccuracyScore,
     '| FluencyScore:', pa.FluencyScore,
@@ -209,23 +209,25 @@ module.exports = async function handler(req, res) {
     const azureResp = await azureAssess(audioBase64, refText);
     const result    = parseAzureResult(azureResp, chars || []);
 
-    // ── _debug：把 Azure 原始关键字段暴露到 Network 面板，便于排查 ──
+    // ── _debug：Azure 原始返回数据，直接在 Network 面板可见 ──────────
     const nbest0 = azureResp.NBest && azureResp.NBest[0];
-    const pa0    = nbest0 && nbest0.PronunciationAssessment;
     result._debug = {
+      // 1. 顶层识别状态
       RecognitionStatus: azureResp.RecognitionStatus,
-      // Azure 顶层评分（有则有值，无则 undefined，不用 || null 避免掩盖 0 分）
-      PronScore:         pa0 ? pa0.PronScore         : undefined,
-      AccuracyScore:     pa0 ? pa0.AccuracyScore     : undefined,
-      FluencyScore:      pa0 ? pa0.FluencyScore       : undefined,
-      CompletenessScore: pa0 ? pa0.CompletenessScore  : undefined,
-      WordCount:         nbest0 && nbest0.Words ? nbest0.Words.length : 0,
-      // 第一个词的原始数据，方便对照
-      FirstWord: nbest0 && nbest0.Words && nbest0.Words[0] ? {
-        Word:      nbest0.Words[0].Word,
-        ErrorType: nbest0.Words[0].PronunciationAssessment && nbest0.Words[0].PronunciationAssessment.ErrorType,
-        AccScore:  nbest0.Words[0].PronunciationAssessment && nbest0.Words[0].PronunciationAssessment.AccuracyScore
-      } : null
+
+      // 2. NBest[0].PronunciationAssessment 完整对象（Azure 综合评分）
+      'NBest[0].PronunciationAssessment': nbest0 ? nbest0.PronunciationAssessment : null,
+
+      // 3. NBest[0].Words[0] 第一个词的完整数据（含音素）
+      'NBest[0].Words[0]': nbest0 && nbest0.Words && nbest0.Words[0]
+        ? nbest0.Words[0]
+        : null,
+
+      // 4. 本次识别的完整文本
+      'NBest[0].Lexical': nbest0 ? nbest0.Lexical : null,
+
+      // 5. 共识别到几个词
+      WordCount: nbest0 && nbest0.Words ? nbest0.Words.length : 0
     };
     res.status(200).json(result);
   } catch (err) {
