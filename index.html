@@ -174,7 +174,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 /* 发音提示 */
 .eval-hint-card { background: rgba(96,165,250,0.07); border: 1px solid rgba(96,165,250,0.2); border-radius: 20px; padding: 16px 20px; }
 .eval-hint-title { font-size: 12px; font-weight: 700; color: #60a5fa; margin-bottom: 8px; }
-.eval-hint-text { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+.eval-hint-text { font-size: 14px; color: #94a3b8; line-height: 1.8; white-space: pre-line; }
 
 /* 底部导航 */
 .eval-nav { display: flex; gap: 12px; margin-top: 4px; }
@@ -483,17 +483,18 @@ function iseAnnotations(words) {
   });
 }
 
-// 发音提示：红色和黄色字分开列出，措辞不同
+// 发音提示：每个有问题的字单独一行，红色在前黄色在后
 function iseHintText(words) {
   var reds    = words.filter(function(w) { return w.perrLevel === 2; });
   var yellows = words.filter(function(w) { return w.perrLevel === 1; });
   if (!reds.length && !yellows.length) return '发音准确，每个字均通过评测！';
   var lines = [];
   reds.forEach(function(w) {
-    lines.push('「' + w.content + '」发音有误' + (w.perrMsg ? '：' + w.perrMsg : ''));
+    // perrMsg 已由后端生成具体描述，直接展示
+    lines.push('🔴 「' + w.content + '」' + (w.perrMsg || '发音有误'));
   });
   yellows.forEach(function(w) {
-    lines.push('「' + w.content + '」发音需改进' + (w.perrMsg ? '：' + w.perrMsg : ''));
+    lines.push('🟡 「' + w.content + '」' + (w.perrMsg || '发音需改进'));
   });
   return lines.join('\n');
 }

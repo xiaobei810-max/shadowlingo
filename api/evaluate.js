@@ -143,16 +143,17 @@ function parseAzureResult(resp, chars) {
       // 词级 ErrorType 对词内所有字生效
       cLevel[i] = levelOf(charAcc, errType);
 
+      // ── 基础消息（根据等级和错误类型）────────────────────────
       if (cLevel[i] === 2) {
-        if (errType === 'Omission')          cMsgs[i].push('漏读');
-        else if (errType === 'Insertion')    cMsgs[i].push('多读');
-        else if (errType === 'Mispronunciation') cMsgs[i].push(`发音有误（${charAcc}分）`);
-        else                                 cMsgs[i].push(`准确度过低（${charAcc}分）`);
+        if (errType === 'Omission')              cMsgs[i].push('漏读');
+        else if (errType === 'Insertion')        cMsgs[i].push('多读');
+        else if (errType === 'Mispronunciation') cMsgs[i].push('发音有误，注意声调/发音');
+        else                                     cMsgs[i].push(`准确度过低（${charAcc}分）`);
       } else if (cLevel[i] === 1) {
-        cMsgs[i].push(`需改进（${charAcc}分）`);
+        cMsgs[i].push(`发音需改进（${charAcc}分）`);
       }
 
-      // ── 平翘舌检测（声母混淆 → 强制红色）────────────────────
+      // ── 拼音级详细检测（声母混淆 + 声调偏差）────────────────
       const correctPyArr = queue[ch];
       if (correctPyArr && ph && ph.Phoneme) {
         const ui        = usedIdx[ch] || 0;
@@ -161,16 +162,25 @@ function parseAzureResult(resp, chars) {
 
         const wantInit = getInitial(correctPy);
         const gotInit  = getInitial(ph.Phoneme);
-        console.log(`[平翘舌] "${ch}": 期望=${correctPy}(${wantInit}) 识别=${ph.Phoneme}(${gotInit})`);
+        console.log(`[拼音] "${ch}": 期望=${correctPy}(声母:${wantInit}) 识别=${ph.Phoneme}(声母:${gotInit})`);
 
+        // 平翘舌混淆 → 红色
         for (const [retro, flat] of RETRO_PAIRS) {
           if (wantInit !== retro && wantInit !== flat) continue;
           if (!gotInit) continue;
           if ((wantInit === retro && gotInit === flat) ||
               (wantInit === flat  && gotInit === retro)) {
-            cMsgs[i].push(`平翘舌：应【${wantInit}】实【${gotInit}】（${correctPy}）`);
-            cLevel[i] = 2; // 声母混淆 → 红色
+            cMsgs[i].push(`声母混淆：应【${wantInit}】实【${gotInit}】`);
+            cLevel[i] = 2;
           }
+        }
+
+        // 声调偏差检测（从拼音字符串末尾的数字提取声调）
+        const wantTone = (correctPy.match(/\d/) || [''])[0];
+        const gotTone  = (ph.Phoneme.match(/\d/) || [''])[0];
+        if (wantTone && gotTone && wantTone !== gotTone) {
+          cMsgs[i].push(`声调偏差：应第${wantTone}声，识别第${gotTone}声`);
+          if (cLevel[i] === 0) cLevel[i] = 1; // 仅声调偏差升级到黄色
         }
       } else if (correctPyArr) {
         usedIdx[ch] = (usedIdx[ch] || 0) + 1;
