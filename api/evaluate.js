@@ -27,13 +27,16 @@ function pcmToWav(pcmBuf) {
 function azureAssess(pcmBase64, refText) {
   return new Promise((resolve, reject) => {
     const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
-    console.log('[Azure] WAV大小:', wavBuf.length, '字节，refText:', refText);
+    // 去掉标点，避免影响 Azure 对中文的评分
+    const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+    console.log('[Azure] WAV大小:', wavBuf.length, '字节，refText:', cleanRef);
 
     const cfg = Buffer.from(JSON.stringify({
-      ReferenceText: refText,
-      GradingSystem: 'HundredMark',
-      Granularity:   'Phoneme',
-      Dimension:     'Comprehensive'
+      ReferenceText:  cleanRef,
+      GradingSystem:  'HundredMark',
+      Granularity:    'Phoneme',
+      Dimension:      'Comprehensive',
+      EnableMiscue:   false
     })).toString('base64');
 
     const options = {
