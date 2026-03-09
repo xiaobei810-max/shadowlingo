@@ -475,21 +475,27 @@ async function convertToPCM(blob) {
 
 // ── 以下函数已移至 api/evaluate.js，前端仅保留展示逻辑 ──────────
 
-// ISE word → 字符注释
+// perrLevel: 0=绿(正确) 1=黄(需改进) 2=红(错误)
 function iseAnnotations(words) {
   return words.map(function(w) {
-    return { char: w.content, type: w.perrLevel === 0 ? 'correct' : 'miss', perrMsg: w.perrMsg };
+    var type = w.perrLevel === 0 ? 'correct' : w.perrLevel === 1 ? 'confused' : 'miss';
+    return { char: w.content, type: type, perrMsg: w.perrMsg };
   });
 }
 
-// 发音提示（后端已处理，直接展示）
+// 发音提示：红色和黄色字分开列出，措辞不同
 function iseHintText(words) {
-  var errors = words.filter(function(w) { return w.perrLevel !== 0; });
-  if (!errors.length) return '发音准确，每个字均通过评测！';
-  var lines = errors.map(function(w) {
-    return '「' + w.content + '」' + (w.perrMsg || '发音有误');
+  var reds    = words.filter(function(w) { return w.perrLevel === 2; });
+  var yellows = words.filter(function(w) { return w.perrLevel === 1; });
+  if (!reds.length && !yellows.length) return '发音准确，每个字均通过评测！';
+  var lines = [];
+  reds.forEach(function(w) {
+    lines.push('「' + w.content + '」发音有误' + (w.perrMsg ? '：' + w.perrMsg : ''));
   });
-  return '发现 ' + errors.length + ' 处问题：\n' + lines.join('\n');
+  yellows.forEach(function(w) {
+    lines.push('「' + w.content + '」发音需改进' + (w.perrMsg ? '：' + w.perrMsg : ''));
+  });
+  return lines.join('\n');
 }
 
 // ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
@@ -764,7 +770,7 @@ async function evaluateAudio(blob) {
 
     // 3. 展示结果
     var recText = result.wordResults.map(function(w) {
-      return w.perrLevel === 0 ? w.content : (w.content + '★');
+      return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
     }).join('');
     sessionScores.push(result.totalScore);
     incPracticeCount(lessonIdx, idx);

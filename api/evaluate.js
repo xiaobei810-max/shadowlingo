@@ -121,70 +121,68 @@ function parseAzureResult(resp, chars) {
     console.log(`[parse] word="${text}" acc=${accuracy} err=${errType} phonemes=${phonemes.length} syl=${syllables.length}`);
 
     const charArr = Array.from(text);
-    const cMsgs   = charArr.map(() => []);   // 每个字的错误消息列表
-    const cErr    = charArr.map(() => false); // 每个字是否有错
+    const cMsgs  = charArr.map(() => []);  // 每个字的消息列表
+    const cLevel = charArr.map(() => 0);   // 0=绿 1=黄 2=红
 
-    // ── 词级错误 → 挂到第一个字 ───────────────────────────────
-    // 判断规则：AccuracyScore < 75 或 ErrorType = Mispronunciation → 标红
-    if (errType === 'Omission') {
-      cMsgs[0].push('漏读'); cErr[0] = true;
-    } else if (errType === 'Insertion') {
-      cMsgs[0].push('多读'); cErr[0] = true;
-    } else if (errType === 'Mispronunciation') {
-      cMsgs[0].push(`发音有误（${accuracy}分）`); cErr[0] = true;
-    } else if (accuracy < 75) {
-      cMsgs[0].push(`准确度偏低（${accuracy}分）`); cErr[0] = true;
-    }
+    // ── 三色评级辅助 ─────────────────────────────────────────────
+    // acc >= 80 → 0(绿)；60-79 → 1(黄)；<60 或 Mispronunciation/Omission → 2(红)
+    const levelOf = (acc, err) => {
+      if (err === 'Omission' || err === 'Insertion' || err === 'Mispronunciation') return 2;
+      if (acc < 60) return 2;
+      if (acc < 80) return 1;
+      return 0;
+    };
 
-    // ── 逐字分析（音节准确度 + 平翘舌检测）────────────────────
+    // ── 逐字分析 ─────────────────────────────────────────────────
     charArr.forEach((ch, i) => {
-      // 找对应音素（Grapheme 精确匹配，否则按下标）
       const ph  = phonemes.find(p => p.Grapheme === ch)  || phonemes[i]  || null;
       const syl = syllables.find(s => s.Grapheme === ch) || syllables[i] || null;
 
-      // 音节准确度（优先用 Syllables，无则用 Phonemes）
-      const sylScore = syl ? subAcc(syl) : (ph ? subAcc(ph) : null);
-      if (sylScore !== null && sylScore < 40) {
-        cMsgs[i].push(`音节偏差（${sylScore}分）`); cErr[i] = true;
+      // 每字准确度：优先用音节分，无则用词级分
+      const charAcc = syl ? subAcc(syl) : (ph ? subAcc(ph) : accuracy);
+      // 词级 ErrorType 对词内所有字生效
+      cLevel[i] = levelOf(charAcc, errType);
+
+      if (cLevel[i] === 2) {
+        if (errType === 'Omission')          cMsgs[i].push('漏读');
+        else if (errType === 'Insertion')    cMsgs[i].push('多读');
+        else if (errType === 'Mispronunciation') cMsgs[i].push(`发音有误（${charAcc}分）`);
+        else                                 cMsgs[i].push(`准确度过低（${charAcc}分）`);
+      } else if (cLevel[i] === 1) {
+        cMsgs[i].push(`需改进（${charAcc}分）`);
       }
 
-      // ── 平翘舌检测 ────────────────────────────────────────────
-      // Azure 的 ph.Phoneme 是完整拼音串，如 "shou 3" / "zhong 1" / "zong 1"
-      // getInitial("shou 3")  → "sh"
-      // getInitial("zhong 1") → "zh"
-      // getInitial("zong 1")  → "z"
+      // ── 平翘舌检测（声母混淆 → 强制红色）────────────────────
       const correctPyArr = queue[ch];
       if (correctPyArr && ph && ph.Phoneme) {
-        const ui         = usedIdx[ch] || 0;
-        const correctPy  = correctPyArr[ui] ?? correctPyArr[correctPyArr.length - 1];
-        usedIdx[ch]      = ui + 1;
+        const ui        = usedIdx[ch] || 0;
+        const correctPy = correctPyArr[ui] ?? correctPyArr[correctPyArr.length - 1];
+        usedIdx[ch]     = ui + 1;
 
-        const wantInit = getInitial(correctPy);   // 期望声母
-        const gotInit  = getInitial(ph.Phoneme);  // Azure 识别的声母
-
+        const wantInit = getInitial(correctPy);
+        const gotInit  = getInitial(ph.Phoneme);
         console.log(`[平翘舌] "${ch}": 期望=${correctPy}(${wantInit}) 识别=${ph.Phoneme}(${gotInit})`);
 
         for (const [retro, flat] of RETRO_PAIRS) {
-          if (wantInit !== retro && wantInit !== flat) continue; // 该字不涉及此对
-          if (!gotInit) continue;                                 // 识别不出声母，跳过
+          if (wantInit !== retro && wantInit !== flat) continue;
+          if (!gotInit) continue;
           if ((wantInit === retro && gotInit === flat) ||
               (wantInit === flat  && gotInit === retro)) {
             cMsgs[i].push(`平翘舌：应【${wantInit}】实【${gotInit}】（${correctPy}）`);
-            cErr[i] = true;
+            cLevel[i] = 2; // 声母混淆 → 红色
           }
         }
       } else if (correctPyArr) {
-        // 没有 Phoneme 串但有期望拼音，仍消费队列保持对齐
         usedIdx[ch] = (usedIdx[ch] || 0) + 1;
       }
     });
 
     charArr.forEach((ch, i) => {
-      wordResults.push({ content: ch, perrLevel: cErr[i] ? 1 : 0, perrMsg: cMsgs[i].join('；') });
+      wordResults.push({ content: ch, perrLevel: cLevel[i], perrMsg: cMsgs[i].join('；') });
     });
   }
 
-  // ── 最终得分：Azure PronScore 70% + 字符正确率 30% ──────────
+  // ── 最终得分：Azure PronScore 70% + 绿色字占比 30% ──────────
   let totalScore = pronScore;
   if (wordResults.length > 0) {
     const charRatio = wordResults.filter(w => w.perrLevel === 0).length / wordResults.length;
