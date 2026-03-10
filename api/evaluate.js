@@ -89,14 +89,11 @@ async function getPinyinMap(refText) {
     return pinyinCache.get(refText);
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
   console.log('[Gemini] 请求拼音 for:', refText);
 
   const body = {
-    contents: [{
-      parts: [{ text: `${GEMINI_SYSTEM}\n\n句子：${refText}\n请返回每个汉字的拼音JSON（格式示例：{"你":"ni3","好":"hao3"}）：` }]
-    }],
-    generationConfig: { maxOutputTokens: 512 }
+    contents: [{ parts: [{ text: `${GEMINI_SYSTEM}\n\n句子：${refText}\n请返回每个汉字的拼音JSON（格式示例：{"你":"ni3","好":"hao3"}）：` }] }]
   };
 
   const resp = await fetch(url, {
