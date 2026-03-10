@@ -266,9 +266,26 @@ async function parseAzureResult(resp, refText, pyMap) {
     });
   }
 
-  const totalScore = pronScore;
-  console.log(`[parse] totalScore=${totalScore} wordResults=${wordResults.length}`);
-  return { totalScore, wordResults };
+  // ── 分段线性映射，让分数对学习者更友好 ──────────────────────
+  // 原始分 → 显示分：[src0,src1] → [dst0,dst1] 线性插值
+  const segments = [
+    [90, 100, 95, 100],  // 优秀区间略微提升
+    [75,  89, 85,  94],  // 良好区间明显提升
+    [60,  74, 75,  84],  // 一般区间大幅提升
+    [45,  59, 60,  74],  // 较差区间适度提升
+  ];
+  function mapScore(raw) {
+    for (const [s0, s1, d0, d1] of segments) {
+      if (raw >= s0 && raw <= s1)
+        return Math.round(d0 + (raw - s0) / (s1 - s0) * (d1 - d0));
+    }
+    return raw; // 0-44 保持原分
+  }
+
+  const rawScore     = pronScore;
+  const totalScore   = mapScore(rawScore);
+  console.log(`[parse] rawScore=${rawScore} totalScore=${totalScore} wordResults=${wordResults.length}`);
+  return { totalScore, rawScore, wordResults };
 }
 
 // ── Vercel Serverless 入口 ───────────────────────────────────────
@@ -304,6 +321,7 @@ module.exports = async function handler(req, res) {
       'NBest[0].PronunciationAssessment': nbest0 ? nbest0.PronunciationAssessment : null,
       'NBest[0].Lexical':  nbest0 ? nbest0.Lexical : null,
       WordCount:           nbest0 && nbest0.Words ? nbest0.Words.length : 0,
+      rawScore: result.rawScore,
       pyMap,
       geminiError: claudeErr || null,
       'Words[0]_full':          w0 || null,
