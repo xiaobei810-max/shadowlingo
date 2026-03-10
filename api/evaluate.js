@@ -199,9 +199,16 @@ async function parseAzureResult(resp, refText, pyMap) {
     const cMsgs   = charArr.map(() => []);
     const cLevel  = charArr.map(() => 0);
 
-    const levelOf = (acc, err) => {
+    // Azure 对这些字识别偏严，用宽松阈值避免误报
+    const azureWeakChars = ['松','文','中','说','人','好','首','先','会'];
+    const levelOf = (acc, err, ch) => {
       if (err === 'Omission') return 2;
-      if (acc < 50) return 2;          // 红：< 50 或漏读
+      if (azureWeakChars.includes(ch)) {
+        if (acc < 40) return 2;        // 宽松红：< 40
+        if (acc < 60) return 1;        // 宽松黄：40-59
+        return 0;                      // 宽松绿：>= 60
+      }
+      if (acc < 50) return 2;          // 红：< 50
       if (err === 'Mispronunciation') return 1;
       if (acc < 80) return 1;          // 黄：50-79
       return 0;                        // 绿：>= 80
@@ -212,7 +219,7 @@ async function parseAzureResult(resp, refText, pyMap) {
       const syl = syllables.find(s => s.Grapheme === ch) || syllables[i] || null;
 
       const charAcc = syl ? subAcc(syl) : (ph ? subAcc(ph) : accuracy);
-      cLevel[i] = levelOf(charAcc, errType);
+      cLevel[i] = levelOf(charAcc, errType, ch);
 
       // ── 基础错误消息 ──────────────────────────────────────────
       if (cLevel[i] === 2) {
