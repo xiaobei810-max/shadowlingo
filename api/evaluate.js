@@ -89,7 +89,7 @@ async function getPinyinMap(refText) {
     return pinyinCache.get(refText);
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
   console.log('[Gemini] 请求拼音 for:', refText);
 
   const body = {
@@ -301,7 +301,7 @@ module.exports = async function handler(req, res) {
       'NBest[0].Lexical':  nbest0 ? nbest0.Lexical : null,
       WordCount:           nbest0 && nbest0.Words ? nbest0.Words.length : 0,
       pyMap,
-      claudeError: claudeErr || null,
+      geminiError: claudeErr || null,
       'Words[0]_full':          w0 || null,
       'Words[0].Phonemes_full': w0 ? w0.Phonemes : null,
       'Words[0].Syllables_full':w0 ? w0.Syllables : null,
