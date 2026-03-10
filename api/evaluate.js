@@ -93,10 +93,8 @@ async function getPinyinMap(refText) {
   console.log('[Gemini] 请求拼音 for:', refText);
 
   const body = {
-    systemInstruction: { parts: [{ text: GEMINI_SYSTEM }] },
     contents: [{
-      role: 'user',
-      parts: [{ text: `句子：${refText}\n请返回每个汉字的拼音JSON（格式示例：{"你":"ni3","好":"hao3"}）：` }]
+      parts: [{ text: `${GEMINI_SYSTEM}\n\n句子：${refText}\n请返回每个汉字的拼音JSON（格式示例：{"你":"ni3","好":"hao3"}）：` }]
     }],
     generationConfig: { maxOutputTokens: 512 }
   };
