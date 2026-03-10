@@ -174,14 +174,19 @@ async function parseAzureResult(resp, refText, pyMap) {
     return { totalScore: 0, wordResults: [], debugInfo: resp.RecognitionStatus || 'NoNBest' };
   }
 
-  // ── 总分 ──────────────────────────────────────────────────────
-  const pa = nbest.PronunciationAssessment || {};
-  let pronScore = Math.round(pa.PronScore ?? pa.AccuracyScore ?? nbest.AccuracyScore ?? 0);
+  // ── 自定义加权公式（初级学习者模式）────────────────────────────
+  const pa               = nbest.PronunciationAssessment || {};
+  const accuracyScore    = pa.AccuracyScore     ?? nbest.AccuracyScore     ?? 0;
+  const completenessScore= pa.CompletenessScore ?? nbest.CompletenessScore ?? 100;
+  const fluencyScore     = pa.FluencyScore      ?? nbest.FluencyScore      ?? 0;
+  let pronScore = Math.round(accuracyScore * 0.7 + completenessScore * 0.2 + fluencyScore * 0.1);
+  // 三项均为0时（Azure未返回分项）降级为词级平均
   if (pronScore === 0 && nbest.Words && nbest.Words.length > 0) {
     pronScore = Math.round(nbest.Words.reduce((s, w) => s + wordAcc(w), 0) / nbest.Words.length);
     console.log('[parse] 词级平均兜底 pronScore:', pronScore);
   }
-  console.log('[parse] pronScore:', pronScore, '| 词数:', (nbest.Words || []).length);
+  console.log('[parse] accuracy=%s completeness=%s fluency=%s → pronScore=%s | 词数:%s',
+    accuracyScore, completenessScore, fluencyScore, pronScore, (nbest.Words || []).length);
   console.log('[parse] pyMap:', JSON.stringify(pyMap));
 
   const wordResults = [];
@@ -285,7 +290,7 @@ async function parseAzureResult(resp, refText, pyMap) {
   const rawScore     = pronScore;
   const totalScore   = mapScore(rawScore);
   console.log(`[parse] rawScore=${rawScore} totalScore=${totalScore} wordResults=${wordResults.length}`);
-  return { totalScore, rawScore, wordResults };
+  return { totalScore, rawScore, accuracyScore, completenessScore, fluencyScore, wordResults };
 }
 
 // ── Vercel Serverless 入口 ───────────────────────────────────────
@@ -321,7 +326,10 @@ module.exports = async function handler(req, res) {
       'NBest[0].PronunciationAssessment': nbest0 ? nbest0.PronunciationAssessment : null,
       'NBest[0].Lexical':  nbest0 ? nbest0.Lexical : null,
       WordCount:           nbest0 && nbest0.Words ? nbest0.Words.length : 0,
-      rawScore: result.rawScore,
+      rawScore:          result.rawScore,
+      accuracyScore:     result.accuracyScore,
+      completenessScore: result.completenessScore,
+      fluencyScore:      result.fluencyScore,
       pyMap,
       geminiError: claudeErr || null,
       'Words[0]_full':          w0 || null,
