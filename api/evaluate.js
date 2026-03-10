@@ -1,9 +1,8 @@
-const https     = require('https');
-const Anthropic = require('@anthropic-ai/sdk');
+const https = require('https');
 
 const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
-const anthropic    = new Anthropic(); // uses ANTHROPIC_API_KEY env var
+const GEMINI_KEY   = process.env.GEMINI_API_KEY;
 
 // ── PCM → WAV（44 字节 RIFF 头）────────────────────────────────
 function pcmToWav(pcmBuf) {
@@ -72,37 +71,49 @@ function azureAssess(pcmBase64, refText) {
   });
 }
 
-// ── Claude 生成期望拼音（内存缓存，同句不重复调用）──────────────
+// ── Gemini 生成期望拼音（内存缓存，同句不重复调用）─────────────
 const pinyinCache = new Map();
+
+const GEMINI_SYSTEM =
+  '你是中文拼音专家。给定一个中文句子，返回每个汉字对应的拼音（含声调数字1-4，轻声用0）。\n' +
+  '规则：\n' +
+  '1. 按句子语境判断多音字，例如"教"在"来教你"中读 jiao1\n' +
+  '2. "的/地/得/了/么/着/过/啊/呢/吧/嘛" 等语气助词和轻声字用声调0（de0、le0、me0 等）\n' +
+  '3. "一"按变调规则：后接4声→读2声；后接1/2/3声→读4声；单独或序数→读1声\n' +
+  '4. "不"按变调规则：后接4声→读2声；其他→读4声\n' +
+  '5. 只返回纯JSON对象，不要任何其他文字、注释或 markdown';
 
 async function getPinyinMap(refText) {
   if (pinyinCache.has(refText)) {
-    console.log('[Claude] 缓存命中:', refText);
+    console.log('[Gemini] 缓存命中:', refText);
     return pinyinCache.get(refText);
   }
 
-  const MODEL = 'claude-haiku-4-5-20251001';
-  console.log('[Claude] 请求拼音 model=%s for: %s', MODEL, refText);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+  console.log('[Gemini] 请求拼音 for:', refText);
 
-  const msg = await anthropic.messages.create({
-    model:      MODEL,
-    max_tokens: 512,
-    system:
-      '你是中文拼音专家。给定一个中文句子，返回每个汉字对应的拼音（含声调数字1-4，轻声用0）。\n' +
-      '规则：\n' +
-      '1. 按句子语境判断多音字，例如"教"在"来教你"中读 jiao1\n' +
-      '2. "的/地/得/了/么/着/过/啊/呢/吧/嘛" 等语气助词和轻声字用声调0（de0、le0、me0 等）\n' +
-      '3. "一"按变调规则：后接4声→读2声；后接1/2/3声→读4声；单独或序数→读1声\n' +
-      '4. "不"按变调规则：后接4声→读2声；其他→读4声\n' +
-      '5. 只返回纯JSON对象，不要任何其他文字、注释或 markdown',
-    messages: [{
-      role:    'user',
-      content: `句子：${refText}\n请返回每个汉字的拼音JSON（格式示例：{"你":"ni3","好":"hao3"}）：`
-    }]
+  const body = {
+    systemInstruction: { parts: [{ text: GEMINI_SYSTEM }] },
+    contents: [{
+      role: 'user',
+      parts: [{ text: `句子：${refText}\n请返回每个汉字的拼音JSON（格式示例：{"你":"ni3","好":"hao3"}）：` }]
+    }],
+    generationConfig: { maxOutputTokens: 512 }
+  };
+
+  const resp = await fetch(url, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body)
   });
 
-  const raw = msg.content[0].text.trim();
-  console.log('[Claude] 原始返回:', raw);
+  const data = await resp.json();
+  console.log('[Gemini] HTTP状态:', resp.status, '原始返回:', JSON.stringify(data).slice(0, 300));
+
+  if (!resp.ok) throw Object.assign(new Error(data?.error?.message || 'Gemini error'), { status: resp.status, body: data });
+
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  console.log('[Gemini] 文本返回:', raw);
 
   let pyMap;
   try {
@@ -110,26 +121,20 @@ async function getPinyinMap(refText) {
   } catch(e) {
     const m = raw.match(/\{[\s\S]+\}/);
     if (m) pyMap = JSON.parse(m[0]);
-    else throw new Error('Claude拼音返回格式错误: ' + raw.slice(0, 150));
+    else throw new Error('Gemini拼音返回格式错误: ' + raw.slice(0, 150));
   }
 
   pinyinCache.set(refText, pyMap);
   return pyMap;
 }
 
-// 带降级的包装：Claude 失败时返回空 map，让 Azure 评测仍能进行
+// 带降级的包装：Gemini 失败时返回空 map，让 Azure 评测仍能进行
 async function getPinyinMapSafe(refText) {
   try {
     return { map: await getPinyinMap(refText), error: null };
   } catch(e) {
-    // Anthropic SDK errors: e.status (HTTP code), e.message, e.error (API body)
-    const detail = {
-      status:  e.status  ?? null,
-      message: e.message ?? String(e),
-      body:    e.error   ?? null,   // raw API error body, e.g. { type, error: { type, message } }
-    };
-    console.error('[Claude] 拼音请求失败 status=%s message=%s body=%s',
-      detail.status, detail.message, JSON.stringify(detail.body));
+    const detail = { status: e.status ?? null, message: e.message ?? String(e), body: e.body ?? null };
+    console.error('[Gemini] 拼音请求失败 status=%s message=%s', detail.status, detail.message);
     return { map: {}, error: detail };
   }
 }
