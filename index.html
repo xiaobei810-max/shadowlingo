@@ -31,6 +31,21 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .progress-bar { height: 3px; background: var(--border); margin: 12px 0 0; }
 .progress-fill { height: 100%; background: var(--green); transition: width 0.4s ease; }
 
+/* Step indicator */
+.step-title {
+  padding: 10px 20px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.step-sub {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
 /* Lesson selector */
 .lesson-nav { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 20px 0; }
 .lesson-nav button { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
@@ -52,6 +67,44 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .sentence-badge { position: absolute; top: 14px; left: 14px; background: rgba(0,0,0,0.5); border-radius: 99px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
 .status-badge { position: absolute; top: 14px; right: 14px; font-size: 13px; color: var(--green); font-weight: 600; }
 .sentence-box { padding: 20px 20px 24px; text-align: center; }
+
+/* Dialogue role layout */
+.role-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.role-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: rgba(15,23,42,0.9);
+}
+.role-avatar.learner {
+  background: rgba(34,197,94,0.12);
+}
+.role-meta {
+  flex: 1;
+  text-align: left;
+}
+.role-name {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+.role-text {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.role-text.highlight {
+  color: #f97316;
+}
 
 /* Countdown overlay */
 
@@ -221,6 +274,11 @@ ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: 
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
 
+  <div class="step-title">
+    <span id="step-title-main">第1步：先听一遍 👂</span>
+    <span class="step-sub" id="step-title-sub">跟着完整对话先感受语气</span>
+  </div>
+
   <div class="lesson-nav">
     <button id="btn-lesson-prev" onclick="changeLesson(-1)" disabled>‹</button>
     <span class="lesson-title-text" id="lesson-title-text"></span>
@@ -236,8 +294,26 @@ ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: 
     </div>
     <div class="sentence-badge" id="badge">第 1/5 句</div>
 
-
     <div class="sentence-box">
+      <!-- 上方：本轮 local 台词（林悦） -->
+      <div class="role-row" id="role-row-local" style="margin-bottom:12px;">
+        <div class="role-avatar" id="role-avatar-local">🇨🇳</div>
+        <div class="role-meta">
+          <div class="role-name" id="role-name-local">林悦 · Local</div>
+          <div class="role-text" id="role-text-local"></div>
+        </div>
+      </div>
+
+      <!-- 下方：本轮 learner 台词（卢克） -->
+      <div class="role-row" id="role-row-learner">
+        <div class="role-avatar learner" id="role-avatar-learner">🎤</div>
+        <div class="role-meta">
+          <div class="role-name" id="role-name-learner">卢克 · You</div>
+          <div class="role-text" id="role-text-learner"></div>
+        </div>
+      </div>
+
+      <!-- 卡拉OK字幕（Listen 模式下显示整句） -->
       <div class="kara-wrap" id="kara"></div>
       <div class="kara-bar"><div class="kara-bar-fill" id="bar-fill"></div></div>
       <div class="info-box">
@@ -261,10 +337,10 @@ ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: 
 
 
   <div class="controls">
-    <button class="btn" id="bl" onclick="doListen()">▶ 听原声 Listen</button>
-    <button class="btn" id="bs" onclick="doSlow()" disabled>🐢 慢速跟读 Slow Shadow</button>
-    <button class="btn" id="bm" onclick="doNormal()">🚀 常速跟读 Shadow</button>
-    <button class="btn" id="bn" onclick="doRecord()">🎤 录音 Record</button>
+    <button class="btn" id="bl" onclick="playFullDialogue()">▶ 听完整对话 Listen All</button>
+    <button class="btn" id="bs" onclick="enterDialogStep2()">⏭ 跳到第2步 Your Turn</button>
+    <button class="btn" id="bm" disabled>🚀 Shadow 模式（暂未开放）</button>
+    <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 轮到你说 Record</button>
     <button class="btn btn-retry" id="bretry" onclick="doRetry()">↩ 再练一次 Retry</button>
     <div class="btn-nav">
       <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一句 Prev</button>
@@ -297,6 +373,7 @@ const LESSONS = [
         zh: "你好，叫我卢克就行。我也很高兴认识你！",
         pinyin: "Nǐ hǎo, jiào wǒ Lùkè jiù xíng. Wǒ yě hěn gāoxìng rènshi nǐ!",
         en: "Hi, just call me Luke. Nice to meet you too!",
+        role: "learner",
         start: 1, end: 7,
         praise: "🌟 开场白很自然！Great opening!",
         hint: "【叫我...就行】is a casual self-intro — say it in one smooth breath",
@@ -311,6 +388,7 @@ const LESSONS = [
         zh: "没有没有，还差得远呢。我来北京才三个月。",
         pinyin: "Méiyǒu méiyǒu, hái chà de yuǎn ne. Wǒ lái Běijīng cái sān ge yuè.",
         en: "No no, I still have a long way to go. I've only been in Beijing for 3 months.",
+        role: "learner",
         start: 8, end: 15,
         praise: "😎 谦虚得很地道！Perfectly humble!",
         hint: "【没有没有】say it fast with a hand wave — very Chinese! · 【还差得远呢】is the star phrase",
@@ -326,6 +404,7 @@ const LESSONS = [
         zh: "我是英国人。不过我有一个标准的「中国胃」，特别爱吃烤鸭！",
         pinyin: "Wǒ shì Yīngguó rén. Búguò wǒ yǒu yí ge biāozhǔn de 「Zhōngguó wèi」, tèbié ài chī kǎoyā!",
         en: "I'm British. But I have a proper 'Chinese stomach' — I absolutely love Peking duck!",
+        role: "learner",
         start: 16, end: 26,
         praise: "🔥 文化梗用得妙！Great cultural flex!",
         hint: "【不过】smoothly connects the two parts · 【特别】adds strong emphasis — stress it!",
@@ -359,6 +438,17 @@ let busy = false;
 let segTimer = null;
 let sessionScores = [];
 let slowSpeed = 0.7;
+
+// Dialogue mode: 3-step flow
+// step: 1 = Listen Mode, 2 = Your Turn, 3 = Guide
+let dialogStep = 1;
+let dialogRounds = [];      // [{ local, learner, evalSentence }]
+let dialogRoundIdx = 0;
+let dialogLessonMeta = null; // 当前 lesson 的对话 & 地道指南元数据（来自 data/lessons.json）
+let dialogMode = true;       // 课程页面使用对话模式
+
+// 当前这一次评测要用的句子（默认回退到 LESSONS[lessonIdx].sentences[idx]）
+let currentSentenceForEval = null;
 
 // ── Storage ───────────────────────────────────────────────
 function loadState() {
@@ -773,7 +863,8 @@ function stopMediaRecorderIfRunning() {
 
 // 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
 async function evaluateAudio(blob) {
-  var s = LESSONS[lessonIdx].sentences[idx];
+  // 对话模式下，优先使用当前轮到 learner 说的句子；否则回退到当前课时句子
+  var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
   showEvalPageLoading(s);
   try {
     // 1. 本地转换为 16kHz/16bit/mono PCM
@@ -813,6 +904,8 @@ async function evaluateAudio(blob) {
   }
   busy = false;
   setStatus('准备好了 Ready');
+  // 本轮评测结束后清空覆盖句子，避免影响下一轮
+  currentSentenceForEval = null;
 }
 
 function getPraise(s) {
@@ -823,6 +916,7 @@ function getPraise(s) {
 // ── Karaoke engine ────────────────────────────────────────
 var charTimingsCache = [];
 var karaStart = 0, karaEnd = 0, karaActive = false;
+var karaTimerId = null; // 对话 Listen 模式下的定时器驱动高亮
 
 function computeCharTimings(sentence) {
   var duration = sentence.end - sentence.start;
@@ -848,6 +942,47 @@ function computeCharTimings(sentence) {
   var elapsed = 0;
   for (var i = 0; i < chars.length; i++) {
     if (/[\u4e00-\u9fff]/.test(chars[i])) {
+      var w = weights[wIdx++] || 2;
+      var dur = (w / totalWeight) * duration;
+      timings.push({ start: elapsed, end: elapsed + dur });
+      elapsed += dur;
+    } else {
+      timings.push({ start: elapsed, end: elapsed + 0.05 });
+    }
+  }
+  return timings;
+}
+
+// 基于总时长的字符时间表（用于 TTS / 全对话模式）
+function computeCharTimingsForDuration(text, pinyinStr, totalSeconds) {
+  var sentence = {
+    zh: text,
+    pinyin: pinyinStr || ""
+  };
+  // 复用上面的逻辑，但用人工设定的总时长
+  var duration = totalSeconds;
+  var chars = Array.from(sentence.zh);
+
+  var syllables = (sentence.pinyin || "")
+    .replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, "a")
+    .replace(/[,，。！？.!?]/g, " ")
+    .trim().split(/\s+/).filter(function(s) { return s.length > 0; });
+
+  var weights = [];
+  var sIdx = 0;
+  for (var i = 0; i < chars.length; i++) {
+    if (/[\u4e00-\u9fff]/.test(chars[i])) {
+      weights.push(Math.max((syllables[sIdx] || "aa").length, 1));
+      sIdx++;
+    }
+  }
+  var totalWeight = weights.reduce(function(a, b) { return a + b; }, 0) || 1;
+
+  var timings = [];
+  var wIdx = 0;
+  var elapsed = 0;
+  for (var j = 0; j < chars.length; j++) {
+    if (/[\u4e00-\u9fff]/.test(chars[j])) {
       var w = weights[wIdx++] || 2;
       var dur = (w / totalWeight) * duration;
       timings.push({ start: elapsed, end: elapsed + dur });
@@ -928,20 +1063,56 @@ function onTimeUpdate() {
 
 function completeKara() {
   karaActive = false;
+  if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
   document.querySelectorAll(".kchar").forEach(function(c) { c.className = "kchar done"; });
   document.getElementById("bar-fill").style.width = "100%";
 }
 
 function resetKara() {
   karaActive = false;
+  if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
   document.querySelectorAll(".kchar").forEach(function(c) { c.className = "kchar"; });
   document.getElementById("bar-fill").style.width = "0%";
+}
+
+// 使用 setInterval 驱动的卡拉 OK（不依赖 <audio>）
+function runKaraWithTimer(durationMs, timings) {
+  resetKara();
+  karaActive = true;
+  var start = performance.now();
+  karaTimerId = setInterval(function() {
+    var now = performance.now();
+    var elapsed = (now - start) / 1000;
+    var duration = durationMs / 1000;
+    var pct = Math.max(0, Math.min(1, elapsed / duration));
+    document.getElementById("bar-fill").style.width = (pct * 100) + "%";
+    var chars = document.querySelectorAll(".kchar");
+    chars.forEach(function(el, i) {
+      var t = timings[i];
+      if (!t) return;
+      if (elapsed >= t.end) { el.className = "kchar done"; }
+      else if (elapsed >= t.start) { el.className = "kchar active"; }
+      else { el.className = "kchar"; }
+    });
+    if (pct >= 1) {
+      clearInterval(karaTimerId);
+      karaTimerId = null;
+      completeKara();
+    }
+  }, 50);
 }
 
 // ── Helpers ───────────────────────────────────────────────
 function setStatus(t) {
   var el = document.getElementById("status-text");
   if (el) el.textContent = t;
+}
+
+function setStepTitle(main, sub) {
+  var m = document.getElementById("step-title-main");
+  var s = document.getElementById("step-title-sub");
+  if (m) m.textContent = main || "";
+  if (s) s.textContent = sub || "";
 }
 
 function clearTimers() {
@@ -1239,6 +1410,26 @@ function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText)
 }
 
 function evalNav(dir) {
+  // 对话模式下，第 2 步由轮到你说 → 下一轮 / 地道指南
+  if (dialogMode && dialogStep === 2) {
+    document.getElementById("eval-page").classList.remove("show");
+    if (dir === 1) {
+      if (dialogRoundIdx >= dialogRounds.length - 1) {
+        enterDialogStep3();
+      } else {
+        dialogRoundIdx++;
+        renderDialogYourTurn();
+      }
+    } else {
+      if (dialogRoundIdx > 0) {
+        dialogRoundIdx--;
+        renderDialogYourTurn();
+      }
+    }
+    return;
+  }
+
+  // 旧的逐句导航逻辑（保留以兼容单句练习）
   document.getElementById("eval-page").classList.remove("show");
   if (dir === 1) {
     var lesson = LESSONS[lessonIdx];
@@ -1366,11 +1557,189 @@ function stopFireworks() {
   fwParticles = [];
 }
 
+// ── Dialogue mode (3 steps) ───────────────────────────────
+function initDialogMode() {
+  // 默认设置为第 1 步标题
+  setStepTitle("第1步：先听一遍 👂", "跟着完整对话先感受语气");
+  // 载入对话与地道指南元数据
+  fetch('data/lessons.json')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data || !data.lessons || !data.lessons.length) return;
+      // 目前只支持单课，按顺序取与当前 lessonIdx 对应的 lesson
+      dialogLessonMeta = data.lessons[lessonIdx] || data.lessons[0];
+      buildDialogRounds();
+      renderDialogStep1Intro();
+    })
+    .catch(function(e) {
+      console.error('加载对话数据失败:', e);
+    });
+}
+
+function buildDialogRounds() {
+  dialogRounds = [];
+  if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
+  var lastLocal = null;
+  var dialogue = dialogLessonMeta.dialogue;
+  for (var i = 0; i < dialogue.length; i++) {
+    var d = dialogue[i];
+    if (d.role === 'local') {
+      lastLocal = d;
+    } else if (d.role === 'learner') {
+      // 在 shadow 课的 LESSONS 里寻找同句，拿到 chars/praise/hint
+      var evalSentence = null;
+      var lesson = LESSONS[lessonIdx];
+      if (lesson && lesson.sentences) {
+        for (var j = 0; j < lesson.sentences.length; j++) {
+          if (lesson.sentences[j].zh === d.zh) { evalSentence = lesson.sentences[j]; break; }
+        }
+      }
+      dialogRounds.push({
+        local: lastLocal,
+        learner: d,
+        evalSentence: evalSentence || { zh: d.zh, pinyin: d.pinyin, en: d.en, chars: [] }
+      });
+    }
+  }
+  dialogRoundIdx = 0;
+}
+
+// 第 1 步：自动播放完整对话（使用浏览器 TTS + 卡拉OK）
+function renderDialogStep1Intro() {
+  dialogStep = 1;
+  setStepTitle("第1步：先听一遍 👂", "先听完整对话，感受语气和节奏");
+  var sub = document.getElementById('status-text');
+  if (sub) sub.textContent = '点击「听原声」开始整段对话';
+  // 用第一轮的 local/learner 文本预填区域
+  if (dialogRounds.length) {
+    var r0 = dialogRounds[0];
+    if (el("role-text-local"))   el("role-text-local").textContent   = r0.local ? r0.local.zh : '';
+    if (el("role-text-learner")) el("role-text-learner").textContent = r0.learner ? r0.learner.zh : '';
+    buildKara(r0.learner ? r0.learner.zh : '', null);
+    resetKara();
+  }
+}
+
+// 听完整对话：逐句 TTS
+function playFullDialogue() {
+  if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
+  var seq = dialogLessonMeta.dialogue.slice();
+  var i = 0;
+
+  function next() {
+    if (i >= seq.length) {
+      // 播放完自动进入第 2 步
+      enterDialogStep2();
+      return;
+    }
+    var d = seq[i++];
+    var isLocal = d.role === 'local';
+    if (el("role-text-local"))   el("role-text-local").textContent   = isLocal ? d.zh : (el("role-text-local").textContent || '');
+    if (el("role-text-learner")) el("role-text-learner").textContent = !isLocal ? d.zh : (el("role-text-learner").textContent || '');
+    buildKara(d.zh, null);
+    var estSeconds = Math.max(2, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+    var timings = computeCharTimingsForDuration(d.zh, d.pinyin, estSeconds);
+    runKaraWithTimer(estSeconds * 1000, timings);
+    speakTTS(d.zh, isLocal ? 'local' : 'learner', next);
+  }
+
+  next();
+}
+
+// 简单 TTS 封装（使用浏览器 speechSynthesis，若不可用则仅用计时器）
+function speakTTS(text, role, onend) {
+  if (!('speechSynthesis' in window)) {
+    setTimeout(function() { if (onend) onend(); }, Math.max(2000, text.length * 300));
+    return;
+  }
+  var utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-CN';
+  utter.rate = role === 'local' ? 1.0 : 0.9;
+  utter.pitch = role === 'local' ? 1.0 : 1.05;
+  utter.onend = function() { if (onend) onend(); };
+  utter.onerror = function() { if (onend) onend(); };
+  window.speechSynthesis.speak(utter);
+}
+
+// 进入第 2 步：Your Turn
+function enterDialogStep2() {
+  dialogStep = 2;
+  setStepTitle("第2步：轮到你说 🎯", "上方听林悦，下方轮到你用中文回答");
+  dialogRoundIdx = 0;
+  renderDialogYourTurn();
+}
+
+// 渲染当前轮的 local & learner 台词
+function renderDialogYourTurn() {
+  if (!dialogRounds.length) return;
+  var round = dialogRounds[dialogRoundIdx];
+  if (!round) return;
+  if (el("role-text-local"))   el("role-text-local").textContent   = round.local ? round.local.zh : '';
+  if (el("role-text-learner")) el("role-text-learner").textContent = round.learner ? round.learner.zh : '';
+  if (el("pinyin")) el("pinyin").textContent = round.learner ? round.learner.pinyin : '';
+  if (el("en"))     el("en").textContent     = round.learner ? round.learner.en : '';
+
+  // 上方 local 自动 TTS 一遍
+  if (round.local && round.local.zh) {
+    speakTTS(round.local.zh, 'local', function(){});
+  }
+
+  // 卡拉 OK 高亮 learner 句子
+  buildKara(round.learner.zh, null);
+  var estSeconds = Math.max(2, round.learner.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+  var timings = computeCharTimingsForDuration(round.learner.zh, round.learner.pinyin, estSeconds);
+  runKaraWithTimer(estSeconds * 1000, timings);
+
+  // 绑定当前轮评测用的句子（带 chars/praise/hint）
+  currentSentenceForEval = round.evalSentence;
+}
+
+// Your Turn 下方麦克风点击
+function dialogRecordToggle() {
+  // 直接复用原来的录音按钮逻辑
+  doRecord();
+}
+
+// 第 3 步：地道指南
+function enterDialogStep3() {
+  dialogStep = 3;
+  setStepTitle("第3步：地道指南 📚", "看看这一课中式谦虚的地道表达");
+  showCompletionGuide();
+}
+
+function showCompletionGuide() {
+  // 复用完成弹窗区域展示本课地道指南
+  document.getElementById("overlay").classList.add("show");
+  stopFireworks();
+
+  var card = document.querySelector(".completion-card");
+  if (!card) return;
+  var html = "<div class='completion-title'>📚 地道指南</div>" +
+             "<div class='completion-sub'>常见错误 vs 地道表达</div>";
+
+  if (dialogLessonMeta && dialogLessonMeta.correct && dialogLessonMeta.correct.length) {
+    dialogLessonMeta.correct.forEach(function(item) {
+      html += "<div style='text-align:left;margin-top:14px;padding:10px 12px;border-radius:12px;background:#020617;border:1px solid #1e293b;'>"
+           +  "<div style='font-size:15px;font-weight:600;margin-bottom:6px;'>" + item.zh + " · " + item.pinyin + "</div>"
+           +  "<div style='font-size:13px;color:#94a3b8;margin-bottom:4px;'>✅ 正确说法：" + item.en + "</div>"
+           +  "<div style='font-size:13px;color:#f97316;'>❌ 常见错误：直译成生硬的英文语序，比如「I am very good at Chinese」</div>"
+           +  "<div style='font-size:12px;color:#64748b;margin-top:4px;'>" + (item.note || '') + "</div>"
+           +  "</div>";
+    });
+  } else {
+    html += "<div style='margin-top:12px;font-size:14px;color:#94a3b8;'>本课暂无详细地道指南配置。</div>";
+  }
+
+  card.innerHTML = html +
+    "<button class='btn-restart' onclick='restartLesson()'>再练一次 Practice Again</button>";
+}
+
 // ── Init ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   loadState();
   setupAudio(LESSONS[lessonIdx].audio);
   updateUI();
+  initDialogMode();
 });
 </script>
 <!-- 评价页面 -->
