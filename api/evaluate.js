@@ -201,10 +201,10 @@ async function parseAzureResult(resp, refText, pyMap) {
 
     const levelOf = (acc, err) => {
       if (err === 'Omission') return 2;
-      if (acc < 50) return 2;
+      if (acc < 50) return 2;          // 红：< 50 或漏读
       if (err === 'Mispronunciation') return 1;
-      if (acc < 75) return 1;
-      return 0;
+      if (acc < 80) return 1;          // 黄：50-79
+      return 0;                        // 绿：>= 80
     };
 
     charArr.forEach((ch, i) => {
@@ -230,7 +230,7 @@ async function parseAzureResult(resp, refText, pyMap) {
 
       console.log(`[拼音] "${ch}" 期望=${wantPy} 实测=${gotPy}`);
 
-      if (wantPy && gotPy && errType !== 'Omission') {
+      if (wantPy && gotPy && errType !== 'Omission' && charAcc < 80) {
         const wantTone  = getTone(wantPy);
         const gotTone   = getTone(gotPy);
         const wantInit  = getInitial(wantPy);
