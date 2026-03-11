@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EchoChinese</title>
+<style>
+:root {
+  --bg: #0a0f1a;
+  --card: #111827;
+  --border: #1a2540;
+  --green: #22c55e;
+  --muted: #4b5563;
+  --text: #e2e8f0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; min-height: 100vh; display: flex; justify-content: center; }
+.app { width: 100%; max-width: 480px; padding: 0 0 32px; }
+
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-icon { width: 44px; height: 44px; background: var(--green); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #000; }
+.logo-text { font-size: 20px; font-weight: 700; color: var(--text); }
+.logo-sub { font-size: 14px; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.counter { font-size: 15px; color: var(--muted); font-weight: 600; }
+.practice-count { font-size: 11px; color: #4b5563; }
+
+/* Progress bar */
+.progress-bar { height: 3px; background: var(--border); margin: 12px 0 0; }
+.progress-fill { height: 100%; background: var(--green); transition: width 0.4s ease; }
+
+/* Step indicator */
+.step-title {
+  padding: 10px 20px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.step-sub {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Lesson selector */
+.lesson-nav { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 20px 0; }
+.lesson-nav button { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.lesson-nav button:hover:not(:disabled) { color: var(--green); }
+.lesson-nav button:disabled { opacity: 0.2; cursor: default; }
+.lesson-title-text { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.lesson-title-zh { font-size: 17px; color: #e2e8f0; font-weight: 700; line-height: 1.2; }
+.lesson-title-en { font-size: 12px; color: #94a3b8; font-weight: 500; line-height: 1.2; }
+
+/* Audio error */
+.audio-error { display: none; background: rgba(248,113,113,0.1); border: 1px solid #f87171; border-radius: 12px; padding: 10px 14px; margin: 10px 20px 0; font-size: 13px; color: #f87171; text-align: center; }
+.audio-error.show { display: block; }
+
+/* Stage card */
+.stage { background: var(--card); border-radius: 20px; margin: 10px 20px 0; overflow: hidden; position: relative; }
+.mascot-wrap { display: flex; justify-content: center; align-items: flex-end; padding: 20px 20px 0; height: 190px; }
+.mascot-img { width: 160px; height: 190px; object-fit: contain; mix-blend-mode: screen; transition: transform 0.15s; }
+.mascot-ring { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 176px; height: 206px; border-radius: 50%; border: 3px solid var(--green); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.sentence-badge { position: absolute; top: 14px; left: 14px; background: rgba(0,0,0,0.5); border-radius: 99px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
+.status-badge { position: absolute; top: 14px; right: 14px; font-size: 13px; color: var(--green); font-weight: 600; }
+.sentence-box { padding: 20px 20px 24px; text-align: center; }
+
+/* Dialogue role layout */
+.role-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.role-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: rgba(15,23,42,0.9);
+}
+.role-avatar.learner {
+  background: rgba(34,197,94,0.12);
+}
+.role-meta {
+  flex: 1;
+  text-align: left;
+}
+.role-name {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+.role-text {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.role-text.highlight {
+  color: #f97316;
+}
+
+/* Countdown overlay */
+
+/* Karaoke text */
+.kara-wrap { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 12px; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 4px 3px; word-break: keep-all; }
+/* Each char is a vertical stack: pinyin on top, hanzi below */
+.kchar { display: inline-flex; flex-direction: column; align-items: center; color: #4b5563; transition: color 0.15s; }
+.krt   { font-size: 11px; font-weight: 400; line-height: 1.4; color: #3a5a8a; opacity: 0.5; letter-spacing: 0; transition: opacity 0.15s; min-height: 15px; }
+.kchar.active       { color: var(--text); }
+.kchar.active .krt  { opacity: 1; color: #60a5fa; }
+.kchar.done         { color: var(--green); }
+.kchar.done   .krt  { opacity: 0.7; color: #60a5fa; }
+
+/* Karaoke progress bar */
+.kara-bar { height: 3px; background: var(--border); border-radius: 99px; margin: 0 0 12px; overflow: hidden; }
+.kara-bar-fill { height: 100%; background: var(--green); width: 0%; }
+
+.info-box { background: #0a1120; border-radius: 14px; padding: 14px 16px; text-align: left; }
+.pinyin { display: none; }
+.en { font-size: 16px; color: var(--muted); }
+
+/* Speed control */
+.speed-control { display: flex; align-items: center; gap: 10px; padding: 12px 20px 0; }
+.speed-control span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.speed-control input[type=range] { flex: 1; accent-color: var(--green); cursor: pointer; }
+.speed-label { font-size: 12px; color: var(--green); font-weight: 600; min-width: 36px; text-align: right; }
+
+/* Status + speech indicator */
+.status-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px 0; }
+.status-text { font-size: 13px; color: var(--muted); }
+.speech-indicator { font-size: 12px; color: #f87171; font-weight: 600; display: none; }
+.speech-indicator.active { display: block; animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* Score panel */
+.score-panel { background: var(--card); border-radius: 20px; margin: 12px 20px 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.score-top { display: flex; align-items: center; gap: 14px; }
+.score-num { font-size: 36px; font-weight: 800; color: var(--green); min-width: 52px; text-align: center; }
+.score-right { flex: 1; }
+.score-praise { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.score-hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.score-transcript { font-size: 12px; color: #60a5fa; background: rgba(96,165,250,0.08); border-radius: 8px; padding: 8px 10px; line-height: 1.6; border-left: 2px solid #60a5fa; }
+.score-transcript .label { font-weight: 600; color: #94a3b8; }
+
+/* Buttons */
+.controls { padding: 0 20px; margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.btn { width: 100%; padding: 16px; background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn:hover:not(:disabled) { border-color: var(--green); background: rgba(34,197,94,0.08); }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn.active { border-color: var(--green); background: rgba(34,197,94,0.12); color: var(--green); }
+.btn-nav { display: flex; gap: 8px; }
+.btn-nav .btn { flex: 1; }
+.btn-done { background: var(--green); color: #000; font-weight: 700; border-color: var(--green); display: none; }
+.btn-done.show { display: block; }
+.btn-done:hover:not(:disabled) { background: #16a34a; }
+.btn-retry { background: rgba(251,191,36,0.1); border-color: #d97706; color: #fbbf24; display: none; }
+.btn-retry.show { display: block; }
+.btn-retry:hover:not(:disabled) { background: rgba(251,191,36,0.18); border-color: #fbbf24; }
+
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+@keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 14px 4px rgba(34,197,94,0.25)} }
+
+/* Completion overlay */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:999; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+.overlay.show { display:flex; }
+.completion-card { background:#0d1520; border:1px solid #22c55e; border-radius:24px; padding:28px 24px; max-width:400px; width:100%; text-align:center; position:relative; z-index:2; }
+.completion-title { font-size:28px; font-weight:700; color:#22c55e; margin-bottom:6px; }
+.completion-sub { font-size:14px; color:#94a3b8; margin-bottom:20px; }
+.avg-score { font-size:64px; font-weight:800; color:#22c55e; line-height:1; margin-bottom:4px; }
+.avg-label { font-size:12px; color:#4b5563; margin-bottom:12px; }
+.score-grade { font-size:18px; font-weight:600; margin-bottom:16px; }
+.praise-block { margin-top: 12px; }
+.btn-restart { margin-top:16px; width:100%; padding:14px; background:#22c55e; color:#000; font-weight:700; font-size:15px; border:none; border-radius:14px; cursor:pointer; }
+.btn-restart:hover { background:#16a34a; }
+
+/* Annotation panel */
+.annotation-panel { border-radius: 12px; padding: 10px 0 2px; }
+.anno-legend { font-size: 11px; margin-bottom: 8px; display: flex; gap: 12px; }
+.anno-legend span { display: flex; align-items: center; gap: 4px; }
+.anno-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.anno-dot.correct { background: #22c55e; }
+.anno-dot.confused { background: #fbbf24; }
+.anno-dot.miss { background: #f87171; }
+.anno-chars { font-size: 26px; font-weight: 700; margin-bottom: 8px; line-height: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 4px; }
+ruby.anno-char { display: inline-flex; flex-direction: column-reverse; align-items: center; border-radius: 4px; padding: 0 1px; }
+ruby.anno-char rt { font-size: 11px; font-weight: 400; line-height: 1.4; color: inherit; opacity: 0.85; letter-spacing: 0; }
+.anno-char.correct { color: #22c55e; }
+.anno-char.confused { color: #fbbf24; border-bottom: 2px solid #fbbf24; }
+.anno-char.miss { color: #f87171; border-bottom: 2px solid #f87171; text-decoration-line: underline; text-decoration-style: wavy; }
+.anno-rec { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+/* ── 评价页面 ─────────────────────────────── */
+.eval-page {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: var(--bg); overflow-y: auto;
+  flex-direction: column; align-items: center;
+  padding: 24px 20px 48px;
+}
+.eval-page.show { display: flex; }
+.eval-inner { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; }
+
+/* 顶部句子信息 */
+.eval-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.eval-badge { background: rgba(255,255,255,0.06); border-radius: 99px; padding: 4px 14px; font-size: 12px; color: var(--muted); }
+
+.eval-sentence-card { background: var(--card); border-radius: 20px; padding: 20px 20px 16px; text-align: center; }
+.eval-zh { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 8px; }
+.eval-pinyin { font-size: 13px; color: #60a5fa; letter-spacing: 0.03em; }
+.eval-en { font-size: 14px; color: var(--muted); }
+
+/* 分数卡片 */
+.eval-score-card { background: var(--card); border-radius: 20px; padding: 24px 20px; text-align: center; }
+.eval-score-num { font-size: 80px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.eval-score-sub { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.eval-grade { font-size: 18px; font-weight: 700; }
+.eval-praise { font-size: 14px; color: #94a3b8; margin-top: 10px; line-height: 1.8; padding: 0 8px; white-space: pre-line; }
+
+/* 发音对比卡片 */
+.eval-compare-card { background: var(--card); border-radius: 20px; padding: 18px 20px; }
+.eval-compare-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+.eval-compare-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.eval-compare-row:last-child { margin-bottom: 0; }
+.eval-tag { font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.06); border-radius: 6px; padding: 2px 8px; white-space: nowrap; margin-top: 4px; }
+.eval-anno-wrap { font-size: 24px; font-weight: 700; letter-spacing: 3px; line-height: 1.5; flex: 1; }
+.eval-rec-text { font-size: 16px; color: #94a3b8; flex: 1; line-height: 1.6; padding-top: 2px; }
+
+/* 发音提示 */
+.eval-hint-card { background: rgba(96,165,250,0.07); border: 1px solid rgba(96,165,250,0.2); border-radius: 20px; padding: 16px 20px; }
+.eval-hint-title { font-size: 12px; font-weight: 700; color: #60a5fa; margin-bottom: 8px; }
+.eval-hint-text { font-size: 14px; color: #94a3b8; line-height: 1.8; white-space: pre-line; }
+
+/* 底部导航 */
+.eval-nav { display: flex; gap: 12px; margin-top: 4px; }
+.eval-nav .btn { flex: 1; padding: 16px; }
+.eval-btn-next { background: var(--green); color: #000; font-weight: 700; border-color: var(--green); }
+.eval-btn-next:hover:not(:disabled) { background: #16a34a; border-color: #16a34a; }
+
+/* Eval loading / result */
+.eval-loading { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 32px 0; }
+.eval-spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.eval-loading-txt { font-size: 14px; color: var(--muted); }
+.eval-result-area { display: none; }
+.eval-result-area.show { display: block; }
+.eval-error-notice { font-size: 12px; color: #f87171; background: rgba(248,113,113,0.1); border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
+
+/* Fireworks */
+#fw-canvas { position:fixed; inset:0; z-index:1000; pointer-events:none; }
+
+/* ── 对话聆听页 ─────────────────────────────── */
+#dialog-listen-page {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--bg);
+  flex-direction: column;
+  overflow: hidden;
+}
+#dialog-listen-page.show { display: flex; }
+
+.dlp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dlp-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.dlp-subtitle { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+.dlp-skip {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dlp-skip:hover { border-color: var(--green); color: var(--green); }
+
+.dlp-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dlp-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+  transition: opacity 0.3s, background 0.3s;
+  min-height: 0;
+}
+.dlp-block.local { border-bottom: 1px solid var(--border); background: rgba(17,24,39,0.6); }
+.dlp-block.learner { background: rgba(10,15,26,0.8); }
+.dlp-block.dimmed { opacity: 0.35; }
+.dlp-block.speaking { opacity: 1; }
+
+.dlp-speaker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.dlp-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  flex-shrink: 0;
+}
+.dlp-block.speaking .dlp-avatar {
+  border-color: var(--green);
+  box-shadow: 0 0 12px rgba(34,197,94,0.4);
+  animation: avatarPulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes avatarPulse {
+  from { box-shadow: 0 0 6px rgba(34,197,94,0.3); }
+  to   { box-shadow: 0 0 18px rgba(34,197,94,0.6); }
+}
+.dlp-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.dlp-role-tag { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+.dlp-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-height: 0;
+}
+
+/* 卡拉OK字符块：拼音在上，汉字在中，间距适当 */
+.dlp-kara {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  align-items: flex-end;
+  line-height: 1;
+}
+.dlp-kchar {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  transition: color 0.12s;
+  color: #374151;
+}
+.dlp-kchar .dlp-py {
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #2d4a6e;
+  min-height: 14px;
+  transition: color 0.12s, opacity 0.12s;
+  opacity: 0.5;
+  letter-spacing: 0;
+}
+.dlp-kchar .dlp-hz {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  transition: color 0.12s;
+}
+/* 正在播 */
+.dlp-kchar.dlp-active .dlp-py  { color: #60a5fa; opacity: 1; }
+.dlp-kchar.dlp-active .dlp-hz  { color: var(--text); }
+/* 已读完 */
+.dlp-kchar.dlp-done   .dlp-py  { color: #60a5fa; opacity: 0.8; }
+.dlp-kchar.dlp-done   .dlp-hz  { color: var(--green); }
+
+/* 进度条 */
+.dlp-bar { height: 2px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; flex-shrink: 0; }
+.dlp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
+
+/* 英文翻译 */
+.dlp-en {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+/* 底部播放按钮区 */
+.dlp-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dlp-play-btn {
+  flex: 1;
+  padding: 14px;
+  background: var(--green);
+  color: #000;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dlp-play-btn:hover { background: #16a34a; }
+.dlp-play-btn:disabled { background: #14532d; color: #166534; cursor: default; }
+.dlp-next-btn {
+  padding: 14px 20px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.dlp-next-btn:hover { border-color: var(--green); color: var(--green); }
+</style>
+</head>
+<body>
+<canvas id="fw-canvas"></canvas>
+
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">影</div>
+      <div>
+        <div class="logo-text">EchoChinese</div>
+        <div class="logo-sub">轻松学中文</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="counter" id="counter">1 / 5</div>
+      <div class="practice-count" id="practice-count"></div>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+  <div class="step-title">
+    <span id="step-title-main">第1步：先听一遍 👂</span>
+    <span class="step-sub" id="step-title-sub">跟着完整对话先感受语气</span>
+  </div>
+
+  <div class="lesson-nav">
+    <button id="btn-lesson-prev" onclick="changeLesson(-1)" disabled>‹</button>
+    <span class="lesson-title-text" id="lesson-title-text"></span>
+    <button id="btn-lesson-next" onclick="changeLesson(1)">›</button>
+  </div>
+
+  <div class="audio-error" id="audio-error">⚠️ 音频加载失败，请检查网络后刷新重试</div>
+
+  <div class="stage">
+    <div class="mascot-wrap">
+      <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" onerror="this.style.display='none'"/>
+      <div class="mascot-ring" id="ring"></div>
+    </div>
+    <div class="sentence-badge" id="badge">第 1/5 句</div>
+
+    <div class="sentence-box">
+      <!-- 上方：本轮 local 台词（林悦） -->
+      <div class="role-row" id="role-row-local" style="margin-bottom:12px;">
+        <div class="role-avatar" id="role-avatar-local">🇨🇳</div>
+        <div class="role-meta">
+          <div class="role-name" id="role-name-local">林悦 · Local</div>
+          <div class="role-text" id="role-text-local"></div>
+        </div>
+      </div>
+
+      <!-- 下方：本轮 learner 台词（卢克） -->
+      <div class="role-row" id="role-row-learner">
+        <div class="role-avatar learner" id="role-avatar-learner">🎤</div>
+        <div class="role-meta">
+          <div class="role-name" id="role-name-learner">卢克 · You</div>
+          <div class="role-text" id="role-text-learner"></div>
+        </div>
+      </div>
+
+      <!-- 卡拉OK字幕（Listen 模式下显示整句） -->
+      <div class="kara-wrap" id="kara"></div>
+      <div class="kara-bar"><div class="kara-bar-fill" id="bar-fill"></div></div>
+      <div class="info-box">
+        <div class="pinyin" id="pinyin"></div>
+        <div class="en" id="en"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="speed-control">
+    <span>慢速</span>
+    <input type="range" id="speed-slider" min="0.5" max="1.0" step="0.05" value="0.7"
+      oninput="onSpeedChange(this.value)"/>
+    <span class="speed-label" id="speed-label">0.7×</span>
+  </div>
+
+  <div class="status-row">
+    <span class="status-text" id="status-text">准备好了 Ready</span>
+    <span class="speech-indicator" id="speech-indicator">🎙 聆听中...</span>
+  </div>
+
+
+  <div class="controls">
+    <button class="btn" id="bl" onclick="playFullDialogue()">▶ 听完整对话 Listen All</button>
+    <button class="btn" id="bs" onclick="enterDialogStep2()">⏭ 跳到第2步 Your Turn</button>
+    <button class="btn" id="bm" disabled>🚀 Shadow 模式（暂未开放）</button>
+    <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 轮到你说 Record</button>
+    <button class="btn btn-retry" id="bretry" onclick="doRetry()">↩ 再练一次 Retry</button>
+    <div class="btn-nav">
+      <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一句 Prev</button>
+      <button class="btn btn-done" id="bdone" onclick="doNext()">下一句 Next ▶</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="completion-card">
+    <div class="completion-title">🎉 本课完成！</div>
+    <div class="completion-sub">Lesson Complete!</div>
+    <div class="avg-score" id="avg-score">--</div>
+    <div class="avg-label">本课平均分</div>
+    <div class="score-grade" id="score-grade"></div>
+    <div class="praise-block" id="praise-block"></div>
+    <button class="btn-restart" onclick="restartLesson()">再练一次 Practice Again</button>
+  </div>
+</div>
+
+<script>
+// ── Data ─────────────────────────────────────────────────
+const LESSONS = [
+  {
+    id: "lesson-1",
+    titleZh: "第一课：初次见面的「中式谦虚」", titleEn: "Lesson 1: Meeting Someone — Chinese Humility",
+    audio: "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a",
+    sentences: [
+      {
+        zh: "你好，叫我卢克就行。我也很高兴认识你！",
+        pinyin: "Nǐ hǎo, jiào wǒ Lùkè jiù xíng. Wǒ yě hěn gāoxìng rènshi nǐ!",
+        en: "Hi, just call me Luke. Nice to meet you too!",
+        role: "learner",
+        start: 1, end: 7,
+        praise: "🌟 开场白很自然！Great opening!",
+        hint: "【叫我...就行】is a casual self-intro — say it in one smooth breath",
+        chars: [
+          {c:"你",p:"ni3"},{c:"好",p:"hao3"},{c:"叫",p:"jiao4"},{c:"我",p:"wo3"},
+          {c:"卢",p:"lu2"},{c:"克",p:"ke4"},{c:"就",p:"jiu4"},{c:"行",p:"xing2"},
+          {c:"我",p:"wo3"},{c:"也",p:"ye3"},{c:"很",p:"hen3"},{c:"高",p:"gao1"},
+          {c:"兴",p:"xing4"},{c:"认",p:"ren4"},{c:"识",p:"shi5"},{c:"你",p:"ni3"}
+        ]
+      },
+      {
+        zh: "没有没有，还差得远呢。我来北京才三个月。",
+        pinyin: "Méiyǒu méiyǒu, hái chà de yuǎn ne. Wǒ lái Běijīng cái sān ge yuè.",
+        en: "No no, I still have a long way to go. I've only been in Beijing for 3 months.",
+        role: "learner",
+        start: 8, end: 15,
+        praise: "😎 谦虚得很地道！Perfectly humble!",
+        hint: "【没有没有】say it fast with a hand wave — very Chinese! · 【还差得远呢】is the star phrase",
+        chars: [
+          {c:"没",p:"mei2"},{c:"有",p:"you3"},{c:"没",p:"mei2"},{c:"有",p:"you3"},
+          {c:"还",p:"hai2"},{c:"差",p:"cha4"},{c:"得",p:"de5"},{c:"远",p:"yuan3"},
+          {c:"呢",p:"ne5"},{c:"我",p:"wo3"},{c:"来",p:"lai2"},{c:"北",p:"bei3"},
+          {c:"京",p:"jing1"},{c:"才",p:"cai2"},{c:"三",p:"san1"},{c:"个",p:"ge4"},
+          {c:"月",p:"yue4"}
+        ]
+      },
+      {
+        zh: "我是英国人。不过我有一个标准的「中国胃」，特别爱吃烤鸭！",
+        pinyin: "Wǒ shì Yīngguó rén. Búguò wǒ yǒu yí ge biāozhǔn de 「Zhōngguó wèi」, tèbié ài chī kǎoyā!",
+        en: "I'm British. But I have a proper 'Chinese stomach' — I absolutely love Peking duck!",
+        role: "learner",
+        start: 16, end: 26,
+        praise: "🔥 文化梗用得妙！Great cultural flex!",
+        hint: "【不过】smoothly connects the two parts · 【特别】adds strong emphasis — stress it!",
+        chars: [
+          {c:"我",p:"wo3"},{c:"是",p:"shi4"},{c:"英",p:"ying1"},{c:"国",p:"guo2"},
+          {c:"人",p:"ren2"},{c:"不",p:"bu2"},{c:"过",p:"guo4"},{c:"我",p:"wo3"},
+          {c:"有",p:"you3"},{c:"一",p:"yi2"},{c:"个",p:"ge4"},{c:"标",p:"biao1"},
+          {c:"准",p:"zhun3"},{c:"的",p:"de5"},{c:"中",p:"zhong1"},{c:"国",p:"guo2"},
+          {c:"胃",p:"wei4"},{c:"特",p:"te4"},{c:"别",p:"bie2"},{c:"爱",p:"ai4"},
+          {c:"吃",p:"chi1"},{c:"烤",p:"kao3"},{c:"鸭",p:"ya1"}
+        ]
+      }
+    ]
+  }
+  // 更多课时在此扩展：
+  // { id: "lesson-2", title: "第二课：...", audio: "...", sentences: [...] }
+];
+
+const PRAISES = [
+  { min: 90, msgs: ["🏆 完美！声调拿捏精准！Perfect tones!", "🌟 太棒了，说得非常地道！So natural!"] },
+  { min: 75, msgs: ["🔥 非常好，再练一遍就完美！Almost perfect!", "💪 发音很稳，越来越自然了！Getting smoother!"] },
+  { min: 60, msgs: ["👏 不错，节奏感已经到位了！Good rhythm!", "💡 有进步，多听几遍能做到！Keep it up!"] },
+  { min: 0,  msgs: ["🌱 开口就是最大的勇气！Brave start!", "💫 每次练习都是进步！Every rep counts!"] }
+];
+
+// ── State ─────────────────────────────────────────────────
+let lessonIdx = 0;
+let idx = 0;
+let phase = "idle"; // idle | listen | slow | countdown | recording | scored
+let busy = false;
+let segTimer = null;
+let sessionScores = [];
+let slowSpeed = 0.7;
+
+// Dialogue mode: 3-step flow
+// step: 1 = Listen Mode, 2 = Your Turn, 3 = Guide
+let dialogStep = 1;
+let dialogRounds = [];      // [{ local, learner, evalSentence }]
+let dialogRoundIdx = 0;
+let dialogLessonMeta = null; // 当前 lesson 的对话 & 地道指南元数据（来自 data/lessons.json）
+let dialogMode = true;       // 课程页面使用对话模式
+
+// 当前这一次评测要用的句子（默认回退到 LESSONS[lessonIdx].sentences[idx]）
+let currentSentenceForEval = null;
+
+// ── Storage ───────────────────────────────────────────────
+function loadState() {
+  try {
+    const raw = localStorage.getItem("sl_state");
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (typeof s.lessonIdx === "number" && s.lessonIdx < LESSONS.length) lessonIdx = s.lessonIdx;
+    if (typeof s.sentenceIdx === "number" && s.sentenceIdx < LESSONS[lessonIdx].sentences.length) idx = s.sentenceIdx;
+    if (typeof s.slowSpeed === "number") {
+      slowSpeed = s.slowSpeed;
+      const slider = document.getElementById("speed-slider");
+      if (slider) slider.value = slowSpeed;
+      const lbl = document.getElementById("speed-label");
+      if (lbl) lbl.textContent = fmtSpeed(slowSpeed);
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem("sl_state", JSON.stringify({ lessonIdx, sentenceIdx: idx, slowSpeed }));
+  } catch(e) {}
+}
+
+function getPracticeCount(lIdx, sIdx) {
+  try { return parseInt(localStorage.getItem("sl_count_" + lIdx + "_" + sIdx) || "0", 10); }
+  catch(e) { return 0; }
+}
+
+function incPracticeCount(lIdx, sIdx) {
+  try { localStorage.setItem("sl_count_" + lIdx + "_" + sIdx, getPracticeCount(lIdx, sIdx) + 1); }
+  catch(e) {}
+}
+
+function fmtSpeed(v) {
+  return parseFloat(v).toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
+}
+
+// ── Audio setup ───────────────────────────────────────────
+let audio = null;
+
+function setupAudio(src) {
+  if (audio) { audio.pause(); audio.removeEventListener("timeupdate", onTimeUpdate); audio.src = ""; }
+  audio = new Audio(src);
+  audio.preload = "auto";
+  audio.addEventListener("error", function() {
+    document.getElementById("audio-error").classList.add("show");
+    setStatus("⚠️ 音频加载失败");
+    busy = false;
+  });
+  audio.addEventListener("canplaythrough", function() {
+    document.getElementById("audio-error").classList.remove("show");
+  });
+  audio.addEventListener("timeupdate", onTimeUpdate);
+}
+
+var mediaRecorder = null;
+var audioChunks   = [];
+
+// Uint8Array → base64（避免大数组 btoa 溢出）
+function u8ToB64(arr) {
+  var CHUNK = 0x8000, out = [];
+  for (var i = 0; i < arr.length; i += CHUNK)
+    out.push(String.fromCharCode.apply(null, arr.subarray(i, i + CHUNK)));
+  return btoa(out.join(''));
+}
+
+// 将录音 Blob 解码并重采样为 PCM 16bit/16kHz
+async function convertToPCM(blob) {
+  var buf = await blob.arrayBuffer();
+  var ctx = new AudioContext();
+  var decoded = await ctx.decodeAudioData(buf);
+  await ctx.close();
+  console.log('[ISE] 原始录音 — 时长:', decoded.duration.toFixed(2) + 's',
+    '采样率:', decoded.sampleRate + 'Hz', '声道数:', decoded.numberOfChannels,
+    'Blob大小:', (blob.size / 1024).toFixed(1) + 'KB', 'mimeType:', blob.type);
+  var rate = 16000;
+  var len  = Math.ceil(decoded.duration * rate);
+  var off  = new OfflineAudioContext(1, len, rate);
+  var src  = off.createBufferSource();
+  src.buffer = decoded;
+  src.connect(off.destination);
+  src.start(0);
+  var rendered = await off.startRendering();
+  var f32 = rendered.getChannelData(0);
+  var i16 = new Int16Array(f32.length);
+  for (var i = 0; i < f32.length; i++) {
+    var s = Math.max(-1, Math.min(1, f32[i]));
+    i16[i] = s < 0 ? s * 32768 : s * 32767;
+  }
+  console.log('[ISE] 转换后PCM — 16kHz 16bit mono, 字节数:', i16.byteLength,
+    '时长:', (i16.length / 16000).toFixed(2) + 's');
+  return i16.buffer;
+}
+
+// ── 以下函数已移至 api/evaluate.js，前端仅保留展示逻辑 ──────────
+
+// perrLevel: 0=绿(正确) 1=黄(需改进) 2=红(错误)
+function iseAnnotations(words, chars) {
+  var pyQ = {}, pyI = {};
+  (chars || []).forEach(function(c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
+  return words.map(function(w) {
+    var type = w.perrLevel === 0 ? 'correct' : w.perrLevel === 1 ? 'confused' : 'miss';
+    var idx = pyI[w.content] || 0;
+    var py = pyQ[w.content] ? (pyQ[w.content][idx] || '') : '';
+    pyI[w.content] = idx + 1;
+    return { char: w.content, type: type, perrMsg: w.perrMsg, py: py };
+  });
+}
+
+// 把后端 perrMsg 转成纯英文一行
+function buildHintLine(w, isRed) {
+  var parts = (w.perrMsg || '').split('；').map(function(p) {
+    return p.replace(/（\d+分）/g, '').trim();
+  }).filter(Boolean);
+
+  var en = [];
+  parts.forEach(function(p) {
+    var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/);
+    if (ri) { en.push('wrong initial consonant: should be "' + ri[1] + '", got "' + ri[2] + '"'); return; }
+
+    var rf = p.match(/韵母错误：应【(.+?)】实【(.+?)】/);
+    if (rf) { en.push('wrong vowel sound: should be "' + rf[1] + '", got "' + rf[2] + '"'); return; }
+
+    var tm = p.match(/声调偏差：应第(\d)声/);
+    if (tm) {
+      var names = ['', '1st', '2nd', '3rd', '4th', 'neutral'];
+      en.push('wrong tone: should be ' + (names[+tm[1]] || tm[1]+'th') + ' tone'); return;
+    }
+
+    if (p.indexOf('漏读')       >= 0) { en.push('missed syllable'); return; }
+    if (p.indexOf('多读')       >= 0) { en.push('extra syllable spoken'); return; }
+    if (p.indexOf('发音有误')   >= 0) { en.push('mispronounced, check tone & sounds'); return; }
+    if (p.indexOf('准确度过低') >= 0) { en.push('mispronounced, check tone & sounds'); return; }
+    if (p.indexOf('发音需改进') >= 0) { en.push('needs improvement'); return; }
+  });
+
+  // 有具体问题时去掉泛化描述
+  if (en.length > 1) en = en.filter(function(e) { return e !== 'mispronounced, check tone & sounds' && e !== 'needs improvement'; });
+
+  var desc = en.join(', ') || (isRed ? 'mispronounced, check tone & sounds' : 'needs improvement');
+  return (isRed ? '🔴' : '🟡') + ' "' + w.content + '" ' + desc;
+}
+
+// 发音提示：去重 + 每字一行 + 双语
+function iseHintText(words) {
+  var reds    = words.filter(function(w) { return w.perrLevel === 2; });
+  var yellows = words.filter(function(w) { return w.perrLevel === 1; });
+  if (!reds.length && !yellows.length)
+    return 'Pronunciation accurate — well done! 🎉';
+
+  var seen = {}, lines = [];
+  reds.forEach(function(w) {
+    if (seen[w.content]) return;
+    seen[w.content] = true;
+    lines.push(buildHintLine(w, true));
+  });
+  yellows.forEach(function(w) {
+    if (seen[w.content]) return;
+    seen[w.content] = true;
+    lines.push(buildHintLine(w, false));
+  });
+  return lines.join('\n');
+}
+
+// ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
+// （原 evaluateWithIse、buildIseUrl、parseIseResult、
+//   logAllAttrs、decodeDp、getInitial、applyRetroflexCheck 均移入后端）
+
+function _DELETED_evaluateWithIse(pcmBuf, refText) {
+  return buildIseUrl().then(function(url) {
+    return new Promise(function(resolve, reject) {
+      var ws = new WebSocket(url);
+      var xmlResult = '';
+      var timer = setTimeout(function() { ws.close(); reject(new Error('评测超时')); }, 25000);
+
+      ws.onopen = function() {
+        // ── 第一帧：业务参数（ssb），不含音频 ──────────────────
+        var frame1 = {
+          common: { app_id: ISE_APPID },
+          business: {
+            sub: 'ise',
+            ent: 'cn_vip',
+            category: 'read_chapter',       // 篇章模式，对平翘舌更敏感
+            extra_ability: 'multi_dimension', // 开启多维度评测
+            cmd: 'ssb',
+            text: '\uFEFF' + refText,
+            tte: 'utf-8',
+            ttp_skip: true,
+            aue: 'raw',
+            auf: 'audio/L16;rate=16000',
+            rstcd: 'utf8'
+          },
+          data: { status: 0 }
+        };
+        ws.send(JSON.stringify(frame1));
+
+        // ── 第二阶段：音频帧（auw），data.data 存 base64 音频 ──
+        var pcm = new Uint8Array(pcmBuf);
+        var chunkSize = 1280;
+        var offset = 0;
+        function sendAudio() {
+          var end = Math.min(offset + chunkSize, pcm.length);
+          var chunk = pcm.subarray(offset, end);
+          var isFirst = offset === 0;
+          var isLast  = end >= pcm.length;
+          var aus = isFirst ? 1 : (isLast ? 4 : 2);  // 1=首帧 2=中间 4=末帧
+          var frame = {
+            business: { cmd: 'auw', aus: aus },
+            data: { status: isLast ? 2 : 1, data: u8ToB64(chunk) }
+          };
+          offset = end;
+          ws.send(JSON.stringify(frame));
+          if (!isLast) setTimeout(sendAudio, 40);
+        }
+        setTimeout(sendAudio, 100); // 短暂等待服务端处理 ssb 帧
+      };
+
+      ws.onmessage = function(e) {
+        try {
+          var resp = JSON.parse(e.data);
+          console.log('[ISE] 服务端响应 code=' + resp.code +
+            ' status=' + (resp.data && resp.data.status) +
+            ' 原始:', JSON.stringify(resp).slice(0, 300));
+          if (resp.code !== 0) {
+            clearTimeout(timer); ws.close();
+            reject(new Error('ISE ' + resp.code + ': ' + resp.message)); return;
+          }
+          // 服务端返回的 data.data 是 base64 编码的 XML
+          if (resp.data && resp.data.data) {
+            try {
+              var bytes = Uint8Array.from(atob(resp.data.data), function(c) { return c.charCodeAt(0); });
+              var decoded = new TextDecoder('utf-8').decode(bytes);
+              xmlResult += decoded; // 可能分多帧返回，追加
+              console.log('[ISE] 解码XML片段:', decoded.slice(0, 200));
+            } catch(_) {
+              xmlResult += resp.data.data;
+            }
+          }
+          if (resp.data && resp.data.status === 2) {
+            console.log('[ISE] 完整XML:\n', xmlResult);
+            clearTimeout(timer); ws.close(); resolve(xmlResult);
+          }
+        } catch(err) { clearTimeout(timer); reject(err); }
+      };
+      ws.onerror = function() { clearTimeout(timer); reject(new Error('WebSocket 连接失败')); };
+    });
+  });
+}
+
+function _DELETED_logAllAttrs(tag, el) {
+  var attrs = {};
+  for (var i = 0; i < el.attributes.length; i++) {
+    var a = el.attributes[i];
+    attrs[a.name] = a.value;
+  }
+  console.log('[ISE]', tag, JSON.stringify(attrs));
+}
+
+function _DELETED_decodeDp(dp) {
+  if (!dp) return '';
+  var errs = [];
+  if (dp & 64)  errs.push('声调');
+  if (dp & 16)  errs.push('声母(平翘舌/送气)');
+  if (dp & 32)  errs.push('韵母');
+  if (dp & 8)   errs.push('发音');
+  if (dp & 1)   errs.push('读音替换');
+  if (dp & 2)   errs.push('漏读');
+  if (dp & 4)   errs.push('多读');
+  return errs.join('/');
+}
+
+function _DELETED_parseIseResult(xmlStr) {
+  try {
+    var doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
+    if (doc.querySelector('parsererror')) {
+      console.error('[ISE] XML解析失败，完整原文:\n', xmlStr);
+      return { totalScore: 0, wordResults: [] };
+    }
+
+    // ── 顶层节点诊断 ──────────────────────────────────────
+    console.log('[ISE] ===== 完整XML =====\n', xmlStr);
+    var sent = doc.querySelector('sent');
+    var rec  = doc.querySelector('rec');
+    if (sent) logAllAttrs('sent', sent);
+    if (rec)  logAllAttrs('rec',  rec);
+
+    var words = Array.from(doc.querySelectorAll('word')).map(function(w) {
+      logAllAttrs('  word', w);
+
+      // ── 读取 syll 子节点 ──────────────────────────────
+      var syllMsgs = [];
+      Array.from(w.querySelectorAll('syll')).forEach(function(s) {
+        logAllAttrs('    syll', s);
+        var dp  = parseInt(s.getAttribute('dp_message') || '0', 10);
+        var sym = s.getAttribute('symbol') || s.getAttribute('content') || '';
+        var pm  = s.getAttribute('perr_msg') || '';
+        var decoded = decodeDp(dp);
+        if (decoded) syllMsgs.push((sym || '') + '：' + decoded + (pm ? '(' + pm + ')' : ''));
+        else if (pm)  syllMsgs.push((sym || '') + '：' + pm);
+
+        // ── 读取 phone 子节点 ─────────────────────────
+        Array.from(s.querySelectorAll('phone')).forEach(function(p) {
+          logAllAttrs('      phone', p);
+        });
+      });
+
+      // ── 字级别判断 ────────────────────────────────────
+      var wordDp       = parseInt(w.getAttribute('dp_message')    || '0', 10);
+      var perrLevel    = parseInt(w.getAttribute('perr_level_msg')|| '0', 10);
+      var wordPerrMsg  = w.getAttribute('perr_msg') || '';
+      var wordDecoded  = decodeDp(wordDp);
+
+      // 汇总：优先用 perr_msg，补充 dp_message 解码，再补 syll 详情
+      var msgs = [];
+      if (wordPerrMsg)  msgs.push(wordPerrMsg);
+      if (wordDecoded)  msgs.push(wordDecoded);
+      if (syllMsgs.length) msgs.push(syllMsgs.join('；'));
+      var finalMsg = msgs.join('；');
+
+      // 只要 word-dp 或 perrLevel 或 syll 有任何问题，就标为有问题
+      var hasError = perrLevel !== 0 || wordDp !== 0 || syllMsgs.length > 0;
+
+      // 取第一个 syll 的 symbol 作为讯飞识别到的拼音
+      var syllSymbol = '';
+      var firstSyll = w.querySelector('syll');
+      if (firstSyll) syllSymbol = firstSyll.getAttribute('symbol') || firstSyll.getAttribute('content') || '';
+
+      return {
+        content:     w.getAttribute('content') || w.textContent.trim(),
+        perrLevel:   hasError ? 1 : 0,
+        perrMsg:     finalMsg,
+        syllSymbol:  syllSymbol.toLowerCase()  // 讯飞识别到的拼音（小写）
+      };
+    });
+
+    // 总分 = 正确字数 / 总字数 × 100
+    var correctCount = words.filter(function(w) { return w.perrLevel === 0; }).length;
+    var calcTotal = words.length > 0 ? Math.round(correctCount / words.length * 100) : 0;
+    console.log('[ISE] 汇总 — 总字:', words.length, '正确:', correctCount, '得分:', calcTotal);
+    return { totalScore: calcTotal, wordResults: words };
+  } catch(e) {
+    console.error('[ISE] parseIseResult异常:', e, '\n原XML:', xmlStr);
+    return { totalScore: 0, wordResults: [] };
+  }
+}
+
+function _DELETED_getInitial(py) {
+  py = py.toLowerCase().replace(/\d/g, '').trim();
+  var two = ['zh','ch','sh'];
+  for (var i = 0; i < two.length; i++) {
+    if (py.slice(0, 2) === two[i]) return two[i];
+  }
+  var one = ['b','p','m','f','d','t','n','l','g','k','h','j','q','x','r','z','c','s','y','w'];
+  for (var j = 0; j < one.length; j++) {
+    if (py.slice(0, 1) === one[j]) return one[j];
+  }
+  return ''; // 零声母
+}
+
+function _DELETED_applyRetroflexCheck(wordResults, sentence) {
+  if (!sentence.chars) return;
+  // 建立 char → correctPinyin 的顺序队列（同字多次出现按顺序匹配）
+  var queue = {};
+  sentence.chars.forEach(function(item) {
+    if (!queue[item.c]) queue[item.c] = [];
+    queue[item.c].push(item.p);
+  });
+  var used = {};
+  wordResults.forEach(function(w) {
+    if (!w.syllSymbol) return;
+    var ch = w.content;
+    if (!queue[ch] || !queue[ch].length) return;
+    var usedIdx = used[ch] || 0;
+    var correctPy = queue[ch][usedIdx] || queue[ch][queue[ch].length - 1];
+    used[ch] = usedIdx + 1;
+
+    var correctInit = getInitial(correctPy);
+    var recogInit   = getInitial(w.syllSymbol);
+    console.log('[retro] 「' + ch + '」 正确声母:', correctInit, ' 识别声母:', recogInit,
+      '(正确:', correctPy, ' 识别:', w.syllSymbol + ')');
+
+    for (var i = 0; i < RETRO_PAIRS.length; i++) {
+      var retro = RETRO_PAIRS[i][0], flat = RETRO_PAIRS[i][1];
+      if ((correctInit === retro && recogInit === flat) ||
+          (correctInit === flat  && recogInit === retro)) {
+        var note = '声母混淆：应读【' + correctInit + '】实读【' + recogInit +
+                   '】（' + correctPy + ' ≠ ' + w.syllSymbol + '）';
+        w.perrLevel = 1;
+        w.perrMsg = (w.perrMsg ? w.perrMsg + '；' : '') + note;
+        console.log('[retro] 检测到平翘舌混淆！' + ch + ':' + note);
+        break;
+      }
+    }
+  });
+}
+
+// 停止 MediaRecorder（如果正在录音）
+function stopMediaRecorderIfRunning() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.onstop = null;
+    try { mediaRecorder.stop(); } catch(e) {}
+    if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+    mediaRecorder = null; audioChunks = [];
+    phase = 'idle';
+    document.getElementById('bn').textContent = '🎤 录音 Record';
+    document.getElementById('bn').classList.remove('active');
+    document.getElementById('speech-indicator').classList.remove('active');
+  }
+}
+
+// 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
+async function evaluateAudio(blob) {
+  // 对话模式下，优先使用当前轮到 learner 说的句子；否则回退到当前课时句子
+  var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
+  showEvalPageLoading(s);
+  try {
+    // 1. 本地转换为 16kHz/16bit/mono PCM
+    var pcmBuf  = await convertToPCM(blob);
+    var refText = s.zh.replace(/[，。！？,.!?\s]/g, '');
+
+    // 2. 发送到后端 /api/evaluate
+    setStatus('⏳ 评测中...');
+    var resp = await fetch('/api/evaluate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        audioBase64: u8ToB64(new Uint8Array(pcmBuf)),
+        refText:     refText,
+        chars:       s.chars || []
+      })
+    });
+    if (!resp.ok) throw new Error('服务器错误 ' + resp.status);
+    var result = await resp.json();
+    if (result.error) throw new Error(result.error);
+
+    // 3. 展示结果
+    var recText = result.wordResults.map(function(w) {
+      return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
+    }).join('');
+    sessionScores.push(result.totalScore);
+    incPracticeCount(lessonIdx, idx);
+    document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
+    fillEvalResult(result.totalScore, iseAnnotations(result.wordResults, s.chars),
+                   iseHintText(result.wordResults), s, null, recText);
+  } catch(err) {
+    console.error('评测失败:', err);
+    sessionScores.push(0);
+    incPracticeCount(lessonIdx, idx);
+    document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
+    fillEvalResult(0, null, '', s, '评测失败：' + err.message);
+  }
+  busy = false;
+  setStatus('准备好了 Ready');
+  // 本轮评测结束后清空覆盖句子，避免影响下一轮
+  currentSentenceForEval = null;
+}
+
+function getPraise(s) {
+  var b = PRAISES.find(function(p) { return s >= p.min; });
+  return b ? b.msgs[Math.floor(Math.random() * b.msgs.length)] : "";
+}
+
+// ── Karaoke engine ────────────────────────────────────────
+var charTimingsCache = [];
+var karaStart = 0, karaEnd = 0, karaActive = false;
+var karaTimerId = null; // 对话 Listen 模式下的定时器驱动高亮
+
+function computeCharTimings(sentence) {
+  var duration = sentence.end - sentence.start;
+  var chars = Array.from(sentence.zh);
+
+  var syllables = sentence.pinyin
+    .replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, "a")
+    .replace(/[,，。！？.!?]/g, " ")
+    .trim().split(/\s+/).filter(function(s) { return s.length > 0; });
+
+  var weights = [];
+  var sIdx = 0;
+  for (var i = 0; i < chars.length; i++) {
+    if (/[\u4e00-\u9fff]/.test(chars[i])) {
+      weights.push(Math.max((syllables[sIdx] || "aa").length, 1));
+      sIdx++;
+    }
+  }
+  var totalWeight = weights.reduce(function(a, b) { return a + b; }, 0) || 1;
+
+  var timings = [];
+  var wIdx = 0;
+  var elapsed = 0;
+  for (var i = 0; i < chars.length; i++) {
+    if (/[\u4e00-\u9fff]/.test(chars[i])) {
+      var w = weights[wIdx++] || 2;
+      var dur = (w / totalWeight) * duration;
+      timings.push({ start: elapsed, end: elapsed + dur });
+      elapsed += dur;
+    } else {
+      timings.push({ start: elapsed, end: elapsed + 0.05 });
+    }
+  }
+  return timings;
+}
+
+// 基于总时长的字符时间表（用于 TTS / 全对话模式）
+function computeCharTimingsForDuration(text, pinyinStr, totalSeconds) {
+  var sentence = {
+    zh: text,
+    pinyin: pinyinStr || ""
+  };
+  // 复用上面的逻辑，但用人工设定的总时长
+  var duration = totalSeconds;
+  var chars = Array.from(sentence.zh);
+
+  var syllables = (sentence.pinyin || "")
+    .replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, "a")
+    .replace(/[,，。！？.!?]/g, " ")
+    .trim().split(/\s+/).filter(function(s) { return s.length > 0; });
+
+  var weights = [];
+  var sIdx = 0;
+  for (var i = 0; i < chars.length; i++) {
+    if (/[\u4e00-\u9fff]/.test(chars[i])) {
+      weights.push(Math.max((syllables[sIdx] || "aa").length, 1));
+      sIdx++;
+    }
+  }
+  var totalWeight = weights.reduce(function(a, b) { return a + b; }, 0) || 1;
+
+  var timings = [];
+  var wIdx = 0;
+  var elapsed = 0;
+  for (var j = 0; j < chars.length; j++) {
+    if (/[\u4e00-\u9fff]/.test(chars[j])) {
+      var w = weights[wIdx++] || 2;
+      var dur = (w / totalWeight) * duration;
+      timings.push({ start: elapsed, end: elapsed + dur });
+      elapsed += dur;
+    } else {
+      timings.push({ start: elapsed, end: elapsed + 0.05 });
+    }
+  }
+  return timings;
+}
+
+// 数字声调 → 声调符号，如 "shou3" → "shōu"
+function toToneMark(py) {
+  if (!py) return '';
+  var n = parseInt(py.slice(-1));
+  if (n < 1 || n > 5) return py;
+  var base = py.slice(0, -1), t = n - 1;
+  var m = { a:['ā','á','ǎ','à','a'], e:['ē','é','ě','è','e'],
+            i:['ī','í','ǐ','ì','i'], o:['ō','ó','ǒ','ò','o'],
+            u:['ū','ú','ǔ','ù','u'], v:['ǖ','ǘ','ǚ','ǜ','ü'] };
+  // 规则：a/e 优先；ou 取 o；否则取最后一个韵母
+  if (base.indexOf('a') >= 0) return base.replace('a', m.a[t]).replace('v','ü');
+  if (base.indexOf('e') >= 0) return base.replace('e', m.e[t]).replace('v','ü');
+  if (base.indexOf('ou') >= 0) return base.replace('o', m.o[t]).replace('v','ü');
+  for (var i = base.length - 1; i >= 0; i--) {
+    if (m[base[i]]) return base.slice(0,i) + m[base[i]][t] + base.slice(i+1).replace('v','ü');
+  }
+  return base.replace('v','ü');
+}
+
+function buildKara(text, chars) {
+  var wrap = document.getElementById("kara");
+  wrap.innerHTML = "";
+  // 建立 字→拼音 队列（同一个字可能出现多次）
+  var pyQ = {}, pyI = {};
+  (chars || []).forEach(function(c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
+
+  Array.from(text).forEach(function(c) {
+    var kchar = document.createElement("span");
+    kchar.className = "kchar";
+
+    var rt = document.createElement("span");
+    rt.className = "krt";
+    var idx = pyI[c] || 0;
+    var py  = pyQ[c] ? (pyQ[c][idx] || '') : '';
+    pyI[c] = idx + 1;
+    rt.textContent = toToneMark(py);
+
+    kchar.appendChild(rt);
+    kchar.appendChild(document.createTextNode(c));
+    wrap.appendChild(kchar);
+  });
+}
+
+function startKaraSync(segStart, segEnd, timings) {
+  karaStart = segStart;
+  karaEnd = segEnd;
+  charTimingsCache = timings;
+  karaActive = true;
+  document.getElementById("bar-fill").style.width = "0%";
+}
+
+function onTimeUpdate() {
+  if (!karaActive || !audio) return;
+  var elapsed = audio.currentTime - karaStart;
+  var duration = karaEnd - karaStart;
+  var pct = Math.max(0, Math.min(1, elapsed / duration));
+  document.getElementById("bar-fill").style.width = (pct * 100) + "%";
+  var chars = document.querySelectorAll(".kchar");
+  chars.forEach(function(el, i) {
+    var t = charTimingsCache[i];
+    if (!t) return;
+    if (elapsed >= t.end) { el.className = "kchar done"; }
+    else if (elapsed >= t.start) { el.className = "kchar active"; }
+    else { el.className = "kchar"; }
+  });
+}
+
+function completeKara() {
+  karaActive = false;
+  if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
+  document.querySelectorAll(".kchar").forEach(function(c) { c.className = "kchar done"; });
+  document.getElementById("bar-fill").style.width = "100%";
+}
+
+function resetKara() {
+  karaActive = false;
+  if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
+  document.querySelectorAll(".kchar").forEach(function(c) { c.className = "kchar"; });
+  document.getElementById("bar-fill").style.width = "0%";
+}
+
+// 使用 setInterval 驱动的卡拉 OK（不依赖 <audio>）
+function runKaraWithTimer(durationMs, timings) {
+  resetKara();
+  karaActive = true;
+  var start = performance.now();
+  karaTimerId = setInterval(function() {
+    var now = performance.now();
+    var elapsed = (now - start) / 1000;
+    var duration = durationMs / 1000;
+    var pct = Math.max(0, Math.min(1, elapsed / duration));
+    document.getElementById("bar-fill").style.width = (pct * 100) + "%";
+    var chars = document.querySelectorAll(".kchar");
+    chars.forEach(function(el, i) {
+      var t = timings[i];
+      if (!t) return;
+      if (elapsed >= t.end) { el.className = "kchar done"; }
+      else if (elapsed >= t.start) { el.className = "kchar active"; }
+      else { el.className = "kchar"; }
+    });
+    if (pct >= 1) {
+      clearInterval(karaTimerId);
+      karaTimerId = null;
+      completeKara();
+    }
+  }, 50);
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function setStatus(t) {
+  var el = document.getElementById("status-text");
+  if (el) el.textContent = t;
+}
+
+function setStepTitle(main, sub) {
+  var m = document.getElementById("step-title-main");
+  var s = document.getElementById("step-title-sub");
+  if (m) m.textContent = main || "";
+  if (s) s.textContent = sub || "";
+}
+
+function clearTimers() {
+  if (segTimer) { clearTimeout(segTimer); segTimer = null; }
+}
+
+function speak(on) {
+  var ring = document.getElementById("ring");
+  var mascot = document.getElementById("mascot");
+  if (on) {
+    ring.style.opacity = "1";
+    ring.style.animation = "glow 1.2s ease-in-out infinite";
+    mascot.style.animation = "pulse 0.4s ease-in-out infinite alternate";
+  } else {
+    ring.style.opacity = "0";
+    ring.style.animation = "";
+    mascot.style.animation = "";
+  }
+}
+
+function onSpeedChange(val) {
+  slowSpeed = parseFloat(val);
+  document.getElementById("speed-label").textContent = fmtSpeed(slowSpeed);
+  saveState();
+}
+
+function changeLesson(dir) {
+  var next = lessonIdx + dir;
+  if (next < 0 || next >= LESSONS.length) return;
+  lessonIdx = next;
+  idx = 0;
+  sessionScores = [];
+  setupAudio(LESSONS[lessonIdx].audio);
+  updateUI();
+  saveState();
+}
+
+// ── UI Update ─────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+
+function updateUI() {
+  clearTimers();
+  if (audio) { audio.pause(); audio.playbackRate = 1; }
+  speak(false);
+  busy = false;
+  phase = "idle";
+
+  var lesson = LESSONS[lessonIdx];
+  var s = lesson.sentences[idx];
+  var total = lesson.sentences.length;
+
+  if (el("lesson-title-text")) el("lesson-title-text").innerHTML =
+    '<span class="lesson-title-zh">' + lesson.titleZh + '</span>' +
+    '<span class="lesson-title-en">' + lesson.titleEn + '</span>';
+  if (el("btn-lesson-prev")) el("btn-lesson-prev").disabled = lessonIdx === 0;
+  if (el("btn-lesson-next")) el("btn-lesson-next").disabled = lessonIdx === LESSONS.length - 1;
+
+  buildKara(s.zh, s.chars);
+  resetKara();
+  if (el("pinyin")) el("pinyin").textContent = s.pinyin;
+  if (el("en")) el("en").textContent = s.en;
+  if (el("badge")) el("badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
+  if (el("counter")) el("counter").textContent = (idx + 1) + " / " + total;
+  if (el("progress")) el("progress").style.width = ((idx + 1) / total * 100) + "%";
+
+  var cnt = getPracticeCount(lessonIdx, idx);
+  if (el("practice-count")) el("practice-count").textContent = cnt > 0 ? "已练 " + cnt + " 次" : "";
+
+  if (el("eval-page")) el("eval-page").classList.remove("show");
+  if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
+  if (el("bn")) el("bn").textContent = "🎤 录音 Record";
+
+  if (el("bl")) { el("bl").disabled = false; el("bl").classList.remove("active"); }
+  if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); }
+  if (el("bm")) el("bm").classList.remove("active");
+  if (el("bn")) { el("bn").disabled = false; el("bn").classList.remove("active"); }
+  if (el("bprev")) el("bprev").disabled = idx === 0;
+  if (el("bdone")) el("bdone").className = "btn btn-done show";
+  if (el("bretry")) el("bretry").className = "btn btn-retry";
+
+  setStatus("准备好了 Ready");
+  saveState();
+}
+
+// ── Actions ───────────────────────────────────────────────
+function doListen() {
+  stopMediaRecorderIfRunning();
+  clearTimers();
+  busy = true;
+  phase = "listen";
+
+  var s = LESSONS[lessonIdx].sentences[idx];
+  var timings = computeCharTimings(s);
+  var dur = (s.end - s.start) * 1000;
+
+  setStatus("▶ 听原声 Listening...");
+  document.getElementById("bl").classList.add("active");
+
+  audio.currentTime = s.start;
+  audio.playbackRate = 1;
+  audio.play();
+  speak(true);
+  resetKara();
+  startKaraSync(s.start, s.end, timings);
+
+  segTimer = setTimeout(function() {
+    audio.pause();
+    speak(false);
+    completeKara();
+    document.getElementById("bl").classList.remove("active");
+    setStatus("准备好了 Ready");
+    busy = false;
+    phase = "idle";
+  }, dur + 200);
+}
+
+function doSlow() {
+  stopMediaRecorderIfRunning();
+  clearTimers();
+  busy = true;
+  phase = "slow";
+
+  var s = LESSONS[lessonIdx].sentences[idx];
+  var timings = computeCharTimings(s);
+  var dur = (s.end - s.start) / slowSpeed * 1000;
+
+  setStatus("🐢 慢速跟读 Shadow (slow)...");
+  document.getElementById("bs").classList.add("active");
+
+  audio.currentTime = s.start;
+  audio.playbackRate = slowSpeed;
+  audio.play();
+  speak(true);
+  resetKara();
+  startKaraSync(s.start, s.end, timings);
+
+  segTimer = setTimeout(function() {
+    audio.pause();
+    audio.playbackRate = 1;
+    speak(false);
+    completeKara();
+    document.getElementById("bs").classList.remove("active");
+    setStatus("准备好了 Ready");
+    busy = false;
+    phase = "idle";
+  }, dur + 200);
+}
+
+function doNormal() {
+  stopMediaRecorderIfRunning();
+  clearTimers();
+  busy = true;
+  phase = "normal";
+
+  var s = LESSONS[lessonIdx].sentences[idx];
+  var timings = computeCharTimings(s);
+  var dur = (s.end - s.start) * 1000;
+
+  setStatus("🚀 常速跟读 Shadow...");
+  document.getElementById("bm").classList.add("active");
+
+  audio.currentTime = s.start;
+  audio.playbackRate = 1;
+  audio.play();
+  speak(true);
+  resetKara();
+  startKaraSync(s.start, s.end, timings);
+
+  segTimer = setTimeout(function() {
+    audio.pause();
+    speak(false);
+    completeKara();
+    document.getElementById("bm").classList.remove("active");
+    setStatus("准备好了 Ready");
+    busy = false;
+    phase = "idle";
+  }, dur + 200);
+}
+
+function doRecord() {
+  if (phase === "recording") {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  stopMediaRecorderIfRunning();
+  clearTimers();
+  if (audio) { audio.pause(); speak(false); }
+  phase = "recording";
+  busy = true;
+  document.getElementById("bn").textContent = "⏹ 停止录音 Stop";
+  document.getElementById("bn").classList.add("active");
+  document.getElementById("speech-indicator").classList.add("active");
+  resetKara();
+  setStatus("🎙 录音中 Recording...");
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = function(e) {
+      if (e.data && e.data.size > 0) audioChunks.push(e.data);
+    };
+    mediaRecorder.start(100);
+  }).catch(function(err) {
+    setStatus("⚠️ 麦克风权限被拒绝");
+    busy = false; phase = "idle";
+    document.getElementById("bn").textContent = "🎤 录音 Record";
+    document.getElementById("bn").classList.remove("active");
+    document.getElementById("speech-indicator").classList.remove("active");
+  });
+}
+
+function stopRecording() {
+  document.getElementById("bn").textContent = "🎤 录音 Record";
+  document.getElementById("bn").classList.remove("active");
+  document.getElementById("speech-indicator").classList.remove("active");
+  if (!mediaRecorder || mediaRecorder.state === "inactive") {
+    setStatus("准备好了 Ready"); busy = false; return;
+  }
+  mediaRecorder.onstop = function() {
+    var blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+    mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+    mediaRecorder = null;
+    evaluateAudio(blob);
+  };
+  mediaRecorder.stop();
+  phase = "scored";
+}
+
+
+
+// 显示评价页（loading 状态）
+function showEvalPageLoading(sentence) {
+  var total = LESSONS[lessonIdx].sentences.length;
+  document.getElementById("eval-badge").textContent = "第 " + (idx+1) + "/" + total + " 句";
+  document.getElementById("eval-loading").style.display = "flex";
+  document.getElementById("eval-result-area").classList.remove("show");
+  document.getElementById("eval-compare-card").style.display = "none";
+  document.getElementById("eval-hint-text").textContent = "";
+  document.getElementById("eval-error-notice").style.display = "none";
+  document.getElementById("eval-prev").disabled = idx === 0;
+  var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
+  document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一句 Next ▶";
+  document.getElementById("eval-page").classList.add("show");
+  document.getElementById("eval-page").scrollTop = 0;
+}
+
+// 填入实际评测结果
+function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText) {
+  var color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
+
+  document.getElementById("eval-loading").style.display = "none";
+  document.getElementById("eval-result-area").classList.add("show");
+
+  var numEl = document.getElementById("eval-score-num");
+  numEl.textContent = score;
+  numEl.style.color = color;
+
+  var grade = score >= 90 ? "🏆 优秀 Excellent"
+            : score >= 80 ? "🌟 良好 Great"
+            : score >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
+  var gradeEl = document.getElementById("eval-grade");
+  gradeEl.textContent = grade;
+  gradeEl.style.color = color;
+
+  document.getElementById("eval-praise").textContent = sentence.praise + "\n" + getPraise(score);
+
+  // 发音对比（ISE 字符注释）
+  var compareCard = document.getElementById("eval-compare-card");
+  if (annotations && annotations.length) {
+    var html = annotations.map(function(a) {
+      var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
+      var rt = toToneMark(a.py);
+      return '<ruby class="anno-char ' + a.type + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
+    }).join('');
+    document.getElementById("eval-anno-chars").innerHTML = html;
+    compareCard.style.display = "block";
+  } else {
+    compareCard.style.display = "none";
+  }
+
+  // 发音提示（ISE 详细错误）
+  document.getElementById("eval-hint-text").textContent = hintText;
+
+  // 错误提示
+  var errEl = document.getElementById("eval-error-notice");
+  if (errMsg) {
+    errEl.textContent = "⚠️ " + errMsg;
+    errEl.style.display = "block";
+  } else {
+    errEl.style.display = "none";
+  }
+}
+
+function evalNav(dir) {
+  // 对话模式下，第 2 步由轮到你说 → 下一轮 / 地道指南
+  if (dialogMode && dialogStep === 2) {
+    document.getElementById("eval-page").classList.remove("show");
+    if (dir === 1) {
+      if (dialogRoundIdx >= dialogRounds.length - 1) {
+        enterDialogStep3();
+      } else {
+        dialogRoundIdx++;
+        renderDialogYourTurn();
+      }
+    } else {
+      if (dialogRoundIdx > 0) {
+        dialogRoundIdx--;
+        renderDialogYourTurn();
+      }
+    }
+    return;
+  }
+
+  // 旧的逐句导航逻辑（保留以兼容单句练习）
+  document.getElementById("eval-page").classList.remove("show");
+  if (dir === 1) {
+    var lesson = LESSONS[lessonIdx];
+    if (idx >= lesson.sentences.length - 1) { showCompletion(); return; }
+    idx++;
+  } else {
+    if (idx > 0) idx--;
+  }
+  updateUI();
+}
+
+
+function doRetry() {
+  stopMediaRecorderIfRunning();
+  clearTimers();
+  // Remove the last score so the retry score replaces it
+  if (sessionScores.length > 0) sessionScores.pop();
+  updateUI();
+}
+
+function doPrev() {
+  stopMediaRecorderIfRunning();
+  if (idx > 0) { idx--; updateUI(); }
+}
+
+function doNext() {
+  stopMediaRecorderIfRunning();
+  clearTimers();
+  if (audio) audio.pause();
+  speak(false);
+  var lesson = LESSONS[lessonIdx];
+  if (idx >= lesson.sentences.length - 1) {
+    showCompletion();
+    return;
+  }
+  idx++;
+  updateUI();
+}
+
+function showCompletion() {
+  var overall = sessionScores.length
+    ? Math.round(sessionScores.reduce(function(a, b) { return a + b; }, 0) / sessionScores.length)
+    : 75;
+  var oColor = overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
+
+  document.getElementById("avg-score").textContent = overall;
+  document.getElementById("avg-score").style.color = oColor;
+
+  var grade = overall >= 90 ? "🏆 优秀 Excellent" :
+              overall >= 80 ? "🌟 良好 Great" :
+              overall >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
+  document.getElementById("score-grade").textContent = grade;
+  document.getElementById("score-grade").style.color = oColor;
+
+  var best = PRAISES.find(function(p) { return overall >= p.min; });
+  var praiseMsg = best ? best.msgs[Math.floor(Math.random() * best.msgs.length)] : "";
+  var lastS = LESSONS[lessonIdx].sentences[idx];
+  document.getElementById("praise-block").innerHTML =
+    "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>" + praiseMsg + "</div>" +
+    "<div style='font-size:13px;color:#94a3b8;'>" + lastS.hint + "</div>";
+
+  document.getElementById("overlay").classList.add("show");
+  launchFireworks();
+}
+
+function restartLesson() {
+  document.getElementById("overlay").classList.remove("show");
+  stopFireworks();
+  idx = 0;
+  sessionScores = [];
+  updateUI();
+}
+
+// ── Fireworks ─────────────────────────────────────────────
+var fwCanvas = document.getElementById("fw-canvas");
+var fwCtx = fwCanvas.getContext("2d");
+var fwParticles = [], fwAnimId = null, fwStopTimer = null;
+var FW_COLORS = ["#22c55e","#60a5fa","#fbbf24","#f87171","#a78bfa","#fb923c"];
+
+function resizeFW() { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; }
+window.addEventListener("resize", resizeFW); resizeFW();
+
+function burst(x, y) {
+  var color = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+  for (var i = 0; i < 60; i++) {
+    var angle = (Math.PI * 2 / 60) * i;
+    var speed = 2 + Math.random() * 5;
+    fwParticles.push({ x: x, y: y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, alpha: 1, color: color, r: 2+Math.random()*2 });
+  }
+}
+
+function animateFW() {
+  fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+  fwParticles.forEach(function(p) {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.alpha -= 0.015;
+    fwCtx.globalAlpha = Math.max(0, p.alpha);
+    fwCtx.fillStyle = p.color;
+    fwCtx.beginPath();
+    fwCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    fwCtx.fill();
+  });
+  fwCtx.globalAlpha = 1;
+  fwParticles = fwParticles.filter(function(p) { return p.alpha > 0; });
+  fwAnimId = requestAnimationFrame(animateFW);
+}
+
+function launchFireworks() {
+  fwParticles = [];
+  if (fwAnimId) cancelAnimationFrame(fwAnimId);
+  if (fwStopTimer) clearTimeout(fwStopTimer);
+  animateFW();
+  var count = 0;
+  function fire() {
+    burst(Math.random()*window.innerWidth, Math.random()*window.innerHeight*0.6);
+    count++;
+    if (count < 12) setTimeout(fire, 400);
+  }
+  fire();
+  fwStopTimer = setTimeout(stopFireworks, 5000);
+}
+
+function stopFireworks() {
+  if (fwAnimId) { cancelAnimationFrame(fwAnimId); fwAnimId = null; }
+  fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+  fwParticles = [];
+}
+
+// ── Dialogue mode (3 steps) ───────────────────────────────
+function initDialogMode() {
+  // 默认设置为第 1 步标题
+  setStepTitle("第1步：先听一遍 👂", "跟着完整对话先感受语气");
+  // 载入对话与地道指南元数据
+  fetch('data/lessons.json')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data || !data.lessons || !data.lessons.length) return;
+      // 目前只支持单课，按顺序取与当前 lessonIdx 对应的 lesson
+      dialogLessonMeta = data.lessons[lessonIdx] || data.lessons[0];
+      buildDialogRounds();
+      renderDialogStep1Intro();
+    })
+    .catch(function(e) {
+      console.error('加载对话数据失败:', e);
+    });
+}
+
+function buildDialogRounds() {
+  dialogRounds = [];
+  if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
+  var lastLocal = null;
+  var dialogue = dialogLessonMeta.dialogue;
+  for (var i = 0; i < dialogue.length; i++) {
+    var d = dialogue[i];
+    if (d.role === 'local') {
+      lastLocal = d;
+    } else if (d.role === 'learner') {
+      // 在 shadow 课的 LESSONS 里寻找同句，拿到 chars/praise/hint
+      var evalSentence = null;
+      var lesson = LESSONS[lessonIdx];
+      if (lesson && lesson.sentences) {
+        for (var j = 0; j < lesson.sentences.length; j++) {
+          if (lesson.sentences[j].zh === d.zh) { evalSentence = lesson.sentences[j]; break; }
+        }
+      }
+      dialogRounds.push({
+        local: lastLocal,
+        learner: d,
+        evalSentence: evalSentence || { zh: d.zh, pinyin: d.pinyin, en: d.en, chars: [] }
+      });
+    }
+  }
+  dialogRoundIdx = 0;
+}
+
+// 第 1 步：自动播放完整对话（使用浏览器 TTS + 卡拉OK）
+function renderDialogStep1Intro() {
+  dialogStep = 1;
+  setStepTitle("第1步：先听一遍 👂", "先听完整对话，感受语气和节奏");
+  var sub = document.getElementById('status-text');
+  if (sub) sub.textContent = '点击「听原声」开始整段对话';
+  // 用第一轮的 local/learner 文本预填区域
+  if (dialogRounds.length) {
+    var r0 = dialogRounds[0];
+    if (el("role-text-local"))   el("role-text-local").textContent   = r0.local ? r0.local.zh : '';
+    if (el("role-text-learner")) el("role-text-learner").textContent = r0.learner ? r0.learner.zh : '';
+    buildKara(r0.learner ? r0.learner.zh : '', null);
+    resetKara();
+  }
+}
+
+// ── 对话聆听页：构建单个角色的卡拉OK字符 ────
+function dlpBuildKara(containerId, text, pinyinStr) {
+  var wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  // 解析拼音词列表，按音节分配给每个汉字
+  var syllables = (pinyinStr || '')
+    .replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, 'a')
+    .replace(/[,，。！？.!?]/g, ' ')
+    .trim().split(/\s+/).filter(function(s) { return s.length > 0; });
+  var sIdx = 0;
+
+  // 还原带声调符号的拼音
+  var rawSyls = (pinyinStr || '').trim().split(/\s+/).filter(function(s) { return s.length > 0; });
+  // 过滤掉纯标点
+  rawSyls = rawSyls.filter(function(s) { return /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/.test(s); });
+  var rIdx = 0;
+
+  Array.from(text).forEach(function(c) {
+    var span = document.createElement('span');
+    span.className = 'dlp-kchar';
+
+    var pySpan = document.createElement('span');
+    pySpan.className = 'dlp-py';
+
+    var hzSpan = document.createElement('span');
+    hzSpan.className = 'dlp-hz';
+    hzSpan.textContent = c;
+
+    if (/[\u4e00-\u9fff]/.test(c)) {
+      var rawPy = rawSyls[rIdx] || '';
+      // 去掉结尾标点
+      rawPy = rawPy.replace(/[,，。！？.!?]$/, '');
+      pySpan.textContent = rawPy;
+      rIdx++;
+    }
+
+    span.appendChild(pySpan);
+    span.appendChild(hzSpan);
+    wrap.appendChild(span);
+  });
+}
+
+// 用计时器驱动某个 dlp-kara 容器的高亮
+var dlpKaraTimerId = null;
+function dlpRunKara(containerId, barFillId, durationMs, timings) {
+  if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
+  var chars = document.querySelectorAll('#' + containerId + ' .dlp-kchar');
+  chars.forEach(function(c) { c.className = 'dlp-kchar'; });
+  var barFill = document.getElementById(barFillId);
+  if (barFill) barFill.style.width = '0%';
+  var start = performance.now();
+  dlpKaraTimerId = setInterval(function() {
+    var elapsed = (performance.now() - start) / 1000;
+    var dur = durationMs / 1000;
+    var pct = Math.min(1, elapsed / dur);
+    if (barFill) barFill.style.width = (pct * 100) + '%';
+    chars.forEach(function(el, i) {
+      var t = timings[i];
+      if (!t) return;
+      if (elapsed >= t.end)   el.className = 'dlp-kchar dlp-done';
+      else if (elapsed >= t.start) el.className = 'dlp-kchar dlp-active';
+      else el.className = 'dlp-kchar';
+    });
+    if (pct >= 1) {
+      clearInterval(dlpKaraTimerId); dlpKaraTimerId = null;
+      chars.forEach(function(c) { c.className = 'dlp-kchar dlp-done'; });
+    }
+  }, 40);
+}
+
+// 设置对话页高亮状态（哪个角色在说话）
+function dlpSetSpeaking(role) {
+  var localBlock   = document.getElementById('dlp-block-local');
+  var learnerBlock = document.getElementById('dlp-block-learner');
+  if (!localBlock || !learnerBlock) return;
+  if (role === 'local') {
+    localBlock.className   = 'dlp-block local speaking';
+    learnerBlock.className = 'dlp-block learner dimmed';
+  } else {
+    localBlock.className   = 'dlp-block local dimmed';
+    learnerBlock.className = 'dlp-block learner speaking';
+  }
+}
+
+// 听完整对话：显示专属页面，逐句 TTS + 卡拉OK
+function playFullDialogue() {
+  if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
+
+  // 显示对话聆听页
+  var dlp = document.getElementById('dialog-listen-page');
+  if (dlp) dlp.classList.add('show');
+
+  var playBtn = document.getElementById('dlp-play-btn');
+  if (playBtn) { playBtn.disabled = true; playBtn.textContent = '▶ 播放中...'; }
+
+  var seq = dialogLessonMeta.dialogue.slice();
+  var i = 0;
+
+  function next() {
+    if (i >= seq.length) {
+      // 播放完 → 恢复按钮，自动进入第2步
+      if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
+      var pb = document.getElementById('dlp-play-btn');
+      if (pb) { pb.disabled = false; pb.textContent = '▶ 再听一遍'; }
+      // 短暂停顿后进入第2步
+      setTimeout(function() {
+        if (dlp) dlp.classList.remove('show');
+        enterDialogStep2();
+      }, 1200);
+      return;
+    }
+
+    var d = seq[i++];
+    var isLocal = d.role === 'local';
+    var containerId = isLocal ? 'dlp-kara-local' : 'dlp-kara-learner';
+    var barId       = isLocal ? 'dlp-bar-local'  : 'dlp-bar-learner';
+
+    // 设置英文翻译
+    var enEl = document.getElementById(isLocal ? 'dlp-en-local' : 'dlp-en-learner');
+    if (enEl) enEl.textContent = d.en || '';
+
+    // 构建卡拉OK
+    dlpBuildKara(containerId, d.zh, d.pinyin);
+
+    // 设置高亮角色
+    dlpSetSpeaking(d.role);
+
+    // 时间估算 + 卡拉OK动画
+    var estSeconds = Math.max(1.5, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+    var timings = computeCharTimingsForDuration(d.zh, d.pinyin, estSeconds);
+    dlpRunKara(containerId, barId, estSeconds * 1000, timings);
+
+    speakTTS(d.zh, isLocal ? 'local' : 'learner', next);
+  }
+
+  next();
+}
+
+// 手动跳过对话聆听页进入第2步
+function dlpSkip() {
+  if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  var dlp = document.getElementById('dialog-listen-page');
+  if (dlp) dlp.classList.remove('show');
+  enterDialogStep2();
+}
+
+// 简单 TTS 封装（使用浏览器 speechSynthesis，若不可用则仅用计时器）
+function speakTTS(text, role, onend) {
+  if (!('speechSynthesis' in window)) {
+    setTimeout(function() { if (onend) onend(); }, Math.max(2000, text.length * 300));
+    return;
+  }
+  var utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-CN';
+  utter.rate = role === 'local' ? 1.0 : 0.9;
+  utter.pitch = role === 'local' ? 1.0 : 1.05;
+  utter.onend = function() { if (onend) onend(); };
+  utter.onerror = function() { if (onend) onend(); };
+  window.speechSynthesis.speak(utter);
+}
+
+// 进入第 2 步：Your Turn
+function enterDialogStep2() {
+  dialogStep = 2;
+  setStepTitle("第2步：轮到你说 🎯", "上方听林悦，下方轮到你用中文回答");
+  dialogRoundIdx = 0;
+  renderDialogYourTurn();
+}
+
+// 渲染当前轮的 local & learner 台词
+function renderDialogYourTurn() {
+  if (!dialogRounds.length) return;
+  var round = dialogRounds[dialogRoundIdx];
+  if (!round) return;
+  if (el("role-text-local"))   el("role-text-local").textContent   = round.local ? round.local.zh : '';
+  if (el("role-text-learner")) el("role-text-learner").textContent = round.learner ? round.learner.zh : '';
+  if (el("pinyin")) el("pinyin").textContent = round.learner ? round.learner.pinyin : '';
+  if (el("en"))     el("en").textContent     = round.learner ? round.learner.en : '';
+
+  // 上方 local 自动 TTS 一遍
+  if (round.local && round.local.zh) {
+    speakTTS(round.local.zh, 'local', function(){});
+  }
+
+  // 卡拉 OK 高亮 learner 句子
+  buildKara(round.learner.zh, null);
+  var estSeconds = Math.max(2, round.learner.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+  var timings = computeCharTimingsForDuration(round.learner.zh, round.learner.pinyin, estSeconds);
+  runKaraWithTimer(estSeconds * 1000, timings);
+
+  // 绑定当前轮评测用的句子（带 chars/praise/hint）
+  currentSentenceForEval = round.evalSentence;
+}
+
+// Your Turn 下方麦克风点击
+function dialogRecordToggle() {
+  // 直接复用原来的录音按钮逻辑
+  doRecord();
+}
+
+// 第 3 步：地道指南
+function enterDialogStep3() {
+  dialogStep = 3;
+  setStepTitle("第3步：地道指南 📚", "看看这一课中式谦虚的地道表达");
+  showCompletionGuide();
+}
+
+function showCompletionGuide() {
+  // 复用完成弹窗区域展示本课地道指南
+  document.getElementById("overlay").classList.add("show");
+  stopFireworks();
+
+  var card = document.querySelector(".completion-card");
+  if (!card) return;
+  var html = "<div class='completion-title'>📚 地道指南</div>" +
+             "<div class='completion-sub'>常见错误 vs 地道表达</div>";
+
+  if (dialogLessonMeta && dialogLessonMeta.correct && dialogLessonMeta.correct.length) {
+    dialogLessonMeta.correct.forEach(function(item) {
+      html += "<div style='text-align:left;margin-top:14px;padding:10px 12px;border-radius:12px;background:#020617;border:1px solid #1e293b;'>"
+           +  "<div style='font-size:15px;font-weight:600;margin-bottom:6px;'>" + item.zh + " · " + item.pinyin + "</div>"
+           +  "<div style='font-size:13px;color:#94a3b8;margin-bottom:4px;'>✅ 正确说法：" + item.en + "</div>"
+           +  "<div style='font-size:13px;color:#f97316;'>❌ 常见错误：直译成生硬的英文语序，比如「I am very good at Chinese」</div>"
+           +  "<div style='font-size:12px;color:#64748b;margin-top:4px;'>" + (item.note || '') + "</div>"
+           +  "</div>";
+    });
+  } else {
+    html += "<div style='margin-top:12px;font-size:14px;color:#94a3b8;'>本课暂无详细地道指南配置。</div>";
+  }
+
+  card.innerHTML = html +
+    "<button class='btn-restart' onclick='restartLesson()'>再练一次 Practice Again</button>";
+}
+
+// ── Init ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  loadState();
+  setupAudio(LESSONS[lessonIdx].audio);
+  updateUI();
+  initDialogMode();
+});
+</script>
+<!-- 评价页面 -->
+<div class="eval-page" id="eval-page">
+  <div class="eval-inner">
+    <div class="eval-header">
+      <div class="eval-badge" id="eval-badge">第 1/5 句</div>
+    </div>
+
+    <!-- 分数 -->
+    <div class="eval-score-card">
+      <div class="eval-loading" id="eval-loading">
+        <div class="eval-spinner"></div>
+        <div class="eval-loading-txt">评测中，请稍候...</div>
+      </div>
+      <div class="eval-result-area" id="eval-result-area">
+        <div class="eval-score-num" id="eval-score-num">--</div>
+        <div class="eval-score-sub">发音评分</div>
+        <div class="eval-grade" id="eval-grade"></div>
+        <div class="eval-praise" id="eval-praise"></div>
+        <div class="eval-error-notice" id="eval-error-notice" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- 发音对比 -->
+    <div class="eval-compare-card" id="eval-compare-card">
+      <div class="eval-compare-row">
+        <span class="eval-tag">原 文</span>
+        <div class="eval-anno-wrap" id="eval-anno-chars"></div>
+      </div>
+    </div>
+
+    <!-- 发音提示 -->
+    <div class="eval-hint-card">
+      <div class="eval-hint-title">💡 发音提示</div>
+      <div class="eval-hint-text" id="eval-hint-text"></div>
+    </div>
+
+    <!-- 导航按钮 -->
+    <div class="eval-nav">
+      <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ 上一句 Prev</button>
+      <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">下一句 Next ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 对话聆听页 ─────────────────────────── -->
+<div id="dialog-listen-page">
+  <div class="dlp-header">
+    <div>
+      <div class="dlp-title">👂 听完整对话 Listen</div>
+      <div class="dlp-subtitle">第1步 · 先感受语气和节奏</div>
+    </div>
+    <button class="dlp-skip" onclick="dlpSkip()">跳过 →</button>
+  </div>
+
+  <div class="dlp-body">
+    <!-- 林悦（本地人）-->
+    <div class="dlp-block local" id="dlp-block-local">
+      <div class="dlp-speaker-row">
+        <img class="dlp-avatar" src="mascot.jpg" alt="林悦" onerror="this.style.display='none'">
+        <div>
+          <div class="dlp-name">林悦</div>
+          <div class="dlp-role-tag">🇨🇳 Local · Beijing</div>
+        </div>
+      </div>
+      <div class="dlp-content">
+        <div class="dlp-kara" id="dlp-kara-local"></div>
+        <div class="dlp-bar"><div class="dlp-bar-fill" id="dlp-bar-local"></div></div>
+        <div class="dlp-en" id="dlp-en-local"></div>
+      </div>
+    </div>
+
+    <!-- 卢克（学习者）-->
+    <div class="dlp-block learner" id="dlp-block-learner">
+      <div class="dlp-speaker-row">
+        <img class="dlp-avatar" src="luke.png" alt="卢克" onerror="this.style.background='rgba(34,197,94,0.2)'">
+        <div>
+          <div class="dlp-name">卢克 Luke</div>
+          <div class="dlp-role-tag">🇬🇧 Learner · British</div>
+        </div>
+      </div>
+      <div class="dlp-content">
+        <div class="dlp-kara" id="dlp-kara-learner"></div>
+        <div class="dlp-bar"><div class="dlp-bar-fill" id="dlp-bar-learner"></div></div>
+        <div class="dlp-en" id="dlp-en-learner"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dlp-footer">
+    <button class="dlp-play-btn" id="dlp-play-btn" onclick="playFullDialogue()">▶ 开始播放</button>
+    <button class="dlp-next-btn" onclick="dlpSkip()">下一步 →</button>
+  </div>
+</div>
+
+</body>
+</html>
