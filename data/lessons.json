@@ -6,6 +6,13 @@
       "scene": "卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。",
       "dialogue": [
         {
+          "speaker": "卢克",
+          "role": "learner",
+          "zh": "你好，打扰一下。请问去市区在哪儿坐车？",
+          "pinyin": "Nǐ hǎo, dǎrǎo yíxià. Qǐngwèn qù shìqū zài nǎr zuò chē?",
+          "en": "Hello, excuse me. Where do I take the bus to the city center?"
+        },
+        {
           "speaker": "工作人员",
           "role": "local",
           "zh": "大巴吗？一直往前走，出三号门，往右拐。",
