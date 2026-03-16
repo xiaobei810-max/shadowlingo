@@ -48,28 +48,26 @@
           "en": "I understand, thank you!"
         }
       ],
-      "nativeGuide": {
-        "title": "问路时，"拐"比"转"更地道！",
-        "wrong": "请向右转",
-        "correct": [
-          {
-            "zh": "往右拐",
-            "pinyin": "Wǎng yòu guǎi",
-            "en": "Turn right"
-          },
-          {
-            "zh": "一直走",
-            "pinyin": "Yìzhí zǒu",
-            "en": "Go straight"
-          },
-          {
-            "zh": "往左拐",
-            "pinyin": "Wǎng zuǒ guǎi",
-            "en": "Turn left"
-          }
-        ],
-        "note": "口语中用"拐"，不用"转"，听起来更自然。"
-      }
+      "correct": [
+        {
+          "zh": "往右拐",
+          "pinyin": "Wǎng yòu guǎi",
+          "en": "Turn right",
+          "note": "口语中用"拐"，不用"转"，听起来更自然。"
+        },
+        {
+          "zh": "一直走",
+          "pinyin": "Yìzhí zǒu",
+          "en": "Go straight",
+          "note": "问路常用表达，简洁直接。"
+        },
+        {
+          "zh": "往左拐",
+          "pinyin": "Wǎng zuǒ guǎi",
+          "en": "Turn left",
+          "note": "❌ 错误说法：请向右/左转"
+        }
+      ]
     }
   ]
 }
