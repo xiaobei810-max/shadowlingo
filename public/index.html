@@ -2552,14 +2552,6 @@
     function dlpSkip() {
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       if (window.speechSynthesis) window.speechSynthesis.cancel();
-      var dlp = document.getElementById('dialog-listen-page');
-      if (dlp) dlp.classList.remove('show');
-      enterDialogStep2();
-    }
-
-    function dlpSkip() {
-      if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
       dlpPlaying = false;
       dlpPaused = false;
       var dlp = document.getElementById('dialog-listen-page');

@@ -1,0 +1,73 @@
+{
+  "lessons": [
+    {
+      "id": 1,
+      "title": "机场大巴问路",
+      "scene": "卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。",
+      "dialogue": [
+        {
+          "speaker": "工作人员",
+          "role": "local",
+          "zh": "大巴吗？一直往前走，出三号门，往右拐。",
+          "pinyin": "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.",
+          "en": "The bus? Go straight ahead, exit through Gate 3, then turn right."
+        },
+        {
+          "speaker": "卢克",
+          "role": "learner",
+          "zh": "三号门右拐，对吧？",
+          "pinyin": "Sān hào mén yòu guǎi, duì ba?",
+          "en": "Gate 3, turn right, right?"
+        },
+        {
+          "speaker": "工作人员",
+          "role": "local",
+          "zh": "对，在那边排队上车。",
+          "pinyin": "Duì, zài nàbiān páiduì shàng chē.",
+          "en": "That's right, queue over there to board."
+        },
+        {
+          "speaker": "卢克",
+          "role": "learner",
+          "zh": "好的。请问是在车上买票吗？",
+          "pinyin": "Hǎo de. Qǐngwèn shì zài chē shàng mǎi piào ma?",
+          "en": "Got it. Excuse me, do we buy tickets on the bus?"
+        },
+        {
+          "speaker": "工作人员",
+          "role": "local",
+          "zh": "对，上车扫码或者付现金都行。",
+          "pinyin": "Duì, shàng chē sǎo mǎ huòzhě fù xiànjīn dōu xíng.",
+          "en": "Yes, you can scan a QR code or pay cash on the bus."
+        },
+        {
+          "speaker": "卢克",
+          "role": "learner",
+          "zh": "我明白了，谢谢您！",
+          "pinyin": "Wǒ míngbai le, xièxie nín!",
+          "en": "I understand, thank you!"
+        }
+      ],
+      "correct": [
+        {
+          "zh": "往右拐",
+          "pinyin": "Wǎng yòu guǎi",
+          "en": "Turn right",
+          "note": "口语中用"拐"，不用"转"，听起来更自然。"
+        },
+        {
+          "zh": "一直走",
+          "pinyin": "Yìzhí zǒu",
+          "en": "Go straight",
+          "note": "问路常用表达，简洁直接。"
+        },
+        {
+          "zh": "往左拐",
+          "pinyin": "Wǎng zuǒ guǎi",
+          "en": "Turn left",
+          "note": "❌ 错误说法：请向右/左转"
+        }
+      ]
+    }
+  ]
+}
