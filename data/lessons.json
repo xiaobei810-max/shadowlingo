@@ -2,72 +2,74 @@
   "lessons": [
     {
       "id": 1,
-      "title": "初次见面的「中式谦虚」",
-      "scene": "你在北京参加一个线下的青年交友聚会，刚好和中国人林悦端着咖啡聊了起来。",
+      "title": "机场大巴问路",
+      "scene": "卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。",
       "dialogue": [
         {
-          "speaker": "林悦",
+          "speaker": "工作人员",
           "role": "local",
-          "zh": "你好！我是林悦，很高兴认识你。",
-          "pinyin": "Nǐ hǎo! Wǒ shì Lín Yuè, hěn gāoxìng rènshi nǐ.",
-          "en": "Hi! I'm Lin Yue, nice to meet you."
+          "zh": "大巴吗？一直往前走，出三号门，往右拐。",
+          "pinyin": "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.",
+          "en": "The bus? Go straight ahead, exit through Gate 3, then turn right."
         },
         {
           "speaker": "卢克",
           "role": "learner",
-          "zh": "你好，叫我卢克就行。我也很高兴认识你！",
-          "pinyin": "Nǐ hǎo, jiào wǒ Lùkè jiù xíng. Wǒ yě hěn gāoxìng rènshi nǐ!",
-          "en": "Hi, just call me Luke. Nice to meet you too!"
+          "zh": "三号门右拐，对吧？",
+          "pinyin": "Sān hào mén yòu guǎi, duì ba?",
+          "en": "Gate 3, turn right, right?"
         },
         {
-          "speaker": "林悦",
+          "speaker": "工作人员",
           "role": "local",
-          "zh": "你的中文说得很好！",
-          "pinyin": "Nǐ de Zhōngwén shuō de hěn hǎo!",
-          "en": "Your Chinese is really good!"
+          "zh": "对，在那边排队上车。",
+          "pinyin": "Duì, zài nàbiān páiduì shàng chē.",
+          "en": "That's right, queue over there to board."
         },
         {
           "speaker": "卢克",
           "role": "learner",
-          "zh": "没有没有，还差得远呢。我来北京才三个月。",
-          "pinyin": "Méiyǒu méiyǒu, hái chà de yuǎn ne. Wǒ lái Běijīng cái sān ge yuè.",
-          "en": "No no, I still have a long way to go. I've only been in Beijing for three months."
+          "zh": "好的。请问是在车上买票吗？",
+          "pinyin": "Hǎo de. Qǐngwèn shì zài chē shàng mǎi piào ma?",
+          "en": "Got it. Excuse me, do we buy tickets on the bus?"
         },
         {
-          "speaker": "林悦",
+          "speaker": "工作人员",
           "role": "local",
-          "zh": "那进步已经很快啦！你是哪国人？",
-          "pinyin": "Nà jìnbù yǐjīng hěn kuài la! Nǐ shì něi guó rén?",
-          "en": "That's fast progress! Where are you from?"
+          "zh": "对，上车扫码或者付现金都行。",
+          "pinyin": "Duì, shàng chē sǎo mǎ huòzhě fù xiànjīn dōu xíng.",
+          "en": "Yes, you can scan a QR code or pay cash on the bus."
         },
         {
           "speaker": "卢克",
           "role": "learner",
-          "zh": "我是英国人。不过我有一个标准的「中国胃」，特别爱吃烤鸭！",
-          "pinyin": "Wǒ shì Yīngguó rén. Búguò wǒ yǒu yí ge biāozhǔn de 「Zhōngguó wèi」, tèbié ài chī kǎoyā!",
-          "en": "I'm British. But I have a proper 'Chinese stomach' — I absolutely love Peking duck!"
+          "zh": "我明白了，谢谢您！",
+          "pinyin": "Wǒ míngbai le, xièxie nín!",
+          "en": "I understand, thank you!"
         }
       ],
-      "correct": [
-        {
-          "zh": "没有没有",
-          "pinyin": "Méiyǒu méiyǒu",
-          "en": "No no (shake your head 🙅‍♀️)",
-          "note": "边说边摆手，最自然"
-        },
-        {
-          "zh": "还行",
-          "pinyin": "Hái xíng",
-          "en": "It's okay / Not bad",
-          "note": "轻描淡写，超酷 😎"
-        },
-        {
-          "zh": "还差得远呢",
-          "pinyin": "Hái chà de yuǎn ne",
-          "en": "I still have a long way to go",
-          "note": "谦虚加倍，中国人听了会觉得你深不可测！🤯"
-        }
-      ]
+      "nativeGuide": {
+        "title": "问路时，"拐"比"转"更地道！",
+        "wrong": "请向右转",
+        "correct": [
+          {
+            "zh": "往右拐",
+            "pinyin": "Wǎng yòu guǎi",
+            "en": "Turn right"
+          },
+          {
+            "zh": "一直走",
+            "pinyin": "Yìzhí zǒu",
+            "en": "Go straight"
+          },
+          {
+            "zh": "往左拐",
+            "pinyin": "Wǎng zuǒ guǎi",
+            "en": "Turn left"
+          }
+        ],
+        "note": "口语中用"拐"，不用"转"，听起来更自然。"
+      }
     }
   ]
 }
