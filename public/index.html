@@ -1627,15 +1627,40 @@
       var pairs = []; // { zh, en }
       parts.forEach(function (p) {
         var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/);
-        if (ri) { pairs.push({ zh: '声母错误（应读 ' + ri[1] + '）', en: 'initial consonant: should be "' + ri[1] + '"' }); return; }
+        if (ri) {
+          var should = ri[1], got = ri[2];
+          var retroflex = ['zh', 'ch', 'sh', 'r'];
+          var sibilant  = ['z',  'c',  's'];
+          if ((retroflex.indexOf(should) >= 0 && sibilant.indexOf(got) >= 0) ||
+              (sibilant.indexOf(should) >= 0 && retroflex.indexOf(got) >= 0)) {
+            pairs.push({ zh: '平翘舌音错误（应读 ' + should + '）', en: 'retroflex vs. sibilant: should be "' + should + '"' });
+          } else {
+            pairs.push({ zh: '声母错误（应读 ' + should + '）', en: 'initial consonant: should be "' + should + '"' });
+          }
+          return;
+        }
 
         var rf = p.match(/韵母错误：应【(.+?)】实【(.+?)】/);
-        if (rf) { pairs.push({ zh: '韵母错误（应读 ' + rf[1] + '）', en: 'vowel sound: should be "' + rf[1] + '"' }); return; }
+        if (rf) {
+          var should = rf[1], got = rf[2];
+          var nasalPairs = [['an','ang'],['en','eng'],['in','ing'],['ian','iang'],['uan','uang'],['n','ng']];
+          var isNasal = nasalPairs.some(function (pair) {
+            return (pair[0] === should && pair[1] === got) || (pair[1] === should && pair[0] === got);
+          });
+          if (isNasal) {
+            pairs.push({ zh: '前后鼻音错误（应读 ' + should + '）', en: 'nasal ending: should be "' + should + '" not "' + got + '"' });
+          } else {
+            pairs.push({ zh: '韵母错误（应读 ' + should + '）', en: 'vowel sound: should be "' + should + '"' });
+          }
+          return;
+        }
 
         var tm = p.match(/声调偏差：应第(\d)声/);
         if (tm) {
-          var toneNames = ['', '1st (ā)', '2nd (á)', '3rd (ǎ)', '4th (à)', 'neutral'];
-          pairs.push({ zh: '声调偏差（应第' + tm[1] + '声）', en: 'wrong tone: should be ' + (toneNames[+tm[1]] || tm[1] + 'th') + ' tone' });
+          var toneNames = ['', '第1声（ā 高平调）', '第2声（á 上升调）', '第3声（ǎ 低降升调）', '第4声（à 下降调）', '轻声'];
+          var toneNamesEn = ['', '1st tone (ā, high flat)', '2nd tone (á, rising)', '3rd tone (ǎ, dip-rise)', '4th tone (à, falling)', 'neutral tone'];
+          var n = +tm[1];
+          pairs.push({ zh: '声调错误（应读' + (toneNames[n] || '第' + n + '声') + '）', en: 'wrong tone: should be ' + (toneNamesEn[n] || n + 'th tone') });
           return;
         }
 
@@ -1664,6 +1689,12 @@
       if (!reds.length && !yellows.length)
         return '发音准确，继续保持！🎉\nPronunciation accurate — well done!';
 
+      // 检测未录音或录音不完整（大多数字符均为红色错误）
+      var prefix = '';
+      if (words.length > 0 && reds.length >= 3 && reds.length / words.length >= 0.5) {
+        prefix = '⚠️ 未检测到完整语音，请重新录音\n   No full audio detected — please record again\n\n';
+      }
+
       var seen = {}, lines = [];
       reds.forEach(function (w) {
         if (seen[w.content]) return;
@@ -1675,7 +1706,7 @@
         seen[w.content] = true;
         lines.push(buildHintLine(w, false));
       });
-      return lines.join('\n');
+      return prefix + lines.join('\n');
     }
 
     // ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
@@ -2524,12 +2555,8 @@
         idx++;
         updateUI();
       } else {
-        if (idx > 0) {
-          idx--;
-          updateUI();
-        } else {
-          showPreListenPage();
-        }
+        if (idx > 0) idx--;
+        updateUI();
       }
     }
 
