@@ -3495,22 +3495,22 @@
       };
       var chosen;
       if (role === 'local') {
-        // 工作人员：中国女性20岁，清晰自然
-        chosen = find('语舒 (中文（中国大陆）)')
-              || find('语舒')
-              || find('Sandy (中文（中国大陆）)')
+        // 工作人员：中国女性20多岁，清晰自然
+        chosen = find('Sandy (中文（中国大陆）)')
+              || find('Shelley (中文（中国大陆）)')
               || find('婷婷')
               || find('Flo (中文（中国大陆）)')
-              || find('Shelley (中文（中国大陆）)')
+              || find('语舒 (中文（中国大陆）)')
+              || find('语舒')
               || findLang('zh-CN', ['Grandma','Grandpa','Eddy','Rocko','Reed','Li-Mu']);
       } else {
-        // 卢克：澳大利亚男性，中文不太熟练，声音偏粗犷
-        chosen = find('Rocko (中文（中国大陆）)')
-              || find('Eddy (中文（中国大陆）)')
+        // 卢克：澳大利亚20岁交换生，阳光男声
+        chosen = find('Eddy (中文（中国大陆）)')
+              || find('Rocko (中文（中国大陆）)')
               || find('Reed (中文（中国大陆）)')
               || find('Li-Mu')
-              || find('Rocko (中文（台湾）)')
               || find('Eddy (中文（台湾）)')
+              || find('Rocko (中文（台湾）)')
               || findLang('zh-TW', ['Grandma','Grandpa'])
               || findLang('zh-CN', ['Grandma','Grandpa']);
       }
@@ -3528,10 +3528,10 @@
       }
       if (role === 'local') {
         utter.rate  = rate || 1.0;
-        utter.pitch = 1.15;  // 略高，年轻女声
+        utter.pitch = 1.1;   // 略高，年轻女声，不夸张
       } else {
-        utter.rate  = rate ? rate * 0.92 : 0.88; // 稍慢，非母语感
-        utter.pitch = 0.88;  // 低沉男声
+        utter.rate  = rate ? rate * 0.95 : 0.92; // 轻微放慢，缺实战经验感
+        utter.pitch = 1.0;   // 自然男声音调，不做过多处理
       }
     }
 
