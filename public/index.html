@@ -2831,22 +2831,25 @@
 
     // 小花绽放（80-89分）—— 左下角冒出3朵小花/绿叶
     function spawnBloomElement(anchorEl) {
-      var rect = anchorEl.getBoundingClientRect();
+      // Use score card as anchor for accurate centering
+      var card = document.getElementById('eval-score-card') || anchorEl;
+      var rect = card.getBoundingClientRect();
       var cx = rect.left + rect.width / 2;
-      var cy = rect.top + rect.height / 2;
-      // 围绕分数四周：左上、右上、左下、右下、正左、正右
+      // cy = top of card + ~60px (where the big number sits)
+      var cy = rect.top + 60;
+      // Fixed pixel offsets around the score number
       var items = [
-        { emoji: '🌸', dx: -rect.width * 0.85, dy: -rect.height * 0.3, sz: 30, delay: 0 },
-        { emoji: '🌿', dx:  rect.width * 0.85, dy: -rect.height * 0.15, sz: 28, delay: 0.18 },
-        { emoji: '🌸', dx: -rect.width * 0.6,  dy:  rect.height * 0.55, sz: 26, delay: 0.34 },
-        { emoji: '🍀', dx:  rect.width * 0.65, dy:  rect.height * 0.5,  sz: 27, delay: 0.50 },
-        { emoji: '🌿', dx: -rect.width * 1.1,  dy:  rect.height * 0.1,  sz: 24, delay: 0.65 },
-        { emoji: '🌸', dx:  rect.width * 1.05, dy: -rect.height * 0.45, sz: 25, delay: 0.80 }
+        { emoji: '🌸', dx: -95,  dy: -30, sz: 30, delay: 0 },
+        { emoji: '🌿', dx:  90,  dy: -18, sz: 28, delay: 0.18 },
+        { emoji: '🌸', dx: -70,  dy:  55, sz: 26, delay: 0.34 },
+        { emoji: '🍀', dx:  75,  dy:  50, sz: 27, delay: 0.50 },
+        { emoji: '🌿', dx: -120, dy:  18, sz: 24, delay: 0.65 },
+        { emoji: '🌸', dx:  115, dy: -42, sz: 25, delay: 0.80 }
       ];
       items.forEach(function(it) {
         var el = document.createElement('div');
         el.textContent = it.emoji;
-        el.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;opacity:0;font-size:' + it.sz + 'px;' +
+        el.style.cssText = 'position:fixed;pointer-events:none;z-index:9997;opacity:0;font-size:' + it.sz + 'px;' +
           'left:' + (cx + it.dx - it.sz / 2) + 'px;' +
           'top:'  + (cy + it.dy - it.sz / 2) + 'px;' +
           'transform-origin:center bottom;' +
