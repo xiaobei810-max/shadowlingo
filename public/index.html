@@ -1619,7 +1619,34 @@
     }
 
     // 把后端 perrMsg 转成纯英文一行
-    function buildHintLine(w, isRed) {
+    // 计算音变后的正确声调（一/不/三声连读等）
+    function computeSandhiTones(chars) {
+      if (!chars || !chars.length) return [];
+      var tones = chars.map(function (c) {
+        return { c: c.c, p: c.p, tone: parseInt((c.p || '').slice(-1)) || 0 };
+      });
+      for (var i = 0; i < tones.length; i++) {
+        var cur = tones[i], nxt = tones[i + 1];
+        var nxtTone = nxt ? nxt.tone : 0;
+        // 一 音变
+        if (cur.c === '一' && cur.tone === 1) {
+          cur.sandhiTone = (nxtTone === 4) ? 2 : (nxtTone >= 1 && nxtTone <= 3) ? 4 : 1;
+        }
+        // 不 音变：不 + 4声 → 2声
+        if (cur.c === '不' && cur.tone === 4 && nxtTone === 4) {
+          cur.sandhiTone = 2;
+        }
+        // 三声连读：3 + 3 → first becomes 2
+        if (cur.tone === 3 && nxtTone === 3) {
+          cur.sandhiTone = 2;
+        }
+        // 轻声字（的地得了着过们子头等）已在 chars 中标注 tone=5，无需额外处理
+        cur.expectedTone = cur.sandhiTone || cur.tone;
+      }
+      return tones;
+    }
+
+    function buildHintLine(w, isRed, sandhiQueue) {
       var parts = (w.perrMsg || '').split('；').map(function (p) {
         return p.replace(/（\d+分）/g, '').trim();
       }).filter(Boolean);
@@ -1659,7 +1686,12 @@
         if (tm) {
           var toneNames = ['', '第1声（ā 高平调）', '第2声（á 上升调）', '第3声（ǎ 低降升调）', '第4声（à 下降调）', '轻声'];
           var toneNamesEn = ['', '1st tone (ā, high flat)', '2nd tone (á, rising)', '3rd tone (ǎ, dip-rise)', '4th tone (à, falling)', 'neutral tone'];
-          var n = +tm[1];
+          var iseTone = +tm[1];
+          // 用我们的 chars 数据（已含音变）校验 ISE 的声调判断
+          var ourEntry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content].shift();
+          var ourTone = ourEntry ? ourEntry.expectedTone : 0;
+          // 若 ISE 判断的"应读声调"与我们的正确声调不符，以我们的数据为准
+          var n = (ourTone && ourTone !== iseTone) ? ourTone : iseTone;
           pairs.push({ zh: '声调错误（应读' + (toneNames[n] || '第' + n + '声') + '）', en: 'wrong tone: should be ' + (toneNamesEn[n] || n + 'th tone') });
           return;
         }
@@ -1683,30 +1715,37 @@
     }
 
     // 发音提示：去重 + 每字一行 + 双语
-    function iseHintText(words) {
+    function iseHintText(words, chars) {
       var reds = words.filter(function (w) { return w.perrLevel === 2; });
       var yellows = words.filter(function (w) { return w.perrLevel === 1; });
       if (!reds.length && !yellows.length)
         return '发音准确，继续保持！🎉\nPronunciation accurate — well done!';
 
-      // 检测未录音或录音不完整（大多数字符均为红色错误）
-      var prefix = '';
-      if (words.length > 0 && reds.length >= 3 && reds.length / words.length >= 0.5) {
-        prefix = '⚠️ 未检测到完整语音，请重新录音\n   No full audio detected — please record again\n\n';
-      }
+      // 构建音变后声调队列（按字符分组，保持出现顺序）
+      var sandhiQueue = {};
+      computeSandhiTones(chars || []).forEach(function (item) {
+        if (!sandhiQueue[item.c]) sandhiQueue[item.c] = [];
+        sandhiQueue[item.c].push(item);
+      });
 
       var seen = {}, lines = [];
       reds.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        lines.push(buildHintLine(w, true));
+        lines.push(buildHintLine(w, true, sandhiQueue));
       });
       yellows.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        lines.push(buildHintLine(w, false));
+        lines.push(buildHintLine(w, false, sandhiQueue));
       });
-      return prefix + lines.join('\n');
+      return lines.join('\n');
+    }
+
+    // 检测录音是否不完整
+    function isIncompleteRecording(words) {
+      var reds = words.filter(function (w) { return w.perrLevel === 2; });
+      return reds.length >= 3 && reds.length / words.length >= 0.5;
     }
 
     // ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
@@ -1981,6 +2020,22 @@
         if (result.error) throw new Error(result.error);
 
         // 3. 展示结果
+        if (isIncompleteRecording(result.wordResults)) {
+          // 录音不完整：不计分，提示重录
+          document.getElementById("eval-loading").style.display = "none";
+          document.getElementById("eval-result-area").classList.add("show");
+          document.getElementById("eval-score-num").textContent = "—";
+          document.getElementById("eval-score-num").style.color = "#94a3b8";
+          document.getElementById("eval-grade").textContent = "";
+          document.getElementById("eval-praise").textContent = "请说完完整句子后再提交\nPlease speak the full sentence before submitting";
+          document.getElementById("eval-compare-card").style.display = "none";
+          document.getElementById("eval-hint-text").textContent = "⚠️ 未录到完整句子，请重新录音\n   Recording incomplete — please try again";
+          document.getElementById("eval-error-notice").style.display = "none";
+          busy = false;
+          setStatus('准备好了 Ready');
+          currentSentenceForEval = null;
+          return;
+        }
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
@@ -1988,7 +2043,7 @@
         incPracticeCount(lessonIdx, idx);
         document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
         fillEvalResult(result.totalScore, iseAnnotations(result.wordResults, s.chars),
-          iseHintText(result.wordResults), s, null, recText);
+          iseHintText(result.wordResults, s.chars), s, null, recText);
       } catch (err) {
         console.error('评测失败:', err);
         sessionScores.push(0);
