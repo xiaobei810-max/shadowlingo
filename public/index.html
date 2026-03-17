@@ -1660,9 +1660,9 @@
           var sibilant  = ['z',  'c',  's'];
           if ((retroflex.indexOf(should) >= 0 && sibilant.indexOf(got) >= 0) ||
               (sibilant.indexOf(should) >= 0 && retroflex.indexOf(got) >= 0)) {
-            pairs.push({ zh: '平翘舌音错误（应读 ' + should + '）', en: 'retroflex vs. sibilant: should be "' + should + '"' });
+            pairs.push({ zh: '平翘舌音：你读成了 ' + got + '，应读 ' + should, en: 'retroflex: you said "' + got + '", should be "' + should + '"' });
           } else {
-            pairs.push({ zh: '声母错误（应读 ' + should + '）', en: 'initial consonant: should be "' + should + '"' });
+            pairs.push({ zh: '声母错误：你读成了 ' + got + '，应读 ' + should, en: 'initial consonant: you said "' + got + '", should be "' + should + '"' });
           }
           return;
         }
@@ -1675,9 +1675,9 @@
             return (pair[0] === should && pair[1] === got) || (pair[1] === should && pair[0] === got);
           });
           if (isNasal) {
-            pairs.push({ zh: '前后鼻音错误（应读 ' + should + '）', en: 'nasal ending: should be "' + should + '" not "' + got + '"' });
+            pairs.push({ zh: '前后鼻音：你读成了 ' + got + '，应读 ' + should, en: 'nasal ending: you said "' + got + '", should be "' + should + '"' });
           } else {
-            pairs.push({ zh: '韵母错误（应读 ' + should + '）', en: 'vowel sound: should be "' + should + '"' });
+            pairs.push({ zh: '韵母错误：你读成了 ' + got + '，应读 ' + should, en: 'vowel sound: you said "' + got + '", should be "' + should + '"' });
           }
           return;
         }
@@ -1698,7 +1698,24 @@
 
         if (p.indexOf('漏读') >= 0) { pairs.push({ zh: '漏读音节', en: 'missed syllable' }); return; }
         if (p.indexOf('多读') >= 0) { pairs.push({ zh: '多读音节', en: 'extra syllable spoken' }); return; }
-        if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0) { pairs.push({ zh: '发音有误', en: 'mispronounced' }); return; }
+        if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0) {
+          var entry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0];
+          if (entry && entry.p) {
+            var py = toToneMark(entry.p);
+            var initRaw = entry.p.toLowerCase().replace(/\d/g, '').trim();
+            var isRetroflex = /^(zh|ch|sh|r)/.test(initRaw);
+            if (entry.tone === 5) {
+              pairs.push({ zh: '轻声字读错（正确：' + py + '）', en: 'neutral tone error (correct: ' + py + ')' });
+            } else if (isRetroflex) {
+              pairs.push({ zh: '发音有误，注意翘舌音（正确：' + py + '）', en: 'mispronounced: check retroflex (correct: ' + py + ')' });
+            } else {
+              pairs.push({ zh: '发音有误（正确读音：' + py + '）', en: 'mispronounced (correct: ' + py + ')' });
+            }
+          } else {
+            pairs.push({ zh: '发音有误', en: 'mispronounced' });
+          }
+          return;
+        }
         if (p.indexOf('发音需改进') >= 0) {
           var entry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0]; // peek
           if (entry && entry.p) {
@@ -2425,16 +2442,28 @@
       }, dur + 200);
     }
 
+    var ttsPaused = false;
+
     function doSlow() {
       var btn = document.getElementById("bs");
-      if (phase === "slow") {
-        // 暂停
-        clearTimers();
-        window.speechSynthesis && window.speechSynthesis.cancel();
-        phase = "idle"; busy = false;
-        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
+      // 已暂停 → 继续
+      if (phase === "slow" && ttsPaused) {
+        window.speechSynthesis && window.speechSynthesis.resume();
+        resumeKaraTimer();
+        ttsPaused = false;
+        if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
         return;
       }
+      // 正在播放 → 暂停
+      if (phase === "slow" && !ttsPaused) {
+        window.speechSynthesis && window.speechSynthesis.pause();
+        pauseKaraTimer();
+        ttsPaused = true;
+        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 继续 Resume"; }
+        return;
+      }
+      // 空闲 → 重新开始
+      ttsPaused = false;
       stopMediaRecorderIfRunning();
       clearTimers();
       window.speechSynthesis && window.speechSynthesis.cancel();
@@ -2457,6 +2486,7 @@
       speakTTSAtRate(s.zh, slowSpeed, function () {
         clearTimeout(fallbackTimer);
         if (phase !== "slow") return;
+        ttsPaused = false;
         completeKara();
         if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
         busy = false; phase = "idle";
@@ -3070,20 +3100,17 @@
       setTimeout(function () { window.speechSynthesis.speak(utter); }, 100);
     }
 
-    // Timer-based karaoke for main kara div (no audio timestamps needed)
-    function runKaraTimedMain(durationMs, timings, barOnly) {
-      if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
-      karaActive = true;
-      document.getElementById("bar-fill").style.width = "0%";
-      var startTime = Date.now();
+    // Timer-based karaoke for main kara div — supports pause/resume
+    var _kts = { dur: 0, timings: null, barOnly: false, startTime: 0, pausedMs: 0 };
+
+    function _tickKara() {
       karaTimerId = setInterval(function () {
-        var elapsed = (Date.now() - startTime) / 1000;
-        var dur = durationMs / 1000;
+        var elapsed = (_kts.pausedMs + Date.now() - _kts.startTime) / 1000;
+        var dur = _kts.dur / 1000;
         document.getElementById("bar-fill").style.width = (Math.min(1, elapsed / dur) * 100) + "%";
-        if (!barOnly) {
+        if (!_kts.barOnly) {
           document.querySelectorAll("#kara .kchar").forEach(function (el, i) {
-            var t = timings[i];
-            if (!t) return;
+            var t = _kts.timings[i]; if (!t) return;
             if (elapsed >= t.end) el.className = "kchar done";
             else if (elapsed >= t.start) el.className = "kchar active";
             else el.className = "kchar";
@@ -3091,6 +3118,27 @@
         }
         if (elapsed >= dur) { clearInterval(karaTimerId); karaTimerId = null; }
       }, 50);
+    }
+
+    function runKaraTimedMain(durationMs, timings, barOnly) {
+      if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
+      karaActive = true;
+      _kts.dur = durationMs; _kts.timings = timings; _kts.barOnly = barOnly;
+      _kts.pausedMs = 0; _kts.startTime = Date.now();
+      document.getElementById("bar-fill").style.width = "0%";
+      _tickKara();
+    }
+
+    function pauseKaraTimer() {
+      if (karaTimerId) {
+        _kts.pausedMs += Date.now() - _kts.startTime;
+        clearInterval(karaTimerId); karaTimerId = null;
+      }
+    }
+
+    function resumeKaraTimer() {
+      _kts.startTime = Date.now();
+      _tickKara();
     }
 
     // 进入第 2 步：Your Turn
