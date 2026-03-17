@@ -3177,29 +3177,45 @@
     }
 
     function showCompletion() {
-      var overall = sessionScores.length
-        ? Math.round(sessionScores.reduce(function (a, b) { return a + b; }, 0) / sessionScores.length)
-        : 75;
-      var oColor = overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
+      var totalSentences = LESSONS[lessonIdx].sentences.length;
+      var recorded = sessionScores.length;
+      // Skipped sentences count as 0 — divide by total, not just recorded
+      var sum = sessionScores.reduce(function (a, b) { return a + b; }, 0);
+      var overall = totalSentences > 0 ? Math.round(sum / totalSentences) : 0;
 
-      document.getElementById("avg-score").textContent = overall;
+      var noPractice = recorded === 0;
+      var oColor = noPractice ? "#64748b" :
+        overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
+
+      document.getElementById("avg-score").textContent = noPractice ? '--' : overall;
       document.getElementById("avg-score").style.color = oColor;
 
-      var grade = overall >= 90 ? "🏆 优秀 Excellent" :
+      var grade = noPractice ? "🎤 未录音 No Practice" :
+        overall >= 90 ? "🏆 优秀 Excellent" :
         overall >= 80 ? "🌟 良好 Great" :
-          overall >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
+        overall >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
       document.getElementById("score-grade").textContent = grade;
       document.getElementById("score-grade").style.color = oColor;
 
-      var best = PRAISES.find(function (p) { return overall >= p.min; });
-      var praiseMsg = best ? best.msgs[Math.floor(Math.random() * best.msgs.length)] : "";
-      var lastS = LESSONS[lessonIdx].sentences[idx];
-      document.getElementById("praise-block").innerHTML =
-        "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>" + praiseMsg + "</div>" +
-        "<div style='font-size:13px;color:#94a3b8;'>" + lastS.hint + "</div>";
+      if (noPractice) {
+        document.getElementById("praise-block").innerHTML =
+          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;color:#94a3b8;'>💡 点击麦克风录音，才能获得分数</div>" +
+          "<div style='font-size:13px;color:#64748b;'>Try recording each sentence to see your score!</div>";
+      } else {
+        var completionNote = recorded < totalSentences
+          ? "<div style='font-size:12px;color:#64748b;margin-bottom:6px;'>📊 已练 " + recorded + "/" + totalSentences + " 句（未练句子计 0 分）</div>"
+          : "";
+        var best = PRAISES.find(function (p) { return overall >= p.min; });
+        var praiseMsg = best ? best.msgs[Math.floor(Math.random() * best.msgs.length)] : "";
+        var lastS = LESSONS[lessonIdx].sentences[idx];
+        document.getElementById("praise-block").innerHTML =
+          completionNote +
+          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>" + praiseMsg + "</div>" +
+          "<div style='font-size:13px;color:#94a3b8;'>" + lastS.hint + "</div>";
+      }
 
       document.getElementById("overlay").classList.add("show");
-      launchFireworks();
+      if (!noPractice) launchFireworks();
     }
 
     function restartLesson() {
