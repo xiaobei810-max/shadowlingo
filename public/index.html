@@ -2612,7 +2612,7 @@
       var btn = document.getElementById("bs");
       // 已暂停 → 继续
       if (phase === "slow" && ttsPaused) {
-        window.speechSynthesis && window.speechSynthesis.resume();
+        resumeAudio();
         resumeKaraTimer();
         ttsPaused = false;
         if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
@@ -2620,7 +2620,7 @@
       }
       // 正在播放 → 暂停
       if (phase === "slow" && !ttsPaused) {
-        window.speechSynthesis && window.speechSynthesis.pause();
+        pauseAudio();
         pauseKaraTimer();
         ttsPaused = true;
         if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 继续 Resume"; }
@@ -2630,39 +2630,30 @@
       ttsPaused = false;
       stopMediaRecorderIfRunning();
       clearTimers();
-      window.speechSynthesis && window.speechSynthesis.cancel();
+      stopAudio();
       busy = true; phase = "slow";
       var s = LESSONS[lessonIdx].sentences[idx];
       var estSec = Math.max(2.0, s.zh.replace(/[，。！？,.!?]/g, '').length * 0.28 / slowSpeed);
       var timings = computeCharTimingsForDuration(s.zh, s.pinyin, estSec);
       if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
-      var boundaryReceived = false;
-      // Delay bar timer 100ms to match Chrome TTS start; runs bar-only — boundary events handle chars
-      setTimeout(function () { if (phase === "slow") runKaraTimedMain(estSec * 1000, timings, true); }, 100);
-      // Fallback: if no boundary events fire within 400ms, switch timer to full char mode
-      var fallbackTimer = setTimeout(function () {
-        if (phase === "slow" && !boundaryReceived) {
-          if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
-          runKaraTimedMain(estSec * 1000, timings, false);
+      speakAzure(s.zh, 'learner', slowSpeed,
+        // onend
+        function () {
+          if (phase !== "slow") return;
+          ttsPaused = false;
+          completeKara();
+          if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
+          busy = false; phase = "idle";
+        },
+        // onplay(actualDuration) — start karaoke once audio begins
+        function (actualDuration) {
+          if (phase !== "slow") return;
+          var dur = actualDuration || estSec;
+          var actualTimings = computeCharTimingsForDuration(s.zh, s.pinyin, dur);
+          runKaraTimedMain(dur * 1000, actualTimings, false);
         }
-      }, 400);
-      speakTTSAtRate(s.zh, slowSpeed, function () {
-        clearTimeout(fallbackTimer);
-        if (phase !== "slow") return;
-        ttsPaused = false;
-        completeKara();
-        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
-        busy = false; phase = "idle";
-      }, function (charIdx, charLen) {
-        boundaryReceived = true;
-        // Boundary events exclusively control char highlighting — no timer conflict
-        document.querySelectorAll("#kara .kchar").forEach(function (el, i) {
-          if (i < charIdx) el.className = "kchar done";
-          else if (i < charIdx + Math.max(1, charLen || 1)) el.className = "kchar active";
-          else el.className = "kchar";
-        });
-      });
+      );
     }
 
     var doNormal = doSlow; // merged into single listen button
@@ -3074,7 +3065,7 @@
     }
 
     function stopCtxTTS() {
-      window.speechSynthesis && window.speechSynthesis.cancel();
+      stopAudio();
       var btnAbove = document.getElementById('ctx-play-btn');
       var btnBelow = document.getElementById('ctx-play-btn-below');
       if (btnAbove) { btnAbove.textContent = '▶ 播放'; btnAbove.classList.remove('playing'); }
@@ -3096,14 +3087,14 @@
       var btn = document.getElementById('ctx-play-btn');
       // Resume from pause
       if (ctxPausedId === 'above') {
-        window.speechSynthesis && window.speechSynthesis.resume();
+        resumeAudio();
         ctxPlayingId = 'above'; ctxPausedId = null;
         if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
         return;
       }
       // Pause if currently playing
       if (ctxPlayingId === 'above') {
-        window.speechSynthesis && window.speechSynthesis.pause();
+        pauseAudio();
         ctxPausedId = 'above'; ctxPlayingId = null;
         if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
         return;
@@ -3131,14 +3122,14 @@
       var btn = document.getElementById('ctx-play-btn-below');
       // Resume from pause
       if (ctxPausedId === 'below') {
-        window.speechSynthesis && window.speechSynthesis.resume();
+        resumeAudio();
         ctxPlayingId = 'below'; ctxPausedId = null;
         if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
         return;
       }
       // Pause if currently playing
       if (ctxPlayingId === 'below') {
-        window.speechSynthesis && window.speechSynthesis.pause();
+        pauseAudio();
         ctxPausedId = 'below'; ctxPlayingId = null;
         if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
         return;
@@ -3157,7 +3148,7 @@
       stopMediaRecorderIfRunning();
       clearTimers();
       if (audio) audio.pause();
-      window.speechSynthesis && window.speechSynthesis.cancel();
+      window.speechSynthesis && stopAudio();
       speak(false);
       busy = false; phase = "idle";
       if (idx > 0) {
@@ -3173,7 +3164,7 @@
       stopMediaRecorderIfRunning();
       clearTimers();
       if (audio) audio.pause();
-      window.speechSynthesis && window.speechSynthesis.cancel();
+      window.speechSynthesis && stopAudio();
       speak(false);
       busy = false; phase = "idle";
       var lesson = LESSONS[lessonIdx];
@@ -3395,7 +3386,7 @@
 
     function dlpSkip() {
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      stopAudio();
       dlpPlaying = false;
       dlpPaused = false;
       var dlp = document.getElementById('dialog-listen-page');
@@ -3411,7 +3402,7 @@
     function dlpPause() {
       if (!dlpPlaying || dlpPaused) return;
       dlpPaused = true;
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      stopAudio();
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       dlpUpdatePlayButton('▶ 继续');
     }
@@ -3479,6 +3470,85 @@
       dlpPlayOne(0);
     }
 
+    // ── Azure Neural TTS ──────────────────────────────────────────
+    var _ttsCache = {};    // cacheKey → blob URL
+    var _currentAudio = null; // currently playing <audio> element
+
+    function stopAudio() {
+      if (_currentAudio) {
+        _currentAudio.pause();
+        _currentAudio.src = '';
+        _currentAudio = null;
+      }
+      window.speechSynthesis && window.speechSynthesis.cancel();
+    }
+    function pauseAudio() {
+      if (_currentAudio) _currentAudio.pause();
+      else window.speechSynthesis && window.speechSynthesis.pause();
+    }
+    function resumeAudio() {
+      if (_currentAudio) _currentAudio.play().catch(function(){});
+      else window.speechSynthesis && window.speechSynthesis.resume();
+    }
+
+    // onplay(actualDuration) fires when audio starts; onend fires when done
+    function speakAzure(text, role, rate, onend, onplay) {
+      stopAudio();
+      var cacheKey = role + ':' + (rate || 1.0).toFixed(2) + ':' + text;
+
+      function playUrl(url) {
+        var audio = new Audio(url);
+        _currentAudio = audio;
+        audio.onplay = function () {
+          if (onplay) onplay(audio.duration || null);
+        };
+        audio.onloadedmetadata = function () {
+          // duration now known — if onplay already fired without it, re-fire
+        };
+        audio.onended = function () {
+          if (_currentAudio === audio) _currentAudio = null;
+          if (onend) onend();
+        };
+        audio.onerror = function () {
+          if (_currentAudio === audio) _currentAudio = null;
+          fallbackBrowserTTS(text, role, rate, onend, onplay);
+        };
+        audio.play().catch(function () {
+          fallbackBrowserTTS(text, role, rate, onend, onplay);
+        });
+      }
+
+      if (_ttsCache[cacheKey]) { playUrl(_ttsCache[cacheKey]); return; }
+
+      fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text, role: role, rate: rate || 1.0 })
+      })
+      .then(function (r) {
+        if (!r.ok) throw new Error('tts ' + r.status);
+        return r.blob();
+      })
+      .then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        _ttsCache[cacheKey] = url;
+        playUrl(url);
+      })
+      .catch(function () {
+        fallbackBrowserTTS(text, role, rate, onend, onplay);
+      });
+    }
+
+    function fallbackBrowserTTS(text, role, rate, onend, onplay) {
+      var utter = new SpeechSynthesisUtterance(text);
+      _applyVoice(utter, role, rate);
+      var estSec = Math.max(2.0, text.replace(/[，。！？,.!?]/g, '').length * 0.28 / (rate || 1));
+      utter.onstart = function () { if (onplay) onplay(estSec); };
+      utter.onend   = function () { if (onend) onend(); };
+      utter.onerror = function () { if (onend) onend(); };
+      setTimeout(function () { window.speechSynthesis.speak(utter); }, 50);
+    }
+
     // 语音选择 —— local=工作人员(中国女性20s), learner=卢克(澳大利亚男性)
     var _voiceCache = {};
     function pickVoice(role) {
@@ -3535,35 +3605,14 @@
       }
     }
 
-    // 简单 TTS 封装（使用浏览器 speechSynthesis，若不可用则仅用计时器）
+    // 简单 TTS（对话监听页用，Azure 优先）
     function speakTTS(text, role, onend) {
-      if (!('speechSynthesis' in window)) {
-        setTimeout(function () { if (onend) onend(); }, Math.max(2000, text.length * 300));
-        return;
-      }
-      var utter = new SpeechSynthesisUtterance(text);
-      _applyVoice(utter, role);
-      utter.onend  = function () { if (onend) onend(); };
-      utter.onerror = function () { if (onend) onend(); };
-      window.speechSynthesis.speak(utter);
+      speakAzure(text, role || 'local', 1.0, onend, null);
     }
 
-    // TTS with custom rate — role defaults to 'learner' (Luke); pass 'local' for staff
+    // 带语速 TTS（工作人员播放面板用，Azure 优先）
     function speakTTSAtRate(text, rate, onend, onboundary, role) {
-      if (!('speechSynthesis' in window)) {
-        setTimeout(function () { if (onend) onend(); }, Math.max(2000, text.length * 300 / rate));
-        return;
-      }
-      window.speechSynthesis.cancel();
-      var utter = new SpeechSynthesisUtterance(text);
-      _applyVoice(utter, role || 'learner', rate);
-      utter.onend  = function () { if (onend) onend(); };
-      utter.onerror = function () { if (onend) onend(); };
-      if (onboundary) {
-        utter.addEventListener('boundary', function (e) { onboundary(e.charIndex, e.charLength); });
-      }
-      // Chrome bug: cancel() followed immediately by speak() produces silence — add delay
-      setTimeout(function () { window.speechSynthesis.speak(utter); }, 100);
+      speakAzure(text, role || 'learner', rate || 1.0, onend, null);
     }
 
     // Timer-based karaoke for main kara div — supports pause/resume
@@ -3721,7 +3770,7 @@
         plpPaused = true;
         plpPlaying = false;
         if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        stopAudio();
         plpSetPauseBtn(true);
       }
     }
@@ -3773,7 +3822,7 @@
       plpPlaying = false;
       plpPaused = false;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      stopAudio();
       var kTop = document.getElementById('plp-kara-top');
       var kBot = document.getElementById('plp-kara-bottom');
       var bTop = document.getElementById('plp-bar-top');
@@ -3789,7 +3838,7 @@
     function plpNext() {
       plpPlaying = false;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      stopAudio();
       updateUI();
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.remove('show');

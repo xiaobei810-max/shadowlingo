@@ -1,9 +1,8 @@
 {
   "version": 2,
   "functions": {
-    "api/evaluate.js": {
-      "maxDuration": 30
-    }
+    "api/evaluate.js": { "maxDuration": 30 },
+    "api/tts.js":      { "maxDuration": 10 }
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
