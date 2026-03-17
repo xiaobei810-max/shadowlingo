@@ -1832,8 +1832,17 @@
 
     // 检测录音是否不完整
     function isIncompleteRecording(words) {
+      if (!words || !words.length) return true;
+      // 大量红字（≥3且占≥50%）→ 基本没录到声音
       var reds = words.filter(function (w) { return w.perrLevel === 2; });
-      return reds.length >= 3 && reds.length / words.length >= 0.5;
+      if (reds.length >= 3 && reds.length / words.length >= 0.5) return true;
+      // 句尾连续红字（≥2）→ 说到一半停了
+      var trailing = 0;
+      for (var i = words.length - 1; i >= 0; i--) {
+        if (words[i].perrLevel === 2) trailing++;
+        else break;
+      }
+      return trailing >= 2;
     }
 
     // ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
