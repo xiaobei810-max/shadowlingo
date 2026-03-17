@@ -1200,13 +1200,24 @@
     .ctx-zh {
       font-size: 20px;
       color: var(--text);
-      line-height: 1.5;
+      line-height: 1;
       margin-bottom: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 1px;
     }
-    .ctx-pinyin {
-      font-size: 13px;
+    .ctx-kchar {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--text);
+    }
+    .ctx-krt {
+      font-size: 11px;
       color: #94a3b8;
-      margin-bottom: 3px;
+      line-height: 1.4;
+      min-height: 15px;
+      letter-spacing: 0;
     }
     .ctx-en {
       font-size: 13px;
@@ -1270,7 +1281,6 @@
           <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放</button>
         </div>
         <div class="ctx-zh" id="ctx-zh"></div>
-        <div class="ctx-pinyin" id="ctx-pinyin"></div>
         <div class="ctx-en" id="ctx-en"></div>
       </div>
 
@@ -1304,7 +1314,6 @@
           <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放</button>
         </div>
         <div class="ctx-zh" id="ctx-zh-below"></div>
-        <div class="ctx-pinyin" id="ctx-pinyin-below"></div>
         <div class="ctx-en" id="ctx-en-below"></div>
       </div>
     </div>
@@ -1364,7 +1373,7 @@
             pinyin: "Nǐ hǎo, dǎrǎo yíxià. Qǐngwèn qù shìqū zài nǎr zuò chē?",
             en: "Hello, excuse me. Where do I take the bus to the city center?",
             context: null,
-            contextBelow: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
+            contextBelow: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dà bā ma? Yì zhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
             role: "learner",
             start: 0, end: 4,
             praise: "👏 开口问路很勇敢！Great initiative!",
@@ -1381,7 +1390,7 @@
             zh: "三号门右拐，对吧？",
             pinyin: "Sān hào mén yòu guǎi, duì ba?",
             en: "Gate 3, turn right, right?",
-            context: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
+            context: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dà bā ma? Yì zhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
             role: "learner",
             start: 1, end: 5,
             praise: "🌟 确认方向很自然！Great confirmation!",
@@ -1396,7 +1405,7 @@
             zh: "好的。请问是在车上买票吗？",
             pinyin: "Hǎo de. Qǐngwèn shì zài chē shàng mǎi piào ma?",
             en: "Got it. Excuse me, do we buy tickets on the bus?",
-            context: { speaker: "工作人员", zh: "对，在那边排队上车。", pinyin: "Duì, zài nàbiān páiduì shàng chē.", en: "That's right, queue over there to board." },
+            context: { speaker: "工作人员", zh: "对，在那边排队上车。", pinyin: "Duì, zài nà biān pái duì shàng chē.", en: "That's right, queue over there to board." },
             role: "learner",
             start: 6, end: 12,
             praise: "😎 问问题很礼貌！Politely done!",
@@ -1412,7 +1421,7 @@
             zh: "我明白了，谢谢您！",
             pinyin: "Wǒ míngbai le, xièxie nín!",
             en: "I understand, thank you!",
-            context: { speaker: "工作人员", zh: "对，上车扫码或者付现金都行。", pinyin: "Duì, shàng chē sǎo mǎ huòzhě fù xiànjīn dōu xíng.", en: "Yes, you can scan a QR code or pay cash on the bus." },
+            context: { speaker: "工作人员", zh: "对，上车扫码或者付现金都行。", pinyin: "Duì, shàng chē sǎo mǎ huò zhě fù xiàn jīn dōu xíng.", en: "Yes, you can scan a QR code or pay cash on the bus." },
             role: "learner",
             start: 13, end: 17,
             praise: "🔥 收尾很有礼貌！Perfectly polite sign-off!",
@@ -1457,7 +1466,7 @@
             en: "Hello, excuse me. Where do I take the bus to the city center?" },
           { speaker: "工作人员", role: "local",
             zh: "大巴吗？一直往前走，出三号门，往右拐。",
-            pinyin: "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.",
+            pinyin: "Dà bā ma? Yì zhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.",
             en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
           { speaker: "卢克", role: "learner",
             zh: "三号门右拐，对吧？",
@@ -1465,7 +1474,7 @@
             en: "Gate 3, turn right, right?" },
           { speaker: "工作人员", role: "local",
             zh: "对，在那边排队上车。",
-            pinyin: "Duì, zài nàbiān páiduì shàng chē.",
+            pinyin: "Duì, zài nà biān pái duì shàng chē.",
             en: "That's right, queue over there to board." },
           { speaker: "卢克", role: "learner",
             zh: "好的。请问是在车上买票吗？",
@@ -1473,7 +1482,7 @@
             en: "Got it. Excuse me, do we buy tickets on the bus?" },
           { speaker: "工作人员", role: "local",
             zh: "对，上车扫码或者付现金都行。",
-            pinyin: "Duì, shàng chē sǎo mǎ huòzhě fù xiànjīn dōu xíng.",
+            pinyin: "Duì, shàng chē sǎo mǎ huò zhě fù xiàn jīn dōu xíng.",
             en: "Yes, you can scan a QR code or pay cash on the bus." },
           { speaker: "卢克", role: "learner",
             zh: "我明白了，谢谢您！",
@@ -2232,12 +2241,10 @@
           ctxPanel.style.display = 'block';
           var ctxSpeaker = document.getElementById('ctx-speaker');
           var ctxZh = document.getElementById('ctx-zh');
-          var ctxPy = document.getElementById('ctx-pinyin');
           var ctxEn = document.getElementById('ctx-en');
           var ctxBtn = document.getElementById('ctx-play-btn');
           if (ctxSpeaker) ctxSpeaker.textContent = s.context.speaker + ' · Staff';
-          if (ctxZh) ctxZh.textContent = s.context.zh;
-          if (ctxPy) ctxPy.textContent = s.context.pinyin;
+          buildCtxKara(ctxZh, s.context.zh, s.context.pinyin);
           if (ctxEn) ctxEn.textContent = s.context.en;
           if (ctxBtn) { ctxBtn.textContent = '▶ 播放'; ctxBtn.classList.remove('playing'); }
         } else {
@@ -2251,12 +2258,10 @@
           ctxBelowPanel.style.display = 'block';
           var cbSpeaker = document.getElementById('ctx-speaker-below');
           var cbZh = document.getElementById('ctx-zh-below');
-          var cbPy = document.getElementById('ctx-pinyin-below');
           var cbEn = document.getElementById('ctx-en-below');
           var cbBtn = document.getElementById('ctx-play-btn-below');
           if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker + ' · Staff';
-          if (cbZh) cbZh.textContent = s.contextBelow.zh;
-          if (cbPy) cbPy.textContent = s.contextBelow.pinyin;
+          buildCtxKara(cbZh, s.contextBelow.zh, s.contextBelow.pinyin);
           if (cbEn) cbEn.textContent = s.contextBelow.en;
           if (cbBtn) { cbBtn.textContent = '▶ 播放'; cbBtn.classList.remove('playing'); }
         } else {
@@ -2284,6 +2289,7 @@
       if (el("bdone")) el("bdone").className = "btn btn-done show";
       if (el("bretry")) el("bretry").className = "btn btn-retry";
 
+      if (typeof stopCtxTTS === 'function') stopCtxTTS();
       setStatus("准备好了 Ready");
       saveState();
     }
@@ -2526,20 +2532,56 @@
       updateUI();
     }
 
+    var ctxPlayingId = null; // 'above' | 'below' | null
+
+    function buildCtxKara(containerEl, zhText, pinyinStr) {
+      if (!containerEl) return;
+      containerEl.innerHTML = '';
+      var rawSyls = (pinyinStr || '').trim().split(/\s+/).map(function (s) {
+        return s.replace(/[,，。！？.!?]+$/g, '').replace(/^[,，。！？.!?]+/g, '');
+      }).filter(function (s) {
+        return s.length > 0 && /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(s);
+      });
+      var rIdx = 0;
+      Array.from(zhText).forEach(function (c) {
+        var span = document.createElement('span');
+        span.className = 'ctx-kchar';
+        var rt = document.createElement('span');
+        rt.className = 'ctx-krt';
+        if (/[\u4e00-\u9fff]/.test(c)) { rt.textContent = rawSyls[rIdx] || ''; rIdx++; }
+        span.appendChild(rt);
+        span.appendChild(document.createTextNode(c));
+        containerEl.appendChild(span);
+      });
+    }
+
+    function stopCtxTTS() {
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      var btnAbove = document.getElementById('ctx-play-btn');
+      var btnBelow = document.getElementById('ctx-play-btn-below');
+      if (btnAbove) { btnAbove.textContent = '▶ 播放'; btnAbove.classList.remove('playing'); }
+      if (btnBelow) { btnBelow.textContent = '▶ 播放'; btnBelow.classList.remove('playing'); }
+      ctxPlayingId = null;
+    }
+
     function playContext() {
       var s = LESSONS[lessonIdx].sentences[idx];
       if (!s || !s.context) return;
-      if (phase === 'recording') return; // don't interrupt recording
-      // If learner TTS was playing, reset its visuals
+      if (phase === 'recording') return;
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
         var bsBtn = document.getElementById('bs');
         if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
         phase = 'idle'; busy = false;
       }
+      // Toggle: if already playing this panel, pause
+      if (ctxPlayingId === 'above') { stopCtxTTS(); return; }
+      stopCtxTTS(); // stop any other panel playing
+      ctxPlayingId = 'above';
       var btn = document.getElementById('ctx-play-btn');
-      if (btn) { btn.textContent = '⏸ 停止'; btn.classList.add('playing'); }
+      if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       speakTTSAtRate(s.context.zh, 1.0, function () {
+        if (ctxPlayingId === 'above') { ctxPlayingId = null; }
         if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
       });
     }
@@ -2554,9 +2596,14 @@
         if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
         phase = 'idle'; busy = false;
       }
+      // Toggle: if already playing this panel, pause
+      if (ctxPlayingId === 'below') { stopCtxTTS(); return; }
+      stopCtxTTS();
+      ctxPlayingId = 'below';
       var btn = document.getElementById('ctx-play-btn-below');
-      if (btn) { btn.textContent = '⏸ 停止'; btn.classList.add('playing'); }
+      if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       speakTTSAtRate(s.contextBelow.zh, 1.0, function () {
+        if (ctxPlayingId === 'below') { ctxPlayingId = null; }
         if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
       });
     }
