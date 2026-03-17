@@ -1646,6 +1646,57 @@
       return tones;
     }
 
+    function _getInit(base) {
+      var two = ['zh', 'ch', 'sh'];
+      for (var i = 0; i < two.length; i++) { if (base.slice(0, 2) === two[i]) return two[i]; }
+      var one = ['b','p','m','f','d','t','n','l','g','k','h','j','q','x','r','z','c','s','y','w'];
+      for (var j = 0; j < one.length; j++) { if (base.slice(0, 1) === one[j]) return one[j]; }
+      return '';
+    }
+
+    // 用 syllSymbol（用户实际读音）和 entry.p（正确读音）对比，找出具体问题
+    function _diagnoseMismatch(entry, syllSymbol) {
+      if (!syllSymbol) return null;
+      var correctPy = (entry.p || '').toLowerCase();
+      var recogPy   = syllSymbol.toLowerCase();
+      var correctTone = parseInt(correctPy.match(/\d/) || [0], 10);
+      var recogTone   = parseInt(recogPy.match(/\d/) || [0], 10);
+      var correctBase = correctPy.replace(/\d/g, '').trim();
+      var recogBase   = recogPy.replace(/\d/g, '').trim();
+      var cInit = _getInit(correctBase), rInit = _getInit(recogBase);
+      var cFinal = correctBase.slice(cInit.length), rFinal = recogBase.slice(rInit.length);
+      var retroflex = ['zh','ch','sh','r'], sibilant = ['z','c','s'];
+      var toneNames   = ['','第1声（ā）','第2声（á）','第3声（ǎ）','第4声（à）','轻声'];
+      var toneNamesEn = ['','1st tone (ā)','2nd tone (á)','3rd tone (ǎ)','4th tone (à)','neutral tone'];
+      if (cInit !== rInit) {
+        if ((retroflex.indexOf(cInit) >= 0 && sibilant.indexOf(rInit) >= 0) ||
+            (sibilant.indexOf(cInit) >= 0 && retroflex.indexOf(rInit) >= 0)) {
+          return { zh: '平翘舌音：你读成了 "' + (rInit||'零声母') + '"，应读 "' + (cInit||'零声母') + '"',
+                   en: 'retroflex: you said "' + (rInit||'zero-initial') + '", should be "' + (cInit||'zero-initial') + '"' };
+        }
+        return { zh: '声母错误：你读成了 "' + (rInit||'零声母') + '"，应读 "' + (cInit||'零声母') + '"',
+                 en: 'initial: you said "' + (rInit||'zero-initial') + '", should be "' + (cInit||'zero-initial') + '"' };
+      }
+      if (cFinal && rFinal && cFinal !== rFinal) {
+        var nasalPairs = [['an','ang'],['en','eng'],['in','ing'],['ian','iang'],['uan','uang'],['n','ng']];
+        var isNasal = nasalPairs.some(function(pair) {
+          return (pair[0]===cFinal&&pair[1]===rFinal)||(pair[1]===cFinal&&pair[0]===rFinal);
+        });
+        if (isNasal) {
+          return { zh: '前后鼻音：你读成了 "' + rFinal + '"，应读 "' + cFinal + '"',
+                   en: 'nasal ending: you said "' + rFinal + '", should be "' + cFinal + '"' };
+        }
+        return { zh: '韵母错误：你读成了 "' + rFinal + '"，应读 "' + cFinal + '"',
+                 en: 'vowel: you said "' + rFinal + '", should be "' + cFinal + '"' };
+      }
+      var expectedTone = entry.expectedTone || correctTone;
+      if (recogTone && expectedTone && recogTone !== expectedTone) {
+        return { zh: '声调错误：你读成了' + (toneNames[recogTone]||'第'+recogTone+'声') + '，应读' + (toneNames[expectedTone]||'第'+expectedTone+'声'),
+                 en: 'wrong tone: you said ' + (toneNamesEn[recogTone]||recogTone+'th') + ', should be ' + (toneNamesEn[expectedTone]||expectedTone+'th') };
+      }
+      return null;
+    }
+
     function buildHintLine(w, isRed, sandhiQueue) {
       var parts = (w.perrMsg || '').split('；').map(function (p) {
         return p.replace(/（\d+分）/g, '').trim();
@@ -1702,14 +1753,18 @@
           var entry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0];
           if (entry && entry.p) {
             var py = toToneMark(entry.p);
-            var initRaw = entry.p.toLowerCase().replace(/\d/g, '').trim();
-            var isRetroflex = /^(zh|ch|sh|r)/.test(initRaw);
-            if (entry.tone === 5) {
-              pairs.push({ zh: '轻声字读错（正确：' + py + '）', en: 'neutral tone error (correct: ' + py + ')' });
-            } else if (isRetroflex) {
-              pairs.push({ zh: '发音有误，注意翘舌音（正确：' + py + '）', en: 'mispronounced: check retroflex (correct: ' + py + ')' });
+            var specific = _diagnoseMismatch(entry, w.syllSymbol);
+            if (specific) {
+              pairs.push(specific);
             } else {
-              pairs.push({ zh: '发音有误（正确读音：' + py + '）', en: 'mispronounced (correct: ' + py + ')' });
+              var initRaw = entry.p.toLowerCase().replace(/\d/g, '').trim();
+              if (entry.tone === 5) {
+                pairs.push({ zh: '轻声字读错（正确：' + py + '）', en: 'neutral tone error (correct: ' + py + ')' });
+              } else if (/^(zh|ch|sh|r)/.test(initRaw)) {
+                pairs.push({ zh: '发音有误，注意翘舌音（正确：' + py + '）', en: 'mispronounced: check retroflex (correct: ' + py + ')' });
+              } else {
+                pairs.push({ zh: '发音有误（正确读音：' + py + '）', en: 'mispronounced (correct: ' + py + ')' });
+              }
             }
           } else {
             pairs.push({ zh: '发音有误', en: 'mispronounced' });
@@ -1720,7 +1775,10 @@
           var entry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0]; // peek
           if (entry && entry.p) {
             var py = toToneMark(entry.p);
-            if (entry.tone === 5) {
+            var specific = _diagnoseMismatch(entry, w.syllSymbol);
+            if (specific) {
+              pairs.push(specific);
+            } else if (entry.tone === 5) {
               pairs.push({ zh: '轻声字，读短读轻（' + py + '）', en: 'neutral tone: say "' + py + '" lightly and short' });
             } else {
               pairs.push({ zh: '发音需改进（目标读音：' + py + '）', en: 'needs improvement (aim for: ' + py + ')' });
@@ -2665,6 +2723,7 @@
     }
 
     var ctxPlayingId = null; // 'above' | 'below' | null
+    var ctxPausedId = null;  // 'above' | 'below' | null
 
     function buildCtxKara(containerEl, zhText, pinyinStr) {
       if (!containerEl) return;
@@ -2694,6 +2753,7 @@
       if (btnAbove) { btnAbove.textContent = '▶ 播放'; btnAbove.classList.remove('playing'); }
       if (btnBelow) { btnBelow.textContent = '▶ 播放'; btnBelow.classList.remove('playing'); }
       ctxPlayingId = null;
+      ctxPausedId = null;
     }
 
     function playContext() {
@@ -2706,14 +2766,27 @@
         if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
         phase = 'idle'; busy = false;
       }
-      // Toggle: if already playing this panel, pause
-      if (ctxPlayingId === 'above') { stopCtxTTS(); return; }
-      stopCtxTTS(); // stop any other panel playing
-      ctxPlayingId = 'above';
       var btn = document.getElementById('ctx-play-btn');
+      // Resume from pause
+      if (ctxPausedId === 'above') {
+        window.speechSynthesis && window.speechSynthesis.resume();
+        ctxPlayingId = 'above'; ctxPausedId = null;
+        if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+        return;
+      }
+      // Pause if currently playing
+      if (ctxPlayingId === 'above') {
+        window.speechSynthesis && window.speechSynthesis.pause();
+        ctxPausedId = 'above'; ctxPlayingId = null;
+        if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
+        return;
+      }
+      // Start fresh (cancel any other panel playing)
+      stopCtxTTS();
+      ctxPlayingId = 'above';
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       speakTTSAtRate(s.context.zh, 1.0, function () {
-        if (ctxPlayingId === 'above') { ctxPlayingId = null; }
+        if (ctxPlayingId === 'above') { ctxPlayingId = null; ctxPausedId = null; }
         if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
       });
     }
@@ -2728,14 +2801,27 @@
         if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
         phase = 'idle'; busy = false;
       }
-      // Toggle: if already playing this panel, pause
-      if (ctxPlayingId === 'below') { stopCtxTTS(); return; }
+      var btn = document.getElementById('ctx-play-btn-below');
+      // Resume from pause
+      if (ctxPausedId === 'below') {
+        window.speechSynthesis && window.speechSynthesis.resume();
+        ctxPlayingId = 'below'; ctxPausedId = null;
+        if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+        return;
+      }
+      // Pause if currently playing
+      if (ctxPlayingId === 'below') {
+        window.speechSynthesis && window.speechSynthesis.pause();
+        ctxPausedId = 'below'; ctxPlayingId = null;
+        if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
+        return;
+      }
+      // Start fresh (cancel any other panel playing)
       stopCtxTTS();
       ctxPlayingId = 'below';
-      var btn = document.getElementById('ctx-play-btn-below');
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       speakTTSAtRate(s.contextBelow.zh, 1.0, function () {
-        if (ctxPlayingId === 'below') { ctxPlayingId = null; }
+        if (ctxPlayingId === 'below') { ctxPlayingId = null; ctxPausedId = null; }
         if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
       });
     }
