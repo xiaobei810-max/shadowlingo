@@ -1325,7 +1325,7 @@
       </div>
       <!-- 竖排 2 个功能按钮 -->
       <button class="btn" id="bs" onclick="doSlow()">▶ 跟读 Listen</button>
-      <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 跟读 Record &amp; Evaluate</button>
+      <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 录音 Record</button>
 
       <!-- 隐藏的旧按钮（JS 兼容用） -->
       <button class="btn" id="bm" style="display:none">Shadow</button>
@@ -2275,7 +2275,7 @@
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
-      if (el("bn")) el("bn").textContent = "🎤 跟读 Record";
+      if (el("bn")) el("bn").textContent = "🎤 录音 Record";
 
       if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); el("bs").textContent = "▶ 跟读 Listen"; }
       if (el("bm")) el("bm").classList.remove("active");
@@ -2339,15 +2339,25 @@
       var timings = computeCharTimingsForDuration(s.zh, s.pinyin, estSec);
       if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
-      // Delay timer 100ms to match Chrome TTS start delay
-      setTimeout(function () { if (phase === "slow") runKaraTimedMain(estSec * 1000, timings); }, 100);
+      var boundaryReceived = false;
+      // Delay bar timer 100ms to match Chrome TTS start; runs bar-only — boundary events handle chars
+      setTimeout(function () { if (phase === "slow") runKaraTimedMain(estSec * 1000, timings, true); }, 100);
+      // Fallback: if no boundary events fire within 400ms, switch timer to full char mode
+      var fallbackTimer = setTimeout(function () {
+        if (phase === "slow" && !boundaryReceived) {
+          if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
+          runKaraTimedMain(estSec * 1000, timings, false);
+        }
+      }, 400);
       speakTTSAtRate(s.zh, slowSpeed, function () {
+        clearTimeout(fallbackTimer);
         if (phase !== "slow") return;
         completeKara();
         if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
         busy = false; phase = "idle";
       }, function (charIdx, charLen) {
-        // TTS boundary events override timer for accurate char sync
+        boundaryReceived = true;
+        // Boundary events exclusively control char highlighting — no timer conflict
         document.querySelectorAll("#kara .kchar").forEach(function (el, i) {
           if (i < charIdx) el.className = "kchar done";
           else if (i < charIdx + Math.max(1, charLen || 1)) el.className = "kchar active";
@@ -2912,7 +2922,7 @@
     }
 
     // Timer-based karaoke for main kara div (no audio timestamps needed)
-    function runKaraTimedMain(durationMs, timings) {
+    function runKaraTimedMain(durationMs, timings, barOnly) {
       if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
       karaActive = true;
       document.getElementById("bar-fill").style.width = "0%";
@@ -2921,13 +2931,15 @@
         var elapsed = (Date.now() - startTime) / 1000;
         var dur = durationMs / 1000;
         document.getElementById("bar-fill").style.width = (Math.min(1, elapsed / dur) * 100) + "%";
-        document.querySelectorAll("#kara .kchar").forEach(function (el, i) {
-          var t = timings[i];
-          if (!t) return;
-          if (elapsed >= t.end) el.className = "kchar done";
-          else if (elapsed >= t.start) el.className = "kchar active";
-          else el.className = "kchar";
-        });
+        if (!barOnly) {
+          document.querySelectorAll("#kara .kchar").forEach(function (el, i) {
+            var t = timings[i];
+            if (!t) return;
+            if (elapsed >= t.end) el.className = "kchar done";
+            else if (elapsed >= t.start) el.className = "kchar active";
+            else el.className = "kchar";
+          });
+        }
         if (elapsed >= dur) { clearInterval(karaTimerId); karaTimerId = null; }
       }, 50);
     }
