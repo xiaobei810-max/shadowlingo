@@ -1189,7 +1189,7 @@
       <div class="progress-fill" id="progress" style="width:0%"></div>
     </div>
 
-    <div class="step-title">
+    <div class="step-title" id="step-title-row" style="display:none">
       <span id="step-title-main">第1步：先听一遍 👂</span>
       <span class="step-sub" id="step-title-sub">跟着完整对话先感受语气</span>
     </div>
@@ -1210,8 +1210,8 @@
       <div class="sentence-badge" id="badge">第 1/5 句</div>
 
       <div class="sentence-box">
-        <!-- 上方：本轮 local 台词（林悦） -->
-        <div class="role-row" id="role-row-local" style="margin-bottom:12px;">
+        <!-- 本轮 local 台词（隐藏，每页只练一句学习者台词） -->
+        <div class="role-row" id="role-row-local" style="display:none">
           <div class="role-avatar" id="role-avatar-local">🇨🇳</div>
           <div class="role-meta">
             <div class="role-name" id="role-name-local">工作人员 · Local</div>
@@ -1219,9 +1219,8 @@
           </div>
         </div>
 
-        <!-- 下方：本轮 learner 台词（卢克） -->
-        <div class="role-row" id="role-row-learner">
-          <div class="role-avatar learner" id="role-avatar-learner">🎤</div>
+        <!-- 本轮 learner 台词（只保留 id 供 JS 使用，不显示重复文字） -->
+        <div id="role-row-learner" style="display:none">
           <div class="role-meta">
             <div class="role-name" id="role-name-learner">卢克 · You</div>
             <div class="role-text" id="role-text-learner"></div>
@@ -1240,28 +1239,34 @@
       </div>
     </div>
 
-    <div class="speed-control">
-      <span>慢速</span>
-      <input type="range" id="speed-slider" min="0.5" max="1.0" step="0.05" value="0.7"
-        oninput="onSpeedChange(this.value)" />
-      <span class="speed-label" id="speed-label">0.7×</span>
-    </div>
-
     <div class="status-row">
       <span class="status-text" id="status-text">准备好了 Ready</span>
       <span class="speech-indicator" id="speech-indicator">🎙 聆听中...</span>
     </div>
 
-
     <div class="controls">
-      <button class="btn" id="bl" onclick="playFullDialogue()">▶ 听完整对话 Listen All</button>
-      <button class="btn" id="bs" onclick="enterDialogStep2()">⏭ 跳到第2步 Your Turn</button>
-      <button class="btn" id="bm" disabled>🚀 Shadow 模式（暂未开放）</button>
-      <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 轮到你说 Record</button>
-      <button class="btn btn-retry" id="bretry" onclick="doRetry()">↩ 再练一次 Retry</button>
+      <!-- 竖排 3 个功能按钮 -->
+      <button class="btn" id="bl" onclick="doNormal()">▶ 常速 Normal Speed</button>
+
+      <!-- 速度条（搭配慢速按钮使用） -->
+      <div class="speed-control" style="margin:4px 0;">
+        <span>慢 Slow</span>
+        <input type="range" id="speed-slider" min="0.5" max="1.0" step="0.05" value="0.7"
+          oninput="onSpeedChange(this.value)" />
+        <span>快 Fast</span>
+        <span class="speed-label" id="speed-label">0.7×</span>
+      </div>
+      <button class="btn" id="bs" onclick="doSlow()">🐢 慢速 Slow Speed</button>
+      <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 跟读 Record &amp; Evaluate</button>
+
+      <!-- 隐藏的旧按钮（JS 兼容用） -->
+      <button class="btn" id="bm" style="display:none">Shadow</button>
+      <button class="btn btn-retry" id="bretry" onclick="doRetry()" style="display:none">↩ 再练一次 Retry</button>
+
+      <!-- 横排 2 个导航按钮 -->
       <div class="btn-nav">
-        <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一句 Prev</button>
-        <button class="btn btn-done" id="bdone" onclick="doNext()">下一句 Next ▶</button>
+        <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一页 Prev</button>
+        <button class="btn btn-done" id="bdone" onclick="doNext()">下一页 Next ▶</button>
       </div>
     </div>
   </div>
@@ -2156,7 +2161,7 @@
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
-      if (el("bn")) el("bn").textContent = "🎤 录音 Record";
+      if (el("bn")) el("bn").textContent = "🎤 跟读 Record";
 
       if (el("bl")) { el("bl").disabled = false; el("bl").classList.remove("active"); }
       if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); }
@@ -2244,8 +2249,8 @@
       var timings = computeCharTimings(s);
       var dur = (s.end - s.start) * 1000;
 
-      setStatus("🚀 常速跟读 Shadow...");
-      document.getElementById("bm").classList.add("active");
+      setStatus("▶ 常速播放 Normal Speed...");
+      document.getElementById("bl").classList.add("active");
 
       audio.currentTime = s.start;
       audio.playbackRate = 1;
@@ -2258,7 +2263,7 @@
         audio.pause();
         speak(false);
         completeKara();
-        document.getElementById("bm").classList.remove("active");
+        document.getElementById("bl").classList.remove("active");
         setStatus("准备好了 Ready");
         busy = false;
         phase = "idle";
@@ -2294,14 +2299,14 @@
       }).catch(function (err) {
         setStatus("⚠️ 麦克风权限被拒绝");
         busy = false; phase = "idle";
-        document.getElementById("bn").textContent = "🎤 录音 Record";
+        document.getElementById("bn").textContent = "🎤 跟读 Record";
         document.getElementById("bn").classList.remove("active");
         document.getElementById("speech-indicator").classList.remove("active");
       });
     }
 
     function stopRecording() {
-      document.getElementById("bn").textContent = "🎤 录音 Record";
+      document.getElementById("bn").textContent = "🎤 跟读 Record";
       document.getElementById("bn").classList.remove("active");
       document.getElementById("speech-indicator").classList.remove("active");
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
@@ -2571,7 +2576,7 @@
       dialogStep = 1;
       setStepTitle("第1步：先听一遍 👂", "先听完整对话，感受语气和节奏");
       var sub = document.getElementById('status-text');
-      if (sub) sub.textContent = '点击「听原声」开始整段对话';
+      if (sub) sub.textContent = '';
       // 用第一轮的 local/learner 文本预填区域
       if (dialogRounds.length) {
         var r0 = dialogRounds[0];
