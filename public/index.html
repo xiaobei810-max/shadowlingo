@@ -1239,7 +1239,7 @@
       </div>
     </div>
 
-    <div class="status-row">
+    <div class="status-row" style="display:none">
       <span class="status-text" id="status-text">准备好了 Ready</span>
       <span class="speech-indicator" id="speech-indicator">🎙 聆听中...</span>
     </div>
@@ -2163,8 +2163,8 @@
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
       if (el("bn")) el("bn").textContent = "🎤 跟读 Record";
 
-      if (el("bl")) { el("bl").disabled = false; el("bl").classList.remove("active"); }
-      if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); }
+      if (el("bl")) { el("bl").disabled = false; el("bl").classList.remove("active"); el("bl").textContent = "▶ 常速 Normal Speed"; }
+      if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); el("bs").textContent = "🐢 慢速 Slow Speed"; }
       if (el("bm")) el("bm").classList.remove("active");
       if (el("bn")) { el("bn").disabled = false; el("bn").classList.remove("active"); }
       if (el("bprev")) el("bprev").disabled = idx === 0;
@@ -2208,65 +2208,58 @@
     }
 
     function doSlow() {
+      var btn = document.getElementById("bs");
+      if (phase === "slow") {
+        // 暂停
+        clearTimers();
+        window.speechSynthesis && window.speechSynthesis.cancel();
+        phase = "idle"; busy = false;
+        if (btn) { btn.classList.remove("active"); btn.textContent = "🐢 慢速 Slow Speed"; }
+        return;
+      }
       stopMediaRecorderIfRunning();
       clearTimers();
-      busy = true;
-      phase = "slow";
-
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      busy = true; phase = "slow";
       var s = LESSONS[lessonIdx].sentences[idx];
-      var timings = computeCharTimings(s);
-      var dur = (s.end - s.start) / slowSpeed * 1000;
-
-      setStatus("🐢 慢速跟读 Shadow (slow)...");
-      document.getElementById("bs").classList.add("active");
-
-      audio.currentTime = s.start;
-      audio.playbackRate = slowSpeed;
-      audio.play();
-      speak(true);
+      var estSec = Math.max(2.0, s.zh.replace(/[，。！？,.!?]/g, '').length * 0.28 / slowSpeed);
+      var timings = computeCharTimingsForDuration(s.zh, s.pinyin, estSec);
+      if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
-      startKaraSync(s.start, s.end, timings);
-
-      segTimer = setTimeout(function () {
-        audio.pause();
-        audio.playbackRate = 1;
-        speak(false);
+      runKaraTimedMain(estSec * 1000, timings);
+      speakTTSAtRate(s.zh, slowSpeed, function () {
+        if (phase !== "slow") return;
         completeKara();
-        document.getElementById("bs").classList.remove("active");
-        setStatus("准备好了 Ready");
-        busy = false;
-        phase = "idle";
-      }, dur + 200);
+        if (btn) { btn.classList.remove("active"); btn.textContent = "🐢 慢速 Slow Speed"; }
+        busy = false; phase = "idle";
+      });
     }
 
     function doNormal() {
+      var btn = document.getElementById("bl");
+      if (phase === "normal") {
+        // 暂停
+        clearTimers();
+        window.speechSynthesis && window.speechSynthesis.cancel();
+        phase = "idle"; busy = false;
+        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 常速 Normal Speed"; }
+        return;
+      }
       stopMediaRecorderIfRunning();
       clearTimers();
-      busy = true;
-      phase = "normal";
-
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      busy = true; phase = "normal";
       var s = LESSONS[lessonIdx].sentences[idx];
-      var timings = computeCharTimings(s);
-      var dur = (s.end - s.start) * 1000;
-
-      setStatus("▶ 常速播放 Normal Speed...");
-      document.getElementById("bl").classList.add("active");
-
-      audio.currentTime = s.start;
-      audio.playbackRate = 1;
-      audio.play();
-      speak(true);
+      var estSec = Math.max(1.5, s.zh.replace(/[，。！？,.!?]/g, '').length * 0.28);
+      var timings = computeCharTimingsForDuration(s.zh, s.pinyin, estSec);
+      if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
-      startKaraSync(s.start, s.end, timings);
-
-      segTimer = setTimeout(function () {
-        audio.pause();
-        speak(false);
+      runKaraTimedMain(estSec * 1000, timings);
+      speakTTSAtRate(s.zh, 1.0, function () {
+        if (phase !== "normal") return;
         completeKara();
-        document.getElementById("bl").classList.remove("active");
-        setStatus("准备好了 Ready");
-        busy = false;
-        phase = "idle";
+        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 常速 Normal Speed"; }
+        busy = false; phase = "idle";
       }, dur + 200);
     }
 
@@ -2430,6 +2423,10 @@
 
     function doPrev() {
       stopMediaRecorderIfRunning();
+      clearTimers();
+      if (audio) audio.pause();
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      speak(false);
       if (idx > 0) { idx--; updateUI(); }
     }
 
@@ -2756,6 +2753,42 @@
       utter.onend = function () { if (onend) onend(); };
       utter.onerror = function () { if (onend) onend(); };
       window.speechSynthesis.speak(utter);
+    }
+
+    // TTS with custom rate (for Normal/Slow buttons)
+    function speakTTSAtRate(text, rate, onend) {
+      if (!('speechSynthesis' in window)) {
+        setTimeout(function () { if (onend) onend(); }, Math.max(2000, text.length * 300 / rate));
+        return;
+      }
+      window.speechSynthesis.cancel();
+      var utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'zh-CN';
+      utter.rate = rate;
+      utter.onend = function () { if (onend) onend(); };
+      utter.onerror = function () { if (onend) onend(); };
+      window.speechSynthesis.speak(utter);
+    }
+
+    // Timer-based karaoke for main kara div (no audio timestamps needed)
+    function runKaraTimedMain(durationMs, timings) {
+      if (karaTimerId) { clearInterval(karaTimerId); karaTimerId = null; }
+      karaActive = true;
+      document.getElementById("bar-fill").style.width = "0%";
+      var startTime = Date.now();
+      karaTimerId = setInterval(function () {
+        var elapsed = (Date.now() - startTime) / 1000;
+        var dur = durationMs / 1000;
+        document.getElementById("bar-fill").style.width = (Math.min(1, elapsed / dur) * 100) + "%";
+        document.querySelectorAll("#kara .kchar").forEach(function (el, i) {
+          var t = timings[i];
+          if (!t) return;
+          if (elapsed >= t.end) el.className = "kchar done";
+          else if (elapsed >= t.start) el.className = "kchar active";
+          else el.className = "kchar";
+        });
+        if (elapsed >= dur) { clearInterval(karaTimerId); karaTimerId = null; }
+      }, 50);
     }
 
     // 进入第 2 步：Your Turn
