@@ -194,44 +194,38 @@
       background: var(--card);
       border-radius: 20px;
       margin: 10px 20px 0;
-      overflow: hidden;
+      padding: 14px 14px 4px;
       position: relative;
     }
 
     .mascot-wrap {
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      padding: 20px 20px 0;
-      height: 190px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
     }
 
     .mascot-img {
-      width: 160px;
-      height: 190px;
-      object-fit: contain;
-      mix-blend-mode: screen;
-      transition: transform 0.15s;
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      object-position: center top;
+      mix-blend-mode: normal;
     }
 
     .mascot-ring {
       position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 176px;
-      height: 206px;
+      inset: -2px;
       border-radius: 50%;
-      border: 3px solid var(--green);
+      border: 2.5px solid var(--green);
       opacity: 0;
       transition: opacity 0.3s;
       pointer-events: none;
     }
 
     .sentence-badge {
-      position: absolute;
-      top: 14px;
-      left: 14px;
       background: rgba(0, 0, 0, 0.5);
       border-radius: 99px;
       padding: 4px 12px;
@@ -249,8 +243,12 @@
     }
 
     .sentence-box {
-      padding: 20px 20px 24px;
-      text-align: center;
+      background: rgba(17,24,39,0.7);
+      border: 1.5px solid var(--green);
+      border-radius: 14px;
+      padding: 14px 18px 12px;
+      margin-bottom: 10px;
+      text-align: left;
     }
 
     /* Dialogue role layout */
@@ -301,7 +299,7 @@
 
     /* Karaoke text */
     .kara-wrap {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: 700;
       line-height: 1;
       margin-bottom: 12px;
@@ -1218,12 +1216,13 @@
     .learner-panel-hdr {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 10px;
-      margin-bottom: 6px;
+      margin-bottom: 10px;
     }
     .learner-name-tag {
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 600;
       color: var(--green);
     }
   </style>
@@ -1264,8 +1263,6 @@
     <div class="audio-error" id="audio-error">⚠️ 音频加载失败，请检查网络后刷新重试</div>
 
     <div class="stage">
-      <div class="sentence-badge" id="badge">第 1/4 句</div>
-
       <!-- 对方台词面板（上方，无前置台词时隐藏） -->
       <div class="context-panel" id="context-panel" style="display:none">
         <div class="ctx-header">
@@ -1280,11 +1277,14 @@
       <!-- 卢克练习面板（下方） -->
       <div class="sentence-box">
         <div class="learner-panel-hdr">
-          <div class="mascot-wrap">
-            <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" onerror="this.style.display='none'" />
-            <div class="mascot-ring" id="ring"></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="mascot-wrap">
+              <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" onerror="this.style.display='none'" />
+              <div class="mascot-ring" id="ring"></div>
+            </div>
+            <span class="learner-name-tag">卢克 · Luke</span>
           </div>
-          <span class="learner-name-tag">卢克 · Luke</span>
+          <span class="sentence-badge" id="badge">第 1/4 句</span>
         </div>
         <!-- 卡拉OK字幕 -->
         <div class="kara-wrap" id="kara"></div>
@@ -1295,6 +1295,17 @@
           <div class="pinyin" id="pinyin"></div>
           <div class="en" id="en"></div>
         </div>
+      </div>
+
+      <!-- 下方配对台词面板（用于卢克开口时显示对方回应） -->
+      <div class="context-panel" id="context-panel-below" style="display:none">
+        <div class="ctx-header">
+          <span class="ctx-speaker" id="ctx-speaker-below">工作人员 · Staff</span>
+          <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放</button>
+        </div>
+        <div class="ctx-zh" id="ctx-zh-below"></div>
+        <div class="ctx-pinyin" id="ctx-pinyin-below"></div>
+        <div class="ctx-en" id="ctx-en-below"></div>
       </div>
     </div>
 
@@ -1354,6 +1365,7 @@
             pinyin: "Nǐ hǎo, dǎrǎo yíxià. Qǐngwèn qù shìqū zài nǎr zuò chē?",
             en: "Hello, excuse me. Where do I take the bus to the city center?",
             context: null,
+            contextBelow: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
             role: "learner",
             start: 0, end: 4,
             praise: "👏 开口问路很勇敢！Great initiative!",
@@ -2214,7 +2226,7 @@
       buildKara(s.zh, s.chars);
       resetKara();
 
-      // Context panel (other person's preceding line)
+      // Context panel above (staff's preceding line for sentences 2-4)
       var ctxPanel = document.getElementById('context-panel');
       if (ctxPanel) {
         if (s.context) {
@@ -2231,6 +2243,25 @@
           if (ctxBtn) { ctxBtn.textContent = '▶ 播放'; ctxBtn.classList.remove('playing'); }
         } else {
           ctxPanel.style.display = 'none';
+        }
+      }
+      // Context panel below (staff's response for sentence 1 where Luke initiates)
+      var ctxBelowPanel = document.getElementById('context-panel-below');
+      if (ctxBelowPanel) {
+        if (s.contextBelow) {
+          ctxBelowPanel.style.display = 'block';
+          var cbSpeaker = document.getElementById('ctx-speaker-below');
+          var cbZh = document.getElementById('ctx-zh-below');
+          var cbPy = document.getElementById('ctx-pinyin-below');
+          var cbEn = document.getElementById('ctx-en-below');
+          var cbBtn = document.getElementById('ctx-play-btn-below');
+          if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker + ' · Staff';
+          if (cbZh) cbZh.textContent = s.contextBelow.zh;
+          if (cbPy) cbPy.textContent = s.contextBelow.pinyin;
+          if (cbEn) cbEn.textContent = s.contextBelow.en;
+          if (cbBtn) { cbBtn.textContent = '▶ 播放'; cbBtn.classList.remove('playing'); }
+        } else {
+          ctxBelowPanel.style.display = 'none';
         }
       }
 
@@ -2521,6 +2552,25 @@
       var btn = document.getElementById('ctx-play-btn');
       if (btn) { btn.textContent = '⏸ 停止'; btn.classList.add('playing'); }
       speakTTSAtRate(s.context.zh, 1.0, function () {
+        if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
+      });
+    }
+
+    function playContextBelow() {
+      var s = LESSONS[lessonIdx].sentences[idx];
+      if (!s || !s.contextBelow) return;
+      if (phase === 'recording') return;
+      if (phase === 'normal' || phase === 'slow') {
+        clearTimers();
+        var blBtn = document.getElementById('bl');
+        var bsBtn = document.getElementById('bs');
+        if (blBtn) { blBtn.classList.remove('active'); blBtn.textContent = '▶ 常速 Normal Speed'; }
+        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '🐢 慢速 Slow Speed'; }
+        phase = 'idle'; busy = false;
+      }
+      var btn = document.getElementById('ctx-play-btn-below');
+      if (btn) { btn.textContent = '⏸ 停止'; btn.classList.add('playing'); }
+      speakTTSAtRate(s.contextBelow.zh, 1.0, function () {
         if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
       });
     }
