@@ -892,11 +892,13 @@
       100% { transform: scale(1);    filter: brightness(1)   drop-shadow(0 0 0px #22c55e); }
     }
     @keyframes bloomAnim {
-      0%   { opacity: 0; transform: scale(0) rotate(-20deg) translateY(10px); }
-      30%  { opacity: 1; transform: scale(1.25) rotate(5deg) translateY(-4px); }
-      55%  { opacity: 1; transform: scale(1) rotate(0deg) translateY(0); }
-      80%  { opacity: 1; transform: scale(1.05) rotate(-3deg) translateY(-3px); }
-      100% { opacity: 0; transform: scale(0.85) rotate(5deg) translateY(-14px); }
+      0%   { opacity: 0; transform: scale(0)    rotate(-20deg) translateY(10px); }
+      20%  { opacity: 1; transform: scale(1.3)  rotate(6deg)  translateY(-5px); }
+      38%  { opacity: 1; transform: scale(0.95) rotate(-2deg) translateY(0); }
+      50%  { opacity: 1; transform: scale(1.05) rotate(3deg)  translateY(-3px); }
+      70%  { opacity: 1; transform: scale(1)    rotate(0deg)  translateY(0); }
+      88%  { opacity: 0.9; transform: scale(1)  rotate(-2deg) translateY(-2px); }
+      100% { opacity: 0; transform: scale(0.8)  rotate(6deg)  translateY(-18px); }
     }
     @keyframes scoreShake {
       0%,100% { transform: translateX(0) rotate(0deg); }
@@ -2828,20 +2830,29 @@
     }
 
     // 小花绽放（80-89分）—— 左下角冒出3朵小花/绿叶
-    function spawnBloomElement() {
+    function spawnBloomElement(anchorEl) {
+      var rect = anchorEl.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      // 围绕分数四周：左上、右上、左下、右下、正左、正右
       var items = [
-        { emoji: '🌸', x: 22,  y: 90, sz: 32, delay: 0 },
-        { emoji: '🌿', x: 52,  y: 95, sz: 28, delay: 0.22 },
-        { emoji: '🌸', x: 80,  y: 88, sz: 30, delay: 0.44 }
+        { emoji: '🌸', dx: -rect.width * 0.85, dy: -rect.height * 0.3, sz: 30, delay: 0 },
+        { emoji: '🌿', dx:  rect.width * 0.85, dy: -rect.height * 0.15, sz: 28, delay: 0.18 },
+        { emoji: '🌸', dx: -rect.width * 0.6,  dy:  rect.height * 0.55, sz: 26, delay: 0.34 },
+        { emoji: '🍀', dx:  rect.width * 0.65, dy:  rect.height * 0.5,  sz: 27, delay: 0.50 },
+        { emoji: '🌿', dx: -rect.width * 1.1,  dy:  rect.height * 0.1,  sz: 24, delay: 0.65 },
+        { emoji: '🌸', dx:  rect.width * 1.05, dy: -rect.height * 0.45, sz: 25, delay: 0.80 }
       ];
       items.forEach(function(it) {
         var el = document.createElement('div');
         el.textContent = it.emoji;
         el.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;opacity:0;font-size:' + it.sz + 'px;' +
-          'left:' + it.x + 'px;bottom:' + it.y + 'px;transform-origin:center bottom;' +
-          'animation:bloomAnim 2.6s ' + it.delay + 's ease-out forwards;';
+          'left:' + (cx + it.dx - it.sz / 2) + 'px;' +
+          'top:'  + (cy + it.dy - it.sz / 2) + 'px;' +
+          'transform-origin:center bottom;' +
+          'animation:bloomAnim 4.0s ' + it.delay + 's ease-out forwards;';
         document.body.appendChild(el);
-        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3400);
+        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 5500);
       });
     }
 
@@ -2915,7 +2926,7 @@
       } else if (score >= 80) {
         animateCountUp(numEl, score, 800, function() {
           numEl.classList.add('score-anim-pulse');
-          setTimeout(function() { spawnBloomElement(); }, 300);
+          setTimeout(function() { spawnBloomElement(numEl); }, 300);
         });
       } else if (score >= 70) {
         animateCountUp(numEl, score, 700, function() {
