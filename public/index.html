@@ -2742,8 +2742,6 @@
         var r0 = dialogRounds[0];
         if (el("role-text-local")) el("role-text-local").textContent = r0.local ? r0.local.zh : '';
         if (el("role-text-learner")) el("role-text-learner").textContent = r0.learner ? r0.learner.zh : '';
-        buildKara(r0.learner ? r0.learner.zh : '', null);
-        resetKara();
       }
     }
 
@@ -3138,6 +3136,7 @@
       plpPlaying = false;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      updateUI();
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.remove('show');
     }
