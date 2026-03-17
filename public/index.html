@@ -1069,31 +1069,72 @@
     /* Eval loading / result */
     .eval-loading {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      padding: 32px 0;
+      gap: 14px;
+      padding: 36px 20px 32px;
     }
-
-    .eval-spinner {
-      width: 28px;
-      height: 28px;
-      border: 3px solid var(--border);
-      border-top-color: var(--green);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      flex-shrink: 0;
+    .eval-loading-emoji {
+      font-size: 52px;
+      line-height: 1;
+      animation: elBounce 0.75s ease-in-out infinite alternate;
+      user-select: none;
     }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+    @keyframes elBounce {
+      from { transform: translateY(0) scale(1); }
+      to   { transform: translateY(-12px) scale(1.12); }
     }
-
-    .eval-loading-txt {
-      font-size: 14px;
+    .eval-loading-msg {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e2e8f0;
+      min-height: 22px;
+      text-align: center;
+      transition: opacity 0.25s;
+    }
+    .eval-loading-sub {
+      font-size: 12px;
       color: var(--muted);
+      text-align: center;
+    }
+    .eval-loading-bar-wrap {
+      width: 180px;
+      height: 10px;
+      background: var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .eval-loading-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #22c55e, #60a5fa, #a78bfa);
+      background-size: 200% 100%;
+      animation: elShimmer 1.4s linear infinite;
+      transition: width 0.15s linear;
+    }
+    @keyframes elShimmer {
+      0%   { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .eval-loading-dots {
+      display: flex;
+      gap: 7px;
+      margin-top: 2px;
+    }
+    .eval-loading-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: elDot 1.1s ease-in-out infinite;
+    }
+    .eval-loading-dot:nth-child(2) { animation-delay: 0.18s; background: #60a5fa; }
+    .eval-loading-dot:nth-child(3) { animation-delay: 0.36s; background: #a78bfa; }
+    @keyframes elDot {
+      0%,80%,100% { transform: scale(0.55); opacity: 0.4; }
+      40%          { transform: scale(1.1);  opacity: 1; }
     }
 
     .eval-result-area {
@@ -2210,6 +2251,7 @@
         // 3. 展示结果
         if (isIncompleteRecording(result.wordResults)) {
           // 录音不完整：不计分，只显示提示 + 重录按钮
+          stopEvalLoadingAnim();
           document.getElementById("eval-loading").style.display = "none";
           document.getElementById("eval-score-card").style.display = "none";
           document.getElementById("eval-compare-card").style.display = "none";
@@ -2713,12 +2755,46 @@
 
 
     // 显示评价页（loading 状态）
+    // ── Eval loading animation ────────────────────────────────
+    var _elTimer = null;
+    var _elStart = 0;
+    var _EL_MSGS = [
+      { emoji: '🎙️', text: '正在上传录音...' },
+      { emoji: '🔍', text: 'AI 正在分析发音...' },
+      { emoji: '🎵', text: '对比标准音节...' },
+      { emoji: '💡', text: '检测声调和发音...' },
+      { emoji: '✨', text: '快好了，稍等一下...' }
+    ];
+    function startEvalLoadingAnim() {
+      var barEl  = document.getElementById('eval-loading-bar');
+      var msgEl  = document.getElementById('eval-loading-msg');
+      var emjEl  = document.getElementById('eval-loading-emoji');
+      if (barEl) { barEl.style.transition = 'none'; barEl.style.width = '0%'; }
+      if (msgEl) msgEl.textContent = _EL_MSGS[0].text;
+      if (emjEl) emjEl.textContent = _EL_MSGS[0].emoji;
+      _elStart = Date.now();
+      if (_elTimer) clearInterval(_elTimer);
+      _elTimer = setInterval(function () {
+        var pct = Math.min(90, (Date.now() - _elStart) / 60); // ~6s to 90%
+        if (barEl) { barEl.style.transition = 'width 0.15s linear'; barEl.style.width = pct + '%'; }
+        var mIdx = Math.min(Math.floor((Date.now() - _elStart) / 1300), _EL_MSGS.length - 1);
+        if (msgEl) msgEl.textContent = _EL_MSGS[mIdx].text;
+        if (emjEl) emjEl.textContent = _EL_MSGS[mIdx].emoji;
+      }, 120);
+    }
+    function stopEvalLoadingAnim() {
+      if (_elTimer) { clearInterval(_elTimer); _elTimer = null; }
+      var barEl = document.getElementById('eval-loading-bar');
+      if (barEl) { barEl.style.transition = 'width 0.3s ease'; barEl.style.width = '100%'; }
+    }
+
     function showEvalPageLoading(sentence) {
       var total = LESSONS[lessonIdx].sentences.length;
       document.getElementById("eval-badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
-      document.getElementById("eval-loading").style.display = "flex";
-      document.getElementById("eval-score-card").style.display = "none";
+      // Show score card with loading animation (not hidden — fixes black screen)
+      document.getElementById("eval-score-card").style.display = "";
       document.getElementById("eval-score-card").classList.remove("score-card-glow");
+      document.getElementById("eval-loading").style.display = "flex";
       document.getElementById("eval-result-area").classList.remove("show");
       document.getElementById("eval-compare-card").style.display = "none";
       document.getElementById("eval-hint-text").textContent = "";
@@ -2731,6 +2807,7 @@
       document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一页 Next ▶";
       document.getElementById("eval-page").classList.add("show");
       document.getElementById("eval-page").scrollTop = 0;
+      startEvalLoadingAnim();
     }
 
     // 填入实际评测结果
@@ -2942,6 +3019,7 @@
         : score >= 70 ? "#f97316"
         : "#f87171";
 
+      stopEvalLoadingAnim();
       document.getElementById("eval-loading").style.display = "none";
       document.getElementById("eval-score-card").style.display = "";
       document.getElementById("eval-hint-card").style.display = "";
@@ -4032,9 +4110,18 @@
 
       <!-- 分数 -->
       <div class="eval-score-card" id="eval-score-card">
-        <div class="eval-loading" id="eval-loading">
-          <div class="eval-spinner"></div>
-          <div class="eval-loading-txt">评测中，请稍候...</div>
+        <div class="eval-loading" id="eval-loading" style="display:none">
+          <div class="eval-loading-emoji" id="eval-loading-emoji">🎙️</div>
+          <div class="eval-loading-msg" id="eval-loading-msg">正在上传录音...</div>
+          <div class="eval-loading-bar-wrap">
+            <div class="eval-loading-bar" id="eval-loading-bar"></div>
+          </div>
+          <div class="eval-loading-sub" id="eval-loading-sub">AI 正在帮你评分</div>
+          <div class="eval-loading-dots">
+            <div class="eval-loading-dot"></div>
+            <div class="eval-loading-dot"></div>
+            <div class="eval-loading-dot"></div>
+          </div>
         </div>
         <div class="eval-result-area" id="eval-result-area">
           <div class="eval-score-num" id="eval-score-num">--</div>
