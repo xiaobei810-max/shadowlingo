@@ -2341,12 +2341,20 @@
       var timings = computeCharTimingsForDuration(s.zh, s.pinyin, estSec);
       if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
-      runKaraTimedMain(estSec * 1000, timings);
+      // Delay timer 100ms to match Chrome TTS start delay
+      setTimeout(function () { if (phase === "slow") runKaraTimedMain(estSec * 1000, timings); }, 100);
       speakTTSAtRate(s.zh, slowSpeed, function () {
         if (phase !== "slow") return;
         completeKara();
         if (btn) { btn.classList.remove("active"); btn.textContent = "🐢 慢速 Slow Speed"; }
         busy = false; phase = "idle";
+      }, function (charIdx, charLen) {
+        // TTS boundary events override timer for accurate char sync
+        document.querySelectorAll("#kara .kchar").forEach(function (el, i) {
+          if (i < charIdx) el.className = "kchar done";
+          else if (i < charIdx + Math.max(1, charLen || 1)) el.className = "kchar active";
+          else el.className = "kchar";
+        });
       });
     }
 
@@ -2917,7 +2925,7 @@
     }
 
     // TTS with custom rate (for Normal/Slow buttons)
-    function speakTTSAtRate(text, rate, onend) {
+    function speakTTSAtRate(text, rate, onend, onboundary) {
       if (!('speechSynthesis' in window)) {
         setTimeout(function () { if (onend) onend(); }, Math.max(2000, text.length * 300 / rate));
         return;
@@ -2928,6 +2936,9 @@
       utter.rate = rate;
       utter.onend = function () { if (onend) onend(); };
       utter.onerror = function () { if (onend) onend(); };
+      if (onboundary) {
+        utter.addEventListener('boundary', function (e) { onboundary(e.charIndex, e.charLength); });
+      }
       // Chrome bug: cancel() followed immediately by speak() produces silence — add delay
       setTimeout(function () { window.speechSynthesis.speak(utter); }, 100);
     }
