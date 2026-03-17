@@ -877,6 +877,61 @@
       white-space: pre-line;
     }
 
+    /* ── Score animations ───────────────────────────── */
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+    @keyframes scoreBounce {
+      0%   { transform: scale(0.2); opacity: 0; }
+      55%  { transform: scale(1.2); }
+      75%  { transform: scale(0.92); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes scorePulse {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50%       { transform: scale(1.1); filter: brightness(1.35); }
+    }
+    @keyframes scoreShake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-9px); }
+      40%       { transform: translateX(9px); }
+      60%       { transform: translateX(-5px); }
+      80%       { transform: translateX(5px); }
+    }
+    @keyframes scoreFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes goldSweep {
+      0%   { background-position: -200% center; }
+      100% { background-position: 300% center; }
+    }
+    @keyframes sparkleAnim {
+      0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+      50%       { opacity: 1; transform: scale(1.2) rotate(20deg); }
+    }
+    @keyframes floatUpAnim {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-70px) scale(0.5); }
+    }
+    @keyframes btnHeartbeat {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248,113,113,0.5); }
+      50%       { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(248,113,113,0); }
+    }
+    .score-anim-bounce  { animation: scoreBounce  0.65s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .score-anim-pulse   { animation: scorePulse   1.1s ease-in-out 0.15s; }
+    .score-anim-shake   { animation: scoreShake   0.55s ease-in-out; }
+    .score-anim-fadein  { animation: scoreFadeIn  0.5s ease-out forwards; }
+    .score-anim-perfect {
+      background: linear-gradient(90deg,#B8860B 0%,#FFD700 30%,#FFFACD 50%,#FFD700 70%,#B8860B 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: goldSweep 1.8s ease-in-out 0.2s forwards;
+    }
+    .eval-retry-heartbeat { animation: btnHeartbeat 1.4s ease-in-out infinite; }
+
     /* 发音对比卡片 */
     .eval-compare-card {
       background: var(--card);
@@ -1438,10 +1493,11 @@
     ];
 
     const PRAISES = [
-      { min: 90, msgs: ["🏆 完美！声调拿捏精准！Perfect tones!", "🌟 太棒了，说得非常地道！So natural!"] },
-      { min: 75, msgs: ["🔥 非常好，再练一遍就完美！Almost perfect!", "💪 发音很稳，越来越自然了！Getting smoother!"] },
-      { min: 60, msgs: ["👏 不错，节奏感已经到位了！Good rhythm!", "💡 有进步，多听几遍能做到！Keep it up!"] },
-      { min: 0, msgs: ["🌱 开口就是最大的勇气！Brave start!", "💫 每次练习都是进步！Every rep counts!"] }
+      { min: 100, msgs: ["💯 完美！声调拿捏精准！Perfect tones!"] },
+      { min: 90,  msgs: ["🏆 优秀！几乎像个本地人！Almost like a local!", "🌟 太棒了，说得非常地道！So natural!"] },
+      { min: 80,  msgs: ["👏 不错！继续保持！Good job! Keep it up!", "💪 发音很稳，越来越自然了！Getting smoother!"] },
+      { min: 70,  msgs: ["🤔 还可以！注意声调哦。Not bad! Watch those tones.", "💡 有进步，多听几遍能做到！Keep it up!"] },
+      { min: 0,   msgs: ["💪 别灰心！再试一次！Don't give up! Try again!", "🌱 开口就是最大的勇气！Brave start!"] }
     ];
 
     // ── State ─────────────────────────────────────────────────
@@ -2133,10 +2189,14 @@
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
-        sessionScores.push(result.totalScore);
+        // 全部正确时强制给满分
+        var allCorrect = result.wordResults.length > 0 &&
+          result.wordResults.every(function(w) { return w.perrLevel === 0; });
+        var displayScore = allCorrect ? 100 : result.totalScore;
+        sessionScores.push(displayScore);
         incPracticeCount(lessonIdx, idx);
         document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
-        fillEvalResult(result.totalScore, iseAnnotations(result.wordResults, s.chars),
+        fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           iseHintText(result.wordResults, s.chars), s, null, recText);
       } catch (err) {
         console.error('评测失败:', err);
@@ -2647,24 +2707,115 @@
     }
 
     // 填入实际评测结果
+    // ── Score animation helpers ──────────────────────────────
+    function launchConfetti() {
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;';
+      document.body.appendChild(overlay);
+      var colors = ['#FF6B6B','#FFD700','#6BCF7F','#4D96FF','#FF9FF3','#FFA500','#54A0FF'];
+      for (var i = 0; i < 90; i++) {
+        var p = document.createElement('div');
+        var c = colors[i % colors.length];
+        var left = Math.random() * 100;
+        var delay = Math.random() * 1.0;
+        var dur = 1.8 + Math.random() * 1.4;
+        var sz = 6 + Math.random() * 8;
+        p.style.cssText = 'position:absolute;top:-20px;left:' + left + '%;width:' + sz + 'px;height:' + sz + 'px;background:' + c + ';border-radius:' + (Math.random()>0.5?'50%':'3px') + ';animation:confettiFall ' + dur + 's ' + delay + 's ease-in forwards;';
+        overlay.appendChild(p);
+      }
+      setTimeout(function() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 3500);
+    }
+
+    function spawnFloatingEmojis(anchorEl, emoji, count) {
+      var rect = anchorEl.getBoundingClientRect();
+      for (var i = 0; i < count; i++) {
+        (function(idx) {
+          var el = document.createElement('div');
+          el.textContent = emoji;
+          el.style.cssText = 'position:fixed;font-size:26px;pointer-events:none;z-index:1000;opacity:0;animation:floatUpAnim 1.1s ' + (idx * 0.18) + 's ease-out forwards;';
+          el.style.left = (rect.left + rect.width/2 - 20 + (Math.random()-0.5)*80) + 'px';
+          el.style.top  = (rect.top + rect.height/2) + 'px';
+          document.body.appendChild(el);
+          setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2000);
+        })(i);
+      }
+    }
+
+    function spawnSparkles(anchorEl) {
+      var rect = anchorEl.getBoundingClientRect();
+      var positions = [
+        { left: rect.left - 30, top: rect.top + rect.height*0.2 },
+        { left: rect.right + 8,  top: rect.top + rect.height*0.5 },
+        { left: rect.left - 20,  top: rect.bottom - 10 }
+      ];
+      positions.forEach(function(pos, i) {
+        var el = document.createElement('div');
+        el.textContent = '✨';
+        el.style.cssText = 'position:fixed;font-size:22px;pointer-events:none;z-index:1000;opacity:0;animation:sparkleAnim 0.9s ' + (i*0.22) + 's ease-in-out forwards;';
+        el.style.left = pos.left + 'px';
+        el.style.top  = pos.top  + 'px';
+        document.body.appendChild(el);
+        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1800);
+      });
+    }
+
+    function triggerScoreAnimation(score, numEl) {
+      // remove any previous anim class + gold sweep inline style
+      numEl.className = 'eval-score-num';
+      numEl.style.background = '';
+      numEl.style.webkitBackgroundClip = '';
+      numEl.style.backgroundClip = '';
+      numEl.style.webkitTextFillColor = '';
+      void numEl.offsetWidth; // force reflow
+      var prevBtn = document.getElementById('eval-prev');
+      if (prevBtn) prevBtn.classList.remove('eval-retry-heartbeat');
+
+      if (score === 100) {
+        numEl.classList.add('score-anim-perfect');
+        launchConfetti();
+        if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+      } else if (score >= 90) {
+        numEl.classList.add('score-anim-bounce');
+        spawnFloatingEmojis(numEl, '👍', 4);
+        setTimeout(function() { spawnSparkles(numEl); }, 300);
+      } else if (score >= 80) {
+        numEl.classList.add('score-anim-pulse');
+      } else if (score >= 70) {
+        numEl.classList.add('score-anim-fadein');
+      } else {
+        numEl.classList.add('score-anim-shake');
+        if (prevBtn) {
+          setTimeout(function() { prevBtn.classList.add('eval-retry-heartbeat'); }, 600);
+        }
+      }
+    }
+
     function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText) {
-      var color = score >= 85 ? "#22c55e" : score >= 70 ? "#facc15" : "#f87171";
+      var color = score === 100 ? "#FFD700"
+        : score >= 80 ? "#22c55e"
+        : score >= 70 ? "#f97316"
+        : "#f87171";
 
       document.getElementById("eval-loading").style.display = "none";
       document.getElementById("eval-result-area").classList.add("show");
 
       var numEl = document.getElementById("eval-score-num");
       numEl.textContent = score;
-      numEl.style.color = color;
+      numEl.style.color = score === 100 ? "" : color; // perfect uses gradient
 
-      var grade = score >= 90 ? "🏆 优秀 Excellent"
-        : score >= 80 ? "🌟 良好 Great"
-          : score >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
+      var grade = score === 100 ? "💯 完美 Perfect"
+        : score >= 90 ? "🏆 优秀 Excellent"
+        : score >= 80 ? "👏 良好 Good"
+        : score >= 70 ? "🤔 继续努力 Keep Going"
+        : "💪 再来一次 Try Again";
       var gradeEl = document.getElementById("eval-grade");
       gradeEl.textContent = grade;
       gradeEl.style.color = color;
 
       document.getElementById("eval-praise").textContent = sentence.praise + "\n" + getPraise(score);
+
+      // 触发对应分数段的动态效果
+      triggerScoreAnimation(score, numEl);
 
       // 发音对比（ISE 字符注释）
       var compareCard = document.getElementById("eval-compare-card");
