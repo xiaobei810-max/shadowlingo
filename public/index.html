@@ -1265,7 +1265,7 @@
       <!-- 横排 2 个导航按钮 -->
       <div class="btn-nav">
         <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一页 Prev</button>
-        <button class="btn btn-done" id="bdone" onclick="doNext()">下一页 Next ▶</button>
+        <button class="btn btn-done show" id="bdone" onclick="doNext()">下一页 Next ▶</button>
       </div>
     </div>
   </div>
@@ -2099,6 +2099,7 @@
     function speak(on) {
       var ring = document.getElementById("ring");
       var mascot = document.getElementById("mascot");
+      if (!ring || !mascot) return;
       if (on) {
         ring.style.opacity = "1";
         ring.style.animation = "glow 1.2s ease-in-out infinite";
