@@ -3495,16 +3495,16 @@
       };
       var chosen;
       if (role === 'local') {
-        // 工作人员：中国女性20多岁，清晰自然
-        chosen = find('Sandy (中文（中国大陆）)')
-              || find('Shelley (中文（中国大陆）)')
-              || find('婷婷')
+        // 工作人员：清脆标准普通话，婷婷最接近播音腔
+        chosen = find('婷婷')
               || find('Flo (中文（中国大陆）)')
+              || find('Sandy (中文（中国大陆）)')
+              || find('Shelley (中文（中国大陆）)')
               || find('语舒 (中文（中国大陆）)')
               || find('语舒')
               || findLang('zh-CN', ['Grandma','Grandpa','Eddy','Rocko','Reed','Li-Mu']);
       } else {
-        // 卢克：澳大利亚20岁交换生，阳光男声
+        // 卢克：20岁澳大利亚阳光男生，Eddy最年轻活泼
         chosen = find('Eddy (中文（中国大陆）)')
               || find('Rocko (中文（中国大陆）)')
               || find('Reed (中文（中国大陆）)')
@@ -3527,11 +3527,11 @@
         utter.lang = 'zh-CN';
       }
       if (role === 'local') {
-        utter.rate  = rate || 1.0;
-        utter.pitch = 1.1;   // 略高，年轻女声，不夸张
+        utter.rate  = (rate || 1.0) * 1.05; // 稍快，干脆利落
+        utter.pitch = 1.2;                   // 较高，清脆女声
       } else {
-        utter.rate  = rate ? rate * 0.95 : 0.92; // 轻微放慢，缺实战经验感
-        utter.pitch = 1.0;   // 自然男声音调，不做过多处理
+        utter.rate  = rate || 1.0;           // 正常语速（纸面成绩不错）
+        utter.pitch = 1.25;                  // 明显偏高，活泼年轻感
       }
     }
 
