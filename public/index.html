@@ -1165,6 +1165,67 @@
       background: var(--green); border: none; color: #fff; font-weight: 700;
     }
     .plp-go-btn:hover { background: #16a34a; }
+
+    /* ── 双面板练习页 Dual-panel practice ─────────────────────── */
+    .context-panel {
+      background: rgba(17,24,39,0.7);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 18px 12px;
+      margin-bottom: 10px;
+    }
+    .ctx-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .ctx-speaker {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .ctx-play-btn {
+      background: rgba(34,197,94,0.12);
+      border: 1.5px solid var(--green);
+      color: var(--green);
+      border-radius: 8px;
+      padding: 4px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .ctx-play-btn:hover { background: rgba(34,197,94,0.25); }
+    .ctx-play-btn.playing { background: rgba(34,197,94,0.3); }
+    .ctx-zh {
+      font-size: 20px;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 4px;
+    }
+    .ctx-pinyin {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 3px;
+    }
+    .ctx-en {
+      font-size: 13px;
+      color: #6b7280;
+      font-style: italic;
+    }
+    .learner-panel-hdr {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .learner-name-tag {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green);
+    }
   </style>
 </head>
 
@@ -1203,31 +1264,29 @@
     <div class="audio-error" id="audio-error">⚠️ 音频加载失败，请检查网络后刷新重试</div>
 
     <div class="stage">
-      <div class="mascot-wrap">
-        <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" onerror="this.style.display='none'" />
-        <div class="mascot-ring" id="ring"></div>
+      <div class="sentence-badge" id="badge">第 1/4 句</div>
+
+      <!-- 对方台词面板（上方，无前置台词时隐藏） -->
+      <div class="context-panel" id="context-panel" style="display:none">
+        <div class="ctx-header">
+          <span class="ctx-speaker" id="ctx-speaker">工作人员 · Staff</span>
+          <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放</button>
+        </div>
+        <div class="ctx-zh" id="ctx-zh"></div>
+        <div class="ctx-pinyin" id="ctx-pinyin"></div>
+        <div class="ctx-en" id="ctx-en"></div>
       </div>
-      <div class="sentence-badge" id="badge">第 1/5 句</div>
 
+      <!-- 卢克练习面板（下方） -->
       <div class="sentence-box">
-        <!-- 本轮 local 台词（隐藏，每页只练一句学习者台词） -->
-        <div class="role-row" id="role-row-local" style="display:none">
-          <div class="role-avatar" id="role-avatar-local">🇨🇳</div>
-          <div class="role-meta">
-            <div class="role-name" id="role-name-local">工作人员 · Local</div>
-            <div class="role-text" id="role-text-local"></div>
+        <div class="learner-panel-hdr">
+          <div class="mascot-wrap">
+            <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" onerror="this.style.display='none'" />
+            <div class="mascot-ring" id="ring"></div>
           </div>
+          <span class="learner-name-tag">卢克 · Luke</span>
         </div>
-
-        <!-- 本轮 learner 台词（只保留 id 供 JS 使用，不显示重复文字） -->
-        <div id="role-row-learner" style="display:none">
-          <div class="role-meta">
-            <div class="role-name" id="role-name-learner">卢克 · You</div>
-            <div class="role-text" id="role-text-learner"></div>
-          </div>
-        </div>
-
-        <!-- 卡拉OK字幕（Listen 模式下显示整句） -->
+        <!-- 卡拉OK字幕 -->
         <div class="kara-wrap" id="kara"></div>
         <div class="kara-bar">
           <div class="kara-bar-fill" id="bar-fill"></div>
@@ -1294,6 +1353,7 @@
             zh: "你好，打扰一下。请问去市区在哪儿坐车？",
             pinyin: "Nǐ hǎo, dǎrǎo yíxià. Qǐngwèn qù shìqū zài nǎr zuò chē?",
             en: "Hello, excuse me. Where do I take the bus to the city center?",
+            context: null,
             role: "learner",
             start: 0, end: 4,
             praise: "👏 开口问路很勇敢！Great initiative!",
@@ -1310,6 +1370,7 @@
             zh: "三号门右拐，对吧？",
             pinyin: "Sān hào mén yòu guǎi, duì ba?",
             en: "Gate 3, turn right, right?",
+            context: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
             role: "learner",
             start: 1, end: 5,
             praise: "🌟 确认方向很自然！Great confirmation!",
@@ -1324,6 +1385,7 @@
             zh: "好的。请问是在车上买票吗？",
             pinyin: "Hǎo de. Qǐngwèn shì zài chē shàng mǎi piào ma?",
             en: "Got it. Excuse me, do we buy tickets on the bus?",
+            context: { speaker: "工作人员", zh: "对，在那边排队上车。", pinyin: "Duì, zài nàbiān páiduì shàng chē.", en: "That's right, queue over there to board." },
             role: "learner",
             start: 6, end: 12,
             praise: "😎 问问题很礼貌！Politely done!",
@@ -1339,6 +1401,7 @@
             zh: "我明白了，谢谢您！",
             pinyin: "Wǒ míngbai le, xièxie nín!",
             en: "I understand, thank you!",
+            context: { speaker: "工作人员", zh: "对，上车扫码或者付现金都行。", pinyin: "Duì, shàng chē sǎo mǎ huòzhě fù xiànjīn dōu xíng.", en: "Yes, you can scan a QR code or pay cash on the bus." },
             role: "learner",
             start: 13, end: 17,
             praise: "🔥 收尾很有礼貌！Perfectly polite sign-off!",
@@ -2150,6 +2213,27 @@
 
       buildKara(s.zh, s.chars);
       resetKara();
+
+      // Context panel (other person's preceding line)
+      var ctxPanel = document.getElementById('context-panel');
+      if (ctxPanel) {
+        if (s.context) {
+          ctxPanel.style.display = 'block';
+          var ctxSpeaker = document.getElementById('ctx-speaker');
+          var ctxZh = document.getElementById('ctx-zh');
+          var ctxPy = document.getElementById('ctx-pinyin');
+          var ctxEn = document.getElementById('ctx-en');
+          var ctxBtn = document.getElementById('ctx-play-btn');
+          if (ctxSpeaker) ctxSpeaker.textContent = s.context.speaker + ' · Staff';
+          if (ctxZh) ctxZh.textContent = s.context.zh;
+          if (ctxPy) ctxPy.textContent = s.context.pinyin;
+          if (ctxEn) ctxEn.textContent = s.context.en;
+          if (ctxBtn) { ctxBtn.textContent = '▶ 播放'; ctxBtn.classList.remove('playing'); }
+        } else {
+          ctxPanel.style.display = 'none';
+        }
+      }
+
       if (el("pinyin")) el("pinyin").textContent = s.pinyin;
       if (el("en")) el("en").textContent = s.en;
       if (el("badge")) el("badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
@@ -2419,6 +2503,26 @@
       // Remove the last score so the retry score replaces it
       if (sessionScores.length > 0) sessionScores.pop();
       updateUI();
+    }
+
+    function playContext() {
+      var s = LESSONS[lessonIdx].sentences[idx];
+      if (!s || !s.context) return;
+      if (phase === 'recording') return; // don't interrupt recording
+      // If learner TTS was playing, reset its visuals
+      if (phase === 'normal' || phase === 'slow') {
+        clearTimers();
+        var blBtn = document.getElementById('bl');
+        var bsBtn = document.getElementById('bs');
+        if (blBtn) { blBtn.classList.remove('active'); blBtn.textContent = '▶ 常速 Normal Speed'; }
+        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '🐢 慢速 Slow Speed'; }
+        phase = 'idle'; busy = false;
+      }
+      var btn = document.getElementById('ctx-play-btn');
+      if (btn) { btn.textContent = '⏸ 停止'; btn.classList.add('playing'); }
+      speakTTSAtRate(s.context.zh, 1.0, function () {
+        if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
+      });
     }
 
     function doPrev() {
