@@ -1624,32 +1624,37 @@
         return p.replace(/（\d+分）/g, '').trim();
       }).filter(Boolean);
 
-      var en = [];
+      var pairs = []; // { zh, en }
       parts.forEach(function (p) {
         var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/);
-        if (ri) { en.push('wrong initial consonant: should be "' + ri[1] + '", got "' + ri[2] + '"'); return; }
+        if (ri) { pairs.push({ zh: '声母错误（应读 ' + ri[1] + '）', en: 'initial consonant: should be "' + ri[1] + '"' }); return; }
 
         var rf = p.match(/韵母错误：应【(.+?)】实【(.+?)】/);
-        if (rf) { en.push('wrong vowel sound: should be "' + rf[1] + '", got "' + rf[2] + '"'); return; }
+        if (rf) { pairs.push({ zh: '韵母错误（应读 ' + rf[1] + '）', en: 'vowel sound: should be "' + rf[1] + '"' }); return; }
 
         var tm = p.match(/声调偏差：应第(\d)声/);
         if (tm) {
-          var names = ['', '1st', '2nd', '3rd', '4th', 'neutral'];
-          en.push('wrong tone: should be ' + (names[+tm[1]] || tm[1] + 'th') + ' tone'); return;
+          var toneNames = ['', '1st (ā)', '2nd (á)', '3rd (ǎ)', '4th (à)', 'neutral'];
+          pairs.push({ zh: '声调偏差（应第' + tm[1] + '声）', en: 'wrong tone: should be ' + (toneNames[+tm[1]] || tm[1] + 'th') + ' tone' });
+          return;
         }
 
-        if (p.indexOf('漏读') >= 0) { en.push('missed syllable'); return; }
-        if (p.indexOf('多读') >= 0) { en.push('extra syllable spoken'); return; }
-        if (p.indexOf('发音有误') >= 0) { en.push('mispronounced, check tone & sounds'); return; }
-        if (p.indexOf('准确度过低') >= 0) { en.push('mispronounced, check tone & sounds'); return; }
-        if (p.indexOf('发音需改进') >= 0) { en.push('needs improvement'); return; }
+        if (p.indexOf('漏读') >= 0) { pairs.push({ zh: '漏读音节', en: 'missed syllable' }); return; }
+        if (p.indexOf('多读') >= 0) { pairs.push({ zh: '多读音节', en: 'extra syllable spoken' }); return; }
+        if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0) { pairs.push({ zh: '发音有误', en: 'mispronounced' }); return; }
+        if (p.indexOf('发音需改进') >= 0) { pairs.push({ zh: '发音需改进', en: 'needs improvement' }); return; }
       });
 
       // 有具体问题时去掉泛化描述
-      if (en.length > 1) en = en.filter(function (e) { return e !== 'mispronounced, check tone & sounds' && e !== 'needs improvement'; });
+      if (pairs.length > 1) {
+        var generic = ['mispronounced', 'needs improvement'];
+        var hasSpecific = pairs.some(function (p) { return generic.indexOf(p.en) < 0; });
+        if (hasSpecific) pairs = pairs.filter(function (p) { return generic.indexOf(p.en) < 0; });
+      }
 
-      var desc = en.join(', ') || (isRed ? 'mispronounced, check tone & sounds' : 'needs improvement');
-      return (isRed ? '🔴' : '🟡') + ' "' + w.content + '" ' + desc;
+      var zhDesc = pairs.map(function (p) { return p.zh; }).join('、') || (isRed ? '发音有误' : '发音需改进');
+      var enDesc = pairs.map(function (p) { return p.en; }).join(', ') || (isRed ? 'mispronounced' : 'needs improvement');
+      return (isRed ? '🔴' : '🟡') + ' "' + w.content + '" ' + zhDesc + '\n     ' + enDesc;
     }
 
     // 发音提示：去重 + 每字一行 + 双语
@@ -1657,7 +1662,7 @@
       var reds = words.filter(function (w) { return w.perrLevel === 2; });
       var yellows = words.filter(function (w) { return w.perrLevel === 1; });
       if (!reds.length && !yellows.length)
-        return 'Pronunciation accurate — well done! 🎉';
+        return '发音准确，继续保持！🎉\nPronunciation accurate — well done!';
 
       var seen = {}, lines = [];
       reds.forEach(function (w) {
@@ -2437,9 +2442,8 @@
       document.getElementById("eval-compare-card").style.display = "none";
       document.getElementById("eval-hint-text").textContent = "";
       document.getElementById("eval-error-notice").style.display = "none";
-      var isFirst = (dialogMode && dialogStep === 2) ? dialogRoundIdx === 0 : idx === 0;
-      var isLast = (dialogMode && dialogStep === 2) ? dialogRoundIdx >= dialogRounds.length - 1 : idx >= LESSONS[lessonIdx].sentences.length - 1;
-      document.getElementById("eval-prev").disabled = isFirst;
+      document.getElementById("eval-prev").disabled = false;
+      var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
       document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一页 Next ▶";
       document.getElementById("eval-page").classList.add("show");
       document.getElementById("eval-page").scrollTop = 0;
@@ -2512,16 +2516,21 @@
         return;
       }
 
-      // 旧的逐句导航逻辑（保留以兼容单句练习）
+      // 逐句导航逻辑
       document.getElementById("eval-page").classList.remove("show");
       if (dir === 1) {
         var lesson = LESSONS[lessonIdx];
         if (idx >= lesson.sentences.length - 1) { showCompletion(); return; }
         idx++;
+        updateUI();
       } else {
-        if (idx > 0) idx--;
+        if (idx > 0) {
+          idx--;
+          updateUI();
+        } else {
+          showPreListenPage();
+        }
       }
-      updateUI();
     }
 
 
@@ -3317,7 +3326,7 @@
 
       <!-- 发音提示 -->
       <div class="eval-hint-card">
-        <div class="eval-hint-title">💡 发音提示</div>
+        <div class="eval-hint-title">💡 发音提示 Pronunciation Tips</div>
         <div class="eval-hint-text" id="eval-hint-text"></div>
       </div>
 
