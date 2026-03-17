@@ -1699,7 +1699,20 @@
         if (p.indexOf('漏读') >= 0) { pairs.push({ zh: '漏读音节', en: 'missed syllable' }); return; }
         if (p.indexOf('多读') >= 0) { pairs.push({ zh: '多读音节', en: 'extra syllable spoken' }); return; }
         if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0) { pairs.push({ zh: '发音有误', en: 'mispronounced' }); return; }
-        if (p.indexOf('发音需改进') >= 0) { pairs.push({ zh: '发音需改进', en: 'needs improvement' }); return; }
+        if (p.indexOf('发音需改进') >= 0) {
+          var entry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0]; // peek
+          if (entry && entry.p) {
+            var py = toToneMark(entry.p);
+            if (entry.tone === 5) {
+              pairs.push({ zh: '轻声字，读短读轻（' + py + '）', en: 'neutral tone: say "' + py + '" lightly and short' });
+            } else {
+              pairs.push({ zh: '发音需改进（目标读音：' + py + '）', en: 'needs improvement (aim for: ' + py + ')' });
+            }
+          } else {
+            pairs.push({ zh: '发音需改进', en: 'needs improvement' });
+          }
+          return;
+        }
       });
 
       // 有具体问题时去掉泛化描述
@@ -2021,16 +2034,11 @@
 
         // 3. 展示结果
         if (isIncompleteRecording(result.wordResults)) {
-          // 录音不完整：不计分，提示重录
+          // 录音不完整：不计分，只显示一行提示
           document.getElementById("eval-loading").style.display = "none";
-          document.getElementById("eval-result-area").classList.add("show");
-          document.getElementById("eval-score-num").textContent = "—";
-          document.getElementById("eval-score-num").style.color = "#94a3b8";
-          document.getElementById("eval-grade").textContent = "";
-          document.getElementById("eval-praise").textContent = "请说完完整句子后再提交\nPlease speak the full sentence before submitting";
           document.getElementById("eval-compare-card").style.display = "none";
-          document.getElementById("eval-hint-text").textContent = "⚠️ 未录到完整句子，请重新录音\n   Recording incomplete — please try again";
-          document.getElementById("eval-error-notice").style.display = "none";
+          document.getElementById("eval-hint-card").style.display = "none";
+          document.getElementById("eval-incomplete-msg").style.display = "block";
           busy = false;
           setStatus('准备好了 Ready');
           currentSentenceForEval = null;
@@ -2528,6 +2536,8 @@
       document.getElementById("eval-compare-card").style.display = "none";
       document.getElementById("eval-hint-text").textContent = "";
       document.getElementById("eval-error-notice").style.display = "none";
+      document.getElementById("eval-incomplete-msg").style.display = "none";
+      document.getElementById("eval-hint-card").style.display = "";
       document.getElementById("eval-prev").disabled = false;
       var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
       document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一页 Next ▶";
@@ -3406,8 +3416,14 @@
         </div>
       </div>
 
+      <!-- 录音不完整提示（仅此一行） -->
+      <div id="eval-incomplete-msg" style="display:none;text-align:center;padding:32px 16px;font-size:17px;font-weight:600;color:#f87171;line-height:1.8;">
+        ⚠️ 未录到完整句子，请重新录音<br>
+        <span style="font-size:14px;font-weight:400;color:#94a3b8">Recording incomplete — please try again</span>
+      </div>
+
       <!-- 发音提示 -->
-      <div class="eval-hint-card">
+      <div class="eval-hint-card" id="eval-hint-card">
         <div class="eval-hint-title">💡 发音提示 Pronunciation Tips</div>
         <div class="eval-hint-text" id="eval-hint-text"></div>
       </div>
