@@ -2109,10 +2109,12 @@
 
         // 3. 展示结果
         if (isIncompleteRecording(result.wordResults)) {
-          // 录音不完整：不计分，只显示一行提示
+          // 录音不完整：不计分，只显示提示 + 重录按钮
           document.getElementById("eval-loading").style.display = "none";
+          document.getElementById("eval-score-card").style.display = "none";
           document.getElementById("eval-compare-card").style.display = "none";
           document.getElementById("eval-hint-card").style.display = "none";
+          document.getElementById("eval-nav").style.display = "none";
           document.getElementById("eval-incomplete-msg").style.display = "block";
           busy = false;
           setStatus('准备好了 Ready');
@@ -2620,12 +2622,14 @@
       var total = LESSONS[lessonIdx].sentences.length;
       document.getElementById("eval-badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
       document.getElementById("eval-loading").style.display = "flex";
+      document.getElementById("eval-score-card").style.display = "";
       document.getElementById("eval-result-area").classList.remove("show");
       document.getElementById("eval-compare-card").style.display = "none";
       document.getElementById("eval-hint-text").textContent = "";
       document.getElementById("eval-error-notice").style.display = "none";
       document.getElementById("eval-incomplete-msg").style.display = "none";
       document.getElementById("eval-hint-card").style.display = "";
+      document.getElementById("eval-nav").style.display = "";
       document.getElementById("eval-prev").disabled = false;
       var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
       document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一页 Next ▶";
@@ -2678,6 +2682,11 @@
       } else {
         errEl.style.display = "none";
       }
+    }
+
+    function evalRetry() {
+      document.getElementById("eval-page").classList.remove("show");
+      updateUI();
     }
 
     function evalNav(dir) {
@@ -3528,7 +3537,7 @@
       </div>
 
       <!-- 分数 -->
-      <div class="eval-score-card">
+      <div class="eval-score-card" id="eval-score-card">
         <div class="eval-loading" id="eval-loading">
           <div class="eval-spinner"></div>
           <div class="eval-loading-txt">评测中，请稍候...</div>
@@ -3551,9 +3560,10 @@
       </div>
 
       <!-- 录音不完整提示（仅此一行） -->
-      <div id="eval-incomplete-msg" style="display:none;text-align:center;padding:32px 16px;font-size:17px;font-weight:600;color:#f87171;line-height:1.8;">
+      <div id="eval-incomplete-msg" style="display:none;text-align:center;padding:40px 16px 32px;font-size:17px;font-weight:600;color:#f87171;line-height:1.8;">
         ⚠️ 未录到完整句子，请重新录音<br>
-        <span style="font-size:14px;font-weight:400;color:#94a3b8">Recording incomplete — please try again</span>
+        <span style="font-size:14px;font-weight:400;color:#94a3b8">Recording incomplete — please try again</span><br>
+        <button class="btn active" style="margin-top:20px;font-size:15px;" onclick="evalRetry()">🎤 重新录音 Try Again</button>
       </div>
 
       <!-- 发音提示 -->
@@ -3563,7 +3573,7 @@
       </div>
 
       <!-- 导航按钮 -->
-      <div class="eval-nav">
+      <div class="eval-nav" id="eval-nav">
         <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ 上一页 Prev</button>
         <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">下一页 Next ▶</button>
       </div>
