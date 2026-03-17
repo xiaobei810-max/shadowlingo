@@ -3441,13 +3441,27 @@
       if (enEl) enEl.textContent = d.en || '';
       dlpBuildKara(containerId, d.zh, d.pinyin);
       dlpSetSpeaking(d.role);
-      var estSeconds = Math.max(1.5, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
-      var timings = computeCharTimingsForDuration(d.zh, d.pinyin, estSeconds);
-      dlpRunKara(containerId, barId, estSeconds * 1000, timings);
-      speakTTS(d.zh, isLocal ? 'local' : 'learner', function () {
-        if (dlpPaused) return;
-        dlpPlayOne(idx + 1);
-      });
+      var role = isLocal ? 'local' : 'learner';
+      // Pre-fetch next sentence while current plays
+      var nextD = dlpSeq[idx + 1];
+      if (nextD) {
+        var nextRole = nextD.role === 'local' ? 'local' : 'learner';
+        var nextKey = nextRole + ':1.00:' + nextD.zh;
+        if (!_ttsCache[nextKey]) {
+          fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: nextD.zh, role: nextRole, rate: 1.0 }) })
+          .then(function (r) { return r.ok ? r.blob() : null; })
+          .then(function (blob) { if (blob) _ttsCache[nextKey] = URL.createObjectURL(blob); })
+          .catch(function () {});
+        }
+      }
+      speakAzure(d.zh, role, 1.0,
+        function () { if (!dlpPaused) dlpPlayOne(idx + 1); },
+        function (actualDur) {
+          var dur = actualDur || Math.max(1.5, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+          dlpRunKara(containerId, barId, dur * 1000, computeCharTimingsForDuration(d.zh, d.pinyin, dur));
+        }
+      );
     }
 
     // 听完整对话：显示专属页面，逐句 TTS + 卡拉OK
@@ -3498,22 +3512,32 @@
 
       function playUrl(url) {
         var audio = new Audio(url);
+        var _handled = false;
+        var _playFired = false;
+        var _knownDuration = null;
         _currentAudio = audio;
-        audio.onplay = function () {
-          if (onplay) onplay(audio.duration || null);
-        };
         audio.onloadedmetadata = function () {
-          // duration now known — if onplay already fired without it, re-fire
+          _knownDuration = isFinite(audio.duration) ? audio.duration : null;
+          if (_playFired && onplay) { onplay(_knownDuration); _playFired = false; }
+        };
+        audio.onplay = function () {
+          if (_knownDuration !== null) {
+            if (onplay) onplay(_knownDuration);
+          } else {
+            _playFired = true; // wait for onloadedmetadata
+          }
         };
         audio.onended = function () {
           if (_currentAudio === audio) _currentAudio = null;
           if (onend) onend();
         };
         audio.onerror = function () {
+          if (_handled) return; _handled = true;
           if (_currentAudio === audio) _currentAudio = null;
           fallbackBrowserTTS(text, role, rate, onend, onplay);
         };
         audio.play().catch(function () {
+          if (_handled) return; _handled = true;
           fallbackBrowserTTS(text, role, rate, onend, onplay);
         });
       }
@@ -3809,13 +3833,27 @@
       plpSetActive(d.role);
       if (enEl) enEl.textContent = d.en || '';
       dlpBuildKara(karaId, d.zh, d.pinyin);
-      var estSec = Math.max(1.5, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
-      var timings = computeCharTimingsForDuration(d.zh, d.pinyin, estSec);
-      dlpRunKara(karaId, barId, estSec * 1000, timings);
-      speakTTS(d.zh, isLearner ? 'learner' : 'local', function () {
-        if (!plpPlaying || plpPaused) return;
-        plpPlayOne(idx + 1);
-      });
+      var plpRole = isLearner ? 'learner' : 'local';
+      // Pre-fetch next sentence while current plays
+      var plpNextD = plpSeq[idx + 1];
+      if (plpNextD) {
+        var plpNextRole = plpNextD.role === 'learner' ? 'learner' : 'local';
+        var plpNextKey = plpNextRole + ':1.00:' + plpNextD.zh;
+        if (!_ttsCache[plpNextKey]) {
+          fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: plpNextD.zh, role: plpNextRole, rate: 1.0 }) })
+          .then(function (r) { return r.ok ? r.blob() : null; })
+          .then(function (blob) { if (blob) _ttsCache[plpNextKey] = URL.createObjectURL(blob); })
+          .catch(function () {});
+        }
+      }
+      speakAzure(d.zh, plpRole, 1.0,
+        function () { if (plpPlaying && !plpPaused) plpPlayOne(idx + 1); },
+        function (actualDur) {
+          var dur = actualDur || Math.max(1.5, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+          dlpRunKara(karaId, barId, dur * 1000, computeCharTimingsForDuration(d.zh, d.pinyin, dur));
+        }
+      );
     }
 
     function plpRestart() {

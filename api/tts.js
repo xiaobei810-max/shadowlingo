@@ -48,10 +48,10 @@ function buildSSML(text, role, rate) {
 
   let prosody;
   if (v.crossLang) {
-    // 跨语言合成：用英语发音引擎读中文，产生外国口音
-    prosody = `<lang xml:lang="${v.crossLang}">` +
+    // 跨语言合成：用英语发音引擎读中文，产生外国口音（必须用 mstts:lang）
+    prosody = `<mstts:lang xml:lang="${v.crossLang}">` +
       `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>` +
-      `</lang>`;
+      `</mstts:lang>`;
   } else if (v.style) {
     prosody = `<mstts:express-as style="${v.style}">` +
       `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>` +
