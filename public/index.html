@@ -1315,7 +1315,7 @@
     </div>
 
     <div class="controls">
-      <!-- 速度条（在常速按钮上方） -->
+      <!-- 速度条 -->
       <div class="speed-control" style="margin:0 0 4px;">
         <span>慢 Slow</span>
         <input type="range" id="speed-slider" min="0.3" max="1.5" step="0.05" value="0.7"
@@ -1323,9 +1323,8 @@
         <span>快 Fast</span>
         <span class="speed-label" id="speed-label">0.7×</span>
       </div>
-      <!-- 竖排 3 个功能按钮 -->
-      <button class="btn" id="bl" onclick="doNormal()">▶ 常速 Normal Speed</button>
-      <button class="btn" id="bs" onclick="doSlow()">🐢 慢速 Slow Speed</button>
+      <!-- 竖排 2 个功能按钮 -->
+      <button class="btn" id="bs" onclick="doSlow()">▶ 跟读 Listen</button>
       <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 跟读 Record &amp; Evaluate</button>
 
       <!-- 隐藏的旧按钮（JS 兼容用） -->
@@ -2278,8 +2277,7 @@
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
       if (el("bn")) el("bn").textContent = "🎤 跟读 Record";
 
-      if (el("bl")) { el("bl").disabled = false; el("bl").classList.remove("active"); el("bl").textContent = "▶ 常速 Normal Speed"; }
-      if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); el("bs").textContent = "🐢 慢速 Slow Speed"; }
+      if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); el("bs").textContent = "▶ 跟读 Listen"; }
       if (el("bm")) el("bm").classList.remove("active");
       if (el("bn")) { el("bn").disabled = false; el("bn").classList.remove("active"); }
       if (el("bprev")) el("bprev").disabled = false;
@@ -2302,7 +2300,7 @@
       var dur = (s.end - s.start) * 1000;
 
       setStatus("▶ 听原声 Listening...");
-      document.getElementById("bl").classList.add("active");
+      document.getElementById("bs").classList.add("active");
 
       audio.currentTime = s.start;
       audio.playbackRate = 1;
@@ -2315,7 +2313,7 @@
         audio.pause();
         speak(false);
         completeKara();
-        document.getElementById("bl").classList.remove("active");
+        document.getElementById("bs").classList.remove("active");
         setStatus("准备好了 Ready");
         busy = false;
         phase = "idle";
@@ -2329,7 +2327,7 @@
         clearTimers();
         window.speechSynthesis && window.speechSynthesis.cancel();
         phase = "idle"; busy = false;
-        if (btn) { btn.classList.remove("active"); btn.textContent = "🐢 慢速 Slow Speed"; }
+        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
         return;
       }
       stopMediaRecorderIfRunning();
@@ -2346,7 +2344,7 @@
       speakTTSAtRate(s.zh, slowSpeed, function () {
         if (phase !== "slow") return;
         completeKara();
-        if (btn) { btn.classList.remove("active"); btn.textContent = "🐢 慢速 Slow Speed"; }
+        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
         busy = false; phase = "idle";
       }, function (charIdx, charLen) {
         // TTS boundary events override timer for accurate char sync
@@ -2358,33 +2356,7 @@
       });
     }
 
-    function doNormal() {
-      var btn = document.getElementById("bl");
-      if (phase === "normal") {
-        // 暂停
-        clearTimers();
-        window.speechSynthesis && window.speechSynthesis.cancel();
-        phase = "idle"; busy = false;
-        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 常速 Normal Speed"; }
-        return;
-      }
-      stopMediaRecorderIfRunning();
-      clearTimers();
-      window.speechSynthesis && window.speechSynthesis.cancel();
-      busy = true; phase = "normal";
-      var s = LESSONS[lessonIdx].sentences[idx];
-      var estSec = Math.max(1.5, s.zh.replace(/[，。！？,.!?]/g, '').length * 0.28);
-      var timings = computeCharTimingsForDuration(s.zh, s.pinyin, estSec);
-      if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
-      resetKara();
-      runKaraTimedMain(estSec * 1000, timings);
-      speakTTSAtRate(s.zh, slowSpeed, function () {
-        if (phase !== "normal") return;
-        completeKara();
-        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 常速 Normal Speed"; }
-        busy = false; phase = "idle";
-      });
-    }
+    var doNormal = doSlow; // merged into single listen button
 
     function doRecord() {
       if (phase === "recording") {
@@ -2551,10 +2523,8 @@
       // If learner TTS was playing, reset its visuals
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
-        var blBtn = document.getElementById('bl');
         var bsBtn = document.getElementById('bs');
-        if (blBtn) { blBtn.classList.remove('active'); blBtn.textContent = '▶ 常速 Normal Speed'; }
-        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '🐢 慢速 Slow Speed'; }
+        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
         phase = 'idle'; busy = false;
       }
       var btn = document.getElementById('ctx-play-btn');
@@ -2570,10 +2540,8 @@
       if (phase === 'recording') return;
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
-        var blBtn = document.getElementById('bl');
         var bsBtn = document.getElementById('bs');
-        if (blBtn) { blBtn.classList.remove('active'); blBtn.textContent = '▶ 常速 Normal Speed'; }
-        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '🐢 慢速 Slow Speed'; }
+        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
         phase = 'idle'; busy = false;
       }
       var btn = document.getElementById('ctx-play-btn-below');
