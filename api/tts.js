@@ -5,17 +5,30 @@ const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
 
 // Voice config per role
 const VOICES = {
+  // 工作人员：40岁左右女性，沉稳干练
   local: {
-    name:  'zh-CN-XiaoxiaoNeural',
-    style: 'customerservice',   // 清晰标准，服务员腔
+    name:     'zh-CN-XiaoruiNeural',
+    xmlLang:  'zh-CN',
+    style:    'calm',
+    rateScale: 1.0,
+    pitchAdj: '-4%'
+  },
+  // 卢克：澳大利亚20岁交换生，跨语言合成 → 带外国口音的中文
+  learner: {
+    name:       'en-AU-WilliamNeural',
+    xmlLang:    'en-AU',
+    crossLang:  'zh-CN',   // <lang xml:lang="zh-CN"> 包裹中文文本
+    style:      null,
+    rateScale:  0.92,
+    pitchAdj:   '+5%'
+  },
+  // 林欣悦：主角之一，清脆亲切，留作后续故事
+  linyue: {
+    name:     'zh-CN-XiaoxiaoNeural',
+    xmlLang:  'zh-CN',
+    style:    'customerservice',
     rateScale: 1.05,
     pitchAdj: '+5%'
-  },
-  learner: {
-    name:  'zh-CN-YunxiNeural',
-    style: 'cheerful',          // 阳光活泼
-    rateScale: 0.95,
-    pitchAdj: '+8%'
   }
 };
 
@@ -31,14 +44,27 @@ function escapeXml(s) {
 function buildSSML(text, role, rate) {
   const v = VOICES[role] || VOICES.local;
   const finalRate = ((rate || 1.0) * v.rateScale).toFixed(2);
-  const inner = `<mstts:express-as style="${v.style}">` +
-    `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escapeXml(text)}</prosody>` +
-    `</mstts:express-as>`;
+  const escaped = escapeXml(text);
+
+  let prosody;
+  if (v.crossLang) {
+    // 跨语言合成：用英语发音引擎读中文，产生外国口音
+    prosody = `<lang xml:lang="${v.crossLang}">` +
+      `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>` +
+      `</lang>`;
+  } else if (v.style) {
+    prosody = `<mstts:express-as style="${v.style}">` +
+      `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>` +
+      `</mstts:express-as>`;
+  } else {
+    prosody = `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>`;
+  }
+
   return `<speak version='1.0' ` +
     `xmlns='http://www.w3.org/2001/10/synthesis' ` +
     `xmlns:mstts='https://www.w3.org/2001/mstts' ` +
-    `xml:lang='zh-CN'>` +
-    `<voice name='${v.name}'>${inner}</voice>` +
+    `xml:lang='${v.xmlLang}'>` +
+    `<voice name='${v.name}'>${prosody}</voice>` +
     `</speak>`;
 }
 
