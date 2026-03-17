@@ -2437,9 +2437,10 @@
       document.getElementById("eval-compare-card").style.display = "none";
       document.getElementById("eval-hint-text").textContent = "";
       document.getElementById("eval-error-notice").style.display = "none";
-      document.getElementById("eval-prev").disabled = idx === 0;
-      var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
-      document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一句 Next ▶";
+      var isFirst = (dialogMode && dialogStep === 2) ? dialogRoundIdx === 0 : idx === 0;
+      var isLast = (dialogMode && dialogStep === 2) ? dialogRoundIdx >= dialogRounds.length - 1 : idx >= LESSONS[lessonIdx].sentences.length - 1;
+      document.getElementById("eval-prev").disabled = isFirst;
+      document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一页 Next ▶";
       document.getElementById("eval-page").classList.add("show");
       document.getElementById("eval-page").scrollTop = 0;
     }
@@ -3322,8 +3323,8 @@
 
       <!-- 导航按钮 -->
       <div class="eval-nav">
-        <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ 上一句 Prev</button>
-        <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">下一句 Next ▶</button>
+        <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ 上一页 Prev</button>
+        <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">下一页 Next ▶</button>
       </div>
     </div>
   </div>
