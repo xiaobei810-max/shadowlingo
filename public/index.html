@@ -1264,7 +1264,7 @@
 
       <!-- 横排 2 个导航按钮 -->
       <div class="btn-nav">
-        <button class="btn" id="bprev" onclick="doPrev()" disabled>◀ 上一页 Prev</button>
+        <button class="btn" id="bprev" onclick="doPrev()">◀ 上一页 Prev</button>
         <button class="btn btn-done show" id="bdone" onclick="doNext()">下一页 Next ▶</button>
       </div>
     </div>
@@ -2167,7 +2167,7 @@
       if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); el("bs").textContent = "🐢 慢速 Slow Speed"; }
       if (el("bm")) el("bm").classList.remove("active");
       if (el("bn")) { el("bn").disabled = false; el("bn").classList.remove("active"); }
-      if (el("bprev")) el("bprev").disabled = idx === 0;
+      if (el("bprev")) el("bprev").disabled = false;
       if (el("bdone")) el("bdone").className = "btn btn-done show";
       if (el("bretry")) el("bretry").className = "btn btn-retry";
 
@@ -2428,7 +2428,13 @@
       window.speechSynthesis && window.speechSynthesis.cancel();
       speak(false);
       busy = false; phase = "idle";
-      if (idx > 0) { idx--; updateUI(); }
+      if (idx > 0) {
+        idx--;
+        updateUI();
+      } else {
+        // 第1句时，返回预听页面
+        showPreListenPage();
+      }
     }
 
     function doNext() {
