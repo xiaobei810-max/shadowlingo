@@ -1071,19 +1071,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 36px 20px 32px;
-    }
-    .eval-loading-emoji {
-      font-size: 52px;
-      line-height: 1;
-      animation: elBounce 0.75s ease-in-out infinite alternate;
-      user-select: none;
-    }
-    @keyframes elBounce {
-      from { transform: translateY(0) scale(1); }
-      to   { transform: translateY(-12px) scale(1.12); }
+      gap: 10px;
+      padding: 28px 16px 24px;
     }
     .eval-loading-msg {
       font-size: 15px;
@@ -1091,38 +1080,109 @@
       color: #e2e8f0;
       min-height: 22px;
       text-align: center;
-      transition: opacity 0.25s;
+    }
+    /* ── unicycle rider ── */
+    .el-stage {
+      width: 100%;
+      max-width: 260px;
+      position: relative;
+      height: 86px;
+    }
+    .el-rider {
+      position: absolute;
+      bottom: 10px;
+      left: 4%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 2;
+      transition: left 0.2s linear;
+    }
+    .el-cat {
+      font-size: 28px;
+      line-height: 1;
+      animation: elBob 0.32s ease-in-out infinite alternate;
+    }
+    @keyframes elBob {
+      from { transform: translateY(0) rotate(-5deg); }
+      to   { transform: translateY(-4px) rotate(5deg); }
+    }
+    .el-uni-seat {
+      width: 22px; height: 4px;
+      background: #64748b;
+      border-radius: 3px;
+      margin: 1px 0;
+    }
+    .el-uni-post {
+      width: 3px; height: 12px;
+      background: #64748b;
+      border-radius: 1px;
+    }
+    .el-uni-wheel {
+      width: 26px; height: 26px;
+      border: 3px solid #94a3b8;
+      border-radius: 50%;
+      position: relative;
+      animation: elSpin 0.38s linear infinite;
+      flex-shrink: 0;
+    }
+    .el-uni-wheel::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      height: 2px; margin-top: -1px;
+      background: #64748b;
+    }
+    .el-uni-wheel::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; left: 50%;
+      width: 2px; margin-left: -1px;
+      background: #64748b;
+    }
+    @keyframes elSpin { to { transform: rotate(360deg); } }
+    .el-flag {
+      position: absolute;
+      right: 0; bottom: 8px;
+      font-size: 24px; line-height: 1;
+      animation: elFlagWave 0.55s ease-in-out infinite alternate;
+      transform-origin: bottom left;
+    }
+    @keyframes elFlagWave {
+      from { transform: rotate(-5deg); }
+      to   { transform: rotate(5deg); }
+    }
+    .el-road {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 10px;
+      background: #1e293b;
+      border-radius: 5px;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+    .el-progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #22c55e, #60a5fa, #a78bfa);
+      background-size: 200% 100%;
+      animation: elShimmer 1.6s linear infinite;
+      transition: width 0.2s linear;
+      border-radius: 5px 0 0 5px;
+    }
+    @keyframes elShimmer {
+      0%   { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
     }
     .eval-loading-sub {
       font-size: 12px;
       color: var(--muted);
       text-align: center;
     }
-    .eval-loading-bar-wrap {
-      width: 180px;
-      height: 10px;
-      background: var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-    .eval-loading-bar {
-      height: 100%;
-      width: 0%;
-      border-radius: 10px;
-      background: linear-gradient(90deg, #22c55e, #60a5fa, #a78bfa);
-      background-size: 200% 100%;
-      animation: elShimmer 1.4s linear infinite;
-      transition: width 0.15s linear;
-    }
-    @keyframes elShimmer {
-      0%   { background-position: 100% 0; }
-      100% { background-position: -100% 0; }
-    }
     .eval-loading-dots {
       display: flex;
       gap: 7px;
-      margin-top: 2px;
     }
     .eval-loading-dot {
       width: 8px; height: 8px;
@@ -2755,37 +2815,38 @@
 
 
     // 显示评价页（loading 状态）
-    // ── Eval loading animation ────────────────────────────────
+    // ── Eval loading animation (unicycle rider) ──────────────
     var _elTimer = null;
     var _elStart = 0;
     var _EL_MSGS = [
-      { emoji: '🎙️', text: '正在上传录音...' },
-      { emoji: '🔍', text: 'AI 正在分析发音...' },
-      { emoji: '🎵', text: '对比标准音节...' },
-      { emoji: '💡', text: '检测声调和发音...' },
-      { emoji: '✨', text: '快好了，稍等一下...' }
+      '正在上传录音...', 'AI 正在分析发音...', '对比标准音节...',
+      '检测声调和发音...', '快好了，稍等一下...'
     ];
     function startEvalLoadingAnim() {
-      var barEl  = document.getElementById('eval-loading-bar');
-      var msgEl  = document.getElementById('eval-loading-msg');
-      var emjEl  = document.getElementById('eval-loading-emoji');
-      if (barEl) { barEl.style.transition = 'none'; barEl.style.width = '0%'; }
-      if (msgEl) msgEl.textContent = _EL_MSGS[0].text;
-      if (emjEl) emjEl.textContent = _EL_MSGS[0].emoji;
+      var msgEl   = document.getElementById('eval-loading-msg');
+      var riderEl = document.getElementById('el-rider');
+      var progEl  = document.getElementById('el-progress');
+      if (riderEl) { riderEl.style.transition = 'none'; riderEl.style.left = '4%'; }
+      if (progEl)  { progEl.style.transition  = 'none'; progEl.style.width  = '0%'; }
+      if (msgEl)   msgEl.textContent = _EL_MSGS[0];
       _elStart = Date.now();
       if (_elTimer) clearInterval(_elTimer);
       _elTimer = setInterval(function () {
-        var pct = Math.min(90, (Date.now() - _elStart) / 60); // ~6s to 90%
-        if (barEl) { barEl.style.transition = 'width 0.15s linear'; barEl.style.width = pct + '%'; }
-        var mIdx = Math.min(Math.floor((Date.now() - _elStart) / 1300), _EL_MSGS.length - 1);
-        if (msgEl) msgEl.textContent = _EL_MSGS[mIdx].text;
-        if (emjEl) emjEl.textContent = _EL_MSGS[mIdx].emoji;
-      }, 120);
+        var elapsed = Date.now() - _elStart;
+        var pct = Math.min(88, elapsed / 60); // ~5.3s to 88%
+        var riderLeft = (4 + pct * 0.84).toFixed(1); // 4%→78% as pct 0→88
+        if (riderEl) { riderEl.style.transition = 'left 0.2s linear'; riderEl.style.left = riderLeft + '%'; }
+        if (progEl)  { progEl.style.transition  = 'width 0.2s linear'; progEl.style.width  = pct + '%'; }
+        var mIdx = Math.min(Math.floor(elapsed / 1300), _EL_MSGS.length - 1);
+        if (msgEl) msgEl.textContent = _EL_MSGS[mIdx];
+      }, 150);
     }
     function stopEvalLoadingAnim() {
       if (_elTimer) { clearInterval(_elTimer); _elTimer = null; }
-      var barEl = document.getElementById('eval-loading-bar');
-      if (barEl) { barEl.style.transition = 'width 0.3s ease'; barEl.style.width = '100%'; }
+      var riderEl = document.getElementById('el-rider');
+      var progEl  = document.getElementById('el-progress');
+      if (progEl)  { progEl.style.transition  = 'width 0.3s ease';  progEl.style.width  = '100%'; }
+      if (riderEl) { riderEl.style.transition = 'left 0.3s ease';   riderEl.style.left  = '96%'; }
     }
 
     function showEvalPageLoading(sentence) {
@@ -4111,12 +4172,20 @@
       <!-- 分数 -->
       <div class="eval-score-card" id="eval-score-card">
         <div class="eval-loading" id="eval-loading" style="display:none">
-          <div class="eval-loading-emoji" id="eval-loading-emoji">🎙️</div>
           <div class="eval-loading-msg" id="eval-loading-msg">正在上传录音...</div>
-          <div class="eval-loading-bar-wrap">
-            <div class="eval-loading-bar" id="eval-loading-bar"></div>
+          <div class="el-stage">
+            <div class="el-rider" id="el-rider">
+              <div class="el-cat">🐱</div>
+              <div class="el-uni-seat"></div>
+              <div class="el-uni-post"></div>
+              <div class="el-uni-wheel"></div>
+            </div>
+            <span class="el-flag">🏁</span>
+            <div class="el-road">
+              <div class="el-progress" id="el-progress"></div>
+            </div>
           </div>
-          <div class="eval-loading-sub" id="eval-loading-sub">AI 正在帮你评分</div>
+          <div class="eval-loading-sub">AI 正在帮你评分</div>
           <div class="eval-loading-dots">
             <div class="eval-loading-dot"></div>
             <div class="eval-loading-dot"></div>
