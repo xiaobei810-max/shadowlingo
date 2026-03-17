@@ -1081,7 +1081,7 @@
       min-height: 22px;
       text-align: center;
     }
-    /* ── panda rolling ball ── */
+    /* ── soccer ball rolling ── */
     .el-stage {
       width: 100%;
       max-width: 260px;
@@ -1094,81 +1094,34 @@
       left: 4%;
       z-index: 2;
       transition: left 0.2s linear;
-      animation: pandaRoll 0.7s linear infinite;
+      animation: soccerRoll 2s linear infinite;
     }
-    @keyframes pandaRoll {
+    @keyframes soccerRoll {
       from { transform: translateX(-50%) rotate(0deg); }
       to   { transform: translateX(-50%) rotate(360deg); }
     }
-    .panda-ball {
-      width: 46px; height: 46px;
-      background: #f8f8f4;
+    .soccer-ball {
+      width: 44px; height: 44px;
+      background: #f8f8f8;
       border-radius: 50%;
       position: relative;
-      border: 2px solid #c8c8c0;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+      border: 1.5px solid #bbb;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      overflow: hidden;
     }
-    .panda-ear-l, .panda-ear-r {
+    .sb-c {
       position: absolute;
-      width: 14px; height: 14px;
-      background: #111;
-      border-radius: 50%;
-      top: -5px;
-    }
-    .panda-ear-l { left: 5px; }
-    .panda-ear-r { right: 5px; }
-    .panda-eye-patch-l, .panda-eye-patch-r {
-      position: absolute;
-      width: 14px; height: 12px;
-      background: #111;
-      border-radius: 50%;
-      top: 10px;
-    }
-    .panda-eye-patch-l { left: 2px; transform: rotate(-15deg); }
-    .panda-eye-patch-r { right: 2px; transform: rotate(15deg); }
-    .panda-eye-patch-l::before, .panda-eye-patch-r::before {
-      content: '';
-      position: absolute;
-      width: 7px; height: 7px;
-      background: white;
-      border-radius: 50%;
+      width: 15px; height: 15px;
+      background: #222;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
+      clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
     }
-    .panda-eye-patch-l::after, .panda-eye-patch-r::after {
-      content: '';
-      position: absolute;
-      width: 3px; height: 3px;
-      background: #111;
-      border-radius: 50%;
-      top: 50%; left: 50%;
-      transform: translate(-20%, -30%);
-    }
-    .panda-nose {
-      position: absolute;
-      width: 8px; height: 5px;
-      background: #2a2a2a;
-      border-radius: 50%;
-      bottom: 13px; left: 50%;
-      transform: translateX(-50%);
-    }
-    .panda-mouth {
-      position: absolute;
-      width: 10px; height: 5px;
-      border: 1.5px solid #555;
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      bottom: 7px; left: 50%;
-      transform: translateX(-50%);
-    }
-    .panda-belly {
-      position: absolute;
-      width: 20px; height: 16px;
-      background: rgba(240,240,220,0.5);
-      border-radius: 50%;
-      bottom: 6px; left: 50%;
-      transform: translateX(-50%);
-    }
+    .sb-t  { position:absolute; width:13px; height:13px; background:#222; top:-3px;   left:50%; transform:translateX(-50%);        clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%); }
+    .sb-tr { position:absolute; width:13px; height:13px; background:#222; top:5px;    right:-3px;                                  clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%); transform:rotate(72deg); }
+    .sb-br { position:absolute; width:13px; height:13px; background:#222; bottom:5px; right:-3px;                                  clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%); transform:rotate(144deg); }
+    .sb-bl { position:absolute; width:13px; height:13px; background:#222; bottom:5px; left:-3px;                                   clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%); transform:rotate(216deg); }
+    .sb-tl { position:absolute; width:13px; height:13px; background:#222; top:5px;    left:-3px;                                   clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%); transform:rotate(288deg); }
     .el-flag {
       position: absolute;
       right: 0; bottom: 8px;
@@ -4202,14 +4155,13 @@
           <div class="eval-loading-msg" id="eval-loading-msg">正在上传录音...</div>
           <div class="el-stage">
             <div class="el-rider" id="el-rider">
-              <div class="panda-ball">
-                <div class="panda-ear-l"></div>
-                <div class="panda-ear-r"></div>
-                <div class="panda-eye-patch-l"></div>
-                <div class="panda-eye-patch-r"></div>
-                <div class="panda-nose"></div>
-                <div class="panda-mouth"></div>
-                <div class="panda-belly"></div>
+              <div class="soccer-ball">
+                <div class="sb-c"></div>
+                <div class="sb-t"></div>
+                <div class="sb-tr"></div>
+                <div class="sb-br"></div>
+                <div class="sb-bl"></div>
+                <div class="sb-tl"></div>
               </div>
             </div>
             <span class="el-flag">🏁</span>
