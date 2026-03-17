@@ -3487,12 +3487,17 @@
     // ── Azure Neural TTS ──────────────────────────────────────────
     var _ttsCache = {};    // cacheKey → blob URL
     var _currentAudio = null; // currently playing <audio> element
+    var _needsGesture = false; // autoplay blocked — waiting for user tap
+    var _gestureCallback = null;
 
     function stopAudio() {
       if (_currentAudio) {
-        _currentAudio.pause();
-        _currentAudio.src = '';
+        var a = _currentAudio;
         _currentAudio = null;
+        a.onplay = null; a.onloadedmetadata = null;
+        a.onended = null; a.onerror = null;
+        a.pause();
+        a.src = '';
       }
       window.speechSynthesis && window.speechSynthesis.cancel();
     }
@@ -3534,11 +3539,20 @@
         audio.onerror = function () {
           if (_handled) return; _handled = true;
           if (_currentAudio === audio) _currentAudio = null;
+          // Only use browser TTS as true fallback (Azure unavailable), not for autoplay blocks
           fallbackBrowserTTS(text, role, rate, onend, onplay);
         };
-        audio.play().catch(function () {
+        audio.play().catch(function (err) {
           if (_handled) return; _handled = true;
-          fallbackBrowserTTS(text, role, rate, onend, onplay);
+          // Autoplay blocked — show "tap to start" and wait for user gesture
+          if (err && err.name === 'NotAllowedError') {
+            _needsGesture = true;
+            _gestureCallback = function () { _needsGesture = false; speakAzure(text, role, rate, onend, onplay); };
+            if (_currentAudio === audio) _currentAudio = null;
+            plpSetPauseBtn(true); // show "▶ 继续"
+          } else {
+            fallbackBrowserTTS(text, role, rate, onend, onplay);
+          }
         });
       }
 
@@ -3784,6 +3798,10 @@
     }
 
     function plpPauseResume() {
+      if (_needsGesture && _gestureCallback) {
+        var cb = _gestureCallback; _needsGesture = false; _gestureCallback = null;
+        plpSetPauseBtn(false); cb(); return;
+      }
       if (plpPaused || !plpPlaying) {
         // 继续 Resume
         plpPaused = false;
@@ -3875,8 +3893,10 @@
 
     function plpNext() {
       plpPlaying = false;
+      _needsGesture = false; _gestureCallback = null;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       stopAudio();
+      idx = 0; // always start shadow reading from sentence 1
       updateUI();
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.remove('show');
