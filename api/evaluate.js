@@ -736,6 +736,10 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
     '哪','那','这','哪','一',
     // 连读中容易弱化的字
     '请','问','去','区','打','你','下','市',
+    // 方向/位置词（Azure 对这类词在连读中评分偏严）
+    '号','门','右','左','拐','对','前','后','旁','边','里','外','上','下',
+    // 常见确认/疑问词
+    '吗','吧','呢','啊','哦','呀','嗯','哈',
   ]);
 
   for (const w of (nbest.Words || [])) {
@@ -745,7 +749,13 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
     const phonemes  = w.Phonemes  || [];
     const syllables = w.Syllables || [];
 
-    console.log(`[parse] word="${text}" acc=${accuracy} err=${errType} ph=${phonemes.length} syl=${syllables.length}`);
+    // ── 区分真实漏读 vs Azure 对齐失败 ─────────────────────────
+    // Azure EnableMiscue 模式下，即使用户说了某字，也可能因 ASR 文本与参考不一致
+    // 而标记为 Omission。真实漏读的特征：w.Duration === 0（没有音频时长数据）。
+    // 若 Duration > 0，说明 Azure 找到了对应音频，只是对齐分数低，不应报"漏读"。
+    const wordHasDuration = (w.Duration || 0) > 0;
+
+    console.log(`[parse] word="${text}" acc=${accuracy} err=${errType} ph=${phonemes.length} syl=${syllables.length} dur=${w.Duration||0}`);
     // 记录第一个phoneme的NBestPhonemes结构，帮助理解格式
     if (phonemes.length > 0 && phonemes[0].PronunciationAssessment) {
       console.log(`[parse] ph[0]="${phonemes[0].Phoneme}" NBest:`, JSON.stringify((phonemes[0].PronunciationAssessment.NBestPhonemes||[]).slice(0,3)));
@@ -756,7 +766,12 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
     const cLevel  = charArr.map(() => 0);
 
     const levelOf = (acc, err, ch) => {
-      if (err === 'Omission') return 2;
+      if (err === 'Omission') {
+        // 无时长 → 真实漏读，强制红色
+        if (!wordHasDuration) return 2;
+        // 有时长 → Azure 对齐误判（用户实际说了），按准确度正常评级
+        // 用稍严阈值（不给免死金牌）
+      }
       const isWeak = WEAK_CHARS.has(ch);
       // 宽松策略：只有 Azure 明确报 Mispronunciation 或分数很低时才标错
       // 单纯低分（70-79）不代表发音有误，Azure 对连读整体偏严
@@ -794,7 +809,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
 
       // ── 基础错误标签 ────────────────────────────────────────
       if (cLevel[i] === 2) {
-        if (errType === 'Omission') cMsgs[i].push('漏读');
+        if (errType === 'Omission' && !wordHasDuration) cMsgs[i].push('漏读');
         else cMsgs[i].push(`准确度过低（${charAcc}分）`);
       } else if (cLevel[i] === 1) {
         if (errType === 'Insertion') cMsgs[i].push('多读');
@@ -802,8 +817,9 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         else cMsgs[i].push(`发音需改进（${charAcc}分）`);
       }
 
-      // ── 精确错误诊断（只要不是漏读，都尝试分析）──────────
-      if (errType !== 'Omission') {
+      // ── 精确错误诊断（漏读且无时长时跳过，其余情况都分析）──
+      // errType === 'Omission' 但有时长 → 对齐误判，仍尝试诊断具体问题
+      if (!(errType === 'Omission' && !wordHasDuration)) {
         const wantPy = normalizePy(pyMap[ch] || '');
         const wantTone = getTone(wantPy);
 
