@@ -580,12 +580,12 @@ function extractUserPhoneme(ph) {
   const list = pa.NBestPhonemes || [];
   if (!list.length) return null;
   const refPhone = normalizePy(ph.Phoneme);
-  // NBest[0] 是得分最高的，如果与参考相同说明用户读对了这个音素
-  // 如果不同，说明用户读成了 NBest[0]
+  // NBest[0] 是得分最高的，即用户最可能读的那个音
+  // 与参考相同 → 用户读对了，返回 null（不能把 NBest[1] 当用户读音！
+  //   对于中文连读，NBest[1] 往往是下一个字的音节，会导致 off-by-one 假报错）
+  // 与参考不同 → 用户确实读成了 NBest[0]
   const top = normalizePy(list[0].Phoneme || '');
   if (top && top !== refPhone) return top;
-  // 参考音得分最高时，返回得分第二的（候补）
-  if (list.length > 1) return normalizePy(list[1].Phoneme || '') || null;
   return null;
 }
 
