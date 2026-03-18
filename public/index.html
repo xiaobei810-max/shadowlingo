@@ -2674,9 +2674,8 @@
             var pyMap = {};
             (s.chars || []).forEach(function (c) { if (c.c && c.p) pyMap[c.c] = c.p; });
             acousticErrors = acousticAnalyzer.analyzeZhZConfusion(audioBuffer, result.wordResults, pyMap);
-            if (acousticErrors.length > 0) {
-              console.log('[Acoustic] 检测到', acousticErrors.length, '个声学异常:', JSON.stringify(acousticErrors));
-            }
+            console.log('[Acoustic] 分析完成，共检测到', acousticErrors.length, '个平翘舌异常',
+              acousticErrors.length > 0 ? JSON.stringify(acousticErrors) : '（无异常）');
           } catch (ae) {
             console.warn('[Acoustic] 分析出错（不影响主流程）:', ae);
           }
