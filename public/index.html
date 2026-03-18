@@ -4022,10 +4022,13 @@
     var plpPlaying = false;
     var plpPaused = false;
 
-    function plpSetPauseBtn(paused) {
+    function plpSetPauseBtn(state) {
+      // state: 'play' = not started / finished, 'pause' = playing, 'resume' = paused
       var btn = document.getElementById('plp-pause-btn');
       if (!btn) return;
-      btn.innerHTML = paused ? '▶ 继续<br>Resume' : '⏸ 暂停<br>Pause';
+      if (state === 'pause')       btn.innerHTML = '⏸ 暂停<br>Pause';
+      else if (state === 'resume') btn.innerHTML = '▶ 继续<br>Resume';
+      else                         btn.innerHTML = '▶ 播放<br>Play';
     }
 
     function showPreListenPage() {
@@ -4042,19 +4045,23 @@
       }
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.add('show');
-      plpSetPauseBtn(false);
-      setTimeout(function () { plpPlayOne(0); }, 600);
+      plpSetPauseBtn('play'); // 等待用户点击，不自动播放
     }
 
     function plpPauseResume() {
       if (_needsGesture && _gestureCallback) {
         var cb = _gestureCallback; _needsGesture = false; _gestureCallback = null;
-        plpSetPauseBtn(false); cb(); return;
+        plpSetPauseBtn('pause'); cb(); return;
       }
-      if (plpPaused || !plpPlaying) {
-        // 继续 Resume
+      if (plpPaused) {
+        // 继续 Resume（暂停后点播放）
         plpPaused = false;
-        plpSetPauseBtn(false);
+        plpSetPauseBtn('pause');
+        plpPlayOne(plpCurrentIdx);
+      } else if (!plpPlaying) {
+        // 首次播放 / 播完后再播
+        plpCurrentIdx = plpCurrentIdx || 0;
+        plpSetPauseBtn('pause');
         plpPlayOne(plpCurrentIdx);
       } else {
         // 暂停 Pause
@@ -4062,7 +4069,7 @@
         plpPlaying = false;
         if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
         stopAudio();
-        plpSetPauseBtn(true);
+        plpSetPauseBtn('resume');
       }
     }
 
@@ -4083,7 +4090,7 @@
       if (!plpSeq || idx >= plpSeq.length) {
         plpPlaying = false;
         plpPaused = false;
-        plpSetPauseBtn(true); // 播完后显示「继续」可重新开始
+        plpSetPauseBtn('play'); // 播完后显示「播放」可重新开始
         var tp = document.getElementById('plp-panel-top');
         var bp = document.getElementById('plp-panel-bottom');
         if (tp) { tp.classList.remove('dimmed', 'active'); }
@@ -4136,7 +4143,7 @@
       if (kBot) kBot.innerHTML = '';
       if (bTop) bTop.style.width = '0%';
       if (bBot) bBot.style.width = '0%';
-      plpSetPauseBtn(false);
+      plpSetPauseBtn('pause');
       setTimeout(function () { plpPlayOne(0); }, 200);
     }
 
@@ -4200,7 +4207,7 @@
     </div>
     <!-- 按钮：暂停 · 再播一次 · 下一页 -->
     <div class="plp-footer">
-      <button class="plp-pause-btn" id="plp-pause-btn" onclick="plpPauseResume()">⏸ 暂停<br>Pause</button>
+      <button class="plp-pause-btn" id="plp-pause-btn" onclick="plpPauseResume()">▶ 播放<br>Play</button>
       <button class="plp-replay-btn" onclick="plpRestart()">🔄 再播一次<br>Replay</button>
       <button class="plp-go-btn" onclick="plpNext()">下一页<br>Next ▶</button>
     </div>

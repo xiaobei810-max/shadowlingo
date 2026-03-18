@@ -73,8 +73,9 @@ function azureAssess(pcmBase64, refText) {
 }
 
 // ── Azure 无参考 Free STT（并行调用，获取用户实际读了什么）────────
-// 不带 Pronunciation-Assessment header，Azure 自由转写用户语音
-// 用于检测明显误读（如 sh→s：市读成四）
+// 使用 format=detailed 返回多个识别候选（NBest），
+// 提高平翘舌音误读被捕获的概率——即使 top-1 被语境纠正，
+// 其他候选可能反映真实音素输出
 function azureFreeStt(pcmBase64) {
   return new Promise((resolve) => {
     try {
@@ -82,7 +83,7 @@ function azureFreeStt(pcmBase64) {
       const options = {
         hostname: `${AZURE_REGION}.stt.speech.microsoft.com`,
         path:     '/speech/recognition/conversation/cognitiveservices/v1' +
-                  '?language=zh-CN&format=simple',
+                  '?language=zh-CN&format=detailed',   // detailed → 返回 NBest 候选列表
         method:   'POST',
         headers:  {
           'Ocp-Apim-Subscription-Key': AZURE_KEY,
@@ -96,17 +97,27 @@ function azureFreeStt(pcmBase64) {
         res.on('end', () => {
           try {
             const data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
-            // DisplayText 是带标点的，去掉标点取纯汉字
-            const raw = (data.DisplayText || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '');
-            console.log('[FreeStt] 识别结果:', raw);
-            resolve(raw);
-          } catch(e) { resolve(''); }
+            // 取最多 3 个 NBest 候选文本（去标点取纯汉字）
+            const nbestArr = data.NBest || [];
+            if (nbestArr.length > 0) {
+              const alts = nbestArr.slice(0, 3).map(n =>
+                (n.Display || n.Lexical || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '')
+              ).filter(t => t.length > 0);
+              console.log('[FreeStt] NBest候选:', alts);
+              resolve(alts);
+            } else {
+              // fallback: format=detailed 有时在 DisplayText 返回
+              const raw = (data.DisplayText || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '');
+              console.log('[FreeStt] fallback:', raw);
+              resolve(raw ? [raw] : []);
+            }
+          } catch(e) { resolve([]); }
         });
       });
-      req.on('error', () => resolve(''));
+      req.on('error', () => resolve([]));
       req.write(wavBuf);
       req.end();
-    } catch(e) { resolve(''); }
+    } catch(e) { resolve([]); }
   });
 }
 
@@ -208,33 +219,37 @@ const CHAR_PY = {
   '英':'ying1','应':'ying4','影':'ying3','营':'ying2',
 };
 
-// ── 利用 Free STT 结果对比参考文本，检测字级替换错误 ────────────
-// refChars: 参考文本的字数组（清理后）
-// sttText: free STT 识别到的文本
-// pyMap: Gemini 生成的参考文本拼音映射
-// 返回: Map<char_index, {expected, got, diagnose}>
-function detectSttMismatches(refChars, sttText, pyMap) {
-  const sttChars = Array.from(sttText.replace(/\s/g, ''));
+// ── 利用 Free STT 多候选结果对比参考文本，检测字级替换错误 ────────
+// refChars:    参考文本的字数组（清理后）
+// sttAlts:     free STT 识别候选数组（format=detailed NBest）
+// pyMap:       Gemini 生成的参考文本拼音映射
+// 返回: Map<char_index, {expected, got, gotPy, diag}>
+// 策略：检查所有候选，每个位置取最有力的（非 expected 的）差异证据
+function detectSttMismatches(refChars, sttAlts, pyMap) {
   const mismatches = new Map();
-  if (!sttChars.length) return mismatches;
+  if (!sttAlts || !sttAlts.length) return mismatches;
 
-  // 简单对齐：按最长公共子序列找匹配（LCS 降级为逐字对齐）
-  // 对于短句子（<20字），逐字对齐足够
-  const minLen = Math.min(refChars.length, sttChars.length);
-  for (let i = 0; i < minLen; i++) {
-    const expected = refChars[i];
-    const got      = sttChars[i];
-    if (expected === got) continue;
+  for (const sttText of sttAlts) {
+    const sttChars = Array.from((sttText || '').replace(/\s/g, ''));
+    if (!sttChars.length) continue;
 
-    // 获取参考字和识别字的拼音
-    const wantPy = normalizePy(pyMap[expected] || CHAR_PY[expected] || '');
-    const gotPy  = normalizePy(CHAR_PY[got] || '');
-    if (!wantPy) continue; // 无法比对
+    const minLen = Math.min(refChars.length, sttChars.length);
+    for (let i = 0; i < minLen; i++) {
+      const expected = refChars[i];
+      const got      = sttChars[i];
+      if (expected === got) continue;
+      if (mismatches.has(i)) continue; // 已有同位置证据，先到先得
 
-    console.log(`[SttMatch] pos=${i} expected="${expected}"(${wantPy}) got="${got}"(${gotPy})`);
+      const wantPy = normalizePy(pyMap[expected] || CHAR_PY[expected] || '');
+      const gotPy  = normalizePy(CHAR_PY[got] || '');
+      if (!wantPy) continue;
 
-    const diag = gotPy ? diagnoseError(wantPy, gotPy) : [];
-    mismatches.set(i, { expected, got, gotPy, diag });
+      console.log(`[SttMatch] alt="${sttText.slice(0,8)}…" pos=${i} expected="${expected}"(${wantPy}) got="${got}"(${gotPy})`);
+
+      const diag = gotPy ? diagnoseError(wantPy, gotPy) : [];
+      // 即使没有 gotPy，也记录：可能参考字本是翘舌而 STT 给出了平舌字
+      mismatches.set(i, { expected, got, gotPy, diag });
+    }
   }
   return mismatches;
 }
@@ -510,9 +525,11 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
 
   const wordResults = [];
 
-  // ── Free STT 预处理：对齐参考文本与 STT 结果 ─────────────────
+  // ── Free STT 预处理：对齐参考文本与所有 STT 候选 ─────────────
   const refClean  = Array.from(refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
-  const sttMismap = sttText ? detectSttMismatches(refClean, sttText, pyMap) : new Map();
+  // sttText 现在是字符串数组（NBest 候选），兼容旧格式（单字符串）
+  const sttAlts   = Array.isArray(sttText) ? sttText : (sttText ? [sttText] : []);
+  const sttMismap = sttAlts.length ? detectSttMismatches(refClean, sttAlts, pyMap) : new Map();
   if (sttMismap.size > 0) {
     console.log('[SttMis] 发现', sttMismap.size, '个字级差异:', JSON.stringify([...sttMismap.entries()]));
   }
@@ -659,9 +676,64 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           userSyllable = userSyllable || sttMis.gotPy || null; // 把STT结果当userSyllable用于后续声调检查
         }
 
+        // 方案D：主动翘舌/前后鼻音检测（对所有相关字，不受准确度阈值限制）
+        // Azure 的语境 ASR 可能把平舌读音"纠正"回翘舌字，导致分数偏高但发音有误
+        // 对此类字：直接检查 effectivePhonemes 的 NBestPhonemes，
+        // 若有平舌/鼻音替代候选且置信度 > 0.15，则主动标记
+        if (wantPy && !sttMis && cLevel[i] === 0 && effectivePhonemes.length > 0) {
+          const wInit  = getInitial(wantPy);
+          const wFinal = getFinal(wantPy);
+          const RETRO_INITS = ['zh', 'ch', 'sh', 'r'];
+          const FLAT_INITS  = ['z', 'c', 's', 'l', 'n'];
+
+          for (const ph of effectivePhonemes) {
+            const nbl    = (ph.PronunciationAssessment || {}).NBestPhonemes || [];
+            if (!nbl.length) continue;
+            const refPh  = normalizePy(ph.Phoneme || '');
+
+            // 检查翘舌 ↔ 平舌混淆
+            if (RETRO_INITS.includes(wInit) && RETRO_INITS.includes(refPh)) {
+              const flatAlt = nbl.slice(0, 3).find(n => {
+                const p = normalizePy(n.Phoneme || '');
+                return FLAT_INITS.includes(p) && (n.Score || 0) >= 0.15;
+              });
+              if (flatAlt) {
+                const altPh = normalizePy(flatAlt.Phoneme || '');
+                const conf  = Math.round((flatAlt.Score || 0) * 100);
+                cMsgs[i].push(`平翘舌混淆：应读翘舌【${wInit}】，检测到平舌音【${altPh}】倾向（置信${conf}%）`);
+                cLevel[i] = Math.max(cLevel[i], 1);
+                console.log(`[TierD] char="${ch}" refPh="${refPh}" flatAlt="${altPh}" score=${conf}%`);
+                break;
+              }
+            }
+
+            // 检查前后鼻音混淆（-n vs -ng）
+            const nasal_n  = ['n', 'an', 'en', 'in', 'un', 'ün', 'ian', 'uan'];
+            const nasal_ng = ['ng', 'ang', 'eng', 'ing', 'ong', 'iong', 'uang', 'iang'];
+            if (nasal_n.some(f => wFinal === f) || nasal_ng.some(f => wFinal === f)) {
+              const wIsBack = nasal_ng.some(f => wFinal === f);
+              const oppArr  = wIsBack ? nasal_n : nasal_ng;
+              const oppAlt  = nbl.slice(0, 3).find(n => {
+                const p = normalizePy(n.Phoneme || '');
+                return oppArr.some(f => p === f || p.endsWith(f)) && (n.Score || 0) >= 0.15;
+              });
+              if (oppAlt) {
+                const altPh = normalizePy(oppAlt.Phoneme || '');
+                const conf  = Math.round((oppAlt.Score || 0) * 100);
+                cMsgs[i].push(`前后鼻音混淆：应读【${wFinal}】（${wIsBack?'后鼻-ng':'前鼻-n'}），检测到【${altPh}】倾向（置信${conf}%）`);
+                cLevel[i] = Math.max(cLevel[i], 1);
+                console.log(`[TierD] char="${ch}" nasal wFinal="${wFinal}" altPh="${altPh}" score=${conf}%`);
+                break;
+              }
+            }
+          }
+        }
+
         // 方案C：低准确度时，用 Gemini 的期望拼音做规则推断
         // （当 Azure 无法提供 NBest 时的保底诊断）
-        if (wantPy && (charAcc < 90 || errType === 'Mispronunciation')) {
+        // 对翘舌音字放宽阈值到 95，提高漏报灵敏度
+        const isRetroflex = ['zh','ch','sh','r'].includes(getInitial(wantPy));
+        if (wantPy && (charAcc < (isRetroflex ? 95 : 90) || errType === 'Mispronunciation')) {
           if (userSyllable) {
             // 有用户实际音节 → 精准比对
             const errs = diagnoseError(wantPy, userSyllable);
@@ -780,7 +852,7 @@ module.exports = async function handler(req, res) {
       getPinyinMapSafe(refText),
       azureFreeStt(audioBase64)
     ]);
-    console.log('[handler] FreeStt结果:', sttText || '（空）');
+    console.log('[handler] FreeStt候选:', Array.isArray(sttText) ? sttText : (sttText || '（空）'));
 
     const result = await parseAzureResult(azureResp, refText, pyMap, sttText);
 
@@ -798,7 +870,7 @@ module.exports = async function handler(req, res) {
       completenessScore: result.completenessScore,
       fluencyScore:      result.fluencyScore,
       pyMap,
-      freeSttText:  sttText || null,
+      freeSttAlts:  Array.isArray(sttText) ? sttText : (sttText ? [sttText] : null),
       geminiError: claudeErr || null,
       'Words[0]_full':           w0 || null,
       'Words[0].Phonemes_full':  w0 ? w0.Phonemes  : null,
