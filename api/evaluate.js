@@ -860,33 +860,75 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
                 cLevel[i] = 1;
             });
           } else {
-            // 无 NBest / STT 误读证据时的提示
+            // 无 NBest / STT 误读证据时 → 用每个音素准确度推断最弱分量
             if (wantTone === 0 && charAcc < 55) {
               cMsgs[i].push('轻声字：读得过重，应短促轻读');
               if (cLevel[i] === 0) cLevel[i] = 1;
             }
-            // 根据期望拼音特征给针对性提示（无论 errType，只要 cLevel >= 1）
-            // 去掉 errType === 'Mispronunciation' 限制：Azure 报 None + 低分时同样需要诊断
-            // （STT 已经处理过的不再重复）
             if (wantPy && cLevel[i] >= 1 && !sttMis) {
               const wInit  = getInitial(wantPy);
               const wFinal = getFinal(wantPy);
-              const RETROFLEX_SET = ['zh', 'ch', 'sh', 'r'];
-              const SIBILANT_SET  = ['z', 'c', 's'];
+              const RETROFLEX_SET = ['zh','ch','sh','r'];
+              const SIBILANT_SET  = ['z','c','s'];
+              const NASAL_N_SET   = ['n','an','en','in','un','ün','ian','uan'];
+              const NASAL_NG_SET  = ['ng','ang','eng','ing','ong','iong','uang','iang'];
+              const KNOWN_INITS   = ['b','p','m','f','d','t','n','l','g','k','h',
+                                     'j','q','x','zh','ch','sh','r','z','c','s','y','w'];
               const alreadyHasRetro = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
               const alreadyHasNasal = cMsgs[i].some(m => m.includes('鼻音'));
-              if (!alreadyHasRetro) {
+              const alreadyHasTone  = cMsgs[i].some(m => m.includes('声调'));
+              const alreadyHasInit  = cMsgs[i].some(m => m.includes('声母') || m.includes('翘舌') || m.includes('平舌'));
+              const alreadyHasFinal = cMsgs[i].some(m => m.includes('韵母') || m.includes('鼻音'));
+
+              // 找初声音素（Phoneme 名称为已知声母）与韵母音素
+              const initPh   = effectivePhonemes.find(p => KNOWN_INITS.includes(normalizePy(p.Phoneme || '')));
+              const finalPhs = effectivePhonemes.filter(p => p !== initPh);
+              const initAcc2  = initPh   ? subAcc(initPh)                              : 999;
+              const finalAcc2 = finalPhs.length ? Math.min(...finalPhs.map(p => subAcc(p))) : 999;
+
+              // 初声明显偏弱（< 65，且低于韵母 ≥10 分）→ 初声错误
+              if (!alreadyHasInit && initAcc2 < 65 && initAcc2 <= finalAcc2 - 10) {
                 if (RETROFLEX_SET.includes(wInit)) {
-                  cMsgs[i].push(`注意翘舌音声母【${wInit}】：舌尖上翘，不要读成平舌`);
+                  cMsgs[i].push(`声母【${wInit}】发音不准（翘舌音）`);
                 } else if (SIBILANT_SET.includes(wInit)) {
-                  cMsgs[i].push(`注意平舌音声母【${wInit}】：舌尖平放，不要读成翘舌`);
+                  cMsgs[i].push(`声母【${wInit}】发音不准（平舌音）`);
+                } else if (wInit) {
+                  cMsgs[i].push(`声母【${wInit}】发音不准`);
                 }
               }
-              if (!alreadyHasNasal) {
-                if (wFinal.endsWith('ng')) {
-                  cMsgs[i].push(`注意后鼻音韵母【${wFinal}】：收尾 -ng（舌根抬起）`);
-                } else if (wFinal.endsWith('n') && wFinal !== 'ng') {
-                  cMsgs[i].push(`注意前鼻音韵母【${wFinal}】：收尾 -n（舌尖抵上齿）`);
+              // 韵母明显偏弱（< 65，且低于声母 ≥10 分）→ 韵母/鼻音错误
+              else if (!alreadyHasFinal && finalAcc2 < 65 && finalAcc2 <= initAcc2 - 10) {
+                if (NASAL_N_SET.includes(wFinal)) {
+                  cMsgs[i].push(`韵母【${wFinal}】不准：前鼻音，收尾 -n`);
+                } else if (NASAL_NG_SET.includes(wFinal)) {
+                  cMsgs[i].push(`韵母【${wFinal}】不准：后鼻音，收尾 -ng`);
+                } else if (wFinal) {
+                  cMsgs[i].push(`韵母【${wFinal}】发音不准`);
+                }
+              }
+              // 无法区分哪个音素最弱 → 根据期望拼音特征给提示
+              else {
+                if (!alreadyHasRetro) {
+                  if (RETROFLEX_SET.includes(wInit)) {
+                    cMsgs[i].push(`注意翘舌音声母【${wInit}】`);
+                  } else if (SIBILANT_SET.includes(wInit)) {
+                    cMsgs[i].push(`注意平舌音声母【${wInit}】`);
+                  }
+                }
+                if (!alreadyHasNasal) {
+                  if (NASAL_NG_SET.includes(wFinal)) {
+                    cMsgs[i].push(`注意后鼻音韵母【${wFinal}】：收尾 -ng`);
+                  } else if (NASAL_N_SET.includes(wFinal)) {
+                    cMsgs[i].push(`注意前鼻音韵母【${wFinal}】：收尾 -n`);
+                  }
+                }
+                // 若两者都没有特殊特征，推断为声调问题
+                if (!alreadyHasTone && !alreadyHasRetro && !alreadyHasNasal
+                    && !RETROFLEX_SET.includes(wInit) && !SIBILANT_SET.includes(wInit)
+                    && !NASAL_N_SET.includes(wFinal) && !NASAL_NG_SET.includes(wFinal)
+                    && wantTone > 0 && wantTone < 5) {
+                  const TONE_DESC = ['','高平','上升','低降升','下降'];
+                  cMsgs[i].push(`声调偏差：应第${wantTone}声（${TONE_DESC[wantTone]}）`);
                 }
               }
             }

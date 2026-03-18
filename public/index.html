@@ -4139,6 +4139,25 @@
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.add('show');
       plpSetPauseBtn('play'); // 等待用户点击，不自动播放
+
+      // 预加载前3句TTS，消除首次点击播放的2-3秒延迟
+      // 在页面显示后立即发起请求，用户有时间看到界面时音频已缓存完毕
+      var preloadCount = Math.min(3, plpSeq.length);
+      for (var _pi = 0; _pi < preloadCount; _pi++) {
+        (function(item) {
+          var role = item.role === 'learner' ? 'learner' : 'local';
+          var key  = role + ':1.00:' + item.zh;
+          if (_ttsCache[key]) return; // 已缓存，跳过
+          fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: item.zh, role: role, rate: 1.0 })
+          })
+          .then(function(r) { return r.ok ? r.blob() : null; })
+          .then(function(blob) { if (blob) _ttsCache[key] = URL.createObjectURL(blob); })
+          .catch(function() {});
+        })(plpSeq[_pi]);
+      }
     }
 
     function plpPauseResume() {
