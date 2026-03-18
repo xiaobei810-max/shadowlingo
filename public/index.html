@@ -2684,11 +2684,12 @@
 
         // 5. 声学错误计入扣分（Azure 无法识别平翘舌，需手动补偿）
         // 每个声学错误按置信度扣 2–4 分，最多扣 15 分
-        var acousticPenalty = allCorrect ? 0 : Math.min(15,
+        // ⚠️ 不依赖 allCorrect：即使 Azure 满分，声学检测到错误也要扣分
+        var acousticPenalty = acousticErrors.length > 0 ? Math.min(15,
           acousticErrors.reduce(function(s, e) {
             return s + Math.round(2 + e.confidence * 2);  // conf 0.4→3pts, 1.0→4pts
           }, 0)
-        );
+        ) : 0;
         var displayScore = Math.max(0, baseScore - acousticPenalty);
         sessionScores.push(displayScore);
         incPracticeCount(lessonIdx, idx);
