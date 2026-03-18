@@ -343,8 +343,26 @@ async function parseAzureResult(resp, refText, pyMap) {
 
   const wordResults = [];
 
-  // Azure 对部分字识别偏严，用宽松阈值避免误报
-  const WEAK_CHARS = new Set(['松','文','中','说','人','好','首','先','会','着','了','的','地','得','就','还']);
+  // Azure 对以下字在连读时识别偏严，用更宽松阈值避免误报
+  // 覆盖：助词/虚词、高频字、声学上容易受协同发音影响的字
+  const WEAK_CHARS = new Set([
+    // 助词/语气词
+    '的','地','得','了','着','过','吗','呢','吧','啊','呀','嘛','么','哦','嗯',
+    // 高频但 Azure 评分偏严的实词
+    '松','文','说','人','好','首','先','会','就','还','中','来','去','在','有','没',
+    // 常见翘舌音字（Azure 对 zh/ch/sh/r 整体偏严）
+    '知','只','之','止','直','支','志','者','这','那','她','事','是','市','时',
+    '车','出','处','吃','成','城','程','称','场','长','上','身','生','声','什','使',
+    '说','双','书','收','手','水','谁','所','少','社','深','三','色','思','四',
+    '着','真','找','者','这','中','种','重','主','住','字','自','坐','做','走',
+    '扰','热','人','日','然','让','认','如','入','若',
+    // 常见平舌音字（Azure 有时对 z/c/s 过严）
+    '才','从','此','草','错','词','次','曹','操',
+    // 容易受 r-ending（儿化）影响的前置字
+    '哪','那','这','哪','一',
+    // 连读中容易弱化的字
+    '请','问','去','区','打','你','下','市',
+  ]);
 
   for (const w of (nbest.Words || [])) {
     const text      = w.Word || '';
@@ -366,10 +384,14 @@ async function parseAzureResult(resp, refText, pyMap) {
     const levelOf = (acc, err, ch) => {
       if (err === 'Omission') return 2;
       const isWeak = WEAK_CHARS.has(ch);
-      const redThr  = isWeak ? 40 : 50;
-      const yellThr = isWeak ? 60 : 80;
+      // 宽松策略：只有 Azure 明确报 Mispronunciation 或分数很低时才标错
+      // 单纯低分（70-79）不代表发音有误，Azure 对连读整体偏严
+      const redThr  = isWeak ? 32 : 42;   // 大幅降低红色阈值
+      const yellThr = isWeak ? 55 : 65;   // 大幅降低黄色阈值（原来 60/80）
       if (acc < redThr)  return 2;
-      if (err === 'Mispronunciation' || acc < yellThr) return 1;
+      // Mispronunciation 需要分数也较低才置信（避免误报）
+      if (err === 'Mispronunciation' && acc < 75) return 1;
+      if (acc < yellThr) return 1;
       return 0;
     };
 
@@ -441,45 +463,25 @@ async function parseAzureResult(resp, refText, pyMap) {
                 cLevel[i] = 1;
             });
           } else {
-            // 无 NBest → 基于 Gemini 期望拼音做规则提示
-            const azureRefPy = phFallback ? normalizePy(phFallback.Phoneme) : '';
-            if (azureRefPy && azureRefPy !== wantPy) {
-              // Azure 和 Gemini 对该字的拼音认知不同 → 取 Gemini 为准
-              const errs = diagnoseError(wantPy, azureRefPy);
-              errs.forEach(e => cMsgs[i].push(e.msg));
-            } else if (wantTone === 0) {
-              // 轻声字准确度低
-              if (charAcc < 70) {
-                cMsgs[i].push('轻声字：读得过重，应短促轻读');
-                if (cLevel[i] === 0) cLevel[i] = 1;
-              }
-            } else {
-              // 无法确定具体错在哪 → 给出期望拼音供参考
-              const wantInit  = getInitial(wantPy);
-              const wantFinal = getFinal(wantPy);
-              // 启发式：告知声母类型
-              if (['zh','ch','sh','r'].includes(wantInit))
-                cMsgs[i].push(`注意翘舌音声母【${wantInit}】`);
-              else if (['z','c','s'].includes(wantInit))
-                cMsgs[i].push(`注意平舌音声母【${wantInit}】`);
-              if (wantFinal.endsWith('ng'))
-                cMsgs[i].push(`注意后鼻音韵母【${wantFinal}】`);
-              else if (wantFinal.endsWith('n') && !wantFinal.endsWith('ng'))
-                cMsgs[i].push(`注意前鼻音韵母【${wantFinal}】`);
+            // 无 NBest → 无法确定具体错误，仅对轻声做特殊处理
+            // ⚠️ 不添加推测性提示（如"注意翘舌音"）——没有证据就不报错
+            if (wantTone === 0 && charAcc < 55) {
+              cMsgs[i].push('轻声字：读得过重，应短促轻读');
+              if (cLevel[i] === 0) cLevel[i] = 1;
             }
           }
         }
 
-        // ── 单独声调检查（即使准确度尚可，声调偏差也要提示）──
-        // 只用 Gemini 的期望声调 vs Azure 识别到的声调
-        if (wantPy && wantTone !== 0 && phFallback) {
-          // Azure 有时把声调编码在 final phoneme 里
-          const phTone = getTone(normalizePy(phFallback.Phoneme));
-          if (phTone && phTone !== wantTone && charAcc < 92) {
+        // ── 声调检查：仅在有 NBest 证据时才比对 ──────────────
+        // ph.Phoneme 是 Azure 的音素标识符，不适合直接提取声调
+        // 只用 NBest 中的声调信息（如果 NBest 中的音节包含声调数字）
+        if (wantPy && wantTone !== 0 && userSyllable) {
+          const userTone = getTone(normalizePy(userSyllable));
+          if (userTone && userTone !== wantTone) {
             const TONE_NAMES = ['','第1声（ā）','第2声（á）','第3声（ǎ）','第4声（à）'];
             const alreadyHasToneMsg = cMsgs[i].some(m => m.includes('声调'));
             if (!alreadyHasToneMsg) {
-              cMsgs[i].push(`声调偏差：应${TONE_NAMES[wantTone]||'第'+wantTone+'声'}，识别${TONE_NAMES[phTone]||'第'+phTone+'声'}`);
+              cMsgs[i].push(`声调偏差：应${TONE_NAMES[wantTone]||'第'+wantTone+'声'}，识别${TONE_NAMES[userTone]||'第'+userTone+'声'}`);
               if (cLevel[i] === 0) cLevel[i] = 1;
             }
           }

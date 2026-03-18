@@ -2044,18 +2044,16 @@
         if (p.indexOf('漏读') >= 0) { pairs.push({ cat: '', zh: '漏读音节', en: 'missed syllable' }); return; }
         if (p.indexOf('多读') >= 0) { pairs.push({ cat: '', zh: '多读音节', en: 'extra syllable' }); return; }
 
-        // ── 发音有误 / 准确度低（兜底，尝试从 chars 推断）──
+        // ── 发音有误 / 准确度低（兜底，仅提供正确读音供参考）──
+        // ⚠️ 不再根据声母类型推测错误类型，避免假阳性
         if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0 || p.indexOf('发音需改进') >= 0) {
           if (entry && entry.p) {
             var py = toToneMark(entry.p);
-            var initRaw = (entry.p||'').toLowerCase().replace(/\d/g,'').trim();
             if (entry.expectedTone === 0 || entry.tone === 0) {
               pairs.push({ cat: 'NEUTRAL', zh: '轻声字，读短读轻（正确：' + py + '）', en: 'neutral tone – short and light (correct: '+py+')' });
               tipCats.push('NEUTRAL');
-            } else if (/^(zh|ch|sh|r)/.test(initRaw)) {
-              pairs.push({ cat: 'RETROFLEX', zh: '注意翘舌声母，正确读音：' + py, en: 'check retroflex initial (correct: '+py+')' });
-              tipCats.push('RETROFLEX');
             } else {
+              // 只告知正确读音，不推测错在哪里
               pairs.push({ cat: '', zh: (p.indexOf('需改进')>=0?'发音需加强':'发音有误') + '（正确：' + py + '）', en: (p.indexOf('需改进')>=0?'needs improvement':'mispronounced') + ' (correct: '+py+')' });
             }
           } else {
