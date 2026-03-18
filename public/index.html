@@ -1878,114 +1878,221 @@
       return null;
     }
 
+    // ── 教学提示库：针对每类错误给出学习建议 ───────────────────────
+    var TIPS = {
+      RETROFLEX: {
+        zh: '💡 翘舌音：舌尖向上卷，轻触上颚前部发声。zh/ch/sh/r 均需卷舌，z/c/s 则舌尖平放。',
+        en: '💡 Retroflex: curl your tongue tip upward to touch the front of the palate. zh/ch/sh/r need curl; z/c/s keep tongue flat.'
+      },
+      NASAL_FRONT: {
+        zh: '💡 前鼻音（-n）：发音结束时舌尖抵住上齿背，气流从鼻腔通过，收音短促。',
+        en: '💡 Front nasal (-n): end with tongue tip pressing behind upper teeth, airflow through nose, keep it short.'
+      },
+      NASAL_BACK: {
+        zh: '💡 后鼻音（-ng）：发音结束时舌根抬起抵住软腭，形成鼻腔共鸣，收音较长。',
+        en: '💡 Back nasal (-ng): end with tongue root raised to soft palate, nasal resonance, slightly longer ending.'
+      },
+      TONE1: {
+        zh: '💡 第1声（ā）：高而平，像唱歌的高音，保持稳定不变化。',
+        en: '💡 Tone 1 (ā): high and flat, like a sustained high note in singing.'
+      },
+      TONE2: {
+        zh: '💡 第2声（á）：从中音上升到高音，像问"嗯？"时的语调。',
+        en: '💡 Tone 2 (á): rise from mid to high, like saying "huh?" in surprise.'
+      },
+      TONE3: {
+        zh: '💡 第3声（ǎ）：先降后升，声音先低后高，注意三声相邻时前一个变二声。',
+        en: '💡 Tone 3 (ǎ): dip then rise. Note: two 3rd tones together → first becomes 2nd tone.'
+      },
+      TONE4: {
+        zh: '💡 第4声（à）：从高音急速下降，像命令"Stop！"时的语气。',
+        en: '💡 Tone 4 (à): sharply falling from high to low, like a firm command.'
+      },
+      NEUTRAL: {
+        zh: '💡 轻声：短而轻，几乎没有声调，紧跟前一个字，不要单独加重音。',
+        en: '💡 Neutral tone: short and unstressed, attached closely to the preceding syllable, no emphasis.'
+      },
+      ERHUA: {
+        zh: '💡 儿化音：在韵母后加卷舌动作，舌尖向上卷，"儿"字不单独发音，融入前一个音节。',
+        en: '💡 Erhua (r-coloring): curl tongue after vowel. The "r" merges with the preceding syllable, not pronounced separately.'
+      },
+      INITIAL: {
+        zh: '💡 声母：注意发音部位，唇音(b/p/m/f)、舌尖音(d/t/n/l)、舌根音(g/k/h)各有不同。',
+        en: '💡 Initial consonant: check articulation position — bilabial (b/p/m/f), alveolar (d/t/n/l), velar (g/k/h).'
+      },
+      VOWEL: {
+        zh: '💡 韵母：注意口型和舌位，韵母决定音节的"色彩"，发音要充分。',
+        en: '💡 Vowel: check mouth shape and tongue position; vowels give the syllable its "color".'
+      }
+    };
+
     function buildHintLine(w, isRed, sandhiQueue) {
       var parts = (w.perrMsg || '').split('；').map(function (p) {
         return p.replace(/（\d+分）/g, '').trim();
       }).filter(Boolean);
 
-      var pairs = []; // { zh, en }
+      var pairs   = [];  // { zh, en, cat }
+      var tipCats = [];  // 本字涉及的错误类别，用于最后附上教学提示
+
+      // 获取该字的正确拼音（来自 sandhiQueue）
+      var entry   = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0];
+      var correctPy = entry ? toToneMark(entry.p) : '';
+
       parts.forEach(function (p) {
-        var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/);
-        if (ri) {
-          var should = ri[1], got = ri[2];
-          var retroflex = ['zh', 'ch', 'sh', 'r'];
-          var sibilant  = ['z',  'c',  's'];
-          if ((retroflex.indexOf(should) >= 0 && sibilant.indexOf(got) >= 0) ||
-              (sibilant.indexOf(should) >= 0 && retroflex.indexOf(got) >= 0)) {
-            pairs.push({ zh: '平翘舌音：你读成了 ' + got + '，应读 ' + should, en: 'retroflex: you said "' + got + '", should be "' + should + '"' });
-          } else {
-            pairs.push({ zh: '声母错误：你读成了 ' + got + '，应读 ' + should, en: 'initial consonant: you said "' + got + '", should be "' + should + '"' });
-          }
+
+        // ── 后端新格式：平翘舌 ───────────────────────────────
+        var retroM = p.match(/平翘舌[：:].+?应读【(.+?)】.+?【(.+?)】/);
+        if (!retroM) retroM = p.match(/平翘舌[：:](.+)/);  // fallback
+        if (retroM) {
+          pairs.push({
+            cat: 'RETROFLEX',
+            zh: '平翘舌错误：' + p.replace(/平翘舌[：:]/,''),
+            en: p.replace(/平翘舌[：:]/,'').replace('应读','should be').replace('你读成了','you said').replace(/【/g,'"').replace(/】/g,'"')
+          });
+          tipCats.push('RETROFLEX');
           return;
         }
 
+        // ── 后端新格式：前后鼻音 ─────────────────────────────
+        var nasalM = p.match(/前后鼻音[：:].+?应读【(.+?)】.+?【(.+?)】/);
+        if (nasalM) {
+          var isFront = nasalM[1].endsWith('n') && !nasalM[1].endsWith('ng');
+          pairs.push({
+            cat: isFront ? 'NASAL_FRONT' : 'NASAL_BACK',
+            zh: p,
+            en: p.replace('前后鼻音：','nasal ending: ').replace('前鼻音-n结尾','front nasal -n').replace('后鼻音-ng结尾','back nasal -ng').replace('应读','should be').replace('你读成了','you said').replace(/【/g,'"').replace(/】/g,'"')
+          });
+          tipCats.push(isFront ? 'NASAL_FRONT' : 'NASAL_BACK');
+          return;
+        }
+
+        // ── 声母错误（旧格式兼容）────────────────────────────
+        var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/) || p.match(/声母[错混淆]+[：:].+?【(.+?)】.+?【(.+?)】/);
+        if (ri) {
+          var should = ri[1], got = ri[2];
+          var retroflex = ['zh','ch','sh','r'], sibilant = ['z','c','s'];
+          var cat = (retroflex.indexOf(should)>=0&&sibilant.indexOf(got)>=0)||(sibilant.indexOf(should)>=0&&retroflex.indexOf(got)>=0)
+            ? 'RETROFLEX' : 'INITIAL';
+          pairs.push({ cat: cat, zh: p, en: 'initial: should be "'+should+'", you said "'+got+'"' });
+          tipCats.push(cat);
+          return;
+        }
+
+        // ── 韵母错误（旧格式兼容）────────────────────────────
         var rf = p.match(/韵母错误：应【(.+?)】实【(.+?)】/);
         if (rf) {
           var should = rf[1], got = rf[2];
-          var nasalPairs = [['an','ang'],['en','eng'],['in','ing'],['ian','iang'],['uan','uang'],['n','ng']];
-          var isNasal = nasalPairs.some(function (pair) {
-            return (pair[0] === should && pair[1] === got) || (pair[1] === should && pair[0] === got);
-          });
-          if (isNasal) {
-            pairs.push({ zh: '前后鼻音：你读成了 ' + got + '，应读 ' + should, en: 'nasal ending: you said "' + got + '", should be "' + should + '"' });
-          } else {
-            pairs.push({ zh: '韵母错误：你读成了 ' + got + '，应读 ' + should, en: 'vowel sound: you said "' + got + '", should be "' + should + '"' });
-          }
+          var NASAL_P = [['an','ang'],['en','eng'],['in','ing'],['ian','iang'],['uan','uang'],['n','ng']];
+          var isNasal = NASAL_P.some(function(pair){return(pair[0]===should&&pair[1]===got)||(pair[1]===should&&pair[0]===got);});
+          var isFront = isNasal && should.endsWith('n') && !should.endsWith('ng');
+          var cat = isNasal ? (isFront ? 'NASAL_FRONT' : 'NASAL_BACK') : 'VOWEL';
+          pairs.push({ cat: cat, zh: (isNasal ? '前后鼻音' : '韵母') + '：应读【'+should+'】，读成了【'+got+'】', en: (isNasal?'nasal':'vowel')+': should be "'+should+'", you said "'+got+'"' });
+          tipCats.push(cat);
           return;
         }
 
-        var tm = p.match(/声调偏差：应第(\d)声/);
-        if (tm) {
-          var toneNames = ['', '第1声（ā 高平调）', '第2声（á 上升调）', '第3声（ǎ 低降升调）', '第4声（à 下降调）', '轻声'];
-          var toneNamesEn = ['', '1st tone (ā, high flat)', '2nd tone (á, rising)', '3rd tone (ǎ, dip-rise)', '4th tone (à, falling)', 'neutral tone'];
-          var iseTone = +tm[1];
-          // 用我们的 chars 数据（已含音变）校验 ISE 的声调判断
+        // ── 声调错误（新旧格式均支持）────────────────────────
+        var toneM = p.match(/声调[错误偏差]+[：:][^，,]+[第应](\d)声/) ||
+                    p.match(/声调[：:].*?应.*?第(\d)声/) ||
+                    p.match(/应.*?第(\d)声.*?读成.*?第(\d)声/);
+        var tmOld = p.match(/声调偏差：应第(\d)声/);
+        if (toneM || tmOld) {
+          var shouldTone = parseInt((toneM||tmOld)[1]);
+          // 用 sandhiQueue 校正（音变后的正确声调）
           var ourEntry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content].shift();
-          var ourTone = ourEntry ? ourEntry.expectedTone : 0;
-          // 若 ISE 判断的"应读声调"与我们的正确声调不符，以我们的数据为准
-          var n = (ourTone && ourTone !== iseTone) ? ourTone : iseTone;
-          pairs.push({ zh: '声调错误（应读' + (toneNames[n] || '第' + n + '声') + '）', en: 'wrong tone: should be ' + (toneNamesEn[n] || n + 'th tone') });
+          var ourTone  = ourEntry ? ourEntry.expectedTone : 0;
+          var n = (ourTone && ourTone !== shouldTone) ? ourTone : shouldTone;
+          var TONE_NAMES_ZH = ['','第1声（ā 高平）','第2声（á 上升）','第3声（ǎ 低降升）','第4声（à 下降）','轻声'];
+          var TONE_NAMES_EN = ['','tone 1 (ā, high flat)','tone 2 (á, rising)','tone 3 (ǎ, dip-rise)','tone 4 (à, falling)','neutral'];
+          var tipCat = n === 0 ? 'NEUTRAL' : 'TONE' + n;
+          pairs.push({ cat: tipCat, zh: '声调：应读' + (TONE_NAMES_ZH[n]||'第'+n+'声'), en: 'tone: should be ' + (TONE_NAMES_EN[n]||'tone '+n) });
+          tipCats.push(tipCat);
           return;
         }
 
-        if (p.indexOf('漏读') >= 0) { pairs.push({ zh: '漏读音节', en: 'missed syllable' }); return; }
-        if (p.indexOf('多读') >= 0) { pairs.push({ zh: '多读音节', en: 'extra syllable spoken' }); return; }
-        if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0) {
-          var entry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0];
+        // ── 变调说明 ──────────────────────────────────────────
+        if (p.indexOf('变调') >= 0 || p.indexOf('三声连读') >= 0 || p.indexOf('音变') >= 0) {
+          pairs.push({ cat: 'TONE3', zh: p, en: p.replace('变调','tone sandhi').replace('三声连读','two 3rd tones → first becomes 2nd') });
+          tipCats.push('TONE3');
+          return;
+        }
+
+        // ── 轻声 ─────────────────────────────────────────────
+        if (p.indexOf('轻声') >= 0) {
+          pairs.push({ cat: 'NEUTRAL', zh: p, en: p.replace('轻声字','neutral tone syllable').replace('读短读轻','say it short and unstressed').replace('读得过重','over-stressed') });
+          tipCats.push('NEUTRAL');
+          return;
+        }
+
+        // ── 儿化音 ───────────────────────────────────────────
+        if (p.indexOf('儿化') >= 0 || p.indexOf('卷舌色彩') >= 0) {
+          pairs.push({ cat: 'ERHUA', zh: p, en: 'erhua (r-coloring): ' + p.replace(/儿化音[：:]?/,'') });
+          tipCats.push('ERHUA');
+          return;
+        }
+
+        // ── 翘舌音提示（启发式）─────────────────────────────
+        if (p.indexOf('翘舌音') >= 0) {
+          pairs.push({ cat: 'RETROFLEX', zh: p, en: p.replace('注意翘舌音声母','check retroflex initial').replace(/【/g,'"').replace(/】/g,'"') });
+          tipCats.push('RETROFLEX');
+          return;
+        }
+        if (p.indexOf('前鼻音') >= 0) { pairs.push({ cat: 'NASAL_FRONT', zh: p, en: 'front nasal: '+p }); tipCats.push('NASAL_FRONT'); return; }
+        if (p.indexOf('后鼻音') >= 0) { pairs.push({ cat: 'NASAL_BACK',  zh: p, en: 'back nasal: '+p  }); tipCats.push('NASAL_BACK');  return; }
+
+        // ── 漏读 / 多读 ────────────────────────────────────
+        if (p.indexOf('漏读') >= 0) { pairs.push({ cat: '', zh: '漏读音节', en: 'missed syllable' }); return; }
+        if (p.indexOf('多读') >= 0) { pairs.push({ cat: '', zh: '多读音节', en: 'extra syllable' }); return; }
+
+        // ── 发音有误 / 准确度低（兜底，尝试从 chars 推断）──
+        if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0 || p.indexOf('发音需改进') >= 0) {
           if (entry && entry.p) {
             var py = toToneMark(entry.p);
-            var specific = _diagnoseMismatch(entry, w.syllSymbol);
-            if (specific) {
-              pairs.push(specific);
+            var initRaw = (entry.p||'').toLowerCase().replace(/\d/g,'').trim();
+            if (entry.expectedTone === 0 || entry.tone === 0) {
+              pairs.push({ cat: 'NEUTRAL', zh: '轻声字，读短读轻（正确：' + py + '）', en: 'neutral tone – short and light (correct: '+py+')' });
+              tipCats.push('NEUTRAL');
+            } else if (/^(zh|ch|sh|r)/.test(initRaw)) {
+              pairs.push({ cat: 'RETROFLEX', zh: '注意翘舌声母，正确读音：' + py, en: 'check retroflex initial (correct: '+py+')' });
+              tipCats.push('RETROFLEX');
             } else {
-              var initRaw = entry.p.toLowerCase().replace(/\d/g, '').trim();
-              if (entry.tone === 5) {
-                pairs.push({ zh: '轻声字读错（正确：' + py + '）', en: 'neutral tone error (correct: ' + py + ')' });
-              } else if (/^(zh|ch|sh|r)/.test(initRaw)) {
-                pairs.push({ zh: '发音有误，注意翘舌音（正确：' + py + '）', en: 'mispronounced: check retroflex (correct: ' + py + ')' });
-              } else {
-                pairs.push({ zh: '发音有误（正确读音：' + py + '）', en: 'mispronounced (correct: ' + py + ')' });
-              }
+              pairs.push({ cat: '', zh: (p.indexOf('需改进')>=0?'发音需加强':'发音有误') + '（正确：' + py + '）', en: (p.indexOf('需改进')>=0?'needs improvement':'mispronounced') + ' (correct: '+py+')' });
             }
           } else {
-            pairs.push({ zh: '发音有误', en: 'mispronounced' });
+            pairs.push({ cat: '', zh: p.indexOf('需改进')>=0?'发音需加强':'发音有误', en: p.indexOf('需改进')>=0?'needs improvement':'mispronounced' });
           }
           return;
         }
-        if (p.indexOf('发音需改进') >= 0) {
-          var entry = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0]; // peek
-          if (entry && entry.p) {
-            var py = toToneMark(entry.p);
-            var specific = _diagnoseMismatch(entry, w.syllSymbol);
-            if (specific) {
-              pairs.push(specific);
-            } else if (entry.tone === 5) {
-              pairs.push({ zh: '轻声字，读短读轻（' + py + '）', en: 'neutral tone: say "' + py + '" lightly and short' });
-            } else {
-              pairs.push({ zh: '发音需改进（目标读音：' + py + '）', en: 'needs improvement (aim for: ' + py + ')' });
-            }
-          } else {
-            pairs.push({ zh: '发音需改进', en: 'needs improvement' });
-          }
-          return;
-        }
+
+        // ── 其他原始消息直接输出 ─────────────────────────────
+        if (p) pairs.push({ cat: '', zh: p, en: p });
       });
 
       // 有具体问题时去掉泛化描述
       if (pairs.length > 1) {
-        var generic = ['mispronounced', 'needs improvement'];
-        var hasSpecific = pairs.some(function (p) { return generic.indexOf(p.en) < 0; });
-        if (hasSpecific) pairs = pairs.filter(function (p) { return generic.indexOf(p.en) < 0; });
+        var generic = new Set(['mispronounced','needs improvement']);
+        var hasSpecific = pairs.some(function (p) { return !generic.has(p.en) && p.en !== p.zh; });
+        if (hasSpecific) pairs = pairs.filter(function (p) { return !generic.has(p.en); });
       }
 
-      var zhDesc = pairs.map(function (p) { return p.zh; }).join('、') || (isRed ? '发音有误' : '发音需改进');
-      var enDesc = pairs.map(function (p) { return p.en; }).join(', ') || (isRed ? 'mispronounced' : 'needs improvement');
-      return (isRed ? '🔴' : '🟡') + ' "' + w.content + '" ' + zhDesc + '\n     ' + enDesc;
+      if (!pairs.length) {
+        pairs.push({ cat: '', zh: isRed?'发音有误':'发音需改进', en: isRed?'mispronounced':'needs improvement' });
+      }
+
+      var icon  = isRed ? '🔴' : '🟡';
+      var zhDesc = pairs.map(function (p) { return p.zh; }).join('；');
+      var enDesc = pairs.map(function (p) { return p.en; }).join('; ');
+
+      // 挑第一个有教学提示的类别附加提示
+      var tipKey = tipCats.find(function(c){ return TIPS[c]; });
+      var tipStr = tipKey ? ('\n     ' + TIPS[tipKey].zh + '\n     ' + TIPS[tipKey].en) : '';
+
+      return icon + ' "' + w.content + '" — ' + zhDesc + '\n     ' + enDesc + tipStr;
     }
 
-    // 发音提示：去重 + 每字一行 + 双语
+    // 发音提示：去重 + 每字一行 + 双语 + 分类教学
     function iseHintText(words, chars) {
-      var reds = words.filter(function (w) { return w.perrLevel === 2; });
+      var reds    = words.filter(function (w) { return w.perrLevel === 2; });
       var yellows = words.filter(function (w) { return w.perrLevel === 1; });
       if (!reds.length && !yellows.length)
         return '发音准确，继续保持！🎉\nPronunciation accurate — well done!';
