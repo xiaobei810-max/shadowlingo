@@ -1890,22 +1890,36 @@
       var tones = chars.map(function (c) {
         return { c: c.c, p: c.p, tone: parseInt((c.p || '').slice(-1)) || 0 };
       });
-      for (var i = 0; i < tones.length; i++) {
-        var cur = tones[i], nxt = tones[i + 1];
+
+      // 三声连读（分组变调）：在连续三声段中，将字按两字一组从左配对，
+      // 每组的第一个字变为2声，第二个字保持3声。
+      // 例：你(3)好(3)打(3)扰(3) → [你好][打扰] → 你(2)好(3)打(2)扰(3)
+      // 例：你(3)好(3)打(3) → [你好][打] → 你(2)好(3)打(3)
+      var i = 0;
+      while (i < tones.length) {
+        if (tones[i].tone === 3) {
+          var j = i;
+          while (j < tones.length && tones[j].tone === 3) j++;
+          // [i, j) 是连续三声段，对段内偶数步（0-indexed 内部偏移）且后面还有三声字的位置变调
+          for (var k = i; k < j - 1; k += 2) {
+            tones[k].sandhiTone = 2;
+          }
+          i = j;
+        } else {
+          i++;
+        }
+      }
+
+      // 一 / 不 音变
+      for (var i2 = 0; i2 < tones.length; i2++) {
+        var cur = tones[i2], nxt = tones[i2 + 1];
         var nxtTone = nxt ? nxt.tone : 0;
-        // 一 音变
         if (cur.c === '一' && cur.tone === 1) {
           cur.sandhiTone = (nxtTone === 4) ? 2 : (nxtTone >= 1 && nxtTone <= 3) ? 4 : 1;
         }
-        // 不 音变：不 + 4声 → 2声
         if (cur.c === '不' && cur.tone === 4 && nxtTone === 4) {
           cur.sandhiTone = 2;
         }
-        // 三声连读：3 + 3 → first becomes 2
-        if (cur.tone === 3 && nxtTone === 3) {
-          cur.sandhiTone = 2;
-        }
-        // 轻声字（的地得了着过们子头等）已在 chars 中标注 tone=5，无需额外处理
         cur.expectedTone = cur.sandhiTone || cur.tone;
       }
       return tones;
@@ -2618,10 +2632,7 @@
         // 全部正确时强制给满分
         var allCorrect = result.wordResults.length > 0 &&
           result.wordResults.every(function(w) { return w.perrLevel === 0; });
-        var displayScore = allCorrect ? 100 : result.totalScore;
-        sessionScores.push(displayScore);
-        incPracticeCount(lessonIdx, idx);
-        document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
+        var baseScore = allCorrect ? 100 : result.totalScore;
 
         // 4. 声学层平翘舌检测（本地 FFT，无需 API）
         var acousticErrors = [];
@@ -2637,6 +2648,18 @@
             console.warn('[Acoustic] 分析出错（不影响主流程）:', ae);
           }
         }
+
+        // 5. 声学错误计入扣分（Azure 无法识别平翘舌，需手动补偿）
+        // 每个声学错误按置信度扣 2–4 分，最多扣 15 分
+        var acousticPenalty = allCorrect ? 0 : Math.min(15,
+          acousticErrors.reduce(function(s, e) {
+            return s + Math.round(2 + e.confidence * 2);  // conf 0.4→3pts, 1.0→4pts
+          }, 0)
+        );
+        var displayScore = Math.max(0, baseScore - acousticPenalty);
+        sessionScores.push(displayScore);
+        incPracticeCount(lessonIdx, idx);
+        document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
 
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           iseHintText(result.wordResults, s.chars), s, null, recText,
@@ -3457,9 +3480,6 @@
 
         // Whisper 语音识别对比
         if (allDtErrors.length > 0) {
-          if (allHintItems.length > 0) {
-            html += '<div class="dt-section-sep">── 语音识别对比 ──</div>';
-          }
           html += allDtErrors.map(function (e) {
             var icon = e.type === 'tone_confusion'  ? '🔵'
                      : e.type === 'zh_z_confusion'  ? '🔴'
@@ -3478,9 +3498,6 @@
 
         // 声学频谱检测（句式格式）
         if (allAcoustic.length > 0) {
-          if (allHintItems.length > 0 || allDtErrors.length > 0) {
-            html += '<div class="dt-section-sep">── 声学频谱检测 ──</div>';
-          }
           allAcoustic.forEach(function (e) {
             var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
             html += '<div class="guide-row">'
