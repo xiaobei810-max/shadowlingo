@@ -3,6 +3,7 @@ const https = require('https');
 const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
 const GEMINI_KEY   = process.env.GEMINI_API_KEY;
+const OPENAI_KEY   = process.env.OPENAI_API_KEY; // 双轨 Whisper 检测（可选）
 
 // ── PCM → WAV（44 字节 RIFF 头）────────────────────────────────
 function pcmToWav(pcmBuf) {
@@ -119,6 +120,117 @@ function azureFreeStt(pcmBase64) {
       req.end();
     } catch(e) { resolve([]); }
   });
+}
+
+// ── OpenAI Whisper STT（双轨检测，裸声学识别）──────────────────────
+// 不带 prompt / referenceText，纯声学模型识别，不受语言模型上下文偏置
+// 用于检测 Azure 语境 ASR 会"自动纠正"的平翘舌误读
+// 需要环境变量 OPENAI_API_KEY；不存在或调用失败时静默跳过
+async function whisperStt(pcmBase64) {
+  if (!OPENAI_KEY) return '';
+  try {
+    const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
+
+    // 手工构造 multipart/form-data（无需第三方库）
+    const boundary = 'WBound' + Date.now().toString(36);
+    const textFields = [
+      { name: 'model',           value: 'whisper-1' },
+      { name: 'language',        value: 'zh'        },
+      { name: 'response_format', value: 'text'      },
+    ];
+    const textPart = textFields.map(f =>
+      `--${boundary}\r\nContent-Disposition: form-data; name="${f.name}"\r\n\r\n${f.value}\r\n`
+    ).join('');
+    const fileHeader =
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`;
+    const footer = `\r\n--${boundary}--\r\n`;
+
+    const bodyBuf = Buffer.concat([
+      Buffer.from(textPart + fileHeader),
+      wavBuf,
+      Buffer.from(footer)
+    ]);
+
+    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method:  'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_KEY}`,
+        'Content-Type':  `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': String(bodyBuf.length),
+      },
+      body: bodyBuf,
+    });
+
+    if (!resp.ok) {
+      console.error('[Whisper] HTTP错误:', resp.status, (await resp.text().catch(() => '')).slice(0, 200));
+      return '';
+    }
+    // response_format=text → 纯文本响应
+    const raw = await resp.text();
+    const cleaned = raw.trim().replace(/[，。！？,.!?\s]/g, '').replace(/[^\u4e00-\u9fa5]/g, '');
+    console.log('[Whisper] 识别结果:', cleaned);
+    return cleaned;
+  } catch(e) {
+    console.error('[Whisper] 调用失败:', e.message);
+    return '';
+  }
+}
+
+// ── 双轨平翘舌/鼻音检测：对比 Whisper 识别字 vs 参考文本 ────────────
+// 原理：Whisper 是裸声学模型，听到什么写什么；Azure 有语言模型会"纠正"。
+// 若 Whisper 将参考翘舌字识别为平舌字，高置信度认为用户确实读错了。
+// 返回: { whisperText, dualTrackErrors: [{position, targetChar, targetPy,
+//          whisperHeard, whisperPy, type, message, messageEn}] }
+function dualTrackAnalysis(refChars, whisperText, pyMap) {
+  if (!whisperText) return { whisperText: '', dualTrackErrors: [] };
+
+  const whisperChars = Array.from(whisperText.replace(/\s/g, ''));
+  if (!whisperChars.length) return { whisperText, dualTrackErrors: [] };
+
+  const RETRO    = ['zh', 'ch', 'sh', 'r'];
+  const FLAT     = ['z',  'c',  's' ];
+  const LATERAL  = ['l',  'n' ];   // 南方口音 r↔l/n 混淆
+
+  const errors = [];
+  const minLen = Math.min(refChars.length, whisperChars.length);
+
+  for (let i = 0; i < minLen; i++) {
+    const ref   = refChars[i];
+    const heard = whisperChars[i];
+    if (ref === heard) continue;
+
+    const refPy   = normalizePy(pyMap[ref]   || CHAR_PY[ref]   || '');
+    const heardPy = normalizePy(CHAR_PY[heard] || '');
+    if (!refPy) continue; // 参考字拼音未知，跳过
+
+    const refInit   = getInitial(refPy);
+    const heardInit = getInitial(heardPy || '');
+
+    let type = '', message = '', messageEn = '';
+
+    if (RETRO.includes(refInit) && (FLAT.includes(heardInit) || LATERAL.includes(heardInit))) {
+      type      = 'zh_z_confusion';
+      message   = `"${ref}"（${refPy}）应读翘舌【${refInit}】，Whisper听到了"${heard}"${heardPy ? '（'+heardPy+'）' : ''}——疑似翘舌→平舌`;
+      messageEn = `"${ref}" needs retroflex [${refInit}]; Whisper heard "${heard}" — likely retroflex→flat error`;
+    } else if (FLAT.includes(refInit) && RETRO.includes(heardInit)) {
+      type      = 'z_zh_confusion';
+      message   = `"${ref}"（${refPy}）应读平舌【${refInit}】，Whisper听到了"${heard}"${heardPy ? '（'+heardPy+'）' : ''}——疑似平舌→翘舌`;
+      messageEn = `"${ref}" needs flat [${refInit}]; Whisper heard "${heard}" — likely flat→retroflex error`;
+    } else {
+      type      = 'disagreement';
+      message   = `"${ref}"（${refPy}）Whisper听到了"${heard}"${heardPy ? '（'+heardPy+'）' : ''}——两轨识别不一致`;
+      messageEn = `"${ref}" (${refPy}): Whisper heard "${heard}" — recognition disagreement`;
+    }
+
+    errors.push({ position: i, targetChar: ref, targetPy: refPy,
+                  whisperHeard: heard, whisperPy: heardPy, type, message, messageEn });
+  }
+
+  if (errors.length)
+    console.log('[DualTrack] 检测到', errors.length, '个疑似错误:',
+      errors.map(e => `"${e.targetChar}"→"${e.whisperHeard}"(${e.type})`).join(', '));
+
+  return { whisperText, dualTrackErrors: errors };
 }
 
 // ── 内置常见汉字拼音表（用于 FreeStt 比对，覆盖主要平翘舌/前后鼻音混淆字）
@@ -847,14 +959,22 @@ module.exports = async function handler(req, res) {
     if (!audioBase64 || !refText)
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
 
-    const [azureResp, { map: pyMap, error: claudeErr }, sttText] = await Promise.all([
+    const [azureResp, { map: pyMap, error: claudeErr }, sttText, whisperText] = await Promise.all([
       azureAssess(audioBase64, refText),
       getPinyinMapSafe(refText),
-      azureFreeStt(audioBase64)
+      azureFreeStt(audioBase64),
+      whisperStt(audioBase64)   // 双轨 Whisper 识别（可选，无 KEY 时返回空字符串）
     ]);
     console.log('[handler] FreeStt候选:', Array.isArray(sttText) ? sttText : (sttText || '（空）'));
+    console.log('[handler] Whisper识别:', whisperText || '（空）');
 
     const result = await parseAzureResult(azureResp, refText, pyMap, sttText);
+
+    // ── 双轨分析 ─────────────────────────────────────────────────
+    const refClean = Array.from(refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
+    const dualTrack = dualTrackAnalysis(refClean, whisperText, pyMap);
+    result.dualTrackErrors = dualTrack.dualTrackErrors;
+    result.whisperText     = dualTrack.whisperText;
 
     // ── _debug ───────────────────────────────────────────────────
     const nbest0 = azureResp.NBest && azureResp.NBest[0];
@@ -871,6 +991,8 @@ module.exports = async function handler(req, res) {
       fluencyScore:      result.fluencyScore,
       pyMap,
       freeSttAlts:  Array.isArray(sttText) ? sttText : (sttText ? [sttText] : null),
+      whisperText:  whisperText || null,
+      dualTrackErrors: dualTrack.dualTrackErrors,
       geminiError: claudeErr || null,
       'Words[0]_full':           w0 || null,
       'Words[0].Phonemes_full':  w0 ? w0.Phonemes  : null,

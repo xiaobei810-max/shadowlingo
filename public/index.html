@@ -1042,6 +1042,55 @@
       white-space: pre-line;
     }
 
+    /* 双轨检测卡片 */
+    .eval-dualtrack-card {
+      background: rgba(251, 191, 36, 0.07);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      border-radius: 20px;
+      padding: 16px 20px;
+    }
+
+    .eval-dualtrack-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 10px;
+    }
+
+    .dt-error-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .dt-char {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f87171;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .dt-heard {
+      font-size: 18px;
+      color: #fbbf24;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .dt-arrow {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .dt-msg {
+      color: #94a3b8;
+      flex: 1;
+    }
+
     /* 底部导航 */
     .eval-nav {
       display: flex;
@@ -2410,6 +2459,7 @@
           document.getElementById("eval-score-card").style.display = "none";
           document.getElementById("eval-compare-card").style.display = "none";
           document.getElementById("eval-hint-card").style.display = "none";
+          document.getElementById("eval-dualtrack-card").style.display = "none";
           document.getElementById("eval-nav").style.display = "none";
           document.getElementById("eval-incomplete-msg").style.display = "block";
           busy = false;
@@ -2428,7 +2478,8 @@
         incPracticeCount(lessonIdx, idx);
         document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
-          iseHintText(result.wordResults, s.chars), s, null, recText);
+          iseHintText(result.wordResults, s.chars), s, null, recText,
+          result.dualTrackErrors || []);
       } catch (err) {
         console.error('评测失败:', err);
         sessionScores.push(0);
@@ -2956,6 +3007,7 @@
       document.getElementById("eval-error-notice").style.display = "none";
       document.getElementById("eval-incomplete-msg").style.display = "none";
       document.getElementById("eval-hint-card").style.display = "none";
+      document.getElementById("eval-dualtrack-card").style.display = "none";
       document.getElementById("eval-nav").style.display = "none";
       document.getElementById("eval-prev").disabled = false;
       var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
@@ -3168,7 +3220,7 @@
       gradeEl.classList.add('grade-slide-up');
     }
 
-    function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText) {
+    function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText, dualTrackErrors) {
       var color = score === 100 ? "#FFD700"
         : score >= 80 ? "#22c55e"
         : score >= 70 ? "#f97316"
@@ -3223,6 +3275,29 @@
         errEl.style.display = "block";
       } else {
         errEl.style.display = "none";
+      }
+
+      // 双轨检测卡片
+      var dtCard = document.getElementById("eval-dualtrack-card");
+      var dtBody = document.getElementById("eval-dualtrack-body");
+      if (dualTrackErrors && dualTrackErrors.length > 0) {
+        var dtHtml = dualTrackErrors.map(function(e) {
+          var icon = e.type === 'zh_z_confusion' ? '🔴'
+                   : e.type === 'z_zh_confusion' ? '🟠'
+                   : '🟡';
+          return '<div class="dt-error-row">'
+            + '<span class="dt-char">' + e.targetChar + '</span>'
+            + '<span class="dt-arrow">→</span>'
+            + '<span class="dt-heard">' + (e.whisperHeard || '?') + '</span>'
+            + '<span class="dt-arrow">' + icon + '</span>'
+            + '<span class="dt-msg">' + e.message + '</span>'
+            + '</div>';
+        }).join('');
+        dtBody.innerHTML = dtHtml;
+        dtCard.style.display = "";
+      } else {
+        dtBody.innerHTML = '';
+        dtCard.style.display = "none";
       }
     }
 
@@ -4359,6 +4434,12 @@
       <div class="eval-hint-card" id="eval-hint-card">
         <div class="eval-hint-title">💡 发音提示 Pronunciation Tips</div>
         <div class="eval-hint-text" id="eval-hint-text"></div>
+      </div>
+
+      <!-- 双轨声学检测 -->
+      <div class="eval-dualtrack-card" id="eval-dualtrack-card" style="display:none">
+        <div class="eval-dualtrack-title">🔬 声学双轨检测 Acoustic Dual-Track</div>
+        <div id="eval-dualtrack-body"></div>
       </div>
 
       <!-- 导航按钮 -->
