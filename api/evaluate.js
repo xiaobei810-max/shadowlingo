@@ -206,9 +206,21 @@ function dualTrackAnalysis(refChars, whisperText, pyMap) {
     const refInit   = getInitial(refPy);
     const heardInit = getInitial(heardPy || '');
 
+    // 声调比对：基础拼音相同（去声调数字后）但声调不同 → 声调错误
+    const refBase   = refPy.replace(/\d$/, '');
+    const heardBase = heardPy ? heardPy.replace(/\d$/, '') : '';
+    const refTone   = getTone(refPy);
+    const heardTone = heardPy ? getTone(heardPy) : 0;
+    const TONE_ZH   = ['','第1声（高平）','第2声（上升）','第3声（低降升）','第4声（下降）','轻声'];
+
     let type = '', message = '', messageEn = '';
 
-    if (RETRO.includes(refInit) && (FLAT.includes(heardInit) || LATERAL.includes(heardInit))) {
+    if (refBase && heardBase && refBase === heardBase && refTone > 0 && heardTone > 0 && refTone !== heardTone) {
+      // 同音异调：如 问(wèn/4) vs 文(wén/2)
+      type      = 'tone_confusion';
+      message   = `"${ref}"声调有误：应读${TONE_ZH[refTone]||'第'+refTone+'声'}（${ref} ${refPy}），Whisper听到${TONE_ZH[heardTone]||'第'+heardTone+'声'}（${heard} ${heardPy}）`;
+      messageEn = `"${ref}" tone error: should be tone ${refTone} (${refPy}), Whisper heard tone ${heardTone} ("${heard}" ${heardPy})`;
+    } else if (RETRO.includes(refInit) && (FLAT.includes(heardInit) || LATERAL.includes(heardInit))) {
       type      = 'zh_z_confusion';
       message   = `"${ref}"（${refPy}）应读翘舌【${refInit}】，Whisper听到了"${heard}"${heardPy ? '（'+heardPy+'）' : ''}——疑似翘舌→平舌`;
       messageEn = `"${ref}" needs retroflex [${refInit}]; Whisper heard "${heard}" — likely retroflex→flat error`;
@@ -329,6 +341,61 @@ const CHAR_PY = {
   '等':'deng3','能':'neng2','层':'ceng2','冷':'leng3',
   '轻':'qing1','请':'qing3','情':'qing2','青':'qing1','庆':'qing4',
   '英':'ying1','应':'ying4','影':'ying3','营':'ying2',
+
+  // ── 高频声调对（用于 Whisper 声调混淆检测）──────────────────────
+  // 声调1组
+  '妈':'ma1','巴':'ba1','花':'hua1','喝':'he1','喊':'han3',
+  '他':'ta1','她':'ta1','它':'ta1','家':'jia1','加':'jia1',
+  '天':'tian1','先':'xian1','边':'bian1','年':'nian2','前':'qian2',
+  '书':'shu1','需':'xu1','车':'che1','喝':'he1',
+  // 声调2组（上升）
+  '来':'lai2','才':'cai2','没':'mei2','还':'hai2','能':'neng2',
+  '人':'ren2','国':'guo2','合':'he2','和':'he2','何':'he2',
+  '时':'shi2','直':'zhi2','值':'zhi2','行':'xing2',
+  '学':'xue2','白':'bai2','同':'tong2','朋':'peng2','平':'ping2',
+  // 声调3组（低降升）
+  '我':'wo3','你':'ni3','好':'hao3','也':'ye3','可':'ke3',
+  '小':'xiao3','有':'you3','美':'mei3','所':'suo3','里':'li3',
+  '找':'zhao3','想':'xiang3','请':'qing3','买':'mai3','女':'nv3',
+  '走':'zou3','语':'yu3','比':'bi3','米':'mi3','体':'ti3',
+  // 声调4组（下降）
+  '是':'shi4','不':'bu4','对':'dui4','大':'da4','去':'qu4',
+  '要':'yao4','会':'hui4','做':'zuo4','看':'kan4','用':'yong4',
+  '到':'dao4','说':'shuo4','告':'gao4','但':'dan4','意':'yi4',
+  '问':'wen4','号':'hao4','电':'dian4','面':'mian4','汉':'han4',
+  '字':'zi4','站':'zhan4','上':'shang4','下':'xia4','外':'wai4',
+  '内':'nei4','右':'you4','后':'hou4','再':'zai4','又':'you4',
+  // 轻声
+  '吗':'ma0','呢':'ne0','吧':'ba0','啊':'a0','的':'de0','了':'le0',
+  '着':'zhe0','过':'guo0','们':'men0','子':'zi0','么':'me0',
+  // 更多同音异调对
+  '买':'mai3','卖':'mai4','迈':'mai4',
+  '买':'mai3','买':'mai3',
+  '大':'da4','打':'da3','达':'da2','搭':'da1',
+  '课':'ke4','科':'ke1','可':'ke3','刻':'ke4',
+  '号':'hao4','好':'hao3','毫':'hao2','蒿':'hao1',
+  '女':'nv3','旅':'lv3',
+  '图':'tu2','土':'tu3','兔':'tu4','突':'tu1',
+  '高':'gao1','搞':'gao3','告':'gao4','糕':'gao1',
+  '低':'di1','的':'di4','底':'di3','地':'di4',
+  '多':'duo1','躲':'duo3','朵':'duo3',
+  '国':'guo2','果':'guo3','过':'guo4','锅':'guo1',
+  '花':'hua1','化':'hua4','画':'hua4','话':'hua4','华':'hua2',
+  '就':'jiu4','九':'jiu3','久':'jiu3','救':'jiu4',
+  '快':'kuai4','块':'kuai4','筷':'kuai4',
+  '里':'li3','力':'li4','立':'li4','历':'li4','例':'li4','粒':'li4',
+  '面':'mian4','免':'mian3','棉':'mian2','绵':'mian2',
+  '年':'nian2','念':'nian4','鸟':'niao3',
+  '期':'qi1','起':'qi3','气':'qi4','去':'qu4','取':'qu3','区':'qu1',
+  '然':'ran2','让':'rang4','染':'ran3',
+  '特':'te4','疼':'teng2',
+  '位':'wei4','为':'wei4','围':'wei2','味':'wei4','微':'wei1',
+  '下':'xia4','夏':'xia4','吓':'xia4','虾':'xia1',
+  '样':'yang4','羊':'yang2','养':'yang3','洋':'yang2',
+  '意':'yi4','以':'yi3','已':'yi3','椅':'yi3','一':'yi1',
+  '用':'yong4','勇':'yong3','拥':'yong1','永':'yong3',
+  '在':'zai4','再':'zai4',
+  '早':'zao3','造':'zao4','好':'hao3',
 };
 
 // ── 利用 Free STT 多候选结果对比参考文本，检测字级替换错误 ────────

@@ -3287,13 +3287,16 @@
       var dtBody = document.getElementById("eval-dualtrack-body");
       if (dualTrackErrors && dualTrackErrors.length > 0) {
         var dtHtml = dualTrackErrors.map(function(e) {
-          var icon = e.type === 'zh_z_confusion' ? '🔴'
-                   : e.type === 'z_zh_confusion' ? '🟠'
+          var icon = e.type === 'tone_confusion'  ? '🔵'
+                   : e.type === 'zh_z_confusion'  ? '🔴'
+                   : e.type === 'z_zh_confusion'  ? '🟠'
                    : '🟡';
+          // 声调错误：消息中已包含两个字，不重复显示"→字"
+          var heardSpan = e.type === 'tone_confusion' ? ''
+            : '<span class="dt-arrow">→</span><span class="dt-heard">' + (e.whisperHeard || '?') + '</span>';
           return '<div class="dt-error-row">'
             + '<span class="dt-char">' + e.targetChar + '</span>'
-            + '<span class="dt-arrow">→</span>'
-            + '<span class="dt-heard">' + (e.whisperHeard || '?') + '</span>'
+            + heardSpan
             + '<span class="dt-arrow">' + icon + '</span>'
             + '<span class="dt-msg">' + e.message + '</span>'
             + '</div>';
