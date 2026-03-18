@@ -3492,26 +3492,16 @@
           mergedMap[char].entries.push({ icon: icon, zh: zh, en: en });
         }
 
-        // 判断 ISE 条目是否是泛化描述（无具体错误类型）
-        function isGeneric(zh) {
-          return /发音需加强|发音有误/.test(zh) &&
-                 !/声调|声母|韵母|变调|轻声|翘舌|平舌|鼻音/.test(zh);
-        }
-
-        // 收集声学检测涉及的字（用于去重泛化 ISE 条目）
-        var acousticChars = {};
-        allAcoustic.forEach(function (e) { acousticChars[e.char] = true; });
-
-        // 加入 ISE 条目（若该字已有声学检测且 ISE 是泛化描述则跳过）
-        allHintItems.forEach(function (item) {
-          if (acousticChars[item.char] && isGeneric(item.zh)) return;
-          addEntry(item.char, item.icon, item.zh, item.en);
-        });
-
-        // 加入声学条目（直接合并到同字条目）
+        // 声学条目优先：先加入声学检测结果
         allAcoustic.forEach(function (e) {
           var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
           addEntry(e.char, icon, e.zh, e.en, e.position);
+        });
+
+        // ISE 条目补充：仅对声学未覆盖的字加入（声学已有则跳过）
+        allHintItems.forEach(function (item) {
+          if (mergedMap[item.char]) return;  // 声学已覆盖此字，跳过
+          addEntry(item.char, item.icon, item.zh, item.en);
         });
 
         // ── 步骤3：按句中位置排序，渲染 ─────────────────────────
