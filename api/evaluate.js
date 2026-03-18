@@ -72,6 +72,173 @@ function azureAssess(pcmBase64, refText) {
   });
 }
 
+// ── Azure 无参考 Free STT（并行调用，获取用户实际读了什么）────────
+// 不带 Pronunciation-Assessment header，Azure 自由转写用户语音
+// 用于检测明显误读（如 sh→s：市读成四）
+function azureFreeStt(pcmBase64) {
+  return new Promise((resolve) => {
+    try {
+      const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
+      const options = {
+        hostname: `${AZURE_REGION}.stt.speech.microsoft.com`,
+        path:     '/speech/recognition/conversation/cognitiveservices/v1' +
+                  '?language=zh-CN&format=simple',
+        method:   'POST',
+        headers:  {
+          'Ocp-Apim-Subscription-Key': AZURE_KEY,
+          'Content-Type':  'audio/wav; codecs=audio/pcm; samplerate=16000',
+          'Content-Length': wavBuf.length
+        }
+      };
+      const req = https.request(options, (res) => {
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+            // DisplayText 是带标点的，去掉标点取纯汉字
+            const raw = (data.DisplayText || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '');
+            console.log('[FreeStt] 识别结果:', raw);
+            resolve(raw);
+          } catch(e) { resolve(''); }
+        });
+      });
+      req.on('error', () => resolve(''));
+      req.write(wavBuf);
+      req.end();
+    } catch(e) { resolve(''); }
+  });
+}
+
+// ── 内置常见汉字拼音表（用于 FreeStt 比对，覆盖主要平翘舌/前后鼻音混淆字）
+// 格式：汉字 → 拼音+声调数字（按最常用读音）
+const CHAR_PY = {
+  // ── 翘舌音字（zh/ch/sh/r）─────────────────────────────────────
+  // zh 组
+  '知':'zhi1','直':'zhi2','值':'zhi2','执':'zhi2','植':'zhi2','职':'zhi2',
+  '止':'zhi3','只':'zhi3','纸':'zhi3','指':'zhi3','至':'zhi4','志':'zhi4',
+  '智':'zhi4','制':'zhi4','治':'zhi4','致':'zhi4','质':'zhi4',
+  '中':'zhong1','忠':'zhong1','种':'zhong3','重':'zhong4','众':'zhong4',
+  '主':'zhu3','住':'zhu4','注':'zhu4','助':'zhu4','著':'zhu4','祝':'zhu4',
+  '猪':'zhu1','珠':'zhu1','诸':'zhu1','竹':'zhu2','煮':'zhu3','柱':'zhu4',
+  '这':'zhe4','者':'zhe3','着':'zhe0','折':'zhe2','遮':'zhe1',
+  '真':'zhen1','阵':'zhen4','珍':'zhen1','针':'zhen1','镇':'zhen4',
+  '争':'zheng1','整':'zheng3','正':'zheng4','政':'zheng4','证':'zheng4','郑':'zheng4',
+  '张':'zhang1','掌':'zhang3','章':'zhang1','丈':'zhang4','账':'zhang4',
+  '长':'zhang3','找':'zhao3','照':'zhao4','招':'zhao1','赵':'zhao4',
+  '展':'zhan3','站':'zhan4','战':'zhan4','沾':'zhan1',
+  '准':'zhun3','砖':'zhuan1','转':'zhuan3','抓':'zhua1',
+  // ch 组
+  '车':'che1','扯':'che3','彻':'che4',
+  '吃':'chi1','赤':'chi4','迟':'chi2','尺':'chi3','痴':'chi1',
+  '出':'chu1','处':'chu4','初':'chu1','触':'chu4','储':'chu3',
+  '城':'cheng2','成':'cheng2','程':'cheng2','称':'cheng1','诚':'cheng2','承':'cheng2',
+  '场':'chang3','长':'chang2','唱':'chang4','常':'chang2','尝':'chang2','昌':'chang1',
+  '超':'chao1','炒':'chao3','朝':'chao2','潮':'chao2',
+  '冲':'chong1','虫':'chong2','宠':'chong3',
+  '穿':'chuan1','传':'chuan2','船':'chuan2','串':'chuan4',
+  '春':'chun1','纯':'chun2','唇':'chun2',
+  '吹':'chui1','锤':'chui2',
+  // sh 组
+  '是':'shi4','事':'shi4','时':'shi2','市':'shi4','使':'shi3','世':'shi4',
+  '式':'shi4','实':'shi2','师':'shi1','史':'shi3','始':'shi3','室':'shi4',
+  '诗':'shi1','试':'shi4','识':'shi2','石':'shi2','食':'shi2',
+  '说':'shuo1','烁':'shuo4',
+  '手':'shou3','收':'shou1','受':'shou4','兽':'shou4','首':'shou3','守':'shou3',
+  '树':'shu4','书':'shu1','数':'shu3','输':'shu1','熟':'shu2','束':'shu4','属':'shu3',
+  '睡':'shui4','水':'shui3','谁':'shei2',
+  '什':'shen2','深':'shen1','身':'shen1','神':'shen2','审':'shen3',
+  '声':'sheng1','生':'sheng1','省':'sheng3','盛':'sheng4','升':'sheng1',
+  '上':'shang4','商':'shang1','赏':'shang3','伤':'shang1',
+  '少':'shao3','勺':'shao2','烧':'shao1','哨':'shao4',
+  '社':'she4','设':'she4','蛇':'she2','舌':'she2',
+  '山':'shan1','删':'shan1','善':'shan4','闪':'shan3','扇':'shan4',
+  // r 组
+  '人':'ren2','认':'ren4','任':'ren4','仁':'ren2',
+  '热':'re4','日':'ri4',
+  '如':'ru2','入':'ru4','软':'ruan3',
+  '然':'ran2','让':'rang4','绕':'rao4','扰':'rao3','肉':'rou4','若':'ruo4',
+  '荣':'rong2','融':'rong2','容':'rong2','绒':'rong2',
+  '揉':'rou2','柔':'rou2',
+  '染':'ran3','燃':'ran2',
+  // ── 平舌音字（z/c/s，用于检测翻转：读翘为平或读平为翘）────
+  // z 组
+  '资':'zi1','字':'zi4','自':'zi4','紫':'zi3','子':'zi3',
+  '走':'zou3','足':'zu2','组':'zu3','祖':'zu3','租':'zu1','阻':'zu3',
+  '做':'zuo4','坐':'zuo4','座':'zuo4','作':'zuo4','左':'zuo3','昨':'zuo2',
+  '再':'zai4','载':'zai4','在':'zai4','灾':'zai1',
+  '赞':'zan4','暂':'zan4','脏':'zang1','葬':'zang4',
+  // c 组
+  '菜':'cai4','采':'cai3','猜':'cai1','财':'cai2',
+  '草':'cao3','曹':'cao2','操':'cao1','糙':'cao1',
+  '层':'ceng2','曾':'ceng2',
+  '从':'cong2','丛':'cong2','匆':'cong1','聪':'cong1',
+  '此':'ci3','词':'ci2','次':'ci4','刺':'ci4','赐':'ci4','慈':'ci2',
+  '粗':'cu1','促':'cu4','醋':'cu4',
+  '存':'cun2','村':'cun1','寸':'cun4',
+  '错':'cuo4','磋':'cuo1',
+  // s 组
+  '四':'si4','死':'si3','撕':'si1','丝':'si1','私':'si1','寺':'si4','司':'si1',
+  '送':'song4','松':'song1','颂':'song4','宋':'song4',
+  '苏':'su1','速':'su4','素':'su4','俗':'su2','酸':'suan1',
+  '虽':'sui1','岁':'sui4','随':'sui2','隧':'sui4',
+  '三':'san1','散':'san4','桑':'sang1',
+  '色':'se4','涩':'se4','塞':'se1',
+  '森':'sen1',
+  '算':'suan4','酸':'suan1',
+  // ── 前后鼻音字（-n vs -ng 混淆）──────────────────────────────
+  // 前鼻音 -n
+  '安':'an1','暗':'an4','按':'an4','岸':'an3','案':'an4',
+  '恩':'en1','嗯':'en2',
+  '因':'yin1','音':'yin1','银':'yin2','饮':'yin3','印':'yin4',
+  '温':'wen1','文':'wen2','问':'wen4','稳':'wen3',
+  '民':'min2','敏':'min3','明':'ming2','命':'ming4',  // 注意 ming 是后鼻
+  '今':'jin1','近':'jin4','进':'jin4','金':'jin1','紧':'jin3',
+  '真':'zhen1','阵':'zhen4','陈':'chen2','神':'shen2','深':'shen1',
+  '宾':'bin1','品':'pin3','林':'lin2','心':'xin1','信':'xin4',
+  // 后鼻音 -ng
+  '昂':'ang2','帮':'bang1','房':'fang2','方':'fang1','香':'xiang1',
+  '明':'ming2','名':'ming2','命':'ming4',
+  '星':'xing1','行':'xing2','形':'xing2','性':'xing4','姓':'xing4',
+  '东':'dong1','风':'feng1','公':'gong1','工':'gong1','中':'zhong1',
+  '生':'sheng1','声':'sheng1','城':'cheng2','成':'cheng2',
+  '长':'chang2','常':'chang2','场':'chang3',
+  '等':'deng3','能':'neng2','层':'ceng2','冷':'leng3',
+  '轻':'qing1','请':'qing3','情':'qing2','青':'qing1','庆':'qing4',
+  '英':'ying1','应':'ying4','影':'ying3','营':'ying2',
+};
+
+// ── 利用 Free STT 结果对比参考文本，检测字级替换错误 ────────────
+// refChars: 参考文本的字数组（清理后）
+// sttText: free STT 识别到的文本
+// pyMap: Gemini 生成的参考文本拼音映射
+// 返回: Map<char_index, {expected, got, diagnose}>
+function detectSttMismatches(refChars, sttText, pyMap) {
+  const sttChars = Array.from(sttText.replace(/\s/g, ''));
+  const mismatches = new Map();
+  if (!sttChars.length) return mismatches;
+
+  // 简单对齐：按最长公共子序列找匹配（LCS 降级为逐字对齐）
+  // 对于短句子（<20字），逐字对齐足够
+  const minLen = Math.min(refChars.length, sttChars.length);
+  for (let i = 0; i < minLen; i++) {
+    const expected = refChars[i];
+    const got      = sttChars[i];
+    if (expected === got) continue;
+
+    // 获取参考字和识别字的拼音
+    const wantPy = normalizePy(pyMap[expected] || CHAR_PY[expected] || '');
+    const gotPy  = normalizePy(CHAR_PY[got] || '');
+    if (!wantPy) continue; // 无法比对
+
+    console.log(`[SttMatch] pos=${i} expected="${expected}"(${wantPy}) got="${got}"(${gotPy})`);
+
+    const diag = gotPy ? diagnoseError(wantPy, gotPy) : [];
+    mismatches.set(i, { expected, got, gotPy, diag });
+  }
+  return mismatches;
+}
+
 // ── Gemini 生成期望拼音（内存缓存，同句不重复调用）─────────────
 const pinyinCache = new Map();
 
@@ -319,7 +486,7 @@ function wordErr(w) { return (w.PronunciationAssessment || {}).ErrorType || w.Er
 function subAcc(p)  { return Math.round((p.PronunciationAssessment || {}).AccuracyScore ?? p.AccuracyScore ?? 0); }
 
 // ── 解析 Azure 响应 ──────────────────────────────────────────────
-async function parseAzureResult(resp, refText, pyMap) {
+async function parseAzureResult(resp, refText, pyMap, sttText) {
   console.log('[parse] RecognitionStatus:', resp.RecognitionStatus);
 
   const nbest = resp.NBest && resp.NBest[0];
@@ -342,6 +509,17 @@ async function parseAzureResult(resp, refText, pyMap) {
   console.log('[parse] pyMap:', JSON.stringify(pyMap));
 
   const wordResults = [];
+
+  // ── Free STT 预处理：对齐参考文本与 STT 结果 ─────────────────
+  const refClean  = Array.from(refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
+  const sttMismap = sttText ? detectSttMismatches(refClean, sttText, pyMap) : new Map();
+  if (sttMismap.size > 0) {
+    console.log('[SttMis] 发现', sttMismap.size, '个字级差异:', JSON.stringify([...sttMismap.entries()]));
+  }
+
+  // ── 建立字→STT 误读信息的映射（按字位置索引）──────────────────
+  // 字位置基于 refClean，与 Words 数组对齐
+  let refCharIdx = 0; // 追踪 refClean 的全局索引，用于匹配 sttMismap
 
   // Azure 对以下字在连读时识别偏严，用更宽松阈值避免误报
   // 覆盖：助词/虚词、高频字、声学上容易受协同发音影响的字
@@ -396,11 +574,24 @@ async function parseAzureResult(resp, refText, pyMap) {
     };
 
     charArr.forEach((ch, i) => {
+      // 当前字在 refClean 中的全局位置
+      const globalIdx = refCharIdx + i;
+
       // 优先用 Syllable（字级），再用 Phoneme（音素级）
       const syl = syllables.find(s => s.Grapheme === ch) || syllables[i] || null;
-      // 收集属于该字的所有音素（通过Grapheme字段）
-      const charPhonemes = phonemes.filter(p => p.Grapheme === ch);
-      const phFallback   = charPhonemes[0] || phonemes[i] || null;
+
+      // ⚠️ Bug fix: Azure 的 Phoneme 对象上通常没有 Grapheme 字段
+      // 对于单字词，所有音素都属于该字；对多字词，按位置分配
+      const charPhonemesByGrapheme = phonemes.filter(p => p.Grapheme === ch);
+      const effectivePhonemes = charPhonemesByGrapheme.length > 0
+        ? charPhonemesByGrapheme
+        : charArr.length === 1
+          ? phonemes   // 单字词：全部音素归该字
+          : (() => {   // 多字词：按音素数量均分
+              const ppc = Math.ceil(phonemes.length / charArr.length);
+              return phonemes.slice(i * ppc, (i + 1) * ppc);
+            })();
+      const phFallback = effectivePhonemes[0] || null;
 
       const charAcc = syl ? subAcc(syl) : (phFallback ? subAcc(phFallback) : accuracy);
       cLevel[i] = levelOf(charAcc, errType, ch);
@@ -423,14 +614,14 @@ async function parseAzureResult(resp, refText, pyMap) {
         // 方案A：从 NBestPhonemes 拼合用户实际音节
         // Azure 对中文可能一个字有多个音素（声母+韵母），也可能整字一个音素
         let userSyllable = null;
-        if (charPhonemes.length > 0) {
+        if (effectivePhonemes.length > 0) {
           // 尝试从每个音素的 NBest 拼出用户音节
-          const userParts = charPhonemes.map(ph => {
+          const userParts = effectivePhonemes.map(ph => {
             const nbPh = extractUserPhoneme(ph);
             return nbPh || normalizePy(ph.Phoneme);
           });
           // 如果任何音素的用户读法与参考不同，才构建 userSyllable
-          const refParts = charPhonemes.map(ph => normalizePy(ph.Phoneme));
+          const refParts = effectivePhonemes.map(ph => normalizePy(ph.Phoneme));
           if (JSON.stringify(userParts) !== JSON.stringify(refParts)) {
             // 简单拼接，取末尾数字作为声调（来自最后一个音素）
             const userBase = userParts.map(p => p.replace(/\d$/, '')).join('');
@@ -449,6 +640,25 @@ async function parseAzureResult(resp, refText, pyMap) {
           }
         }
 
+        // 方案STT：使用 Free STT 字符替换证据（高置信度，优先采用）
+        const sttMis = sttMismap.get(globalIdx);
+        if (sttMis && sttMis.diag.length > 0) {
+          console.log(`[SttMis] char="${ch}" pos=${globalIdx} got="${sttMis.got}" diag:`, JSON.stringify(sttMis.diag));
+          sttMis.diag.forEach(e => {
+            cMsgs[i].push(e.msg);
+            if (e.cat === 'RETROFLEX' || e.cat === 'NASAL') {
+              cLevel[i] = Math.max(cLevel[i], 2); // 明确的平翘舌/前后鼻音错误 → 红
+            } else {
+              cLevel[i] = Math.max(cLevel[i], 1);
+            }
+          });
+          // STT 已经给出具体诊断，补充基础错误标签（如果还没有）
+          if (!cMsgs[i].some(m => m.includes('发音'))) {
+            cMsgs[i].unshift('发音有误');
+          }
+          userSyllable = userSyllable || sttMis.gotPy || null; // 把STT结果当userSyllable用于后续声调检查
+        }
+
         // 方案C：低准确度时，用 Gemini 的期望拼音做规则推断
         // （当 Azure 无法提供 NBest 时的保底诊断）
         if (wantPy && (charAcc < 90 || errType === 'Mispronunciation')) {
@@ -463,11 +673,34 @@ async function parseAzureResult(resp, refText, pyMap) {
                 cLevel[i] = 1;
             });
           } else {
-            // 无 NBest → 无法确定具体错误，仅对轻声做特殊处理
-            // ⚠️ 不添加推测性提示（如"注意翘舌音"）——没有证据就不报错
+            // 无 NBest / STT 误读证据时的提示
             if (wantTone === 0 && charAcc < 55) {
               cMsgs[i].push('轻声字：读得过重，应短促轻读');
               if (cLevel[i] === 0) cLevel[i] = 1;
+            }
+            // 当 Azure 明确报 Mispronunciation 时，根据期望拼音特征给针对性提示
+            // （STT 已经处理过的不再重复）
+            if (errType === 'Mispronunciation' && wantPy && cLevel[i] >= 1 && !sttMis) {
+              const wInit  = getInitial(wantPy);
+              const wFinal = getFinal(wantPy);
+              const RETROFLEX_SET = ['zh', 'ch', 'sh', 'r'];
+              const SIBILANT_SET  = ['z', 'c', 's'];
+              const alreadyHasRetro = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
+              const alreadyHasNasal = cMsgs[i].some(m => m.includes('鼻音'));
+              if (!alreadyHasRetro) {
+                if (RETROFLEX_SET.includes(wInit)) {
+                  cMsgs[i].push(`注意翘舌音声母【${wInit}】：舌尖上翘，不要读成平舌`);
+                } else if (SIBILANT_SET.includes(wInit)) {
+                  cMsgs[i].push(`注意平舌音声母【${wInit}】：舌尖平放，不要读成翘舌`);
+                }
+              }
+              if (!alreadyHasNasal) {
+                if (wFinal.endsWith('ng')) {
+                  cMsgs[i].push(`注意后鼻音韵母【${wFinal}】：收尾 -ng（舌根抬起）`);
+                } else if (wFinal.endsWith('n') && wFinal !== 'ng') {
+                  cMsgs[i].push(`注意前鼻音韵母【${wFinal}】：收尾 -n（舌尖抵上齿）`);
+                }
+              }
             }
           }
         }
@@ -503,6 +736,7 @@ async function parseAzureResult(resp, refText, pyMap) {
     charArr.forEach((ch, i) => {
       wordResults.push({ content: ch, perrLevel: cLevel[i], perrMsg: cMsgs[i].join('；') });
     });
+    refCharIdx += charArr.length; // 推进全局字索引
   }
 
   // ── 分段线性映射，让分数对学习者更友好 ──────────────────────
@@ -541,12 +775,14 @@ module.exports = async function handler(req, res) {
     if (!audioBase64 || !refText)
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
 
-    const [azureResp, { map: pyMap, error: claudeErr }] = await Promise.all([
+    const [azureResp, { map: pyMap, error: claudeErr }, sttText] = await Promise.all([
       azureAssess(audioBase64, refText),
-      getPinyinMapSafe(refText)
+      getPinyinMapSafe(refText),
+      azureFreeStt(audioBase64)
     ]);
+    console.log('[handler] FreeStt结果:', sttText || '（空）');
 
-    const result = await parseAzureResult(azureResp, refText, pyMap);
+    const result = await parseAzureResult(azureResp, refText, pyMap, sttText);
 
     // ── _debug ───────────────────────────────────────────────────
     const nbest0 = azureResp.NBest && azureResp.NBest[0];
@@ -562,6 +798,7 @@ module.exports = async function handler(req, res) {
       completenessScore: result.completenessScore,
       fluencyScore:      result.fluencyScore,
       pyMap,
+      freeSttText:  sttText || null,
       geminiError: claudeErr || null,
       'Words[0]_full':           w0 || null,
       'Words[0].Phonemes_full':  w0 ? w0.Phonemes  : null,
