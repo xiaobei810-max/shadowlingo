@@ -218,12 +218,12 @@
         (isTargetFlat  && cls.type === 'retroflex');
       if (!mismatch) continue;
 
-      var targetLabel   = isTargetRetro ? '翘舌' + targetInit : '平舌' + targetInit;
-      var detectedLabel = cls.type === 'flat' ? '平舌音' : '翘舌音';
+      // 新句式格式："市" 声母应为翘舌sh，而不是平舌音。
+      var zhMsg = '"' + ch + '" 声母应为' + (isTargetRetro ? '翘舌' : '平舌') + targetInit
+                + '，而不是' + (isTargetRetro ? '平舌音' : '翘舌音') + '。';
+      var enMsg = '"' + ch + '" initial should be ' + (isTargetRetro ? 'retroflex ' : 'flat ')
+                + targetInit + ', not the ' + (isTargetRetro ? 'flat' : 'retroflex') + ' consonant.';
       var tip = TIPS[targetInit] || '';
-      var msg = '"' + ch + '" 声母应为' + targetLabel +
-                '，检测到' + detectedLabel + '的频谱特征' +
-                (tip ? '\n  💡 ' + tip : '');
 
       errors.push({
         char:          ch,
@@ -232,7 +232,9 @@
         detectedType:  cls.type,
         ratio:         Math.round(cls.ratio * 100) / 100,
         confidence:    Math.round(cls.confidence * 100) / 100,
-        message:       msg,
+        zh:            zhMsg,
+        en:            enMsg,
+        tip:           tip,   // 保留供调试
         type:          isTargetRetro ? 'zh_z_acoustic' : 'z_zh_acoustic',
       });
     }

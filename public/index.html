@@ -1105,6 +1105,23 @@
       letter-spacing: 0.05em;
     }
 
+    .guide-row {
+      padding: 8px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+    .guide-row:last-child { border-bottom: none; }
+    .guide-zh {
+      font-size: 14px;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+    .guide-en {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
     /* 底部导航 */
     .eval-nav {
       display: flex;
@@ -1993,6 +2010,92 @@
       }
     };
 
+    // 将 buildHintLine 的 pairs 数组转换为统一句式 {zh, en}
+    // 例：'"市" 声母应为翘舌sh，而不是平舌音。'
+    function pairsToSentence(char, isRed, pairs) {
+      if (!pairs || !pairs.length) {
+        return {
+          zh: '"' + char + '" ' + (isRed ? '发音有误。' : '发音需加强。'),
+          en: '"' + char + '" ' + (isRed ? 'mispronounced.' : 'needs improvement.')
+        };
+      }
+      var zhParts = [], enParts = [];
+      var RETRO_INITS = { zh: 1, ch: 1, sh: 1, r: 1 };
+
+      pairs.forEach(function (p) {
+        var cat = p.cat || '', zh = p.zh || '', en = p.en || '';
+        var zhS = '', enS = '';
+
+        if (cat === 'RETROFLEX' || cat === 'INITIAL') {
+          var sm = zh.match(/应读【(.+?)】/), gm = zh.match(/你读成了【(.+?)】/);
+          if (sm) {
+            var isRetro = !!RETRO_INITS[sm[1]];
+            zhS = '"' + char + '" 声母应为' + (isRetro ? '翘舌' : '平舌') + sm[1] + '，而不是' + (isRetro ? '平舌音' : '翘舌音') + '。';
+            enS = '"' + char + '" initial should be ' + (isRetro ? 'retroflex ' : 'flat ') + sm[1] + ', not a ' + (isRetro ? 'flat' : 'retroflex') + ' consonant.';
+          } else {
+            zhS = '"' + char + '" ' + zh.replace(/。$/, '') + '。';
+            enS = '"' + char + '" ' + en + (en.endsWith('.') ? '' : '.');
+          }
+        } else if (cat === 'NASAL_FRONT' || cat === 'NASAL_BACK') {
+          var sm2 = zh.match(/应读【(.+?)】/), gm2 = zh.match(/你读成了【(.+?)】/) || zh.match(/读成了【(.+?)】/);
+          var isFront = cat === 'NASAL_FRONT';
+          if (sm2 && gm2) {
+            zhS = '"' + char + '" 韵母应为' + (isFront ? '前鼻音' : '后鼻音') + '【' + sm2[1] + '】，而不是【' + gm2[1] + '】。';
+            enS = '"' + char + '" ending should be ' + (isFront ? 'front nasal' : 'back nasal') + ' [' + sm2[1] + '], not [' + gm2[1] + '].';
+          } else if (sm2) {
+            zhS = '"' + char + '" 韵母应为' + (isFront ? '前鼻音' : '后鼻音') + '【' + sm2[1] + '】。';
+            enS = '"' + char + '" ending should be ' + (isFront ? 'front nasal' : 'back nasal') + ' [' + sm2[1] + '].';
+          } else {
+            zhS = '"' + char + '" ' + zh.replace(/。$/, '') + '。';
+            enS = '"' + char + '" ' + en + (en.endsWith('.') ? '' : '.');
+          }
+        } else if (cat.indexOf('TONE') >= 0 && zh.indexOf('变调') >= 0) {
+          // zh: '变调：打（dǎ）在第3声前变读第2声（dá）'
+          var tm = zh.match(/变读(第\d声)[（(]([^)）]+)/);
+          if (tm) {
+            zhS = '"' + char + '" 此处连读应变调为' + tm[1] + '（' + tm[2] + '）。';
+            enS = '"' + char + '" tone sandhi: say ' + tm[1].replace('第','tone ').replace('声','') + ' (' + tm[2] + ') here.';
+          } else {
+            zhS = '"' + char + '" ' + zh.replace(/。$/, '') + '。';
+            enS = '"' + char + '" ' + en + (en.endsWith('.') ? '' : '.');
+          }
+        } else if (cat.indexOf('TONE') >= 0) {
+          // zh: '声调：应读第4声（à 下降）'
+          var tm2 = zh.match(/应读(第\d声)/);
+          if (tm2) {
+            zhS = '"' + char + '" 声调应为' + tm2[1] + '。';
+            enS = '"' + char + '" ' + en.replace(/^tone: /, 'tone should be ') + (en.endsWith('.') ? '' : '.');
+          } else {
+            zhS = '"' + char + '" ' + zh.replace(/。$/, '') + '。';
+            enS = '"' + char + '" ' + en + (en.endsWith('.') ? '' : '.');
+          }
+        } else if (cat === 'NEUTRAL' || zh.indexOf('轻声') >= 0) {
+          zhS = '"' + char + '" 是轻声字，应读得短促轻柔。';
+          enS = '"' + char + '" is a neutral tone syllable — say it short and unstressed.';
+        } else if (cat === 'ERHUA') {
+          zhS = '"' + char + '" ' + zh.replace(/。$/, '') + '。';
+          enS = '"' + char + '" ' + en + (en.endsWith('.') ? '' : '.');
+        } else if (zh.indexOf('正确：') >= 0 || en.indexOf('correct:') >= 0) {
+          var pm = zh.match(/正确[：:]\s*(\S+?)(?=[）)。\s]|$)/);
+          if (pm) {
+            zhS = '"' + char + '" 发音需加强，正确读音为 ' + pm[1] + '。';
+            enS = '"' + char + '" needs improvement — correct: ' + pm[1] + '.';
+          } else {
+            zhS = '"' + char + '" 发音需加强。';
+            enS = '"' + char + '" needs improvement.';
+          }
+        } else {
+          zhS = '"' + char + '" ' + zh.replace(/。$/, '') + '。';
+          enS = '"' + char + '" ' + en + (en.endsWith('.') ? '' : '.');
+        }
+
+        zhParts.push(zhS);
+        enParts.push(enS);
+      });
+
+      return { zh: zhParts.join(' '), en: enParts.join(' ') };
+    }
+
     function buildHintLine(w, isRed, sandhiQueue) {
       var parts = (w.perrMsg || '').split('；').map(function (p) {
         return p.replace(/（\d+分）/g, '').trim();
@@ -2163,19 +2266,17 @@
         pairs.push({ cat: '', zh: isRed?'发音有误':'发音需改进', en: isRed?'mispronounced':'needs improvement' });
       }
 
-      var icon  = isRed ? '🔴' : '🟡';
-      var zhDesc = pairs.map(function (p) { return p.zh; }).join('；');
-      var enDesc = pairs.map(function (p) { return p.en; }).join('; ');
-
-      return icon + ' "' + w.content + '" — ' + zhDesc + '\n     ' + enDesc;
+      var icon   = isRed ? '🔴' : '🟡';
+      var result = pairsToSentence(w.content, isRed, pairs);
+      return { char: w.content, isRed: isRed, icon: icon, zh: result.zh, en: result.en };
     }
 
-    // 发音提示：去重 + 每字一行 + 双语 + 分类教学
+    // 发音提示：去重 + 每字一条 + 双语 + 分类教学
+    // 返回 Array<{char, isRed, icon, zh, en}>
     function iseHintText(words, chars) {
       var reds    = words.filter(function (w) { return w.perrLevel === 2; });
       var yellows = words.filter(function (w) { return w.perrLevel === 1; });
-      if (!reds.length && !yellows.length)
-        return '发音准确，继续保持！🎉\nPronunciation accurate — well done!';
+      if (!reds.length && !yellows.length) return [];
 
       // 构建音变后声调队列（按字符分组，保持出现顺序）
       var sandhiQueue = {};
@@ -2184,18 +2285,18 @@
         sandhiQueue[item.c].push(item);
       });
 
-      var seen = {}, lines = [];
+      var seen = {}, items = [];
       reds.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        lines.push(buildHintLine(w, true, sandhiQueue));
+        items.push(buildHintLine(w, true, sandhiQueue));
       });
       yellows.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        lines.push(buildHintLine(w, false, sandhiQueue));
+        items.push(buildHintLine(w, false, sandhiQueue));
       });
-      return lines.join('\n');
+      return items;
     }
 
     // 检测录音是否不完整
@@ -2545,7 +2646,7 @@
         sessionScores.push(0);
         incPracticeCount(lessonIdx, idx);
         document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
-        fillEvalResult(0, null, '', s, '评测失败：' + err.message);
+        fillEvalResult(0, null, [], s, '评测失败：' + err.message);
       }
       busy = false;
       setStatus('准备好了 Ready');
@@ -3068,6 +3169,7 @@
       document.getElementById("eval-incomplete-msg").style.display = "none";
       document.getElementById("eval-hint-card").style.display = "none";
       document.getElementById("eval-dualtrack-card").style.display = "none";
+      document.getElementById("eval-dualtrack-body").innerHTML = "";
       document.getElementById("eval-nav").style.display = "none";
       document.getElementById("eval-prev").disabled = false;
       var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
@@ -3280,7 +3382,7 @@
       gradeEl.classList.add('grade-slide-up');
     }
 
-    function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText, dualTrackErrors, acousticErrors) {
+    function fillEvalResult(score, annotations, hintItems, sentence, errMsg, recText, dualTrackErrors, acousticErrors) {
       var color = score === 100 ? "#FFD700"
         : score >= 80 ? "#22c55e"
         : score >= 70 ? "#f97316"
@@ -3289,7 +3391,7 @@
       stopEvalLoadingAnim();
       document.getElementById("eval-loading").style.display = "none";
       document.getElementById("eval-score-card").style.display = "";
-      document.getElementById("eval-hint-card").style.display = "";
+      document.getElementById("eval-hint-card").style.display = "none";  // 旧卡片永久隐藏
       document.getElementById("eval-nav").style.display = "";
       document.getElementById("eval-result-area").classList.add("show");
 
@@ -3325,9 +3427,6 @@
         compareCard.style.display = "none";
       }
 
-      // 发音提示（ISE 详细错误）
-      document.getElementById("eval-hint-text").textContent = hintText;
-
       // 错误提示
       var errEl = document.getElementById("eval-error-notice");
       if (errMsg) {
@@ -3337,53 +3436,65 @@
         errEl.style.display = "none";
       }
 
-      // 双轨检测卡片（Whisper 双轨 + 声学 FFT 层）
-      var dtCard = document.getElementById("eval-dualtrack-card");
-      var dtBody = document.getElementById("eval-dualtrack-body");
-      var allDtErrors  = dualTrackErrors  || [];
-      var allAcoustic  = acousticErrors   || [];
-      var hasAny = allDtErrors.length > 0 || allAcoustic.length > 0;
-      if (hasAny) {
-        // Whisper 双轨结果
-        var dtHtml = allDtErrors.map(function(e) {
-          var icon = e.type === 'tone_confusion'  ? '🔵'
-                   : e.type === 'zh_z_confusion'  ? '🔴'
-                   : e.type === 'z_zh_confusion'  ? '🟠'
-                   : '🟡';
-          var heardSpan = e.type === 'tone_confusion' ? ''
-            : '<span class="dt-arrow">→</span><span class="dt-heard">' + (e.whisperHeard || '?') + '</span>';
-          return '<div class="dt-error-row">'
-            + '<span class="dt-char">' + e.targetChar + '</span>'
-            + heardSpan
-            + '<span class="dt-arrow">' + icon + '</span>'
-            + '<span class="dt-msg">' + e.message + '</span>'
-            + '</div>';
-        }).join('');
+      // ── 统一发音指南卡片（ISE 提示 + Whisper 双轨 + 声学 FFT）──────
+      var guideCard = document.getElementById("eval-dualtrack-card");
+      var guideBody = document.getElementById("eval-dualtrack-body");
+      var allHintItems = Array.isArray(hintItems) ? hintItems : [];
+      var allDtErrors  = dualTrackErrors || [];
+      var allAcoustic  = acousticErrors  || [];
+      var hasAny = allHintItems.length > 0 || allDtErrors.length > 0 || allAcoustic.length > 0;
 
-        // 声学层结果（分隔线 + 条目）
-        var acHtml = '';
-        if (allAcoustic.length > 0) {
-          if (allDtErrors.length > 0) {
-            acHtml += '<div class="dt-section-sep">── 声学频谱检测 ──</div>';
+      if (hasAny) {
+        var html = '';
+
+        // ISE 发音提示（句式格式）
+        allHintItems.forEach(function (item) {
+          html += '<div class="guide-row">'
+            + '<div class="guide-zh">' + item.icon + ' ' + item.zh + '</div>'
+            + '<div class="guide-en">' + item.en + '</div>'
+            + '</div>';
+        });
+
+        // Whisper 语音识别对比
+        if (allDtErrors.length > 0) {
+          if (allHintItems.length > 0) {
+            html += '<div class="dt-section-sep">── 语音识别对比 ──</div>';
           }
-          acHtml += allAcoustic.map(function(e) {
-            var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
-            // message 可能含换行符（💡 纠正提示），转为 <br>
-            var msgHtml = e.message.replace(/\n/g, '<br>');
+          html += allDtErrors.map(function (e) {
+            var icon = e.type === 'tone_confusion'  ? '🔵'
+                     : e.type === 'zh_z_confusion'  ? '🔴'
+                     : e.type === 'z_zh_confusion'  ? '🟠'
+                     : '🟡';
+            var heardSpan = e.type === 'tone_confusion' ? ''
+              : '<span class="dt-arrow">→</span><span class="dt-heard">' + (e.whisperHeard || '?') + '</span>';
             return '<div class="dt-error-row">'
-              + '<span class="dt-char">' + e.char + '</span>'
+              + '<span class="dt-char">' + e.targetChar + '</span>'
+              + heardSpan
               + '<span class="dt-arrow">' + icon + '</span>'
-              + '<span class="dt-msg">' + msgHtml + '</span>'
-              + '<span class="dt-conf"> (置信度 ' + Math.round(e.confidence * 100) + '%)</span>'
+              + '<span class="dt-msg">' + e.message + '</span>'
               + '</div>';
           }).join('');
         }
 
-        dtBody.innerHTML = dtHtml + acHtml;
-        dtCard.style.display = "";
+        // 声学频谱检测（句式格式）
+        if (allAcoustic.length > 0) {
+          if (allHintItems.length > 0 || allDtErrors.length > 0) {
+            html += '<div class="dt-section-sep">── 声学频谱检测 ──</div>';
+          }
+          allAcoustic.forEach(function (e) {
+            var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
+            html += '<div class="guide-row">'
+              + '<div class="guide-zh">' + icon + ' ' + e.zh + '</div>'
+              + '<div class="guide-en">' + e.en + '</div>'
+              + '</div>';
+          });
+        }
+
+        guideBody.innerHTML = html;
+        guideCard.style.display = "";
       } else {
-        dtBody.innerHTML = '';
-        dtCard.style.display = "none";
+        guideBody.innerHTML = '';
+        guideCard.style.display = "none";
       }
     }
 
@@ -4541,9 +4652,9 @@
         <div class="eval-hint-text" id="eval-hint-text"></div>
       </div>
 
-      <!-- 双轨声学检测 -->
+      <!-- 发音指南（ISE 提示 + Whisper 双轨 + 声学 FFT，统一显示） -->
       <div class="eval-dualtrack-card" id="eval-dualtrack-card" style="display:none">
-        <div class="eval-dualtrack-title">🔬 声学双轨检测 Acoustic Dual-Track</div>
+        <div class="eval-dualtrack-title">📖 发音指南 Pronunciation Guide</div>
         <div id="eval-dualtrack-body"></div>
       </div>
 
