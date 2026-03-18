@@ -2043,9 +2043,19 @@
         if (cat === 'RETROFLEX' || cat === 'INITIAL') {
           var sm = zh.match(/应读【(.+?)】/), gm = zh.match(/你读成了【(.+?)】/);
           if (sm) {
-            var isRetro = !!RETRO_INITS[sm[1]];
-            zhS = '"' + char + '" 声母应为' + (isRetro ? '翘舌' : '平舌') + sm[1] + '，而不是' + (isRetro ? '平舌音' : '翘舌音') + '。';
-            enS = '"' + char + '" initial should be ' + (isRetro ? 'retroflex ' : 'flat ') + sm[1] + ', not a ' + (isRetro ? 'flat' : 'retroflex') + ' consonant.';
+            var target = sm[1];
+            var FLAT_S = { z: 1, c: 1, s: 1 };
+            var isRetro = !!RETRO_INITS[target];
+            var isFlat  = !!FLAT_S[target];
+            if (isRetro || isFlat) {
+              // 真正的平翘舌区分（zh/ch/sh/r ↔ z/c/s）
+              zhS = '"' + char + '" 声母应为' + (isRetro ? '翘舌' : '平舌') + target + '，而不是' + (isRetro ? '平舌音' : '翘舌音') + '。';
+              enS = '"' + char + '" initial should be ' + (isRetro ? 'retroflex ' : 'flat ') + target + ', not a ' + (isRetro ? 'flat' : 'retroflex') + ' consonant.';
+            } else {
+              // 其他声母错误（w/p/b/m/f 等），不涉及平翘舌区分
+              zhS = '"' + char + '" 声母有误，应为【' + target + '】' + (gm ? '，你读成了【' + gm[1] + '】' : '') + '。';
+              enS = '"' + char + '" initial incorrect: should be "' + target + '"' + (gm ? ', you said "' + gm[1] + '"' : '') + '.';
+            }
           } else {
             zhS = '"' + char + '" ' + zh.replace(/。$/, '') + '。';
             enS = '"' + char + '" ' + en + (en.endsWith('.') ? '' : '.');
@@ -2133,13 +2143,21 @@
       parts.forEach(function (p) {
 
         // ── 后端新格式：平翘舌 ───────────────────────────────
-        var retroM = p.match(/平翘舌[：:].+?应读【(.+?)】.+?【(.+?)】/);
+        // 格式1（diagnoseError）: 平翘舌：应读【ch】你读成了【z】
+        // 格式2（TierD）:         平翘舌混淆：应读翘舌【ch】，检测到平舌音【z】倾向
+        var retroM = p.match(/平翘舌[^[：:]*[：:]应读(?:翘舌|平舌)?【(.+?)】[，,]?[^【]*(?:【(.+?)】)?/);
         if (!retroM) retroM = p.match(/平翘舌[：:](.+)/);  // fallback
         if (retroM) {
+          // 统一转成标准格式，让 pairsToSentence 能识别
+          var shouldI = retroM[1];
+          var gotI    = retroM[2] || '';
+          var stdZh = gotI
+            ? '平翘舌错误：应读【' + shouldI + '】你读成了【' + gotI + '】'
+            : '平翘舌错误：' + p.replace(/平翘舌[^：:]*[：:]/,'').replace(/应读(?:翘舌|平舌)/, '应读');
           pairs.push({
             cat: 'RETROFLEX',
-            zh: '平翘舌错误：' + p.replace(/平翘舌[：:]/,''),
-            en: p.replace(/平翘舌[：:]/,'').replace('应读','should be').replace('你读成了','you said').replace(/【/g,'"').replace(/】/g,'"')
+            zh: stdZh,
+            en: 'retroflex: should be "' + shouldI + '"' + (gotI ? ', you said "' + gotI + '"' : '')
           });
           tipCats.push('RETROFLEX');
           return;
