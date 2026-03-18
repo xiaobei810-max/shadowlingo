@@ -931,13 +931,22 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         if (wantPy && (charAcc < (isRetroflex ? 95 : 90) || errType === 'Mispronunciation')) {
           if (userSyllable) {
             // 有用户实际音节 → 精准比对
-            const errs = diagnoseError(wantPy, userSyllable);
+            const errs = diagnoseError(wantPy, userSyllable).filter(e => {
+              // y/w 是零声母/滑音，Azure NBest 对它们不可靠，跳过声母错误
+              if (e.cat === 'INITIAL') {
+                const ri = getInitial(wantPy);
+                if (ri === 'y' || ri === 'w' || ri === '') return false;
+              }
+              return true;
+            });
             errs.forEach(e => {
-              // 去重：若已有 STT/TierD 报了同类错误，跳过（避免平翘舌出现两次）
-              const hasRetro = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
-              const hasNasal = cMsgs[i].some(m => m.includes('鼻音'));
-              if (e.cat === 'RETROFLEX' && hasRetro) return;
+              // 去重：若已有 STT/TierD 报了同类错误，跳过（避免重复）
+              const hasRetro   = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
+              const hasNasal   = cMsgs[i].some(m => m.includes('鼻音'));
+              const hasInitial = cMsgs[i].some(m => m.includes('声母'));
+              if (e.cat === 'RETROFLEX' && hasRetro)   return;
               if ((e.cat === 'NASAL' || e.cat === 'VOWEL') && hasNasal) return;
+              if (e.cat === 'INITIAL' && hasInitial)   return;
               cMsgs[i].push(e.msg);
               if (e.cat === 'RETROFLEX' || e.cat === 'INITIAL' || e.cat === 'NASAL' || e.cat === 'VOWEL')
                 cLevel[i] = Math.max(cLevel[i], 2);

@@ -2269,7 +2269,7 @@
           // 改为提示音节较弱，并给出正确读音
           var py0 = correctPy || (entry && entry.p ? toToneMark(entry.p) : '');
           if (py0) {
-            pairs.push({ cat: '', zh: '音节发音较弱，正确读音为 ' + py0, en: 'syllable too soft/unclear, correct: ' + py0 });
+            pairs.push({ cat: '', zh: '音节发音较弱（正确：' + py0 + '）', en: 'syllable too soft/unclear, correct: ' + py0 });
           } else {
             pairs.push({ cat: '', zh: '音节发音不够清晰', en: 'syllable unclear — speak more clearly' });
           }
