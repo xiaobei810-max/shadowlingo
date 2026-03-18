@@ -3818,7 +3818,7 @@
             _needsGesture = true;
             _gestureCallback = function () { _needsGesture = false; speakAzure(text, role, rate, onend, onplay); };
             if (_currentAudio === audio) _currentAudio = null;
-            plpSetPauseBtn(true); // show "▶ 继续"
+            plpSetPauseBtn('play'); // show "▶ 播放"（需用户手势）
           } else {
             fallbackBrowserTTS(text, role, rate, onend, onplay);
           }
@@ -4080,6 +4080,8 @@
         plpPaused = false;
         plpPlaying = true;
         plpSetPauseBtn('pause');
+        // ⚠️ 先清除 onplay，防止 .play() 再次触发 dlpRunKara 从头重置卡拉OK
+        if (_currentAudio) _currentAudio.onplay = null;
         resumeAudio(); // 音频从暂停位置继续
         // 卡拉OK从保存的进度恢复
         if (plpKaraPauseMs != null && dlpKaraParams) {
