@@ -823,34 +823,12 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         const wantPy = normalizePy(pyMap[ch] || '');
         const wantTone = getTone(wantPy);
 
-        // 方案A：从 NBestPhonemes 拼合用户实际音节
-        // Azure 对中文可能一个字有多个音素（声母+韵母），也可能整字一个音素
+        // ⚠️ 方案A/B 已移除：音素级 NBest 重建 userSyllable 会产生大量假阳性声母错误
+        // 原因：Azure phoneme NBest 是音素的声学相似排名，不是用户实际读音的 ASR 结果
+        // 例：「你」ni3 的声母音素 [n] 的 NBest[0] 可能是 [h]（声学近似），
+        //   但用户根本没读成 "hi3"。拼接后 diagnoseError 产生假报错。
+        // userSyllable 现在只由下方「方案STT」填入（STT 字符替换是真实 ASR 证据）
         let userSyllable = null;
-        if (effectivePhonemes.length > 0) {
-          // 尝试从每个音素的 NBest 拼出用户音节
-          const userParts = effectivePhonemes.map(ph => {
-            const nbPh = extractUserPhoneme(ph);
-            return nbPh || normalizePy(ph.Phoneme);
-          });
-          // 如果任何音素的用户读法与参考不同，才构建 userSyllable
-          const refParts = effectivePhonemes.map(ph => normalizePy(ph.Phoneme));
-          if (JSON.stringify(userParts) !== JSON.stringify(refParts)) {
-            // 简单拼接，取末尾数字作为声调（来自最后一个音素）
-            const userBase = userParts.map(p => p.replace(/\d$/, '')).join('');
-            const userTone = userParts.map(p => getTone(p)).find(t => t > 0) || 0;
-            userSyllable = userBase + (userTone || '');
-          }
-        }
-
-        // 方案B：Syllable 层级的 NBestPhonemes（Azure 有时在字级提供）
-        if (!userSyllable && syl) {
-          const sylNBest = (syl.PronunciationAssessment || {}).NBestPhonemes || [];
-          if (sylNBest.length > 0) {
-            const refSylPhone = normalizePy(syl.Phoneme || '');
-            const topSylPhone = normalizePy(sylNBest[0].Phoneme || '');
-            if (topSylPhone && topSylPhone !== refSylPhone) userSyllable = topSylPhone;
-          }
-        }
 
         // 方案STT：使用 Free STT 字符替换证据（高置信度，优先采用）
         const sttMis = sttMismap.get(globalIdx);
@@ -929,58 +907,33 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         // 对翘舌音字放宽阈值到 95，提高漏报灵敏度
         const isRetroflex = ['zh','ch','sh','r'].includes(getInitial(wantPy));
         if (wantPy && (charAcc < (isRetroflex ? 95 : 90) || errType === 'Mispronunciation')) {
-          if (userSyllable) {
-            // 有用户实际音节 → 精准比对
-            const errs = diagnoseError(wantPy, userSyllable).filter(e => {
-              // y/w 是零声母/滑音，Azure NBest 对它们不可靠，跳过声母错误
-              if (e.cat === 'INITIAL') {
-                const ri = getInitial(wantPy);
-                if (ri === 'y' || ri === 'w' || ri === '') return false;
+          // ⚠️ 不再用 userSyllable（来自NBest重建）做 diagnoseError，见方案A/B移除说明
+          // 只用 wantPy 特征做固定规则提示，避免假阳性声母错误
+          if (wantTone === 0 && charAcc < 55) {
+            cMsgs[i].push('轻声字：读得过重，应短促轻读');
+            if (cLevel[i] === 0) cLevel[i] = 1;
+          }
+          // 当 Azure 明确报 Mispronunciation 时，根据期望拼音特征给针对性提示
+          // （STT/TierD 已处理过的不再重复）
+          if (errType === 'Mispronunciation' && wantPy && cLevel[i] >= 1 && !sttMis) {
+            const wInit  = getInitial(wantPy);
+            const wFinal = getFinal(wantPy);
+            const RETROFLEX_SET = ['zh', 'ch', 'sh', 'r'];
+            const SIBILANT_SET  = ['z', 'c', 's'];
+            const alreadyHasRetro = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
+            const alreadyHasNasal = cMsgs[i].some(m => m.includes('鼻音'));
+            if (!alreadyHasRetro) {
+              if (RETROFLEX_SET.includes(wInit)) {
+                cMsgs[i].push(`注意翘舌音声母【${wInit}】：舌尖上翘，不要读成平舌`);
+              } else if (SIBILANT_SET.includes(wInit)) {
+                cMsgs[i].push(`注意平舌音声母【${wInit}】：舌尖平放，不要读成翘舌`);
               }
-              return true;
-            });
-            errs.forEach(e => {
-              // 去重：若已有 STT/TierD 报了同类错误，跳过（避免重复）
-              const hasRetro   = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
-              const hasNasal   = cMsgs[i].some(m => m.includes('鼻音'));
-              const hasInitial = cMsgs[i].some(m => m.includes('声母'));
-              if (e.cat === 'RETROFLEX' && hasRetro)   return;
-              if ((e.cat === 'NASAL' || e.cat === 'VOWEL') && hasNasal) return;
-              if (e.cat === 'INITIAL' && hasInitial)   return;
-              cMsgs[i].push(e.msg);
-              if (e.cat === 'RETROFLEX' || e.cat === 'INITIAL' || e.cat === 'NASAL' || e.cat === 'VOWEL')
-                cLevel[i] = Math.max(cLevel[i], 2);
-              else if (cLevel[i] === 0)
-                cLevel[i] = 1;
-            });
-          } else {
-            // 无 NBest / STT 误读证据时的提示
-            if (wantTone === 0 && charAcc < 55) {
-              cMsgs[i].push('轻声字：读得过重，应短促轻读');
-              if (cLevel[i] === 0) cLevel[i] = 1;
             }
-            // 当 Azure 明确报 Mispronunciation 时，根据期望拼音特征给针对性提示
-            // （STT 已经处理过的不再重复）
-            if (errType === 'Mispronunciation' && wantPy && cLevel[i] >= 1 && !sttMis) {
-              const wInit  = getInitial(wantPy);
-              const wFinal = getFinal(wantPy);
-              const RETROFLEX_SET = ['zh', 'ch', 'sh', 'r'];
-              const SIBILANT_SET  = ['z', 'c', 's'];
-              const alreadyHasRetro = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
-              const alreadyHasNasal = cMsgs[i].some(m => m.includes('鼻音'));
-              if (!alreadyHasRetro) {
-                if (RETROFLEX_SET.includes(wInit)) {
-                  cMsgs[i].push(`注意翘舌音声母【${wInit}】：舌尖上翘，不要读成平舌`);
-                } else if (SIBILANT_SET.includes(wInit)) {
-                  cMsgs[i].push(`注意平舌音声母【${wInit}】：舌尖平放，不要读成翘舌`);
-                }
-              }
-              if (!alreadyHasNasal) {
-                if (wFinal.endsWith('ng')) {
-                  cMsgs[i].push(`注意后鼻音韵母【${wFinal}】：收尾 -ng（舌根抬起）`);
-                } else if (wFinal.endsWith('n') && wFinal !== 'ng') {
-                  cMsgs[i].push(`注意前鼻音韵母【${wFinal}】：收尾 -n（舌尖抵上齿）`);
-                }
+            if (!alreadyHasNasal) {
+              if (wFinal.endsWith('ng')) {
+                cMsgs[i].push(`注意后鼻音韵母【${wFinal}】：收尾 -ng（舌根抬起）`);
+              } else if (wFinal.endsWith('n') && wFinal !== 'ng') {
+                cMsgs[i].push(`注意前鼻音韵母【${wFinal}】：收尾 -n（舌尖抵上齿）`);
               }
             }
           }
