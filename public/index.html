@@ -1091,6 +1091,20 @@
       flex: 1;
     }
 
+    .dt-conf {
+      color: #64748b;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .dt-section-sep {
+      font-size: 11px;
+      color: #475569;
+      text-align: center;
+      margin: 8px 0 6px;
+      letter-spacing: 0.05em;
+    }
+
     /* 底部导航 */
     .eval-nav {
       display: flex;
@@ -1589,6 +1603,9 @@
     </div>
   </div>
 
+  <!-- 声学层平翘舌检测（纯本地 FFT，无需 API） -->
+  <script src="/acousticAnalyzer.js"></script>
+
   <script>
     // ── Data ─────────────────────────────────────────────────
     const LESSONS = [
@@ -1821,7 +1838,7 @@
       src.buffer = decoded;
       src.connect(off.destination);
       src.start(0);
-      var rendered = await off.startRendering();
+      var rendered = await off.startRendering();  // 16kHz AudioBuffer，供声学分析复用
       var f32 = rendered.getChannelData(0);
       var i16 = new Int16Array(f32.length);
       for (var i = 0; i < f32.length; i++) {
@@ -1830,7 +1847,8 @@
       }
       console.log('[ISE] 转换后PCM — 16kHz 16bit mono, 字节数:', i16.byteLength,
         '时长:', (i16.length / 16000).toFixed(2) + 's');
-      return i16.buffer;
+      // 同时返回 PCM buffer 和原始 AudioBuffer（声学分析用）
+      return { pcmBuffer: i16.buffer, audioBuffer: rendered };
     }
 
     // ── 以下函数已移至 api/evaluate.js，前端仅保留展示逻辑 ──────────
@@ -2456,8 +2474,10 @@
       var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
       showEvalPageLoading(s);
       try {
-        // 1. 本地转换为 16kHz/16bit/mono PCM
-        var pcmBuf = await convertToPCM(blob);
+        // 1. 本地转换为 16kHz/16bit/mono PCM（同时保留 AudioBuffer 供声学分析）
+        var convResult  = await convertToPCM(blob);
+        var pcmBuf      = convResult.pcmBuffer;
+        var audioBuffer = convResult.audioBuffer;  // 16kHz AudioBuffer
         var refText = s.zh.replace(/[，。！？,.!?\s]/g, '');
 
         // 2. 发送到后端 /api/evaluate
@@ -2501,9 +2521,25 @@
         sessionScores.push(displayScore);
         incPracticeCount(lessonIdx, idx);
         document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
+
+        // 4. 声学层平翘舌检测（本地 FFT，无需 API）
+        var acousticErrors = [];
+        if (typeof acousticAnalyzer !== 'undefined' && audioBuffer && result.wordResults) {
+          try {
+            var pyMap = {};
+            (s.chars || []).forEach(function (c) { if (c.c && c.p) pyMap[c.c] = c.p; });
+            acousticErrors = acousticAnalyzer.analyzeZhZConfusion(audioBuffer, result.wordResults, pyMap);
+            if (acousticErrors.length > 0) {
+              console.log('[Acoustic] 检测到', acousticErrors.length, '个声学异常:', JSON.stringify(acousticErrors));
+            }
+          } catch (ae) {
+            console.warn('[Acoustic] 分析出错（不影响主流程）:', ae);
+          }
+        }
+
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           iseHintText(result.wordResults, s.chars), s, null, recText,
-          result.dualTrackErrors || []);
+          result.dualTrackErrors || [], acousticErrors);
       } catch (err) {
         console.error('评测失败:', err);
         sessionScores.push(0);
@@ -3244,7 +3280,7 @@
       gradeEl.classList.add('grade-slide-up');
     }
 
-    function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText, dualTrackErrors) {
+    function fillEvalResult(score, annotations, hintText, sentence, errMsg, recText, dualTrackErrors, acousticErrors) {
       var color = score === 100 ? "#FFD700"
         : score >= 80 ? "#22c55e"
         : score >= 70 ? "#f97316"
@@ -3301,16 +3337,19 @@
         errEl.style.display = "none";
       }
 
-      // 双轨检测卡片
+      // 双轨检测卡片（Whisper 双轨 + 声学 FFT 层）
       var dtCard = document.getElementById("eval-dualtrack-card");
       var dtBody = document.getElementById("eval-dualtrack-body");
-      if (dualTrackErrors && dualTrackErrors.length > 0) {
-        var dtHtml = dualTrackErrors.map(function(e) {
+      var allDtErrors  = dualTrackErrors  || [];
+      var allAcoustic  = acousticErrors   || [];
+      var hasAny = allDtErrors.length > 0 || allAcoustic.length > 0;
+      if (hasAny) {
+        // Whisper 双轨结果
+        var dtHtml = allDtErrors.map(function(e) {
           var icon = e.type === 'tone_confusion'  ? '🔵'
                    : e.type === 'zh_z_confusion'  ? '🔴'
                    : e.type === 'z_zh_confusion'  ? '🟠'
                    : '🟡';
-          // 声调错误：消息中已包含两个字，不重复显示"→字"
           var heardSpan = e.type === 'tone_confusion' ? ''
             : '<span class="dt-arrow">→</span><span class="dt-heard">' + (e.whisperHeard || '?') + '</span>';
           return '<div class="dt-error-row">'
@@ -3320,7 +3359,27 @@
             + '<span class="dt-msg">' + e.message + '</span>'
             + '</div>';
         }).join('');
-        dtBody.innerHTML = dtHtml;
+
+        // 声学层结果（分隔线 + 条目）
+        var acHtml = '';
+        if (allAcoustic.length > 0) {
+          if (allDtErrors.length > 0) {
+            acHtml += '<div class="dt-section-sep">── 声学频谱检测 ──</div>';
+          }
+          acHtml += allAcoustic.map(function(e) {
+            var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
+            // message 可能含换行符（💡 纠正提示），转为 <br>
+            var msgHtml = e.message.replace(/\n/g, '<br>');
+            return '<div class="dt-error-row">'
+              + '<span class="dt-char">' + e.char + '</span>'
+              + '<span class="dt-arrow">' + icon + '</span>'
+              + '<span class="dt-msg">' + msgHtml + '</span>'
+              + '<span class="dt-conf"> (置信度 ' + Math.round(e.confidence * 100) + '%)</span>'
+              + '</div>';
+          }).join('');
+        }
+
+        dtBody.innerHTML = dtHtml + acHtml;
         dtCard.style.display = "";
       } else {
         dtBody.innerHTML = '';

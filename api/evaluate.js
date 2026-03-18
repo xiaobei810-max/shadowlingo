@@ -984,8 +984,19 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
       console.log(`[parse] char="${ch}" acc=${charAcc} level=${cLevel[i]} msgs=${JSON.stringify(cMsgs[i])}`);
     });
 
+    // Azure Offset/Duration 单位为100纳秒，转换为秒供前端声学分析使用
+    const wordOffsetSec   = (w.Offset   || 0) / 10_000_000;
+    const wordDurationSec = (w.Duration || 0) / 10_000_000;
+    const charDurSec      = charArr.length > 0 ? wordDurationSec / charArr.length : 0;
+
     charArr.forEach((ch, i) => {
-      wordResults.push({ content: ch, perrLevel: cLevel[i], perrMsg: cMsgs[i].join('；') });
+      wordResults.push({
+        content:   ch,
+        perrLevel: cLevel[i],
+        perrMsg:   cMsgs[i].join('；'),
+        offset:    wordOffsetSec + i * charDurSec,   // 字起始时刻（秒）
+        duration:  charDurSec,                        // 字时长（秒）
+      });
     });
     refCharIdx += charArr.length; // 推进全局字索引
   }
