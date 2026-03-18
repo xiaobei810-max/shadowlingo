@@ -3459,7 +3459,7 @@
         errEl.style.display = "none";
       }
 
-      // ── 统一发音指南卡片（ISE 提示 + Whisper 双轨 + 声学 FFT）──────
+      // ── 统一发音指南卡片（ISE 提示 + 声学 FFT，按句中顺序合并同字）──
       var guideCard = document.getElementById("eval-dualtrack-card");
       var guideBody = document.getElementById("eval-dualtrack-body");
       var allHintItems = Array.isArray(hintItems) ? hintItems : [];
@@ -3470,15 +3470,66 @@
       if (hasAny) {
         var html = '';
 
-        // ISE 发音提示（句式格式）
+        // ── 步骤1：建立句中字的位置索引（按 sentence.chars 顺序）──
+        var charPos = {};
+        if (sentence && sentence.chars) {
+          sentence.chars.forEach(function (c, i) {
+            if (c.c && !(c.c in charPos)) charPos[c.c] = i;
+          });
+        }
+
+        // ── 步骤2：按字合并 ISE 条目和声学条目 ───────────────────
+        // mergedMap[char] = { pos, entries: [{icon, zh, en}] }
+        var mergedMap = {};
+
+        function addEntry(char, icon, zh, en, fallbackPos) {
+          if (!mergedMap[char]) {
+            mergedMap[char] = {
+              pos: charPos[char] !== undefined ? charPos[char] : (fallbackPos || 999),
+              entries: []
+            };
+          }
+          mergedMap[char].entries.push({ icon: icon, zh: zh, en: en });
+        }
+
+        // 判断 ISE 条目是否是泛化描述（无具体错误类型）
+        function isGeneric(zh) {
+          return /发音需加强|发音有误/.test(zh) &&
+                 !/声调|声母|韵母|变调|轻声|翘舌|平舌|鼻音/.test(zh);
+        }
+
+        // 收集声学检测涉及的字（用于去重泛化 ISE 条目）
+        var acousticChars = {};
+        allAcoustic.forEach(function (e) { acousticChars[e.char] = true; });
+
+        // 加入 ISE 条目（若该字已有声学检测且 ISE 是泛化描述则跳过）
         allHintItems.forEach(function (item) {
-          html += '<div class="guide-row">'
-            + '<div class="guide-zh">' + item.icon + ' ' + item.zh + '</div>'
-            + '<div class="guide-en">' + item.en + '</div>'
-            + '</div>';
+          if (acousticChars[item.char] && isGeneric(item.zh)) return;
+          addEntry(item.char, item.icon, item.zh, item.en);
         });
 
-        // Whisper 语音识别对比
+        // 加入声学条目（直接合并到同字条目）
+        allAcoustic.forEach(function (e) {
+          var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
+          addEntry(e.char, icon, e.zh, e.en, e.position);
+        });
+
+        // ── 步骤3：按句中位置排序，渲染 ─────────────────────────
+        var sortedChars = Object.keys(mergedMap).sort(function (a, b) {
+          return mergedMap[a].pos - mergedMap[b].pos;
+        });
+
+        sortedChars.forEach(function (char) {
+          var item = mergedMap[char];
+          item.entries.forEach(function (entry) {
+            html += '<div class="guide-row">'
+              + '<div class="guide-zh">' + entry.icon + ' ' + entry.zh + '</div>'
+              + '<div class="guide-en">' + entry.en + '</div>'
+              + '</div>';
+          });
+        });
+
+        // Whisper 语音识别对比（独立显示，不参与合并）
         if (allDtErrors.length > 0) {
           html += allDtErrors.map(function (e) {
             var icon = e.type === 'tone_confusion'  ? '🔵'
@@ -3494,17 +3545,6 @@
               + '<span class="dt-msg">' + e.message + '</span>'
               + '</div>';
           }).join('');
-        }
-
-        // 声学频谱检测（句式格式）
-        if (allAcoustic.length > 0) {
-          allAcoustic.forEach(function (e) {
-            var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
-            html += '<div class="guide-row">'
-              + '<div class="guide-zh">' + icon + ' ' + e.zh + '</div>'
-              + '<div class="guide-en">' + e.en + '</div>'
-              + '</div>';
-          });
         }
 
         guideBody.innerHTML = html;
