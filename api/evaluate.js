@@ -788,11 +788,10 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           userSyllable = userSyllable || sttMis.gotPy || null; // 把STT结果当userSyllable用于后续声调检查
         }
 
-        // 方案D：主动翘舌/前后鼻音检测（对所有相关字，不受准确度阈值限制）
-        // Azure 的语境 ASR 可能把平舌读音"纠正"回翘舌字，导致分数偏高但发音有误
-        // 对此类字：直接检查 effectivePhonemes 的 NBestPhonemes，
-        // 若有平舌/鼻音替代候选且置信度 > 0.15，则主动标记
-        if (wantPy && !sttMis && cLevel[i] === 0 && effectivePhonemes.length > 0) {
+        // 方案D：主动翘舌/前后鼻音检测（对翘舌/鼻音相关字无条件运行）
+        // 不受 cLevel / errType 限制：Azure 已标错的字也要尝试给出具体诊断
+        // 若有平舌/鼻音替代候选且置信度 ≥ 0.08，则主动标记/追加诊断
+        if (wantPy && !sttMis && effectivePhonemes.length > 0) {
           const wInit  = getInitial(wantPy);
           const wFinal = getFinal(wantPy);
           const RETRO_INITS = ['zh', 'ch', 'sh', 'r'];
@@ -866,9 +865,10 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
               cMsgs[i].push('轻声字：读得过重，应短促轻读');
               if (cLevel[i] === 0) cLevel[i] = 1;
             }
-            // 当 Azure 明确报 Mispronunciation 时，根据期望拼音特征给针对性提示
+            // 根据期望拼音特征给针对性提示（无论 errType，只要 cLevel >= 1）
+            // 去掉 errType === 'Mispronunciation' 限制：Azure 报 None + 低分时同样需要诊断
             // （STT 已经处理过的不再重复）
-            if (errType === 'Mispronunciation' && wantPy && cLevel[i] >= 1 && !sttMis) {
+            if (wantPy && cLevel[i] >= 1 && !sttMis) {
               const wInit  = getInitial(wantPy);
               const wFinal = getFinal(wantPy);
               const RETROFLEX_SET = ['zh', 'ch', 'sh', 'r'];
