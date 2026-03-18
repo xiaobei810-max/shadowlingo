@@ -2162,9 +2162,18 @@
     }
 
     // 检测录音是否不完整
-    function isIncompleteRecording(words) {
+    // refText：已去除标点的纯汉字参考文本（用于判断 Azure 返回字数是否足够）
+    function isIncompleteRecording(words, refText) {
       if (!words || !words.length) return true;
-      // 大量红字（≥3且占≥50%）→ 基本没录到声音
+
+      // 关键修复：若 Azure 返回字数已覆盖参考文本的 ≥80%，视为录音完整
+      // 原因：Azure 对发音评分偏严、末尾字低分 ≠ 用户没有录完整句子
+      // 只有明显漏录（Azure 返回字数不足）才进一步判断
+      if (refText && refText.length > 0 && words.length >= refText.length * 0.8) {
+        return false;
+      }
+
+      // Azure 返回字数明显不足时，再用启发式判断是否真的录音不完整
       var reds = words.filter(function (w) { return w.perrLevel === 2; });
       if (reds.length >= 3 && reds.length / words.length >= 0.5) return true;
       // 句尾连续红字（≥2）→ 说到一半停了
@@ -2448,7 +2457,7 @@
         if (result.error) throw new Error(result.error);
 
         // 3. 展示结果
-        if (isIncompleteRecording(result.wordResults)) {
+        if (isIncompleteRecording(result.wordResults, refText)) {
           // 录音不完整：不计分，只显示提示 + 重录按钮
           stopEvalLoadingAnim();
           document.getElementById("eval-loading").style.display = "none";
