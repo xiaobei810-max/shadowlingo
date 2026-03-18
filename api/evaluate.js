@@ -804,9 +804,13 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         if (err === 'Mispronunciation' && acc < 65) return 1;
         return 0;
       }
-      // 普通字：低分或明确 Mispronunciation 才标错
-      if (acc < 42) return 2;
-      // Mispronunciation 需要分数也较低才置信（避免误报）
+      // 普通字评级规则：
+      // 红（level 2）：Azure 明确说 Mispronunciation 且分数低，或分数极低（≤30）
+      //   ⚠️ 不能只凭低分标红：连读/句首时 Azure 常给正确发音 35-45 分，
+      //      但 errType 仍为 None（词被正确识别），低分是声学打分波动，不是真正读错
+      if (err === 'Mispronunciation' && acc < 55) return 2;
+      if (acc < 30) return 2;
+      // 黄（level 1）：低分或 Azure 判为有一定问题
       if (err === 'Mispronunciation' && acc < 75) return 1;
       if (acc < 65) return 1;
       return 0;
