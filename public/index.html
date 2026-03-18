@@ -2130,11 +2130,7 @@
       var zhDesc = pairs.map(function (p) { return p.zh; }).join('；');
       var enDesc = pairs.map(function (p) { return p.en; }).join('; ');
 
-      // 挑第一个有教学提示的类别附加提示
-      var tipKey = tipCats.find(function(c){ return TIPS[c]; });
-      var tipStr = tipKey ? ('\n     ' + TIPS[tipKey].zh + '\n     ' + TIPS[tipKey].en) : '';
-
-      return icon + ' "' + w.content + '" — ' + zhDesc + '\n     ' + enDesc + tipStr;
+      return icon + ' "' + w.content + '" — ' + zhDesc + '\n     ' + enDesc;
     }
 
     // 发音提示：去重 + 每字一行 + 双语 + 分类教学

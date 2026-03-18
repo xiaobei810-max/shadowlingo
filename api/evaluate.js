@@ -804,10 +804,14 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
             const refPh  = normalizePy(ph.Phoneme || '');
 
             // 检查翘舌 ↔ 平舌混淆
+            // 阈值：0.08（低于原0.15）——对翘舌初声位置更灵敏
+            // 原因：母语者读"sh"时，NBest中"s"置信度极低(<0.01)；
+            //       误读成平舌时"s"置信度约8-25%，0.08可覆盖更多误读
+            // 搜索全部5个NBest（nbl全量），不限top3
             if (RETRO_INITS.includes(wInit) && RETRO_INITS.includes(refPh)) {
-              const flatAlt = nbl.slice(0, 3).find(n => {
+              const flatAlt = nbl.find(n => {
                 const p = normalizePy(n.Phoneme || '');
-                return FLAT_INITS.includes(p) && (n.Score || 0) >= 0.15;
+                return FLAT_INITS.includes(p) && (n.Score || 0) >= 0.08;
               });
               if (flatAlt) {
                 const altPh = normalizePy(flatAlt.Phoneme || '');
