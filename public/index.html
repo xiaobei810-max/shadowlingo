@@ -2159,7 +2159,9 @@
         }
 
         // ── 声母错误（旧格式兼容）────────────────────────────
-        var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/) || p.match(/声母[错混淆]+[：:].+?【(.+?)】.+?【(.+?)】/);
+        var ri = p.match(/声母错误：应【(.+?)】实【(.+?)】/)
+              || p.match(/声母错误[：:]应读【(.+?)】你读成了【(.+?)】/)
+              || p.match(/声母[错混淆]+[：:].+?【(.+?)】.+?【(.+?)】/);
         if (ri) {
           var should = ri[1], got = ri[2];
           var retroflex = ['zh','ch','sh','r'], sibilant = ['z','c','s'];
@@ -2244,7 +2246,17 @@
         if (p.indexOf('后鼻音') >= 0) { pairs.push({ cat: 'NASAL_BACK',  zh: p, en: 'back nasal: '+p  }); tipCats.push('NASAL_BACK');  return; }
 
         // ── 漏读 / 多读 ────────────────────────────────────
-        if (p.indexOf('漏读') >= 0) { pairs.push({ cat: '', zh: '漏读音节', en: 'missed syllable' }); return; }
+        if (p.indexOf('漏读') >= 0) {
+          // 不直接说"漏读"（Azure 对齐不稳定，可能用户实际有读）
+          // 改为提示音节较弱，并给出正确读音
+          var py0 = correctPy || (entry && entry.p ? toToneMark(entry.p) : '');
+          if (py0) {
+            pairs.push({ cat: '', zh: '音节发音较弱，正确读音为 ' + py0, en: 'syllable too soft/unclear, correct: ' + py0 });
+          } else {
+            pairs.push({ cat: '', zh: '音节发音不够清晰', en: 'syllable unclear — speak more clearly' });
+          }
+          return;
+        }
         if (p.indexOf('多读') >= 0) { pairs.push({ cat: '', zh: '多读音节', en: 'extra syllable' }); return; }
 
         // ── 发音有误 / 准确度低（兜底，仅提供正确读音供参考）──
@@ -2270,10 +2282,13 @@
       });
 
       // 有具体问题时去掉泛化描述
+      // 用正则前缀匹配，兼容 "needs improvement (correct: xxx)" 等变体
       if (pairs.length > 1) {
-        var generic = new Set(['mispronounced','needs improvement']);
-        var hasSpecific = pairs.some(function (p) { return !generic.has(p.en) && p.en !== p.zh; });
-        if (hasSpecific) pairs = pairs.filter(function (p) { return !generic.has(p.en); });
+        var isGenericPair = function (p) {
+          return /^(mispronounced|needs improvement|syllable too soft|syllable unclear)/.test(p.en);
+        };
+        var hasSpecific = pairs.some(function (p) { return !isGenericPair(p) && p.en !== p.zh; });
+        if (hasSpecific) pairs = pairs.filter(function (p) { return !isGenericPair(p); });
       }
 
       if (!pairs.length) {
