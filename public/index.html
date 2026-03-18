@@ -3591,20 +3591,31 @@
     }
 
     var dlpKaraTimerId = null;
+    var dlpKaraStart   = null;  // performance.now() 基准，用于暂停/继续
+    var dlpKaraParams  = null;  // 当前卡拉OK参数，用于继续时恢复
     var dlpPlaying = false;
     var dlpPaused = false;
     var dlpSeq = null;
     var dlpCurrentIndex = 0;
 
-    function dlpRunKara(containerId, barFillId, durationMs, timings) {
+    // 从头开始播放卡拉OK（offset=0）或从指定偏移毫秒处继续
+    function dlpRunKaraFrom(containerId, barFillId, durationMs, timings, offsetMs) {
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
+      offsetMs = offsetMs || 0;
       var chars = document.querySelectorAll('#' + containerId + ' .dlp-kchar');
-      chars.forEach(function (c) { c.className = 'dlp-kchar'; });
+      if (!offsetMs) {
+        // 从头开始：重置所有字的状态
+        chars.forEach(function (c) { c.className = 'dlp-kchar'; });
+        var barFill0 = document.getElementById(barFillId);
+        if (barFill0) barFill0.style.width = '0%';
+      }
+      // 保存参数供暂停后恢复使用
+      dlpKaraParams = { containerId: containerId, barFillId: barFillId, durationMs: durationMs, timings: timings };
+      // start 往前偏移 offsetMs，使计时器认为已经过了 offset 时间
+      dlpKaraStart = performance.now() - offsetMs;
       var barFill = document.getElementById(barFillId);
-      if (barFill) barFill.style.width = '0%';
-      var start = performance.now();
       dlpKaraTimerId = setInterval(function () {
-        var elapsed = (performance.now() - start) / 1000;
+        var elapsed = (performance.now() - dlpKaraStart) / 1000;
         var pct = Math.min(1, elapsed / (durationMs / 1000));
         if (barFill) barFill.style.width = (pct * 100) + '%';
         chars.forEach(function (el, i) {
@@ -3618,6 +3629,15 @@
           chars.forEach(function (c) { c.className = 'dlp-kchar dlp-done'; });
         }
       }, 40);
+    }
+
+    function dlpRunKara(containerId, barFillId, durationMs, timings) {
+      dlpRunKaraFrom(containerId, barFillId, durationMs, timings, 0);
+    }
+
+    // 获取当前卡拉OK已经过的毫秒数（用于暂停时保存进度）
+    function dlpKaraElapsedMs() {
+      return dlpKaraStart ? Math.max(0, performance.now() - dlpKaraStart) : 0;
     }
 
     function dlpSetSpeaking(role) {
@@ -4021,6 +4041,7 @@
     var plpCurrentIdx = 0;
     var plpPlaying = false;
     var plpPaused = false;
+    var plpKaraPauseMs = null; // 暂停时保存的卡拉OK进度（毫秒）
 
     function plpSetPauseBtn(state) {
       // state: 'play' = not started / finished, 'pause' = playing, 'resume' = paused
@@ -4037,6 +4058,7 @@
       plpCurrentIdx = 0;
       plpPlaying = false;
       plpPaused = false;
+      plpKaraPauseMs = null;
       var titleEl = document.getElementById('plp-title');
       if (titleEl && dialogLessonMeta.title) {
         var lesson = LESSONS[lessonIdx] || LESSONS[0];
@@ -4054,21 +4076,29 @@
         plpSetPauseBtn('pause'); cb(); return;
       }
       if (plpPaused) {
-        // 继续 Resume（暂停后点播放）
+        // 继续 Resume — 从断点处继续，不重头
         plpPaused = false;
+        plpPlaying = true;
         plpSetPauseBtn('pause');
-        plpPlayOne(plpCurrentIdx);
+        resumeAudio(); // 音频从暂停位置继续
+        // 卡拉OK从保存的进度恢复
+        if (plpKaraPauseMs != null && dlpKaraParams) {
+          var p = dlpKaraParams;
+          dlpRunKaraFrom(p.containerId, p.barFillId, p.durationMs, p.timings, plpKaraPauseMs);
+          plpKaraPauseMs = null;
+        }
       } else if (!plpPlaying) {
         // 首次播放 / 播完后再播
         plpCurrentIdx = plpCurrentIdx || 0;
         plpSetPauseBtn('pause');
         plpPlayOne(plpCurrentIdx);
       } else {
-        // 暂停 Pause
+        // 暂停 Pause — 保存进度，不销毁音频
+        plpKaraPauseMs = dlpKaraElapsedMs(); // 保存卡拉OK当前进度
         plpPaused = true;
         plpPlaying = false;
         if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-        stopAudio();
+        pauseAudio(); // 音频原地暂停（不销毁）
         plpSetPauseBtn('resume');
       }
     }
@@ -4090,6 +4120,7 @@
       if (!plpSeq || idx >= plpSeq.length) {
         plpPlaying = false;
         plpPaused = false;
+        plpKaraPauseMs = null;
         plpSetPauseBtn('play'); // 播完后显示「播放」可重新开始
         var tp = document.getElementById('plp-panel-top');
         var bp = document.getElementById('plp-panel-bottom');
@@ -4133,6 +4164,7 @@
     function plpRestart() {
       plpPlaying = false;
       plpPaused = false;
+      plpKaraPauseMs = null;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       stopAudio();
       var kTop = document.getElementById('plp-kara-top');
