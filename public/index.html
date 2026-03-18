@@ -1983,9 +1983,17 @@
       var pairs   = [];  // { zh, en, cat }
       var tipCats = [];  // 本字涉及的错误类别，用于最后附上教学提示
 
-      // 获取该字的正确拼音（来自 sandhiQueue）
+      // 获取该字的正确拼音（来自 sandhiQueue，音变时显示音变后声调）
       var entry   = sandhiQueue && sandhiQueue[w.content] && sandhiQueue[w.content][0];
-      var correctPy = entry ? toToneMark(entry.p) : '';
+      var correctPy = '';
+      if (entry) {
+        if (entry.expectedTone && entry.tone && entry.expectedTone !== entry.tone) {
+          // 音变情况：显示音变后的声调（如 dǎ→dá）
+          correctPy = toToneMark(entry.p.replace(/\d$/, '') + entry.expectedTone);
+        } else {
+          correctPy = toToneMark(entry.p);
+        }
+      }
 
       parts.forEach(function (p) {
 
@@ -2054,7 +2062,18 @@
           var TONE_NAMES_ZH = ['','第1声（ā 高平）','第2声（á 上升）','第3声（ǎ 低降升）','第4声（à 下降）','轻声'];
           var TONE_NAMES_EN = ['','tone 1 (ā, high flat)','tone 2 (á, rising)','tone 3 (ǎ, dip-rise)','tone 4 (à, falling)','neutral'];
           var tipCat = n === 0 ? 'NEUTRAL' : 'TONE' + n;
-          pairs.push({ cat: tipCat, zh: '声调：应读' + (TONE_NAMES_ZH[n]||'第'+n+'声'), en: 'tone: should be ' + (TONE_NAMES_EN[n]||'tone '+n) });
+          // 若是音变（如三声连读），明确说明变调原因，避免与正确读音矛盾
+          if (ourEntry && ourEntry.expectedTone && ourEntry.tone && ourEntry.expectedTone !== ourEntry.tone) {
+            var basePy   = toToneMark(ourEntry.p);                                          // e.g. dǎ
+            var sandhiPy = toToneMark(ourEntry.p.replace(/\d$/, '') + ourEntry.expectedTone); // e.g. dá
+            pairs.push({
+              cat: tipCat,
+              zh: '变调：' + w.content + '（' + basePy + '）在第' + ourEntry.tone + '声前变读' + (TONE_NAMES_ZH[n]||'第'+n+'声') + '（' + sandhiPy + '）',
+              en: 'tone sandhi: ' + w.content + ' (' + basePy + ') becomes ' + (TONE_NAMES_EN[n]||'tone '+n) + ' (' + sandhiPy + ') before another ' + (ourEntry.tone===3?'3rd':'same') + ' tone'
+            });
+          } else {
+            pairs.push({ cat: tipCat, zh: '声调：应读' + (TONE_NAMES_ZH[n]||'第'+n+'声'), en: 'tone: should be ' + (TONE_NAMES_EN[n]||'tone '+n) });
+          }
           tipCats.push(tipCat);
           return;
         }
@@ -2097,7 +2116,7 @@
         // ⚠️ 不再根据声母类型推测错误类型，避免假阳性
         if (p.indexOf('发音有误') >= 0 || p.indexOf('准确度过低') >= 0 || p.indexOf('发音需改进') >= 0) {
           if (entry && entry.p) {
-            var py = toToneMark(entry.p);
+            var py = correctPy || toToneMark(entry.p);  // 优先使用音变后声调
             if (entry.expectedTone === 0 || entry.tone === 0) {
               pairs.push({ cat: 'NEUTRAL', zh: '轻声字，读短读轻（正确：' + py + '）', en: 'neutral tone – short and light (correct: '+py+')' });
               tipCats.push('NEUTRAL');
