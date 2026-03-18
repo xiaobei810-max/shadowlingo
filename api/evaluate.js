@@ -771,7 +771,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
     // 容易受 r-ending（儿化）影响的前置字
     '哪','那','这','哪','一',
     // 连读中容易弱化的字
-    '请','问','去','区','打','你','下','市',
+    '请','问','去','区','打','你','下','市','我',
     // 方向/位置词（Azure 对这类词在连读中评分偏严）
     '号','门','右','左','拐','对','前','后','旁','边','里','外','上','下',
     // 常见确认/疑问词
@@ -809,14 +809,17 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         // 用稍严阈值（不给免死金牌）
       }
       const isWeak = WEAK_CHARS.has(ch);
-      // 宽松策略：只有 Azure 明确报 Mispronunciation 或分数很低时才标错
-      // 单纯低分（70-79）不代表发音有误，Azure 对连读整体偏严
-      const redThr  = isWeak ? 32 : 42;   // 大幅降低红色阈值
-      const yellThr = isWeak ? 55 : 65;   // 大幅降低黄色阈值（原来 60/80）
-      if (acc < redThr)  return 2;
+      if (isWeak) {
+        // 高频字/虚词：Azure 在连读中对这类字评分系统性偏低，单纯低分不代表发音有误
+        // 只有 Azure 明确报 Mispronunciation 才标为黄色，且绝不标红（避免误报）
+        if (err === 'Mispronunciation' && acc < 65) return 1;
+        return 0;
+      }
+      // 普通字：低分或明确 Mispronunciation 才标错
+      if (acc < 42) return 2;
       // Mispronunciation 需要分数也较低才置信（避免误报）
       if (err === 'Mispronunciation' && acc < 75) return 1;
-      if (acc < yellThr) return 1;
+      if (acc < 65) return 1;
       return 0;
     };
 
