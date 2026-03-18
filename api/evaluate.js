@@ -398,12 +398,48 @@ const CHAR_PY = {
   '早':'zao3','造':'zao4','好':'hao3',
 };
 
-// ── 利用 Free STT 多候选结果对比参考文本，检测字级替换错误 ────────
-// refChars:    参考文本的字数组（清理后）
-// sttAlts:     free STT 识别候选数组（format=detailed NBest）
-// pyMap:       Gemini 生成的参考文本拼音映射
-// 返回: Map<char_index, {expected, got, gotPy, diag}>
-// 策略：检查所有候选，每个位置取最有力的（非 expected 的）差异证据
+// ── 编辑距离对齐：返回操作序列 [{type,ri,si}] ─────────────────────
+// type: 'match' | 'sub' | 'del'(ref多) | 'ins'(stt多)
+// 避免纯位置比较在 STT 有插入/删除时产生"整体位移"假阳性
+function alignChars(refArr, sttArr) {
+  const m = refArr.length, n = sttArr.length;
+  // DP table
+  const dp = [];
+  for (let i = 0; i <= m; i++) {
+    dp[i] = new Array(n + 1);
+    for (let j = 0; j <= n; j++) {
+      if (i === 0) { dp[i][j] = j; continue; }
+      if (j === 0) { dp[i][j] = i; continue; }
+      const same = refArr[i-1] === sttArr[j-1];
+      dp[i][j] = same
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+    }
+  }
+  // Backtrack
+  const ops = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && refArr[i-1] === sttArr[j-1]) {
+      ops.unshift({ type: 'match', ri: i-1, si: j-1 });
+      i--; j--;
+    } else if (i > 0 && j > 0 && dp[i][j] === dp[i-1][j-1] + 1) {
+      ops.unshift({ type: 'sub', ri: i-1, si: j-1 });
+      i--; j--;
+    } else if (j === 0 || (i > 0 && dp[i-1][j] <= dp[i][j-1])) {
+      ops.unshift({ type: 'del', ri: i-1, si: -1 });
+      i--;
+    } else {
+      ops.unshift({ type: 'ins', ri: -1, si: j-1 });
+      j--;
+    }
+  }
+  return ops;
+}
+
+// ── 利用 STT 多候选结果对比参考文本，检测字级替换错误 ───────────────
+// 使用编辑距离对齐取代纯位置比较，正确处理STT的插入/删除，
+// 避免"STT少识别一个字导致后续全部错位"的假阳性连锁反应
 function detectSttMismatches(refChars, sttAlts, pyMap) {
   const mismatches = new Map();
   if (!sttAlts || !sttAlts.length) return mismatches;
@@ -412,22 +448,22 @@ function detectSttMismatches(refChars, sttAlts, pyMap) {
     const sttChars = Array.from((sttText || '').replace(/\s/g, ''));
     if (!sttChars.length) continue;
 
-    const minLen = Math.min(refChars.length, sttChars.length);
-    for (let i = 0; i < minLen; i++) {
-      const expected = refChars[i];
-      const got      = sttChars[i];
-      if (expected === got) continue;
-      if (mismatches.has(i)) continue; // 已有同位置证据，先到先得
+    const ops = alignChars(refChars, sttChars);
+    for (const op of ops) {
+      if (op.type !== 'sub') continue;          // 只处理真正的替换
+      const ri = op.ri;
+      if (mismatches.has(ri)) continue;          // 先到先得
 
-      const wantPy = normalizePy(pyMap[expected] || CHAR_PY[expected] || '');
-      const gotPy  = normalizePy(CHAR_PY[got] || '');
+      const expected = refChars[ri];
+      const got      = sttChars[op.si];
+      const wantPy   = normalizePy(pyMap[expected] || CHAR_PY[expected] || '');
+      const gotPy    = normalizePy(CHAR_PY[got] || '');
       if (!wantPy) continue;
 
-      console.log(`[SttMatch] alt="${sttText.slice(0,8)}…" pos=${i} expected="${expected}"(${wantPy}) got="${got}"(${gotPy})`);
+      console.log(`[SttAlign] pos=${ri} expected="${expected}"(${wantPy}) got="${got}"(${gotPy})`);
 
       const diag = gotPy ? diagnoseError(wantPy, gotPy) : [];
-      // 即使没有 gotPy，也记录：可能参考字本是翘舌而 STT 给出了平舌字
-      mismatches.set(i, { expected, got, gotPy, diag });
+      mismatches.set(ri, { expected, got, gotPy, diag });
     }
   }
   return mismatches;
