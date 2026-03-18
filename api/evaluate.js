@@ -788,10 +788,11 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           userSyllable = userSyllable || sttMis.gotPy || null; // 把STT结果当userSyllable用于后续声调检查
         }
 
-        // 方案D：主动翘舌/前后鼻音检测（对翘舌/鼻音相关字无条件运行）
-        // 不受 cLevel / errType 限制：Azure 已标错的字也要尝试给出具体诊断
-        // 若有平舌/鼻音替代候选且置信度 ≥ 0.08，则主动标记/追加诊断
-        if (wantPy && !sttMis && effectivePhonemes.length > 0) {
+        // 方案D：主动翘舌/前后鼻音检测（对所有相关字，不受准确度阈值限制）
+        // Azure 的语境 ASR 可能把平舌读音"纠正"回翘舌字，导致分数偏高但发音有误
+        // 对此类字：直接检查 effectivePhonemes 的 NBestPhonemes，
+        // 若有平舌/鼻音替代候选且置信度 > 0.15，则主动标记
+        if (wantPy && !sttMis && cLevel[i] === 0 && effectivePhonemes.length > 0) {
           const wInit  = getInitial(wantPy);
           const wFinal = getFinal(wantPy);
           const RETRO_INITS = ['zh', 'ch', 'sh', 'r'];
@@ -803,14 +804,10 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
             const refPh  = normalizePy(ph.Phoneme || '');
 
             // 检查翘舌 ↔ 平舌混淆
-            // 阈值：0.08（低于原0.15）——对翘舌初声位置更灵敏
-            // 原因：母语者读"sh"时，NBest中"s"置信度极低(<0.01)；
-            //       误读成平舌时"s"置信度约8-25%，0.08可覆盖更多误读
-            // 搜索全部5个NBest（nbl全量），不限top3
             if (RETRO_INITS.includes(wInit) && RETRO_INITS.includes(refPh)) {
-              const flatAlt = nbl.find(n => {
+              const flatAlt = nbl.slice(0, 3).find(n => {
                 const p = normalizePy(n.Phoneme || '');
-                return FLAT_INITS.includes(p) && (n.Score || 0) >= 0.08;
+                return FLAT_INITS.includes(p) && (n.Score || 0) >= 0.15;
               });
               if (flatAlt) {
                 const altPh = normalizePy(flatAlt.Phoneme || '');
@@ -860,75 +857,32 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
                 cLevel[i] = 1;
             });
           } else {
-            // 无 NBest / STT 误读证据时 → 用每个音素准确度推断最弱分量
+            // 无 NBest / STT 误读证据时的提示
             if (wantTone === 0 && charAcc < 55) {
               cMsgs[i].push('轻声字：读得过重，应短促轻读');
               if (cLevel[i] === 0) cLevel[i] = 1;
             }
-            if (wantPy && cLevel[i] >= 1 && !sttMis) {
+            // 当 Azure 明确报 Mispronunciation 时，根据期望拼音特征给针对性提示
+            // （STT 已经处理过的不再重复）
+            if (errType === 'Mispronunciation' && wantPy && cLevel[i] >= 1 && !sttMis) {
               const wInit  = getInitial(wantPy);
               const wFinal = getFinal(wantPy);
-              const RETROFLEX_SET = ['zh','ch','sh','r'];
-              const SIBILANT_SET  = ['z','c','s'];
-              const NASAL_N_SET   = ['n','an','en','in','un','ün','ian','uan'];
-              const NASAL_NG_SET  = ['ng','ang','eng','ing','ong','iong','uang','iang'];
-              const KNOWN_INITS   = ['b','p','m','f','d','t','n','l','g','k','h',
-                                     'j','q','x','zh','ch','sh','r','z','c','s','y','w'];
+              const RETROFLEX_SET = ['zh', 'ch', 'sh', 'r'];
+              const SIBILANT_SET  = ['z', 'c', 's'];
               const alreadyHasRetro = cMsgs[i].some(m => m.includes('翘舌') || m.includes('平舌'));
               const alreadyHasNasal = cMsgs[i].some(m => m.includes('鼻音'));
-              const alreadyHasTone  = cMsgs[i].some(m => m.includes('声调'));
-              const alreadyHasInit  = cMsgs[i].some(m => m.includes('声母') || m.includes('翘舌') || m.includes('平舌'));
-              const alreadyHasFinal = cMsgs[i].some(m => m.includes('韵母') || m.includes('鼻音'));
-
-              // 找初声音素（Phoneme 名称为已知声母）与韵母音素
-              const initPh   = effectivePhonemes.find(p => KNOWN_INITS.includes(normalizePy(p.Phoneme || '')));
-              const finalPhs = effectivePhonemes.filter(p => p !== initPh);
-              const initAcc2  = initPh   ? subAcc(initPh)                              : 999;
-              const finalAcc2 = finalPhs.length ? Math.min(...finalPhs.map(p => subAcc(p))) : 999;
-
-              // 初声明显偏弱（< 65，且低于韵母 ≥10 分）→ 初声错误
-              if (!alreadyHasInit && initAcc2 < 65 && initAcc2 <= finalAcc2 - 10) {
+              if (!alreadyHasRetro) {
                 if (RETROFLEX_SET.includes(wInit)) {
-                  cMsgs[i].push(`声母【${wInit}】发音不准（翘舌音）`);
+                  cMsgs[i].push(`注意翘舌音声母【${wInit}】：舌尖上翘，不要读成平舌`);
                 } else if (SIBILANT_SET.includes(wInit)) {
-                  cMsgs[i].push(`声母【${wInit}】发音不准（平舌音）`);
-                } else if (wInit) {
-                  cMsgs[i].push(`声母【${wInit}】发音不准`);
+                  cMsgs[i].push(`注意平舌音声母【${wInit}】：舌尖平放，不要读成翘舌`);
                 }
               }
-              // 韵母明显偏弱（< 65，且低于声母 ≥10 分）→ 韵母/鼻音错误
-              else if (!alreadyHasFinal && finalAcc2 < 65 && finalAcc2 <= initAcc2 - 10) {
-                if (NASAL_N_SET.includes(wFinal)) {
-                  cMsgs[i].push(`韵母【${wFinal}】不准：前鼻音，收尾 -n`);
-                } else if (NASAL_NG_SET.includes(wFinal)) {
-                  cMsgs[i].push(`韵母【${wFinal}】不准：后鼻音，收尾 -ng`);
-                } else if (wFinal) {
-                  cMsgs[i].push(`韵母【${wFinal}】发音不准`);
-                }
-              }
-              // 无法区分哪个音素最弱 → 根据期望拼音特征给提示
-              else {
-                if (!alreadyHasRetro) {
-                  if (RETROFLEX_SET.includes(wInit)) {
-                    cMsgs[i].push(`注意翘舌音声母【${wInit}】`);
-                  } else if (SIBILANT_SET.includes(wInit)) {
-                    cMsgs[i].push(`注意平舌音声母【${wInit}】`);
-                  }
-                }
-                if (!alreadyHasNasal) {
-                  if (NASAL_NG_SET.includes(wFinal)) {
-                    cMsgs[i].push(`注意后鼻音韵母【${wFinal}】：收尾 -ng`);
-                  } else if (NASAL_N_SET.includes(wFinal)) {
-                    cMsgs[i].push(`注意前鼻音韵母【${wFinal}】：收尾 -n`);
-                  }
-                }
-                // 若两者都没有特殊特征，推断为声调问题
-                if (!alreadyHasTone && !alreadyHasRetro && !alreadyHasNasal
-                    && !RETROFLEX_SET.includes(wInit) && !SIBILANT_SET.includes(wInit)
-                    && !NASAL_N_SET.includes(wFinal) && !NASAL_NG_SET.includes(wFinal)
-                    && wantTone > 0 && wantTone < 5) {
-                  const TONE_DESC = ['','高平','上升','低降升','下降'];
-                  cMsgs[i].push(`声调偏差：应第${wantTone}声（${TONE_DESC[wantTone]}）`);
+              if (!alreadyHasNasal) {
+                if (wFinal.endsWith('ng')) {
+                  cMsgs[i].push(`注意后鼻音韵母【${wFinal}】：收尾 -ng（舌根抬起）`);
+                } else if (wFinal.endsWith('n') && wFinal !== 'ng') {
+                  cMsgs[i].push(`注意前鼻音韵母【${wFinal}】：收尾 -n（舌尖抵上齿）`);
                 }
               }
             }
