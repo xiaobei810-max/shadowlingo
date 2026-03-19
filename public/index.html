@@ -2053,9 +2053,10 @@
       audio.addEventListener("timeupdate", onTimeUpdate);
     }
 
-    var mediaRecorder = null;
+    var mediaRecorder = null;   // the always-warm standby recorder
     var micStream = null;
     var audioChunks = [];
+    var _isCapturing = false;   // true only while user-initiated recording is live
 
     // Uint8Array → base64（避免大数组 btoa 溢出）
     function u8ToB64(arr) {
@@ -2840,17 +2841,43 @@
     }
 
     // 停止 MediaRecorder（如果正在录音）
+    // Abort any in-progress user recording but keep the warm recorder running.
+    // Call this when switching to Listen/Slow/navigation within the practice page.
     function stopMediaRecorderIfRunning() {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.onstop = null;
-        try { mediaRecorder.stop(); } catch (e) { }
-        if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(function (t) { t.stop(); });
-        mediaRecorder = null; audioChunks = [];
+      if (_isCapturing) {
+        _isCapturing = false;
+        audioChunks = [];
         phase = 'idle';
-        document.getElementById('bn').textContent = '🎤 录音 Record';
+        document.getElementById('bn').textContent = '🎤 跟读 Record';
         document.getElementById('bn').classList.remove('active');
         document.getElementById('speech-indicator').classList.remove('active');
       }
+    }
+
+    // Truly stop the recorder and release the mic (call when leaving the practice page).
+    function teardownMic() {
+      _isCapturing = false;
+      audioChunks = [];
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        try { mediaRecorder.stop(); } catch (e) {}
+      }
+      mediaRecorder = null;
+      if (micStream) {
+        micStream.getTracks().forEach(function (t) { t.stop(); });
+        micStream = null;
+      }
+    }
+
+    // Start the always-warm standby recorder on this stream.
+    // ondataavailable only collects chunks when _isCapturing is true.
+    function _startStandbyRecorder(stream) {
+      if (mediaRecorder && mediaRecorder.state === 'recording') return; // already warm
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = function (e) {
+        if (_isCapturing && e.data && e.data.size > 0) audioChunks.push(e.data);
+      };
+      mediaRecorder.onpause = mediaRecorder.onerror = null;
+      mediaRecorder.start(50); // 50 ms timeslice keeps pipeline primed; no data saved unless capturing
     }
 
     // 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
@@ -3386,23 +3413,23 @@
       document.getElementById("speech-indicator").classList.add("active");
       resetKara();
       setStatus("🎙 录音中 Recording...");
+      audioChunks = [];
 
-      function initRecorder(stream) {
-        audioChunks = [];
-        mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = function (e) {
-          if (e.data && e.data.size > 0) audioChunks.push(e.data);
-        };
-        mediaRecorder.start(100);
-      }
-
-      // If stream is already active, start synchronously so the very first syllable is captured.
-      // If we need to request permission, we have to go async.
-      if (micStream && micStream.active) {
-        initRecorder(micStream);
+      if (micStream && micStream.active && mediaRecorder && mediaRecorder.state === 'recording') {
+        // Best case: standby recorder is already warm — zero startup latency.
+        _isCapturing = true;
+      } else if (micStream && micStream.active) {
+        // Stream alive but recorder stopped (e.g. after page interaction) — restart it warm.
+        _startStandbyRecorder(micStream);
+        _isCapturing = true;
       } else {
+        // First time or stream died — need to (re-)request mic permission.
         navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (s) { micStream = s; initRecorder(s); })
+          .then(function (s) {
+            micStream = s;
+            _startStandbyRecorder(s);
+            _isCapturing = true;
+          })
           .catch(function () {
             setStatus("⚠️ 麦克风权限被拒绝");
             busy = false; phase = "idle";
@@ -3417,16 +3444,21 @@
       document.getElementById("bn").textContent = "🎤 跟读 Record";
       document.getElementById("bn").classList.remove("active");
       document.getElementById("speech-indicator").classList.remove("active");
-      if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        setStatus("准备好了 Ready"); busy = false; return;
-      }
-      mediaRecorder.onstop = function () {
-        var blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
-        mediaRecorder = null;
-        evaluateAudio(blob);
-      };
-      mediaRecorder.stop();
+      if (!_isCapturing) { setStatus("准备好了 Ready"); busy = false; return; }
+      _isCapturing = false;
       phase = "scored";
+      // requestData flushes the current partial 50 ms chunk before we build the blob.
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.requestData();
+      }
+      // Give requestData one frame to fire its ondataavailable event, then build the blob.
+      var _mimeType = mediaRecorder ? (mediaRecorder.mimeType || 'audio/webm') : 'audio/webm';
+      setTimeout(function () {
+        if (audioChunks.length === 0) { setStatus("准备好了 Ready"); busy = false; return; }
+        var blob = new Blob(audioChunks, { type: _mimeType });
+        audioChunks = [];
+        evaluateAudio(blob);
+      }, 80);
     }
 
 
@@ -4050,6 +4082,7 @@
     }
 
     function showTipPage() {
+      teardownMic(); // leaving practice page — release mic
       // 渲染本课地道指南内容
       var lesson = LESSONS[lessonIdx];
       var tip = lesson.insiderTip;
@@ -4720,6 +4753,7 @@
     }
 
     function showPreListenPage() {
+      teardownMic(); // leaving practice page — release mic
       if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
       plpSeq = dialogLessonMeta.dialogue.slice();
       plpCurrentIdx = 0;
