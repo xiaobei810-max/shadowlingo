@@ -1584,7 +1584,7 @@
       display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px;
     }
     .cover-lesson-num {
-      font-size: 18px; font-weight: 700; color: var(--green);
+      font-size: 24px; font-weight: 700; color: var(--green);
       letter-spacing: 1px; margin-bottom: 2px;
     }
     .cover-title-zh {
@@ -1645,6 +1645,23 @@
     .fc-py {
       font-size: 18px; color: #60a5fa; font-weight: 400; letter-spacing: 0.5px;
     }
+    .fc-speak-btn {
+      margin-top: 4px;
+      padding: 8px 22px; border-radius: 99px;
+      background: rgba(34,197,94,0.12); border: 1.5px solid var(--green);
+      color: var(--green); font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .fc-speak-btn:hover { background: rgba(34,197,94,0.25); }
+    .fc-speak-btn.playing { background: rgba(34,197,94,0.3); }
+    .tip-play-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 10px; padding: 6px 16px; border-radius: 99px;
+      background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);
+      color: var(--green); font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .tip-play-btn:hover { background: rgba(34,197,94,0.25); }
     .fc-en {
       font-size: 15px; color: #94a3b8; line-height: 1.5; max-width: 280px;
     }
@@ -1666,17 +1683,17 @@
 
     /* ── 拼音/英文 Toggle ────────────────────────────────────── */
     .toggle-row {
-      display: flex; gap: 10px; justify-content: center; padding: 10px 20px 0;
+      display: flex; gap: 8px; justify-content: center; padding: 8px 20px 0;
     }
     .tgl-btn {
-      flex: 1; max-width: 160px;
-      padding: 10px 14px; border-radius: 12px; border: 1.5px solid var(--green);
+      padding: 6px 14px; border-radius: 99px; border: 1.5px solid var(--green);
       background: rgba(34,197,94,0.12); color: var(--green);
       cursor: pointer; transition: all 0.2s;
-      display: flex; flex-direction: column; align-items: center; gap: 1px;
+      display: flex; align-items: center; gap: 4px;
+      font-size: 13px; font-weight: 600; white-space: nowrap;
     }
-    .tgl-zh { font-size: 15px; font-weight: 700; line-height: 1.2; }
-    .tgl-en-label { font-size: 11px; font-weight: 500; opacity: 0.8; }
+    .tgl-zh { font-weight: 700; }
+    .tgl-en-label { opacity: 0.8; font-weight: 500; }
     .tgl-btn.off {
       background: transparent; color: #4b5563; border-color: var(--border);
     }
@@ -1791,7 +1808,7 @@
       <div class="context-panel" id="context-panel-below" style="display:none">
         <div class="ctx-header">
           <span class="ctx-speaker" id="ctx-speaker-below">工作人员 · Staff</span>
-          <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放</button>
+          <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
         </div>
         <div class="ctx-zh" id="ctx-zh-below"></div>
         <div class="ctx-en" id="ctx-en-below"></div>
@@ -4062,11 +4079,13 @@
               "<div class='tip-tag'>书面语 · 📖 Textbook</div>" +
               "<div class='tip-zh-big'>" + tip.textbook.zh + "</div>" +
               "<div class='tip-en-sm'>" + tip.textbook.en + "</div>" +
+              "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.textbook.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
             "</div>" +
             "<div class='tip-compare-row'>" +
               "<div class='tip-tag street'>口语 · 🗣 Real Street</div>" +
               "<div class='tip-zh-big'>" + tip.street.zh + "</div>" +
               (tip.street.pinyin ? "<div class='tip-py'>" + tip.street.pinyin + "</div>" : "") +
+              "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.street.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
             "</div>" +
           "</div>" +
           "<div class='tip-note'>" +
@@ -4961,6 +4980,24 @@
       showPreListenPage();
     }
 
+    // ── Flashcard speak ───────────────────────────────────────
+    function fcSpeak(e) {
+      e.stopPropagation(); // don't advance card
+      var v = LESSONS[lessonIdx].vocab[fcIdx];
+      if (!v) return;
+      var btn = document.getElementById('fc-speak-btn');
+      if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 播放中…'; }
+      speakAzure(v.zh, 'local', 1.0,
+        function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } },
+        null
+      );
+    }
+
+    // ── Tip page speak ────────────────────────────────────────
+    function tipSpeak(text, role) {
+      speakAzure(text, role || 'local', 1.0, null, null);
+    }
+
     // ── Pinyin / English Toggles ──────────────────────────────
     var pyOn = true;
     var enOn = true;
@@ -4996,7 +5033,7 @@
       <div class="cover-title-zh" id="cover-title-zh">机场问路</div>
       <div class="cover-title-en" id="cover-title-en">Asking for Directions at the Airport</div>
       <div class="cover-divider"></div>
-      <div class="cover-scene-zh" id="cover-scene-zh">卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。</div>
+      <div class="cover-scene-zh" id="cover-scene-zh">卢克刚抵达上海浦东机场，<br>向机场工作人员询问去市区的巴士。</div>
       <div class="cover-scene-en" id="cover-scene-en">Luke has just arrived at Shanghai Pudong Airport and needs to find the bus to the city center.</div>
       <button class="cover-start-btn" onclick="startLesson()">开始学习 · Start Learning →</button>
     </div>
@@ -5010,9 +5047,10 @@
         <div class="fc-count" id="fc-count">1 / 6</div>
       </div>
       <div class="fc-timer-bar"><div class="fc-timer-fill" id="fc-timer-fill"></div></div>
-      <div class="fc-card" onclick="fcNext()">
+      <div class="fc-card">
         <div class="fc-zh" id="fc-zh">不好意思</div>
         <div class="fc-py" id="fc-py">bù hǎo yì si</div>
+        <button class="fc-speak-btn" id="fc-speak-btn" onclick="fcSpeak(event)">🔊 朗读 Listen</button>
         <div class="fc-en" id="fc-en">Excuse me / Sorry to bother you</div>
       </div>
       <div class="fc-footer">
