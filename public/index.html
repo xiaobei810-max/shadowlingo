@@ -1632,18 +1632,18 @@
         audio: "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a",
         sentences: [
           {
-            zh: "你好，打扰一下。请问去市区在哪儿坐车？",
-            pinyin: "Nǐ hǎo, dǎrǎo yíxià. Qǐngwèn qù shìqū zài nǎr zuò chē?",
+            zh: "你好，不好意思。请问去市区在哪儿坐车？",
+            pinyin: "Nǐ hǎo, bù hǎo yì si. Qǐngwèn qù shìqū zài nǎr zuò chē?",
             en: "Hello, excuse me. Where do I take the bus to the city center?",
             context: null,
             contextBelow: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dà bā ma? Yì zhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
             role: "learner",
             start: 0, end: 4,
             praise: "👏 开口问路很勇敢！Great initiative!",
-            hint: "【打扰一下】is super useful — politely gets someone's attention · 【在哪儿】asks 'where'",
+            hint: "【不好意思】is super useful — politely gets someone's attention · 【在哪儿】asks 'where'",
             chars: [
               { c: "你", p: "ni3" }, { c: "好", p: "hao3" },
-              { c: "打", p: "da3" }, { c: "扰", p: "rao3" }, { c: "一", p: "yi1" }, { c: "下", p: "xia4" },
+              { c: "不", p: "bu4" }, { c: "好", p: "hao3" }, { c: "意", p: "yi4" }, { c: "思", p: "si5" },
               { c: "请", p: "qing3" }, { c: "问", p: "wen4" },
               { c: "去", p: "qu4" }, { c: "市", p: "shi4" }, { c: "区", p: "qu1" },
               { c: "在", p: "zai4" }, { c: "哪", p: "na3" }, { c: "儿", p: "er5" }, { c: "坐", p: "zuo4" }, { c: "车", p: "che1" }
@@ -1681,17 +1681,17 @@
             ]
           },
           {
-            zh: "我明白了，谢谢您！",
-            pinyin: "Wǒ míngbai le, xièxie nín!",
+            zh: "我明白了，谢谢！",
+            pinyin: "Wǒ míngbai le, xièxie!",
             en: "I understand, thank you!",
             context: { speaker: "工作人员", zh: "对，上车扫码或者付现金都行。", pinyin: "Duì, shàng chē sǎo mǎ huò zhě fù xiàn jīn dōu xíng.", en: "Yes, you can scan a QR code or pay cash on the bus." },
             role: "learner",
             start: 13, end: 17,
             praise: "🔥 收尾很有礼貌！Perfectly polite sign-off!",
-            hint: "【您】is more respectful than 你 — use it with strangers and elders",
+            hint: "【我明白了】shows you understood — a natural wrap-up after getting information",
             chars: [
               { c: "我", p: "wo3" }, { c: "明", p: "ming2" }, { c: "白", p: "bai2" }, { c: "了", p: "le5" },
-              { c: "谢", p: "xie4" }, { c: "谢", p: "xie4" }, { c: "您", p: "nin2" }
+              { c: "谢", p: "xie4" }, { c: "谢", p: "xie4" }
             ]
           }
         ]
@@ -1725,8 +1725,8 @@
         scene: "卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。",
         dialogue: [
           { speaker: "卢克", role: "learner",
-            zh: "你好，打扰一下。请问去市区在哪儿坐车？",
-            pinyin: "Nǐ hǎo, dǎrǎo yíxià. Qǐngwèn qù shìqū zài nǎr zuò chē?",
+            zh: "你好，不好意思。请问去市区在哪儿坐车？",
+            pinyin: "Nǐ hǎo, bù hǎo yì si. Qǐngwèn qù shìqū zài nǎr zuò chē?",
             en: "Hello, excuse me. Where do I take the bus to the city center?" },
           { speaker: "工作人员", role: "local",
             zh: "大巴吗？一直往前走，出三号门，往右拐。",
@@ -1749,8 +1749,8 @@
             pinyin: "Duì, shàng chē sǎo mǎ huò zhě fù xiàn jīn dōu xíng.",
             en: "Yes, you can scan a QR code or pay cash on the bus." },
           { speaker: "卢克", role: "learner",
-            zh: "我明白了，谢谢您！",
-            pinyin: "Wǒ míngbai le, xièxie nín!",
+            zh: "我明白了，谢谢！",
+            pinyin: "Wǒ míngbai le, xièxie!",
             en: "I understand, thank you!" }
         ],
         correct: [
@@ -2697,7 +2697,7 @@
           }, 0)
         ) : 0;
         var displayScore = Math.max(0, baseScore - acousticPenalty);
-        sessionScores.push(displayScore);
+        sessionScores[idx] = displayScore;   // 用索引赋值：重复录音时替换而非追加
         incPracticeCount(lessonIdx, idx);
         document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
 
@@ -2706,7 +2706,7 @@
           result.dualTrackErrors || [], acousticErrors);
       } catch (err) {
         console.error('评测失败:', err);
-        sessionScores.push(0);
+        sessionScores[idx] = 0;   // 同上，替换而非追加
         incPracticeCount(lessonIdx, idx);
         document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
         fillEvalResult(0, null, [], s, '评测失败：' + err.message);
@@ -3773,7 +3773,7 @@
       var recorded = sessionScores.length;
       // Skipped sentences count as 0 — divide by total, not just recorded
       var sum = sessionScores.reduce(function (a, b) { return a + b; }, 0);
-      var overall = totalSentences > 0 ? Math.round(sum / totalSentences) : 0;
+      var overall = Math.min(100, totalSentences > 0 ? Math.round(sum / totalSentences) : 0);
 
       var noPractice = recorded === 0;
       var oColor = noPractice ? "#64748b" :

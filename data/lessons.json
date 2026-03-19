@@ -8,8 +8,8 @@
         {
           "speaker": "卢克",
           "role": "learner",
-          "zh": "你好，打扰一下。请问去市区在哪儿坐车？",
-          "pinyin": "Nǐ hǎo, dǎrǎo yíxià. Qǐngwèn qù shìqū zài nǎr zuò chē?",
+          "zh": "你好，不好意思。请问去市区在哪儿坐车？",
+          "pinyin": "Nǐ hǎo, bù hǎo yì si. Qǐngwèn qù shìqū zài nǎr zuò chē?",
           "en": "Hello, excuse me. Where do I take the bus to the city center?"
         },
         {
@@ -50,8 +50,8 @@
         {
           "speaker": "卢克",
           "role": "learner",
-          "zh": "我明白了，谢谢您！",
-          "pinyin": "Wǒ míngbai le, xièxie nín!",
+          "zh": "我明白了，谢谢！",
+          "pinyin": "Wǒ míngbai le, xièxie!",
           "en": "I understand, thank you!"
         }
       ],
