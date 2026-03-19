@@ -1194,16 +1194,14 @@
     .guide-btn-user,
     .guide-btn-native {
       flex: 1;
-      padding: 6px 10px;
+      padding: 8px 10px;
       border-radius: 8px;
       border: none;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
+      line-height: 1.4;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+      text-align: center;
     }
     .guide-btn-user {
       background: rgba(248,113,113,0.15);
@@ -2866,6 +2864,7 @@
       // 对话模式下，优先使用当前轮到 learner 说的句子；否则回退到当前课时句子
       var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
       _lastEvalSentenceZh = s.zh;
+      _lastEvalSentenceRole = s.role || 'learner';
       showEvalPageLoading(s);
       try {
         // 1. 本地转换为 16kHz/16bit/mono PCM（同时保留 AudioBuffer 供声学分析）
@@ -3387,23 +3386,31 @@
       document.getElementById("speech-indicator").classList.add("active");
       resetKara();
       setStatus("🎙 录音中 Recording...");
-      var getStream = (micStream && micStream.active)
-        ? Promise.resolve(micStream)
-        : navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { micStream = s; return s; });
-      getStream.then(function (stream) {
+
+      function initRecorder(stream) {
         audioChunks = [];
         mediaRecorder = new MediaRecorder(stream);
         mediaRecorder.ondataavailable = function (e) {
           if (e.data && e.data.size > 0) audioChunks.push(e.data);
         };
         mediaRecorder.start(100);
-      }).catch(function (err) {
-        setStatus("⚠️ 麦克风权限被拒绝");
-        busy = false; phase = "idle";
-        document.getElementById("bn").textContent = "🎤 跟读 Record";
-        document.getElementById("bn").classList.remove("active");
-        document.getElementById("speech-indicator").classList.remove("active");
-      });
+      }
+
+      // If stream is already active, start synchronously so the very first syllable is captured.
+      // If we need to request permission, we have to go async.
+      if (micStream && micStream.active) {
+        initRecorder(micStream);
+      } else {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function (s) { micStream = s; initRecorder(s); })
+          .catch(function () {
+            setStatus("⚠️ 麦克风权限被拒绝");
+            busy = false; phase = "idle";
+            document.getElementById("bn").textContent = "🎤 跟读 Record";
+            document.getElementById("bn").classList.remove("active");
+            document.getElementById("speech-indicator").classList.remove("active");
+          });
+      }
     }
 
     function stopRecording() {
@@ -4410,10 +4417,11 @@
 
     // ── Azure Neural TTS ──────────────────────────────────────────
     var _ttsCache = {};    // cacheKey → blob URL
-    var _lastUserRecordingUrl = null;  // blob URL of the most recent user recording
-    var _lastEvalSentenceZh = '';      // Chinese text of the last evaluated sentence
-    var _guideUserAudio = null;        // Audio object for guide user-recording playback
-    var _guideNativeAudio = null;      // Audio object for guide native TTS playback
+    var _lastUserRecordingUrl = null;   // blob URL of the most recent user recording
+    var _lastEvalSentenceZh = '';       // Chinese text of the last evaluated sentence
+    var _lastEvalSentenceRole = 'learner'; // TTS role of the last evaluated sentence
+    var _guideUserAudio = null;         // Audio object for guide user-recording playback
+    var _guideNativeAudio = null;       // Audio object for guide native TTS playback
     var _currentAudio = null; // currently playing <audio> element
     var _needsGesture = false; // autoplay blocked — waiting for user tap
     var _gestureCallback = null;
@@ -5006,10 +5014,13 @@
       // state: 'idle' | 'playing' | 'paused'
       var btn = document.getElementById(btnId);
       if (!btn) return;
+      var sub = '<br><span style="font-size:10px;opacity:0.75">';
       if (btnId === 'guide-btn-user') {
-        btn.textContent = state === 'playing' ? '⏸ 我的录音' : state === 'paused' ? '▶ 我的录音' : '🎙 我的录音';
+        var icon = state === 'playing' ? '⏸' : state === 'paused' ? '▶' : '🎙';
+        btn.innerHTML = icon + ' 录音' + sub + 'Recording</span>';
       } else {
-        btn.textContent = state === 'playing' ? '⏸ 原声' : state === 'paused' ? '▶ 原声' : '🔊 原声';
+        var icon = state === 'playing' ? '⏸' : state === 'paused' ? '▶' : '🔊';
+        btn.innerHTML = icon + ' 原声' + sub + 'Native</span>';
       }
     }
 
@@ -5054,7 +5065,8 @@
         return;
       }
       // Fetch TTS and create a new Audio object
-      var cacheKey = 'local:1.00:' + _lastEvalSentenceZh;
+      var nativeRole = _lastEvalSentenceRole || 'learner';
+      var cacheKey = nativeRole + ':1.00:' + _lastEvalSentenceZh;
       _setGuideBtnState('guide-btn-native', 'playing');
       function _playNativeUrl(url) {
         _guideNativeAudio = new Audio(url);
@@ -5068,7 +5080,7 @@
         _playNativeUrl(_ttsCache[cacheKey]);
       } else {
         fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: _lastEvalSentenceZh, role: 'local', rate: 1.0 }) })
+          body: JSON.stringify({ text: _lastEvalSentenceZh, role: nativeRole, rate: 1.0 }) })
         .then(function(r) { return r.ok ? r.blob() : null; })
         .then(function(blob) {
           if (!blob) { _setGuideBtnState('guide-btn-native', 'idle'); return; }
@@ -5299,8 +5311,8 @@
       <div class="eval-dualtrack-card" id="eval-dualtrack-card" style="display:none">
         <div class="eval-dualtrack-title">📖 发音指南 Pronunciation Guide</div>
         <div class="guide-compare-btns" style="margin-bottom:12px">
-          <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 我的录音</button>
-          <button class="guide-btn-native" id="guide-btn-native" onclick="playGuideNative()">🔊 原声</button>
+          <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 录音<br><span style="font-size:10px;opacity:0.75">Recording</span></button>
+          <button class="guide-btn-native" id="guide-btn-native" onclick="playGuideNative()">🔊 原声<br><span style="font-size:10px;opacity:0.75">Native</span></button>
         </div>
         <div id="eval-dualtrack-body"></div>
       </div>
