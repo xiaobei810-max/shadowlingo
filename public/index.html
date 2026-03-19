@@ -446,6 +446,37 @@
       }
     }
 
+    /* ── Recording countdown overlay ───────────────────────── */
+    #rec-countdown {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.72);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    #rec-countdown.show { display: flex; }
+    .rcd-number {
+      font-size: 120px;
+      font-weight: 900;
+      line-height: 1;
+      color: #fff;
+      animation: rcdPop 0.25s ease-out;
+    }
+    .rcd-label {
+      font-size: 20px;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.05em;
+    }
+    @keyframes rcdPop {
+      0%   { transform: scale(1.4); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
     /* Score panel */
     .score-panel {
       background: var(--card);
@@ -2057,7 +2088,9 @@
     var micStream = null;
     var audioChunks = [];
     var _isCapturing = false;   // true only while user-initiated recording is live
-    var _webmInitChunk = null;  // chunk-0 from standby recorder: contains EBML/WebM header without which the blob is undecodable
+    var _webmInitChunk = null;  // chunk-0: container init header (EBML for WebM, ftyp/moov for MP4)
+    var _countdownTimer = null; // setInterval handle for the recording countdown
+    var _countdownN = 0;        // current countdown value
 
     // Uint8Array → base64（避免大数组 btoa 溢出）
     function u8ToB64(arr) {
@@ -2842,14 +2875,18 @@
     }
 
     // 停止 MediaRecorder（如果正在录音）
-    // Abort any in-progress user recording but keep the warm recorder running.
+    // Abort any in-progress user recording (or countdown) but keep the warm recorder running.
     // _webmInitChunk is intentionally preserved so the next recording is still valid.
     function stopMediaRecorderIfRunning() {
-      if (_isCapturing) {
+      if (_countdownTimer) {
+        clearInterval(_countdownTimer); _countdownTimer = null;
+        document.getElementById('rec-countdown').classList.remove('show');
+      }
+      if (_isCapturing || _countdownTimer !== null || phase === 'recording') {
         _isCapturing = false;
-        audioChunks = _webmInitChunk ? [_webmInitChunk] : []; // keep init chunk ready
+        audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
         phase = 'idle';
-        document.getElementById('bn').textContent = '🎤 跟读 Record';
+        document.getElementById('bn').textContent = '🎤 录音 Record';
         document.getElementById('bn').classList.remove('active');
         document.getElementById('speech-indicator').classList.remove('active');
       }
@@ -3411,49 +3448,95 @@
       }
     }
 
+    // Called when countdown reaches zero: arm _isCapturing and switch UI to "recording" state.
+    function _armRecording() {
+      document.getElementById('rec-countdown').classList.remove('show');
+      if (!micStream || !micStream.active) { // mic was lost during countdown
+        busy = false; phase = 'idle';
+        document.getElementById('bn').textContent = '🎤 录音 Record';
+        document.getElementById('bn').classList.remove('active');
+        document.getElementById('speech-indicator').classList.remove('active');
+        return;
+      }
+      audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
+      _isCapturing = true;
+      document.getElementById('bn').textContent = '⏹ 停止录音 Stop';
+      document.getElementById('bn').classList.add('active');
+      document.getElementById('speech-indicator').classList.add('active');
+      setStatus('🎙 录音中 Recording...');
+    }
+
+    // Show the 2-second countdown overlay. MediaRecorder is already running (warming up).
+    function _startCountdown() {
+      if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+      _countdownN = 2;
+      var numEl = document.getElementById('rcd-number');
+      if (numEl) numEl.textContent = _countdownN;
+      document.getElementById('rec-countdown').classList.add('show');
+      _countdownTimer = setInterval(function () {
+        _countdownN--;
+        if (_countdownN > 0) {
+          // Force CSS animation to replay by cloning the element
+          var el = document.getElementById('rcd-number');
+          if (el) { el.textContent = _countdownN; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+        } else {
+          clearInterval(_countdownTimer); _countdownTimer = null;
+          _armRecording();
+        }
+      }, 1000);
+    }
+
     function startRecording() {
       stopMediaRecorderIfRunning();
       clearTimers();
       if (audio) { audio.pause(); speak(false); }
-      phase = "recording";
+      phase = 'recording';
       busy = true;
-      document.getElementById("bn").textContent = "⏹ 停止录音 Stop";
-      document.getElementById("bn").classList.add("active");
-      document.getElementById("speech-indicator").classList.add("active");
       resetKara();
-      setStatus("🎙 录音中 Recording...");
-      // Seed audioChunks with the WebM init chunk so the resulting blob always has
-      // a valid EBML + Tracks header. Without it the audio after the first recording
-      // is undecodable and the first syllables appear to be "missing".
-      audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
+      // Button stays in neutral state during countdown — user can click again to cancel
+      document.getElementById('bn').textContent = '✕ 取消 Cancel';
+      document.getElementById('bn').classList.remove('active');
+      setStatus('准备录音中...');
 
-      if (micStream && micStream.active && mediaRecorder && mediaRecorder.state === 'recording') {
-        // Best case: standby recorder already warm — zero startup latency.
-        _isCapturing = true;
-      } else if (micStream && micStream.active) {
-        // Stream alive but recorder stopped — restart standby.
-        _startStandbyRecorder(micStream);
-        _isCapturing = true;
+      function _beginWarmupAndCountdown(stream) {
+        micStream = stream;
+        _startStandbyRecorder(stream); // pipeline begins warming up now
+        _startCountdown();             // 2-second countdown; _isCapturing armed at zero
+      }
+
+      if (micStream && micStream.active) {
+        // Stream already live — ensure recorder is running then countdown.
+        if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+          _startStandbyRecorder(micStream);
+        }
+        _startCountdown();
       } else {
-        // First time or stream died — request mic permission.
+        // Need mic permission first (async), then start warm-up + countdown.
         navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (s) {
-            micStream = s;
-            _startStandbyRecorder(s);
-            _isCapturing = true;
-          })
+          .then(function (s) { _beginWarmupAndCountdown(s); })
           .catch(function () {
-            setStatus("⚠️ 麦克风权限被拒绝");
-            busy = false; phase = "idle";
-            document.getElementById("bn").textContent = "🎤 跟读 Record";
-            document.getElementById("bn").classList.remove("active");
-            document.getElementById("speech-indicator").classList.remove("active");
+            setStatus('⚠️ 麦克风权限被拒绝');
+            busy = false; phase = 'idle';
+            document.getElementById('bn').textContent = '🎤 录音 Record';
           });
       }
     }
 
     function stopRecording() {
-      document.getElementById("bn").textContent = "🎤 跟读 Record";
+      // If clicked during countdown, cancel it and abort.
+      if (_countdownTimer) {
+        clearInterval(_countdownTimer); _countdownTimer = null;
+        document.getElementById('rec-countdown').classList.remove('show');
+        _isCapturing = false;
+        audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
+        phase = 'idle'; busy = false;
+        document.getElementById('bn').textContent = '🎤 录音 Record';
+        document.getElementById('bn').classList.remove('active');
+        document.getElementById('speech-indicator').classList.remove('active');
+        setStatus('准备好了 Ready');
+        return;
+      }
+      document.getElementById("bn").textContent = "🎤 录音 Record";
       document.getElementById("bn").classList.remove("active");
       document.getElementById("speech-indicator").classList.remove("active");
       if (!_isCapturing) { setStatus("准备好了 Ready"); busy = false; return; }
@@ -3463,7 +3546,6 @@
       if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.requestData();
       }
-      // Give requestData one frame to fire its ondataavailable event, then build the blob.
       var _mimeType = mediaRecorder ? (mediaRecorder.mimeType || 'audio/webm') : 'audio/webm';
       setTimeout(function () {
         if (audioChunks.length === 0) { setStatus("准备好了 Ready"); busy = false; return; }
@@ -5382,6 +5464,12 @@
       <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ 返回<br><span style="font-size:11px;font-weight:400">Back to Start</span></button>
       <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">下一课 ▶<br><span style="font-size:11px;font-weight:400">Next Lesson</span></button>
     </div>
+  </div>
+
+  <!-- Recording countdown overlay -->
+  <div id="rec-countdown">
+    <div class="rcd-number" id="rcd-number">2</div>
+    <div class="rcd-label">准备好了开始说 / Get ready to speak</div>
   </div>
 
 </body>
