@@ -633,7 +633,7 @@
     }
     .tip-tag {
       font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
-      color: #64748b; margin-bottom: 8px; text-transform: uppercase;
+      color: var(--green); margin-bottom: 8px; text-transform: uppercase;
     }
     .tip-tag.street { color: var(--green); }
     .tip-zh-big {
@@ -3900,12 +3900,12 @@
         inner.innerHTML =
           "<div class='tip-compare'>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag'>📖 Textbook</div>" +
+              "<div class='tip-tag'>书面语 · 📖 Textbook</div>" +
               "<div class='tip-zh-big'>" + tip.textbook.zh + "</div>" +
               "<div class='tip-en-sm'>" + tip.textbook.en + "</div>" +
             "</div>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag street'>🗣 Real Street</div>" +
+              "<div class='tip-tag street'>口语 · 🗣 Real Street</div>" +
               "<div class='tip-zh-big'>" + tip.street.zh + "</div>" +
               (tip.street.pinyin ? "<div class='tip-py'>" + tip.street.pinyin + "</div>" : "") +
             "</div>" +
