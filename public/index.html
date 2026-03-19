@@ -726,14 +726,14 @@
     }
 
     .anno-chars {
-      font-size: 26px;
+      font-size: 34px;
       font-weight: 700;
       margin-bottom: 8px;
       line-height: 1;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 6px 4px;
+      gap: 8px 6px;
     }
 
     ruby.anno-char {
@@ -741,11 +741,11 @@
       flex-direction: column-reverse;
       align-items: center;
       border-radius: 4px;
-      padding: 0 1px;
+      padding: 0 2px;
     }
 
     ruby.anno-char rt {
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 400;
       line-height: 1.4;
       color: inherit;
@@ -794,10 +794,10 @@
 
     .eval-inner {
       width: 100%;
-      max-width: 480px;
+      max-width: 640px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 18px;
     }
 
     /* 顶部句子信息 */
@@ -845,33 +845,33 @@
     /* 分数卡片 */
     .eval-score-card {
       background: var(--card);
-      border-radius: 20px;
-      padding: 24px 20px;
+      border-radius: 24px;
+      padding: 40px 32px;
       text-align: center;
     }
 
     .eval-score-num {
-      font-size: 80px;
+      font-size: 120px;
       font-weight: 800;
       line-height: 1;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .eval-score-sub {
-      font-size: 13px;
+      font-size: 16px;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
 
     .eval-grade {
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 700;
     }
 
     .eval-praise {
-      font-size: 14px;
+      font-size: 17px;
       color: #94a3b8;
-      margin-top: 10px;
+      margin-top: 14px;
       line-height: 1.8;
       padding: 0 8px;
       white-space: pre-line;
@@ -1151,8 +1151,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
-      padding: 28px 16px 24px;
+      gap: 16px;
+      padding: 48px 16px 44px;
     }
     .eval-loading-msg {
       font-size: 15px;
@@ -1164,13 +1164,13 @@
     /* ── soccer ball rolling ── */
     .el-stage {
       width: 100%;
-      max-width: 260px;
+      max-width: 420px;
       position: relative;
-      height: 72px;
+      height: 108px;
     }
     .el-rider {
       position: absolute;
-      bottom: 10px;
+      bottom: 15px;
       left: 4%;
       z-index: 2;
       transition: left 0.2s linear;
@@ -1181,29 +1181,29 @@
       to   { transform: translateX(-50%) rotate(360deg); }
     }
     .soccer-ball {
-      width: 44px; height: 44px;
+      width: 66px; height: 66px;
       background: #f8f8f8;
       border-radius: 50%;
       position: relative;
-      border: 1.5px solid #bbb;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      border: 2px solid #bbb;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
       overflow: hidden;
     }
     .sb-c {
       position: absolute;
-      width: 15px; height: 15px;
+      width: 22px; height: 22px;
       background: #222;
-      top: 15px; left: 15px;
+      top: 22px; left: 22px;
       clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
     }
-    /* 5 surrounding pentagons — all start at top-center, rotate around ball center (22,22)
-       transform-origin = (ball_center_x - left, ball_center_y - top) = (22-15.5, 22-(-4)) = (6.5px, 26px) */
+    /* 5 surrounding pentagons — rotate around ball center (33,33)
+       transform-origin = (33 - left, 33 - top) = (33-23.5, 33-(-6)) = (9.5px, 39px) */
     .sb-1,.sb-2,.sb-3,.sb-4,.sb-5 {
       position: absolute;
-      width: 13px; height: 13px;
+      width: 20px; height: 20px;
       background: #222;
-      top: -4px; left: 15.5px;
-      transform-origin: 6.5px 26px;
+      top: -6px; left: 23.5px;
+      transform-origin: 9.5px 39px;
       clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
     }
     .sb-1 { transform: rotate(0deg); }
@@ -1213,8 +1213,8 @@
     .sb-5 { transform: rotate(288deg); }
     .el-flag {
       position: absolute;
-      right: 0; bottom: 8px;
-      font-size: 24px; line-height: 1;
+      right: 0; bottom: 12px;
+      font-size: 36px; line-height: 1;
       animation: elFlagWave 0.55s ease-in-out infinite alternate;
       transform-origin: bottom left;
     }
@@ -1225,9 +1225,9 @@
     .el-road {
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      height: 10px;
+      height: 14px;
       background: #1e293b;
-      border-radius: 5px;
+      border-radius: 7px;
       border: 1px solid #334155;
       overflow: hidden;
     }
@@ -4609,10 +4609,6 @@
       updateUI();
       initDialogMode();
       showPreListenPage();
-      // 提前请求麦克风权限并缓存流，避免每次录音时重复弹出授权窗口
-      navigator.mediaDevices && navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function (s) { micStream = s; })
-        .catch(function () {});
     });
   </script>
   <!-- 预听页面：自动播放完整对话，上=卢克，下=工作人员 -->
@@ -4737,12 +4733,6 @@
             <div class="el-road">
               <div class="el-progress" id="el-progress"></div>
             </div>
-          </div>
-          <div class="eval-loading-sub">AI 正在帮你评分</div>
-          <div class="eval-loading-dots">
-            <div class="eval-loading-dot"></div>
-            <div class="eval-loading-dot"></div>
-            <div class="eval-loading-dot"></div>
           </div>
         </div>
         <div class="eval-result-area" id="eval-result-area">
