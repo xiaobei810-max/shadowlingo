@@ -3253,7 +3253,7 @@
           if (ctxSpeaker) ctxSpeaker.textContent = s.context.speaker + ' · Staff';
           buildCtxKara(ctxZh, s.context.zh, s.context.pinyin);
           if (ctxEn) ctxEn.textContent = s.context.en;
-          if (ctxBtn) { ctxBtn.textContent = '▶ 播放'; ctxBtn.classList.remove('playing'); }
+          if (ctxBtn) { ctxBtn.textContent = '▶ 播放 Play'; ctxBtn.classList.remove('playing'); }
         } else {
           ctxPanel.style.display = 'none';
         }
@@ -3270,7 +3270,7 @@
           if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker + ' · Staff';
           buildCtxKara(cbZh, s.contextBelow.zh, s.contextBelow.pinyin);
           if (cbEn) cbEn.textContent = s.contextBelow.en;
-          if (cbBtn) { cbBtn.textContent = '▶ 播放'; cbBtn.classList.remove('playing'); }
+          if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
         } else {
           ctxBelowPanel.style.display = 'none';
         }
@@ -3918,8 +3918,8 @@
       stopAudio();
       var btnAbove = document.getElementById('ctx-play-btn');
       var btnBelow = document.getElementById('ctx-play-btn-below');
-      if (btnAbove) { btnAbove.textContent = '▶ 播放'; btnAbove.classList.remove('playing'); }
-      if (btnBelow) { btnBelow.textContent = '▶ 播放'; btnBelow.classList.remove('playing'); }
+      if (btnAbove) { btnAbove.textContent = '▶ 播放 Play'; btnAbove.classList.remove('playing'); }
+      if (btnBelow) { btnBelow.textContent = '▶ 播放 Play'; btnBelow.classList.remove('playing'); }
       ctxPlayingId = null;
       ctxPausedId = null;
     }
@@ -3955,7 +3955,7 @@
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       speakTTSAtRate(s.context.zh, 1.0, function () {
         if (ctxPlayingId === 'above') { ctxPlayingId = null; ctxPausedId = null; }
-        if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
+        if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
       }, null, 'local');
     }
 
@@ -3990,7 +3990,7 @@
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       speakTTSAtRate(s.contextBelow.zh, 1.0, function () {
         if (ctxPlayingId === 'below') { ctxPlayingId = null; ctxPausedId = null; }
-        if (btn) { btn.textContent = '▶ 播放'; btn.classList.remove('playing'); }
+        if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
       }, null, 'local');
     }
 
@@ -4906,6 +4906,22 @@
       setTimeout(function () { plpPlayOne(0); }, 200);
     }
 
+    function plpGoBack() {
+      // Stop playback and return to flashcard page
+      plpPlaying = false;
+      _needsGesture = false; _gestureCallback = null;
+      if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
+      stopAudio();
+      var page = document.getElementById('pre-listen-page');
+      if (page) page.classList.remove('show');
+      // Show flashcard page at the last card viewed
+      var lesson = LESSONS[lessonIdx];
+      if (lesson.vocab && lesson.vocab.length) {
+        document.getElementById('flashcard-page').classList.add('show');
+        fcShowCard();
+      }
+    }
+
     function plpNext() {
       plpPlaying = false;
       _needsGesture = false; _gestureCallback = null;
@@ -4957,6 +4973,15 @@
           fill.style.width = '0%';
         });
       });
+      // Preload TTS so "朗读" plays instantly on click
+      var cacheKey = 'local:1.00:' + v.zh;
+      if (!_ttsCache[cacheKey]) {
+        fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: v.zh, role: 'local', rate: 1.0 }) })
+        .then(function(r) { return r.ok ? r.blob() : null; })
+        .then(function(blob) { if (blob) _ttsCache[cacheKey] = URL.createObjectURL(blob); })
+        .catch(function() {});
+      }
       // auto-advance
       if (fcTimer) clearTimeout(fcTimer);
       fcTimer = setTimeout(fcNext, FC_DURATION);
@@ -4986,11 +5011,10 @@
       var v = LESSONS[lessonIdx].vocab[fcIdx];
       if (!v) return;
       var btn = document.getElementById('fc-speak-btn');
+      var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } };
       if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 播放中…'; }
-      speakAzure(v.zh, 'local', 1.0,
-        function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } },
-        null
-      );
+      // If cached, speakAzure plays instantly; otherwise fetches
+      speakAzure(v.zh, 'local', 1.0, restore, null);
     }
 
     // ── Tip page speak ────────────────────────────────────────
@@ -5098,10 +5122,10 @@
         <div class="plp-en" id="plp-en-bottom"></div>
       </div>
     </div>
-    <!-- 按钮：暂停 · 再播一次 · 下一页 -->
+    <!-- 按钮：上一页 · 播放 · 下一页 -->
     <div class="plp-footer">
+      <button class="plp-replay-btn" onclick="plpGoBack()">◀ 上一页<br>Prev</button>
       <button class="plp-pause-btn" id="plp-pause-btn" onclick="plpPauseResume()">▶ 播放<br>Play</button>
-      <button class="plp-replay-btn" onclick="plpRestart()">🔄 再播一次<br>Replay</button>
       <button class="plp-go-btn" onclick="plpNext()">下一页<br>Next ▶</button>
     </div>
   </div><!-- /.plp-inner -->
