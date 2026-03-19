@@ -1186,6 +1186,37 @@
       margin-top: 2px;
       line-height: 1.4;
     }
+    .guide-compare-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .guide-btn-user,
+    .guide-btn-native {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .guide-btn-user {
+      background: rgba(248,113,113,0.15);
+      color: #f87171;
+      border: 1.5px solid rgba(248,113,113,0.4);
+    }
+    .guide-btn-native {
+      background: rgba(34,197,94,0.12);
+      color: #22c55e;
+      border: 1.5px solid rgba(34,197,94,0.3);
+    }
+    .guide-btn-user:active { background: rgba(248,113,113,0.3); }
+    .guide-btn-native:active { background: rgba(34,197,94,0.25); }
 
     /* 底部导航 */
     .eval-nav {
@@ -1228,88 +1259,33 @@
       min-height: 22px;
       text-align: center;
     }
-    /* ── soccer ball rolling ── */
-    .el-stage {
-      width: 100%;
-      max-width: 420px;
-      position: relative;
-      height: 108px;
+    /* ── Soundwave loading animation ── */
+    .soundwave {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 80px;
     }
-    .el-rider {
-      position: absolute;
-      bottom: 15px;
-      left: 4%;
-      z-index: 2;
-      transition: left 0.2s linear;
-      animation: soccerRoll 2s linear infinite;
+    .sw-bar {
+      width: 7px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, #22c55e 0%, #60a5fa 60%, #a78bfa 100%);
+      animation: swBounce 0.75s ease-in-out infinite alternate;
+      min-height: 8px;
     }
-    @keyframes soccerRoll {
-      from { transform: translateX(-50%) rotate(0deg); }
-      to   { transform: translateX(-50%) rotate(360deg); }
-    }
-    .soccer-ball {
-      width: 66px; height: 66px;
-      background: #f8f8f8;
-      border-radius: 50%;
-      position: relative;
-      border: 2px solid #bbb;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-      overflow: hidden;
-    }
-    .sb-c {
-      position: absolute;
-      width: 22px; height: 22px;
-      background: #222;
-      top: 22px; left: 22px;
-      clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-    }
-    /* 5 surrounding pentagons — rotate around ball center (33,33)
-       transform-origin = (33 - left, 33 - top) = (33-23.5, 33-(-6)) = (9.5px, 39px) */
-    .sb-1,.sb-2,.sb-3,.sb-4,.sb-5 {
-      position: absolute;
-      width: 20px; height: 20px;
-      background: #222;
-      top: -6px; left: 23.5px;
-      transform-origin: 9.5px 39px;
-      clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-    }
-    .sb-1 { transform: rotate(0deg); }
-    .sb-2 { transform: rotate(72deg); }
-    .sb-3 { transform: rotate(144deg); }
-    .sb-4 { transform: rotate(216deg); }
-    .sb-5 { transform: rotate(288deg); }
-    .el-flag {
-      position: absolute;
-      right: 0; bottom: 12px;
-      font-size: 36px; line-height: 1;
-      animation: elFlagWave 0.55s ease-in-out infinite alternate;
-      transform-origin: bottom left;
-    }
-    @keyframes elFlagWave {
-      from { transform: rotate(-5deg); }
-      to   { transform: rotate(5deg); }
-    }
-    .el-road {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 14px;
-      background: #1e293b;
-      border-radius: 7px;
-      border: 1px solid #334155;
-      overflow: hidden;
-    }
-    .el-progress {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #22c55e, #60a5fa, #a78bfa);
-      background-size: 200% 100%;
-      animation: elShimmer 1.6s linear infinite;
-      transition: width 0.2s linear;
-      border-radius: 5px 0 0 5px;
-    }
-    @keyframes elShimmer {
-      0%   { background-position: 100% 0; }
-      100% { background-position: -100% 0; }
+    .sw-bar:nth-child(1)  { animation-delay: 0.00s; }
+    .sw-bar:nth-child(2)  { animation-delay: 0.10s; }
+    .sw-bar:nth-child(3)  { animation-delay: 0.20s; }
+    .sw-bar:nth-child(4)  { animation-delay: 0.30s; }
+    .sw-bar:nth-child(5)  { animation-delay: 0.05s; }
+    .sw-bar:nth-child(6)  { animation-delay: 0.18s; }
+    .sw-bar:nth-child(7)  { animation-delay: 0.28s; }
+    .sw-bar:nth-child(8)  { animation-delay: 0.12s; }
+    .sw-bar:nth-child(9)  { animation-delay: 0.38s; }
+    @keyframes swBounce {
+      0%   { height: 10px; opacity: 0.6; }
+      100% { height: 70px; opacity: 1; }
     }
     .eval-loading-sub {
       font-size: 12px;
@@ -2881,6 +2857,9 @@
 
     // 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
     async function evaluateAudio(blob) {
+      // Store the user's recording for later playback in the pronunciation guide
+      if (_lastUserRecordingUrl) { try { URL.revokeObjectURL(_lastUserRecordingUrl); } catch(e) {} }
+      _lastUserRecordingUrl = URL.createObjectURL(blob);
       // 对话模式下，优先使用当前轮到 learner 说的句子；否则回退到当前课时句子
       var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
       showEvalPageLoading(s);
@@ -3450,30 +3429,18 @@
       '检测声调和发音...', '快好了，稍等一下...'
     ];
     function startEvalLoadingAnim() {
-      var msgEl   = document.getElementById('eval-loading-msg');
-      var riderEl = document.getElementById('el-rider');
-      var progEl  = document.getElementById('el-progress');
-      if (riderEl) { riderEl.style.transition = 'none'; riderEl.style.left = '4%'; }
-      if (progEl)  { progEl.style.transition  = 'none'; progEl.style.width  = '0%'; }
-      if (msgEl)   msgEl.textContent = _EL_MSGS[0];
+      var msgEl = document.getElementById('eval-loading-msg');
+      if (msgEl) msgEl.textContent = _EL_MSGS[0];
       _elStart = Date.now();
       if (_elTimer) clearInterval(_elTimer);
       _elTimer = setInterval(function () {
         var elapsed = Date.now() - _elStart;
-        var pct = Math.min(88, elapsed / 60); // ~5.3s to 88%
-        var riderLeft = (4 + pct * 0.84).toFixed(1); // 4%→78% as pct 0→88
-        if (riderEl) { riderEl.style.transition = 'left 0.2s linear'; riderEl.style.left = riderLeft + '%'; }
-        if (progEl)  { progEl.style.transition  = 'width 0.2s linear'; progEl.style.width  = pct + '%'; }
         var mIdx = Math.min(Math.floor(elapsed / 1300), _EL_MSGS.length - 1);
         if (msgEl) msgEl.textContent = _EL_MSGS[mIdx];
       }, 150);
     }
     function stopEvalLoadingAnim() {
       if (_elTimer) { clearInterval(_elTimer); _elTimer = null; }
-      var riderEl = document.getElementById('el-rider');
-      var progEl  = document.getElementById('el-progress');
-      if (progEl)  { progEl.style.transition  = 'width 0.3s ease';  progEl.style.width  = '100%'; }
-      if (riderEl) { riderEl.style.transition = 'left 0.3s ease';   riderEl.style.left  = '96%'; }
     }
 
     function showEvalPageLoading(sentence) {
@@ -3810,9 +3777,14 @@
         sortedChars.forEach(function (char) {
           var item = mergedMap[char];
           item.entries.forEach(function (entry) {
+            var safeChar = char.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             html += '<div class="guide-row">'
               + '<div class="guide-zh">' + entry.icon + ' ' + entry.zh + '</div>'
               + '<div class="guide-en">' + entry.en + '</div>'
+              + '<div class="guide-compare-btns">'
+              + '<button class="guide-btn-user" onclick="playUserRecording()">🎙 我的录音</button>'
+              + '<button class="guide-btn-native" onclick="playNativeTTS(\'' + safeChar + '\')">🔊 原声</button>'
+              + '</div>'
               + '</div>';
           });
         });
@@ -4435,6 +4407,7 @@
 
     // ── Azure Neural TTS ──────────────────────────────────────────
     var _ttsCache = {};    // cacheKey → blob URL
+    var _lastUserRecordingUrl = null;  // blob URL of the most recent user recording
     var _currentAudio = null; // currently playing <audio> element
     var _needsGesture = false; // autoplay blocked — waiting for user tap
     var _gestureCallback = null;
@@ -5022,6 +4995,19 @@
       speakAzure(text, role || 'local', 1.0, null, null);
     }
 
+    // ── Guide compare buttons ─────────────────────────────────
+    function playUserRecording() {
+      if (!_lastUserRecordingUrl) {
+        alert('没有找到录音，请先录制一次。');
+        return;
+      }
+      var audio = new Audio(_lastUserRecordingUrl);
+      audio.play().catch(function(e) { console.warn('playUserRecording error:', e); });
+    }
+    function playNativeTTS(char) {
+      speakAzure(char, 'local', 1.0, null, null);
+    }
+
     // ── Pinyin / English Toggles ──────────────────────────────
     var pyOn = true;
     var enOn = true;
@@ -5192,21 +5178,16 @@
       <div class="eval-score-card" id="eval-score-card">
         <div class="eval-loading" id="eval-loading" style="display:none">
           <div class="eval-loading-msg" id="eval-loading-msg" style="display:none">正在上传录音...</div>
-          <div class="el-stage">
-            <div class="el-rider" id="el-rider">
-              <div class="soccer-ball">
-                <div class="sb-c"></div>
-                <div class="sb-1"></div>
-                <div class="sb-2"></div>
-                <div class="sb-3"></div>
-                <div class="sb-4"></div>
-                <div class="sb-5"></div>
-              </div>
-            </div>
-            <span class="el-flag">🏁</span>
-            <div class="el-road">
-              <div class="el-progress" id="el-progress"></div>
-            </div>
+          <div class="soundwave">
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
+            <div class="sw-bar"></div>
           </div>
         </div>
         <div class="eval-result-area" id="eval-result-area">
