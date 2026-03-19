@@ -1440,9 +1440,13 @@
     /* ── 预听页面 Pre-Listen Page ─────────────────────────────── */
     #pre-listen-page {
       display: none; position: fixed; inset: 0; z-index: 600;
-      background: var(--bg); flex-direction: column; overflow: hidden;
+      background: var(--bg); flex-direction: column; align-items: center; overflow-y: auto;
     }
     #pre-listen-page.show { display: flex; }
+    .plp-inner {
+      width: 100%; max-width: 480px; display: flex; flex-direction: column;
+      flex: 1; padding: 0 0 32px;
+    }
     .plp-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 20px 12px; flex-shrink: 0;
@@ -1450,11 +1454,13 @@
     .plp-header-title { font-size: 19px; font-weight: 700; color: var(--text); }
     .plp-header-sub { font-size: 13px; color: #94a3b8; margin-top: 3px; }
     .plp-panel {
-      flex: 1; display: flex; flex-direction: column;
-      padding: 18px 24px 14px; transition: opacity 0.3s; overflow: hidden;
+      flex: none; display: flex; flex-direction: column;
+      padding: 16px 20px 14px; transition: opacity 0.3s;
+      background: rgba(17,24,39,0.7); border: 1px solid var(--border);
+      border-radius: 14px; margin: 0 20px 10px;
     }
-    .plp-panel-top { border-bottom: 1px solid var(--border); background: rgba(17,24,39,0.7); }
-    .plp-panel-bottom { background: rgba(17,24,39,0.7); }
+    .plp-panel-top { }
+    .plp-panel-bottom { }
     .plp-panel.dimmed { opacity: 0.92; }
     .plp-panel.active  { opacity: 1; }
     .plp-speaker-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-shrink: 0; }
@@ -1475,7 +1481,7 @@
     .plp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
     .plp-footer {
       display: flex; gap: 8px; padding: 14px 20px;
-      border-top: 1px solid var(--border); flex-shrink: 0;
+      border-top: 1px solid var(--border); flex-shrink: 0; margin-top: auto;
     }
     .plp-pause-btn, .plp-replay-btn, .plp-go-btn {
       flex: 1; padding: 13px 8px; border-radius: 14px;
@@ -4750,6 +4756,7 @@
   </script>
   <!-- 预听页面：自动播放完整对话，上=卢克，下=工作人员 -->
   <div id="pre-listen-page">
+  <div class="plp-inner">
     <div class="plp-header">
       <div>
         <div class="plp-header-title" id="plp-title">机场大巴问路 · Asking for Directions at the Airport</div>
@@ -4791,7 +4798,8 @@
       <button class="plp-replay-btn" onclick="plpRestart()">🔄 再播一次<br>Replay</button>
       <button class="plp-go-btn" onclick="plpNext()">下一页<br>Next ▶</button>
     </div>
-  </div>
+  </div><!-- /.plp-inner -->
+  </div><!-- /#pre-listen-page -->
 
   <!-- 对话聆听页（完整对话 · 上林悦 / 下卢克） -->
   <div id="dialog-listen-page">
