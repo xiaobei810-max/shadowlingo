@@ -13,14 +13,14 @@ const VOICES = {
     rateScale: 1.0,
     pitchAdj: '-4%'
   },
-  // 卢克：澳大利亚20岁交换生，跨语言合成 → 带外国口音的中文
+  // 卢克：美国20岁交换生，跨语言合成 → 带外国口音的中文
   learner: {
-    name:       'en-AU-WilliamNeural',
-    xmlLang:    'en-AU',
+    name:       'en-US-AndrewMultilingualNeural',
+    xmlLang:    'en-US',
     crossLang:  'zh-CN',   // <lang xml:lang="zh-CN"> 包裹中文文本
     style:      null,
-    rateScale:  0.92,
-    pitchAdj:   '+5%'
+    rateScale:  0.95,
+    pitchAdj:   '+8%'
   },
   // 林欣悦：主角之一，清脆亲切，留作后续故事
   linyue: {
