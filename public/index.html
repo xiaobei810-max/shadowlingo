@@ -513,12 +513,12 @@
 
     .btn {
       width: 100%;
-      padding: 16px;
+      padding: 18px;
       background: var(--card);
       border: 1.5px solid var(--border);
       border-radius: 16px;
       color: var(--text);
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
@@ -1580,28 +1580,31 @@
     }
     #cover-page.show { display: flex; }
     .cover-inner {
-      width: 100%; max-width: 480px; padding: 40px 28px 48px;
-      display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;
+      width: 100%; max-width: 480px; padding: 48px 32px 56px;
+      display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px;
     }
     .cover-lesson-num {
-      font-size: 14px; font-weight: 700; color: var(--green);
-      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
+      font-size: 18px; font-weight: 700; color: var(--green);
+      letter-spacing: 1px; margin-bottom: 2px;
     }
     .cover-title-zh {
-      font-size: 36px; font-weight: 800; color: var(--text); line-height: 1.2;
+      font-size: 52px; font-weight: 800; color: var(--text); line-height: 1.15;
     }
     .cover-title-en {
-      font-size: 16px; color: #94a3b8; margin-bottom: 8px;
+      font-size: 18px; color: #94a3b8; margin-bottom: 4px;
     }
     .cover-divider {
-      width: 48px; height: 3px; background: var(--green); border-radius: 99px; margin: 8px 0;
+      width: 48px; height: 3px; background: var(--green); border-radius: 99px; margin: 6px 0;
     }
-    .cover-scene {
-      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 16px;
+    .cover-scene-zh {
+      font-size: 16px; color: #94a3b8; line-height: 1.7;
+    }
+    .cover-scene-en {
+      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 12px;
     }
     .cover-start-btn {
-      width: 100%; padding: 18px; background: var(--green); border: none;
-      border-radius: 16px; color: #000; font-size: 17px; font-weight: 700;
+      width: 100%; padding: 20px; background: var(--green); border: none;
+      border-radius: 16px; color: #000; font-size: 19px; font-weight: 700;
       cursor: pointer; transition: background 0.2s; margin-top: 8px;
     }
     .cover-start-btn:hover { background: #16a34a; }
@@ -1662,19 +1665,23 @@
     .fc-next-btn:hover { background: #16a34a; }
 
     /* ── 拼音/英文 Toggle ────────────────────────────────────── */
-    .header-toggles {
-      display: flex; gap: 6px; align-items: center;
+    .toggle-row {
+      display: flex; gap: 10px; justify-content: center; padding: 10px 20px 0;
     }
     .tgl-btn {
-      padding: 5px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
-      border: 1.5px solid var(--border); background: rgba(34,197,94,0.12);
-      color: var(--green); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+      flex: 1; max-width: 160px;
+      padding: 10px 14px; border-radius: 12px; border: 1.5px solid var(--green);
+      background: rgba(34,197,94,0.12); color: var(--green);
+      cursor: pointer; transition: all 0.2s;
+      display: flex; flex-direction: column; align-items: center; gap: 1px;
     }
+    .tgl-zh { font-size: 15px; font-weight: 700; line-height: 1.2; }
+    .tgl-en-label { font-size: 11px; font-weight: 500; opacity: 0.8; }
     .tgl-btn.off {
       background: transparent; color: #4b5563; border-color: var(--border);
-      text-decoration: line-through;
     }
-    .tgl-btn:hover { border-color: var(--green); color: var(--green); }
+    .tgl-btn.off .tgl-zh { text-decoration: line-through; }
+    .tgl-btn:hover:not(.off) { background: rgba(34,197,94,0.2); }
 
     /* ── Toggle hide classes ─────────────────────────────────── */
     body.hide-pinyin .krt,
@@ -1715,10 +1722,6 @@
         </div>
       </div>
       <div class="header-right">
-        <div class="header-toggles">
-          <button class="tgl-btn" id="tgl-py" onclick="togglePy()" title="拼音 Pinyin">拼音</button>
-          <button class="tgl-btn" id="tgl-en" onclick="toggleEn()" title="英文 English">英文</button>
-        </div>
         <div class="counter" id="counter">1 / 5</div>
         <div class="practice-count" id="practice-count"></div>
       </div>
@@ -1738,6 +1741,16 @@
       <button id="btn-lesson-next" onclick="changeLesson(1)">›</button>
     </div>
 
+    <!-- 拼音/英文开关 -->
+    <div class="toggle-row">
+      <button class="tgl-btn" id="tgl-py" onclick="togglePy()">
+        <span class="tgl-zh">拼音</span><span class="tgl-en-label">Pinyin</span>
+      </button>
+      <button class="tgl-btn" id="tgl-en" onclick="toggleEn()">
+        <span class="tgl-zh">英文</span><span class="tgl-en-label">English</span>
+      </button>
+    </div>
+
     <div class="audio-error" id="audio-error">⚠️ 音频加载失败，请检查网络后刷新重试</div>
 
     <div class="stage">
@@ -1745,7 +1758,7 @@
       <div class="context-panel" id="context-panel" style="display:none">
         <div class="ctx-header">
           <span class="ctx-speaker" id="ctx-speaker">工作人员 · Staff</span>
-          <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放</button>
+          <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
         </div>
         <div class="ctx-zh" id="ctx-zh"></div>
         <div class="ctx-en" id="ctx-en"></div>
@@ -1835,7 +1848,7 @@
     const LESSONS = [
       {
         id: "lesson-1",
-        titleZh: "第一课：机场大巴问路", titleEn: "Lesson 1: Asking for Directions at the Airport",
+        titleZh: "第一课：机场问路", titleEn: "Lesson 1: Asking for Directions at the Airport",
         audio: "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a",
         sentences: [
           {
@@ -1942,7 +1955,7 @@
     const LESSONS_META = [
       {
         id: 1,
-        title: "机场大巴问路",
+        title: "机场问路",
         scene: "卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。",
         dialogue: [
           { speaker: "卢克", role: "learner",
@@ -4983,7 +4996,8 @@
       <div class="cover-title-zh" id="cover-title-zh">机场问路</div>
       <div class="cover-title-en" id="cover-title-en">Asking for Directions at the Airport</div>
       <div class="cover-divider"></div>
-      <div class="cover-scene" id="cover-scene">卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。Luke has just arrived at Shanghai Pudong Airport and needs to find the bus to the city center.</div>
+      <div class="cover-scene-zh" id="cover-scene-zh">卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。</div>
+      <div class="cover-scene-en" id="cover-scene-en">Luke has just arrived at Shanghai Pudong Airport and needs to find the bus to the city center.</div>
       <button class="cover-start-btn" onclick="startLesson()">开始学习 · Start Learning →</button>
     </div>
   </div>
@@ -5013,7 +5027,7 @@
   <div class="plp-inner">
     <div class="plp-header">
       <div>
-        <div class="plp-header-title" id="plp-title">机场大巴问路 · Asking for Directions at the Airport</div>
+        <div class="plp-header-title" id="plp-title">机场问路 · Asking for Directions at the Airport</div>
         <div class="plp-header-sub">听一遍完整对话 · Listen to the full dialogue</div>
       </div>
     </div>
