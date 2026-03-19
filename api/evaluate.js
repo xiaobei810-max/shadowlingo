@@ -805,13 +805,19 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         return 0;
       }
       // ── 普通字阈值 ────────────────────────────────────────────
-      // 红（level 2）：Azure 必须明确报 Mispronunciation 且分数 < 60
-      //   原因：Azure 的音节级评分在连读中对第三声（我/好/美等）系统性偏低
-      //   → 打分 40-55 但 errType=None 意味着"词被正确识别，只是音调曲线
-      //     在语流中被自然缩短"，不等于真的读错，不应标红
-      // 黄（level 1）：分数低（≤75）但 Azure 未明确报错 → 提示但不告警
+      // 红（level 2）：Mispronunciation + acc < 60（双条件）
+      //
+      // 黄（level 1）：
+      //   a) acc < 60（任意 errType）— 分数很低，肯定有问题
+      //   b) Mispronunciation + acc < 75 — Azure 认为有误，分数中等偏低
+      //
+      // 不标（level 0）：acc 60-75 且 errType ≠ Mispronunciation
+      //   → 连读语流中的正常打分波动，Azure 本身未报此词读错
+      //   → 典型例子：句末字(坐/车)能量自然下降、前鼻韵(问/门)连读转接、
+      //              第三声字在连读中声调曲线缩短 — 均属于标准普通话连读特征
       if (err === 'Mispronunciation' && acc < 60) return 2;
-      if (acc <= 75) return 1;
+      if (acc < 60) return 1;
+      if (err === 'Mispronunciation' && acc < 75) return 1;
       return 0;
     };
 
