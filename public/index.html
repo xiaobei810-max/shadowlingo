@@ -2084,14 +2084,13 @@
       audio.addEventListener("timeupdate", onTimeUpdate);
     }
 
-    var mediaRecorder = null;   // the always-warm standby recorder
-    var micStream = null;
+    var mediaRecorder = null;   // current MediaRecorder (fresh per recording session)
+    var micStream = null;       // MediaStream kept alive across recordings (no re-permission)
     var audioChunks = [];
-    var _isCapturing = false;   // true only while user-initiated recording is live
-    var _webmInitChunk = null;  // chunk-0: container init header (EBML for WebM, ftyp/moov for MP4)
-    var _flushPending = false;  // true during the one-shot requestData() flush at stop
-    var _countdownTimer = null; // setInterval handle for the recording countdown
-    var _countdownN = 0;        // current countdown value
+    var _isCapturing = false;   // true only between countdown-end and stop
+    var _flushPending = false;  // one-shot: capture the requestData() tail chunk
+    var _countdownTimer = null;
+    var _countdownN = 0;
 
     // Uint8Array → base64（避免大数组 btoa 溢出）
     function u8ToB64(arr) {
@@ -2878,57 +2877,61 @@
     // 停止 MediaRecorder（如果正在录音）
     // Abort any in-progress user recording (or countdown) but keep the warm recorder running.
     // _webmInitChunk is intentionally preserved so the next recording is still valid.
-    function stopMediaRecorderIfRunning() {
-      if (_countdownTimer) {
-        clearInterval(_countdownTimer); _countdownTimer = null;
-        document.getElementById('rec-countdown').classList.remove('show');
-      }
-      if (_isCapturing || _countdownTimer !== null || phase === 'recording') {
-        _isCapturing = false;
-        audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
-        phase = 'idle';
-        document.getElementById('bn').textContent = '🎤 录音 Record';
-        document.getElementById('bn').classList.remove('active');
-        document.getElementById('speech-indicator').classList.remove('active');
-      }
+    // ── helpers ───────────────────────────────────────────────
+    function _cancelCountdown() {
+      if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+      document.getElementById('rec-countdown').classList.remove('show');
     }
 
-    // Truly stop the recorder and release the mic (call when leaving the practice page).
-    function teardownMic() {
+    // Stop the current MediaRecorder (if any) and discard its data.
+    // micStream is intentionally kept alive so we don't need re-permission.
+    function _stopCurrentRecorder() {
       _isCapturing = false;
       _flushPending = false;
       audioChunks = [];
-      _webmInitChunk = null;
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.ondataavailable = null; // silence further events
         try { mediaRecorder.stop(); } catch (e) {}
       }
       mediaRecorder = null;
+    }
+
+    // Create a brand-new MediaRecorder on the existing stream.
+    // Fresh recorder = timestamps start at 0 = valid blob for every sentence.
+    function _createFreshRecorder() {
+      _stopCurrentRecorder();
+      mediaRecorder = new MediaRecorder(micStream);
+      mediaRecorder.ondataavailable = function (e) {
+        if (!e.data || e.data.size === 0) return;
+        if (_isCapturing || _flushPending) {
+          audioChunks.push(e.data);
+          if (_flushPending) _flushPending = false;
+        }
+      };
+      mediaRecorder.start(50); // 50 ms timeslice; 2-s countdown provides warmup
+    }
+
+    // Abort any in-progress recording or countdown (called by Listen, Retry, navigation).
+    function stopMediaRecorderIfRunning() {
+      _cancelCountdown();
+      if (phase === 'recording') {
+        _stopCurrentRecorder();
+        phase = 'idle';
+        var bn = document.getElementById('bn');
+        if (bn) { bn.textContent = '🎤 录音 Record'; bn.classList.remove('active'); bn.disabled = false; }
+        var si = document.getElementById('speech-indicator');
+        if (si) si.classList.remove('active');
+      }
+    }
+
+    // Release mic entirely (called when leaving the practice page).
+    function teardownMic() {
+      _cancelCountdown();
+      _stopCurrentRecorder();
       if (micStream) {
         micStream.getTracks().forEach(function (t) { t.stop(); });
         micStream = null;
       }
-    }
-
-    // Start the always-warm standby recorder on this stream.
-    // Chunk 0 (EBML + WebM header) is saved to _webmInitChunk so every
-    // recording blob starts with a valid WebM container header.
-    // Subsequent chunks are only pushed to audioChunks when _isCapturing is true.
-    function _startStandbyRecorder(stream) {
-      if (mediaRecorder && mediaRecorder.state === 'recording') return; // already warm
-      _webmInitChunk = null;
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = function (e) {
-        if (!e.data || e.data.size === 0) return;
-        if (!_webmInitChunk) {
-          // First chunk always contains container init header — save unconditionally.
-          _webmInitChunk = e.data;
-        }
-        if (_isCapturing || _flushPending) {
-          audioChunks.push(e.data);
-          _flushPending = false; // one-shot: only catch the single requestData chunk
-        }
-      };
-      mediaRecorder.start(50); // 50 ms timeslice keeps pipeline primed
     }
 
     // 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
@@ -3453,17 +3456,17 @@
       }
     }
 
-    // Called when countdown reaches zero: arm _isCapturing and switch UI to "recording" state.
+    // Countdown reaches zero: arm _isCapturing, switch UI to active recording.
     function _armRecording() {
       document.getElementById('rec-countdown').classList.remove('show');
-      if (!micStream || !micStream.active) { // mic was lost during countdown
+      if (!micStream || !micStream.active || !mediaRecorder || mediaRecorder.state !== 'recording') {
         busy = false; phase = 'idle';
         document.getElementById('bn').textContent = '🎤 录音 Record';
         document.getElementById('bn').classList.remove('active');
         document.getElementById('speech-indicator').classList.remove('active');
         return;
       }
-      audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
+      audioChunks = []; // fresh; chunks now flow in via ondataavailable
       _isCapturing = true;
       document.getElementById('bn').textContent = '⏹ 停止录音 Stop';
       document.getElementById('bn').classList.add('active');
@@ -3471,9 +3474,8 @@
       setStatus('🎙 录音中 Recording...');
     }
 
-    // Show the 2-second countdown overlay. MediaRecorder is already running (warming up).
     function _startCountdown() {
-      if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+      _cancelCountdown();
       _countdownN = 2;
       var numEl = document.getElementById('rcd-number');
       if (numEl) numEl.textContent = _countdownN;
@@ -3481,44 +3483,37 @@
       _countdownTimer = setInterval(function () {
         _countdownN--;
         if (_countdownN > 0) {
-          // Force CSS animation to replay by cloning the element
           var el = document.getElementById('rcd-number');
           if (el) { el.textContent = _countdownN; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
         } else {
-          clearInterval(_countdownTimer); _countdownTimer = null;
+          _countdownTimer = null;
           _armRecording();
         }
       }, 1000);
     }
 
     function startRecording() {
-      stopMediaRecorderIfRunning();
+      stopMediaRecorderIfRunning(); // cancel any previous recording/countdown
       clearTimers();
       if (audio) { audio.pause(); speak(false); }
       phase = 'recording';
       busy = true;
       resetKara();
-      // Button stays in neutral state during countdown — user can click again to cancel
       document.getElementById('bn').textContent = '✕ 取消 Cancel';
       document.getElementById('bn').classList.remove('active');
       setStatus('准备录音中...');
 
-      function _beginWarmupAndCountdown(stream) {
+      function _go(stream) {
         micStream = stream;
-        _startStandbyRecorder(stream); // pipeline begins warming up now
-        _startCountdown();             // 2-second countdown; _isCapturing armed at zero
+        _createFreshRecorder(); // brand-new recorder → timestamps start at 0
+        _startCountdown();      // 2-s countdown; pipeline warms; _isCapturing armed at zero
       }
 
       if (micStream && micStream.active) {
-        // Stream already live — ensure recorder is running then countdown.
-        if (!mediaRecorder || mediaRecorder.state !== 'recording') {
-          _startStandbyRecorder(micStream);
-        }
-        _startCountdown();
+        _go(micStream);
       } else {
-        // Need mic permission first (async), then start warm-up + countdown.
         navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (s) { _beginWarmupAndCountdown(s); })
+          .then(function (s) { _go(s); })
           .catch(function () {
             setStatus('⚠️ 麦克风权限被拒绝');
             busy = false; phase = 'idle';
@@ -3528,12 +3523,10 @@
     }
 
     function stopRecording() {
-      // If clicked during countdown, cancel it and abort.
+      // Cancel countdown → abort recording
       if (_countdownTimer) {
-        clearInterval(_countdownTimer); _countdownTimer = null;
-        document.getElementById('rec-countdown').classList.remove('show');
-        _isCapturing = false;
-        audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
+        _cancelCountdown();
+        _stopCurrentRecorder();
         phase = 'idle'; busy = false;
         document.getElementById('bn').textContent = '🎤 录音 Record';
         document.getElementById('bn').classList.remove('active');
@@ -3541,33 +3534,30 @@
         setStatus('准备好了 Ready');
         return;
       }
-      // Update UI immediately so the user gets instant feedback.
-      var bn = document.getElementById("bn");
-      bn.textContent = "🎤 录音 Record";
-      bn.classList.remove("active");
-      bn.disabled = true; // prevent double-tap while draining
-      document.getElementById("speech-indicator").classList.remove("active");
-      if (!_isCapturing) { bn.disabled = false; setStatus("准备好了 Ready"); busy = false; return; }
+      // Instant UI feedback; disable button to prevent double-tap during drain
+      var bn = document.getElementById('bn');
+      bn.textContent = '🎤 录音 Record';
+      bn.classList.remove('active');
+      bn.disabled = true;
+      document.getElementById('speech-indicator').classList.remove('active');
+      if (!_isCapturing) { bn.disabled = false; setStatus('准备好了 Ready'); busy = false; return; }
 
-      phase = "scored";
-      setStatus("⌛ 处理中...");
-
-      // Keep _isCapturing = true for 400 ms to drain the encoder's tail buffer.
-      // On some platforms (iOS Safari) the encoder holds several hundred ms of
-      // audio that won't appear in ondataavailable until after this delay.
+      phase = 'scored';
+      setStatus('⌛ 处理中...');
       var _mimeType = mediaRecorder ? (mediaRecorder.mimeType || 'audio/webm') : 'audio/webm';
+
+      // Keep _isCapturing true for 400 ms so the encoder's tail buffer drains into audioChunks.
       setTimeout(function () {
-        // Now stop collecting and flush the final partial chunk.
         _isCapturing = false;
+        // Flush the final partial 50 ms chunk
         if (mediaRecorder && mediaRecorder.state === 'recording') {
-          _flushPending = true; // catch the one ondataavailable from requestData()
+          _flushPending = true;
           mediaRecorder.requestData();
         }
-        // Brief wait for the requestData ondataavailable event to fire,
-        // then finalise: re-enable the button and evaluate the blob.
         setTimeout(function () {
+          _stopCurrentRecorder(); // release this session's recorder; mic stream stays alive
           bn.disabled = false;
-          if (audioChunks.length === 0) { setStatus("准备好了 Ready"); busy = false; return; }
+          if (audioChunks.length === 0) { setStatus('准备好了 Ready'); busy = false; return; }
           var blob = new Blob(audioChunks, { type: _mimeType });
           audioChunks = [];
           evaluateAudio(blob);
