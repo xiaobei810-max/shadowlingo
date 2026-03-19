@@ -625,8 +625,8 @@
       background: #0d1520;
       border: 1px solid #22c55e;
       border-radius: 24px;
-      padding: 40px 36px;
-      max-width: 520px;
+      padding: 56px 52px;
+      max-width: 640px;
       width: 100%;
       text-align: center;
       position: relative;
@@ -4433,6 +4433,8 @@
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.add('show');
       plpSetPauseBtn('play'); // 等待用户点击，不自动播放
+      // 进入页面即显示第一对对话内容，无需点击播放
+      plpRenderPair(0);
 
       // 预加载前3句TTS，消除首次点击播放的2-3秒延迟
       // 在页面显示后立即发起请求，用户有时间看到界面时音频已缓存完毕
@@ -4502,6 +4504,31 @@
       }
     }
 
+    // 同时渲染上下两个面板（一对对话）
+    function plpRenderPair(pairStart) {
+      if (!plpSeq) return;
+      var dA = plpSeq[pairStart];
+      var dB = plpSeq[pairStart + 1];
+      var bTop = document.getElementById('plp-bar-top');
+      var bBot = document.getElementById('plp-bar-bottom');
+      if (bTop) bTop.style.width = '0%';
+      if (bBot) bBot.style.width = '0%';
+      [dA, dB].forEach(function (d) {
+        if (!d) return;
+        var isL = d.role === 'learner';
+        dlpBuildKara(isL ? 'plp-kara-top' : 'plp-kara-bottom', d.zh, d.pinyin);
+        var enEl = document.getElementById(isL ? 'plp-en-top' : 'plp-en-bottom');
+        if (enEl) enEl.textContent = d.en || '';
+      });
+      // 如果这对只有一句（奇数结尾），清空另一面板
+      if (!dB && dA) {
+        var emptyKara = document.getElementById(dA.role === 'learner' ? 'plp-kara-bottom' : 'plp-kara-top');
+        var emptyEn   = document.getElementById(dA.role === 'learner' ? 'plp-en-bottom'   : 'plp-en-top');
+        if (emptyKara) emptyKara.innerHTML = '';
+        if (emptyEn)   emptyEn.textContent = '';
+      }
+    }
+
     function plpPlayOne(idx) {
       if (!plpSeq || idx >= plpSeq.length) {
         plpPlaying = false;
@@ -4520,10 +4547,9 @@
       var isLearner = d.role === 'learner';
       var karaId = isLearner ? 'plp-kara-top'    : 'plp-kara-bottom';
       var barId  = isLearner ? 'plp-bar-top'     : 'plp-bar-bottom';
-      var enEl   = document.getElementById(isLearner ? 'plp-en-top' : 'plp-en-bottom');
+      // 每对的第一句：同时刷新上下两个面板
+      if (idx % 2 === 0) { plpRenderPair(idx); }
       plpSetActive(d.role);
-      if (enEl) enEl.textContent = d.en || '';
-      dlpBuildKara(karaId, d.zh, d.pinyin);
       var plpRole = isLearner ? 'learner' : 'local';
       // Pre-fetch next sentence while current plays
       var plpNextD = plpSeq[idx + 1];
@@ -4583,6 +4609,10 @@
       updateUI();
       initDialogMode();
       showPreListenPage();
+      // 提前请求麦克风权限并缓存流，避免每次录音时重复弹出授权窗口
+      navigator.mediaDevices && navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function (s) { micStream = s; })
+        .catch(function () {});
     });
   </script>
   <!-- 预听页面：自动播放完整对话，上=卢克，下=工作人员 -->
