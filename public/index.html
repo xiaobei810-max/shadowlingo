@@ -2358,9 +2358,13 @@
     function isIncompleteRecording(words, refText) {
       if (!words || !words.length) return true;
 
-      // 关键修复：若 Azure 返回字数已覆盖参考文本的 ≥80%，视为录音完整
-      // 原因：Azure 对发音评分偏严、末尾字低分 ≠ 用户没有录完整句子
-      // 只有明显漏录（Azure 返回字数不足）才进一步判断
+      // 优先检查：所有字都是最高错误级别（perrLevel=2）且字数≥3
+      // → Azure 返回了结果但全部标为 Mispronunciation，说明没录到有效语音
+      if (words.length >= 3 && words.every(function(w) { return w.perrLevel === 2; })) {
+        return true;
+      }
+
+      // 若 Azure 返回字数已覆盖参考文本的 ≥80%，视为录音完整
       if (refText && refText.length > 0 && words.length >= refText.length * 0.8) {
         return false;
       }
@@ -4685,7 +4689,7 @@
       <!-- 分数 -->
       <div class="eval-score-card" id="eval-score-card">
         <div class="eval-loading" id="eval-loading" style="display:none">
-          <div class="eval-loading-msg" id="eval-loading-msg">正在上传录音...</div>
+          <div class="eval-loading-msg" id="eval-loading-msg" style="display:none">正在上传录音...</div>
           <div class="el-stage">
             <div class="el-rider" id="el-rider">
               <div class="soccer-ball">
@@ -4728,8 +4732,8 @@
 
       <!-- 录音不完整提示（仅此一行） -->
       <div id="eval-incomplete-msg" style="display:none;text-align:center;padding:40px 16px 32px;font-size:17px;font-weight:600;color:#f87171;line-height:1.8;">
-        ⚠️ 未录到完整句子，请重新录音<br>
-        <span style="font-size:14px;font-weight:400;color:#94a3b8">Recording incomplete — please try again</span><br>
+        🎙 未检测到录音，请再说一遍<br>
+        <span style="font-size:14px;font-weight:400;color:#94a3b8">No recording detected — please speak again</span><br>
         <button class="btn active" style="margin-top:20px;font-size:15px;" onclick="evalRetry()">🎤 重新录音 Try Again</button>
       </div>
 
