@@ -804,12 +804,12 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         if (err === 'Mispronunciation' && acc < 70) return 1;
         return 0;
       }
-      // ── 普通字阈值（用户指定）──────────────────────────────────
-      //   < 70 分 → 红（发音明显有问题）
-      //  70-84 分 → 黄（发音偏弱，需改善）
-      //   ≥ 85 分 → 不标（发音可接受）
-      if (acc < 70) return 2;
-      if (acc < 85) return 1;
+      // ── 普通字阈值 ────────────────────────────────────────────
+      //   < 60 分 → 红（发音明显有问题）
+      //  60-75 分 → 黄（发音偏弱，需改善）
+      //   > 75 分 → 不标（发音可接受）
+      if (acc < 60) return 2;
+      if (acc <= 75) return 1;
       return 0;
     };
 
