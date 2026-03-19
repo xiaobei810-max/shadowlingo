@@ -2089,6 +2089,7 @@
     var audioChunks = [];
     var _isCapturing = false;   // true only while user-initiated recording is live
     var _webmInitChunk = null;  // chunk-0: container init header (EBML for WebM, ftyp/moov for MP4)
+    var _flushPending = false;  // true during the one-shot requestData() flush at stop
     var _countdownTimer = null; // setInterval handle for the recording countdown
     var _countdownN = 0;        // current countdown value
 
@@ -2895,6 +2896,7 @@
     // Truly stop the recorder and release the mic (call when leaving the practice page).
     function teardownMic() {
       _isCapturing = false;
+      _flushPending = false;
       audioChunks = [];
       _webmInitChunk = null;
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
@@ -2918,10 +2920,13 @@
       mediaRecorder.ondataavailable = function (e) {
         if (!e.data || e.data.size === 0) return;
         if (!_webmInitChunk) {
-          // First chunk always contains EBML + WebM Tracks header — save unconditionally.
+          // First chunk always contains container init header — save unconditionally.
           _webmInitChunk = e.data;
         }
-        if (_isCapturing) audioChunks.push(e.data);
+        if (_isCapturing || _flushPending) {
+          audioChunks.push(e.data);
+          _flushPending = false; // one-shot: only catch the single requestData chunk
+        }
       };
       mediaRecorder.start(50); // 50 ms timeslice keeps pipeline primed
     }
@@ -3536,23 +3541,38 @@
         setStatus('准备好了 Ready');
         return;
       }
-      document.getElementById("bn").textContent = "🎤 录音 Record";
-      document.getElementById("bn").classList.remove("active");
+      // Update UI immediately so the user gets instant feedback.
+      var bn = document.getElementById("bn");
+      bn.textContent = "🎤 录音 Record";
+      bn.classList.remove("active");
+      bn.disabled = true; // prevent double-tap while draining
       document.getElementById("speech-indicator").classList.remove("active");
-      if (!_isCapturing) { setStatus("准备好了 Ready"); busy = false; return; }
-      _isCapturing = false;
+      if (!_isCapturing) { bn.disabled = false; setStatus("准备好了 Ready"); busy = false; return; }
+
       phase = "scored";
-      // requestData flushes the current partial 50 ms chunk before we build the blob.
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.requestData();
-      }
+      setStatus("⌛ 处理中...");
+
+      // Keep _isCapturing = true for 400 ms to drain the encoder's tail buffer.
+      // On some platforms (iOS Safari) the encoder holds several hundred ms of
+      // audio that won't appear in ondataavailable until after this delay.
       var _mimeType = mediaRecorder ? (mediaRecorder.mimeType || 'audio/webm') : 'audio/webm';
       setTimeout(function () {
-        if (audioChunks.length === 0) { setStatus("准备好了 Ready"); busy = false; return; }
-        var blob = new Blob(audioChunks, { type: _mimeType });
-        audioChunks = [];
-        evaluateAudio(blob);
-      }, 80);
+        // Now stop collecting and flush the final partial chunk.
+        _isCapturing = false;
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          _flushPending = true; // catch the one ondataavailable from requestData()
+          mediaRecorder.requestData();
+        }
+        // Brief wait for the requestData ondataavailable event to fire,
+        // then finalise: re-enable the button and evaluate the blob.
+        setTimeout(function () {
+          bn.disabled = false;
+          if (audioChunks.length === 0) { setStatus("准备好了 Ready"); busy = false; return; }
+          var blob = new Blob(audioChunks, { type: _mimeType });
+          audioChunks = [];
+          evaluateAudio(blob);
+        }, 120);
+      }, 400);
     }
 
 
