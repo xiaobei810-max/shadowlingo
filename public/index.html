@@ -2057,6 +2057,7 @@
     var micStream = null;
     var audioChunks = [];
     var _isCapturing = false;   // true only while user-initiated recording is live
+    var _webmInitChunk = null;  // chunk-0 from standby recorder: contains EBML/WebM header without which the blob is undecodable
 
     // Uint8Array → base64（避免大数组 btoa 溢出）
     function u8ToB64(arr) {
@@ -2842,11 +2843,11 @@
 
     // 停止 MediaRecorder（如果正在录音）
     // Abort any in-progress user recording but keep the warm recorder running.
-    // Call this when switching to Listen/Slow/navigation within the practice page.
+    // _webmInitChunk is intentionally preserved so the next recording is still valid.
     function stopMediaRecorderIfRunning() {
       if (_isCapturing) {
         _isCapturing = false;
-        audioChunks = [];
+        audioChunks = _webmInitChunk ? [_webmInitChunk] : []; // keep init chunk ready
         phase = 'idle';
         document.getElementById('bn').textContent = '🎤 跟读 Record';
         document.getElementById('bn').classList.remove('active');
@@ -2858,6 +2859,7 @@
     function teardownMic() {
       _isCapturing = false;
       audioChunks = [];
+      _webmInitChunk = null;
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         try { mediaRecorder.stop(); } catch (e) {}
       }
@@ -2869,15 +2871,22 @@
     }
 
     // Start the always-warm standby recorder on this stream.
-    // ondataavailable only collects chunks when _isCapturing is true.
+    // Chunk 0 (EBML + WebM header) is saved to _webmInitChunk so every
+    // recording blob starts with a valid WebM container header.
+    // Subsequent chunks are only pushed to audioChunks when _isCapturing is true.
     function _startStandbyRecorder(stream) {
       if (mediaRecorder && mediaRecorder.state === 'recording') return; // already warm
+      _webmInitChunk = null;
       mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.ondataavailable = function (e) {
-        if (_isCapturing && e.data && e.data.size > 0) audioChunks.push(e.data);
+        if (!e.data || e.data.size === 0) return;
+        if (!_webmInitChunk) {
+          // First chunk always contains EBML + WebM Tracks header — save unconditionally.
+          _webmInitChunk = e.data;
+        }
+        if (_isCapturing) audioChunks.push(e.data);
       };
-      mediaRecorder.onpause = mediaRecorder.onerror = null;
-      mediaRecorder.start(50); // 50 ms timeslice keeps pipeline primed; no data saved unless capturing
+      mediaRecorder.start(50); // 50 ms timeslice keeps pipeline primed
     }
 
     // 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
@@ -3413,17 +3422,20 @@
       document.getElementById("speech-indicator").classList.add("active");
       resetKara();
       setStatus("🎙 录音中 Recording...");
-      audioChunks = [];
+      // Seed audioChunks with the WebM init chunk so the resulting blob always has
+      // a valid EBML + Tracks header. Without it the audio after the first recording
+      // is undecodable and the first syllables appear to be "missing".
+      audioChunks = _webmInitChunk ? [_webmInitChunk] : [];
 
       if (micStream && micStream.active && mediaRecorder && mediaRecorder.state === 'recording') {
-        // Best case: standby recorder is already warm — zero startup latency.
+        // Best case: standby recorder already warm — zero startup latency.
         _isCapturing = true;
       } else if (micStream && micStream.active) {
-        // Stream alive but recorder stopped (e.g. after page interaction) — restart it warm.
+        // Stream alive but recorder stopped — restart standby.
         _startStandbyRecorder(micStream);
         _isCapturing = true;
       } else {
-        // First time or stream died — need to (re-)request mic permission.
+        // First time or stream died — request mic permission.
         navigator.mediaDevices.getUserMedia({ audio: true })
           .then(function (s) {
             micStream = s;
