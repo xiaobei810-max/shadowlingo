@@ -299,7 +299,7 @@
 
     /* Karaoke text */
     .kara-wrap {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
       line-height: 1;
       margin-bottom: 12px;
@@ -1549,14 +1549,14 @@
       <!-- 卢克练习面板（下方） -->
       <div class="sentence-box">
         <div class="learner-panel-hdr">
+          <span class="ctx-speaker" style="color:var(--green)">卢克 · Luke</span>
           <div style="display:flex;align-items:center;gap:8px;">
-            <div class="mascot-wrap">
-              <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" onerror="this.style.display='none'" />
+            <div class="mascot-wrap" style="width:28px;height:28px;">
+              <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" style="width:28px;height:28px;" onerror="this.style.display='none'" />
               <div class="mascot-ring" id="ring"></div>
             </div>
-            <span class="learner-name-tag">卢克 · Luke</span>
+            <span class="sentence-badge" id="badge">第 1/4 句</span>
           </div>
-          <span class="sentence-badge" id="badge">第 1/4 句</span>
         </div>
         <!-- 卡拉OK字幕 -->
         <div class="kara-wrap" id="kara"></div>
