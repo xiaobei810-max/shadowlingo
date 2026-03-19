@@ -2860,8 +2860,12 @@
       // Store the user's recording for later playback in the pronunciation guide
       if (_lastUserRecordingUrl) { try { URL.revokeObjectURL(_lastUserRecordingUrl); } catch(e) {} }
       _lastUserRecordingUrl = URL.createObjectURL(blob);
+      // Reset guide audio players from previous evaluation
+      _guideUserAudio = null;
+      _guideNativeAudio = null;
       // 对话模式下，优先使用当前轮到 learner 说的句子；否则回退到当前课时句子
       var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
+      _lastEvalSentenceZh = s.zh;
       showEvalPageLoading(s);
       try {
         // 1. 本地转换为 16kHz/16bit/mono PCM（同时保留 AudioBuffer 供声学分析）
@@ -3724,6 +3728,10 @@
         errEl.style.display = "none";
       }
 
+      // Reset guide compare buttons to idle state
+      _setGuideBtnState('guide-btn-user', 'idle');
+      _setGuideBtnState('guide-btn-native', 'idle');
+
       // ── 统一发音指南卡片（ISE 提示 + 声学 FFT，按句中顺序合并同字）──
       var guideCard = document.getElementById("eval-dualtrack-card");
       var guideBody = document.getElementById("eval-dualtrack-body");
@@ -3777,14 +3785,9 @@
         sortedChars.forEach(function (char) {
           var item = mergedMap[char];
           item.entries.forEach(function (entry) {
-            var safeChar = char.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             html += '<div class="guide-row">'
               + '<div class="guide-zh">' + entry.icon + ' ' + entry.zh + '</div>'
               + '<div class="guide-en">' + entry.en + '</div>'
-              + '<div class="guide-compare-btns">'
-              + '<button class="guide-btn-user" onclick="playUserRecording()">🎙 我的录音</button>'
-              + '<button class="guide-btn-native" onclick="playNativeTTS(\'' + safeChar + '\')">🔊 原声</button>'
-              + '</div>'
               + '</div>';
           });
         });
@@ -4408,6 +4411,9 @@
     // ── Azure Neural TTS ──────────────────────────────────────────
     var _ttsCache = {};    // cacheKey → blob URL
     var _lastUserRecordingUrl = null;  // blob URL of the most recent user recording
+    var _lastEvalSentenceZh = '';      // Chinese text of the last evaluated sentence
+    var _guideUserAudio = null;        // Audio object for guide user-recording playback
+    var _guideNativeAudio = null;      // Audio object for guide native TTS playback
     var _currentAudio = null; // currently playing <audio> element
     var _needsGesture = false; // autoplay blocked — waiting for user tap
     var _gestureCallback = null;
@@ -4995,17 +5001,86 @@
       speakAzure(text, role || 'local', 1.0, null, null);
     }
 
-    // ── Guide compare buttons ─────────────────────────────────
-    function playUserRecording() {
-      if (!_lastUserRecordingUrl) {
-        alert('没有找到录音，请先录制一次。');
+    // ── Guide compare buttons (full-sentence play/pause/resume) ──
+    function _setGuideBtnState(btnId, state) {
+      // state: 'idle' | 'playing' | 'paused'
+      var btn = document.getElementById(btnId);
+      if (!btn) return;
+      if (btnId === 'guide-btn-user') {
+        btn.textContent = state === 'playing' ? '⏸ 我的录音' : state === 'paused' ? '▶ 我的录音' : '🎙 我的录音';
+      } else {
+        btn.textContent = state === 'playing' ? '⏸ 原声' : state === 'paused' ? '▶ 原声' : '🔊 原声';
+      }
+    }
+
+    function playGuideUser() {
+      if (!_lastUserRecordingUrl) return;
+      // If native is playing, stop it first
+      if (_guideNativeAudio && !_guideNativeAudio.paused) {
+        _guideNativeAudio.pause();
+        _setGuideBtnState('guide-btn-native', 'paused');
+      }
+      // Toggle play/pause/resume on the user audio
+      if (!_guideUserAudio) {
+        _guideUserAudio = new Audio(_lastUserRecordingUrl);
+        _guideUserAudio.onended = function() { _setGuideBtnState('guide-btn-user', 'idle'); };
+        _guideUserAudio.play().catch(function(e) { console.warn('playGuideUser:', e); });
+        _setGuideBtnState('guide-btn-user', 'playing');
+      } else if (_guideUserAudio.paused) {
+        _guideUserAudio.play().catch(function(e) { console.warn('playGuideUser resume:', e); });
+        _setGuideBtnState('guide-btn-user', 'playing');
+      } else {
+        _guideUserAudio.pause();
+        _setGuideBtnState('guide-btn-user', 'paused');
+      }
+    }
+
+    function playGuideNative() {
+      if (!_lastEvalSentenceZh) return;
+      // If user recording is playing, stop it first
+      if (_guideUserAudio && !_guideUserAudio.paused) {
+        _guideUserAudio.pause();
+        _setGuideBtnState('guide-btn-user', 'paused');
+      }
+      // Toggle play/pause/resume on the native audio
+      if (_guideNativeAudio && !_guideNativeAudio.ended) {
+        if (_guideNativeAudio.paused) {
+          _guideNativeAudio.play().catch(function(e) { console.warn('playGuideNative resume:', e); });
+          _setGuideBtnState('guide-btn-native', 'playing');
+        } else {
+          _guideNativeAudio.pause();
+          _setGuideBtnState('guide-btn-native', 'paused');
+        }
         return;
       }
-      var audio = new Audio(_lastUserRecordingUrl);
-      audio.play().catch(function(e) { console.warn('playUserRecording error:', e); });
-    }
-    function playNativeTTS(char) {
-      speakAzure(char, 'local', 1.0, null, null);
+      // Fetch TTS and create a new Audio object
+      var cacheKey = 'local:1.00:' + _lastEvalSentenceZh;
+      _setGuideBtnState('guide-btn-native', 'playing');
+      function _playNativeUrl(url) {
+        _guideNativeAudio = new Audio(url);
+        _guideNativeAudio.onended = function() { _setGuideBtnState('guide-btn-native', 'idle'); };
+        _guideNativeAudio.play().catch(function(e) {
+          console.warn('playGuideNative play:', e);
+          _setGuideBtnState('guide-btn-native', 'idle');
+        });
+      }
+      if (_ttsCache[cacheKey]) {
+        _playNativeUrl(_ttsCache[cacheKey]);
+      } else {
+        fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: _lastEvalSentenceZh, role: 'local', rate: 1.0 }) })
+        .then(function(r) { return r.ok ? r.blob() : null; })
+        .then(function(blob) {
+          if (!blob) { _setGuideBtnState('guide-btn-native', 'idle'); return; }
+          var url = URL.createObjectURL(blob);
+          _ttsCache[cacheKey] = url;
+          _playNativeUrl(url);
+        })
+        .catch(function(e) {
+          console.warn('playGuideNative fetch:', e);
+          _setGuideBtnState('guide-btn-native', 'idle');
+        });
+      }
     }
 
     // ── Pinyin / English Toggles ──────────────────────────────
@@ -5223,6 +5298,10 @@
       <!-- 发音指南（ISE 提示 + Whisper 双轨 + 声学 FFT，统一显示） -->
       <div class="eval-dualtrack-card" id="eval-dualtrack-card" style="display:none">
         <div class="eval-dualtrack-title">📖 发音指南 Pronunciation Guide</div>
+        <div class="guide-compare-btns" style="margin-bottom:12px">
+          <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 我的录音</button>
+          <button class="guide-btn-native" id="guide-btn-native" onclick="playGuideNative()">🔊 原声</button>
+        </div>
         <div id="eval-dualtrack-body"></div>
       </div>
 
