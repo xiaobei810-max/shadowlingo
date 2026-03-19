@@ -1571,6 +1571,134 @@
       font-weight: 600;
       color: var(--green);
     }
+
+    /* ── 课程封面 Lesson Cover ───────────────────────────────── */
+    #cover-page {
+      display: none; position: fixed; inset: 0; z-index: 700;
+      background: var(--bg); flex-direction: column; align-items: center;
+      justify-content: center; overflow-y: auto;
+    }
+    #cover-page.show { display: flex; }
+    .cover-inner {
+      width: 100%; max-width: 480px; padding: 40px 28px 48px;
+      display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;
+    }
+    .cover-lesson-num {
+      font-size: 14px; font-weight: 700; color: var(--green);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
+    }
+    .cover-title-zh {
+      font-size: 36px; font-weight: 800; color: var(--text); line-height: 1.2;
+    }
+    .cover-title-en {
+      font-size: 16px; color: #94a3b8; margin-bottom: 8px;
+    }
+    .cover-divider {
+      width: 48px; height: 3px; background: var(--green); border-radius: 99px; margin: 8px 0;
+    }
+    .cover-scene {
+      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 16px;
+    }
+    .cover-start-btn {
+      width: 100%; padding: 18px; background: var(--green); border: none;
+      border-radius: 16px; color: #000; font-size: 17px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s; margin-top: 8px;
+    }
+    .cover-start-btn:hover { background: #16a34a; }
+
+    /* ── 生词闪卡 Vocab Flashcard ────────────────────────────── */
+    #flashcard-page {
+      display: none; position: fixed; inset: 0; z-index: 650;
+      background: var(--bg); flex-direction: column; align-items: center;
+      justify-content: center; overflow-y: auto;
+    }
+    #flashcard-page.show { display: flex; }
+    .fc-inner {
+      width: 100%; max-width: 480px; padding: 0 20px 40px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .fc-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 4px;
+    }
+    .fc-title { font-size: 14px; font-weight: 700; color: var(--green); letter-spacing: 0.5px; }
+    .fc-count { font-size: 13px; color: #64748b; }
+    .fc-timer-bar {
+      height: 4px; background: var(--border); border-radius: 99px; overflow: hidden;
+    }
+    .fc-timer-fill {
+      height: 100%; background: var(--green); width: 100%;
+      transition: width linear;
+    }
+    .fc-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+      padding: 40px 28px 36px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      min-height: 200px; justify-content: center;
+    }
+    .fc-zh {
+      font-size: 48px; font-weight: 800; color: var(--text); line-height: 1.1;
+    }
+    .fc-py {
+      font-size: 18px; color: #60a5fa; font-weight: 400; letter-spacing: 0.5px;
+    }
+    .fc-en {
+      font-size: 15px; color: #94a3b8; line-height: 1.5; max-width: 280px;
+    }
+    .fc-footer {
+      display: flex; gap: 10px;
+    }
+    .fc-skip-btn {
+      padding: 14px 20px; background: transparent; border: 1.5px solid var(--border);
+      border-radius: 14px; color: #64748b; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .fc-skip-btn:hover { border-color: var(--green); color: var(--green); }
+    .fc-next-btn {
+      flex: 1; padding: 16px; background: var(--green); border: none;
+      border-radius: 14px; color: #000; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .fc-next-btn:hover { background: #16a34a; }
+
+    /* ── 拼音/英文 Toggle ────────────────────────────────────── */
+    .header-toggles {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .tgl-btn {
+      padding: 5px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+      border: 1.5px solid var(--border); background: rgba(34,197,94,0.12);
+      color: var(--green); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .tgl-btn.off {
+      background: transparent; color: #4b5563; border-color: var(--border);
+      text-decoration: line-through;
+    }
+    .tgl-btn:hover { border-color: var(--green); color: var(--green); }
+
+    /* ── Toggle hide classes ─────────────────────────────────── */
+    body.hide-pinyin .krt,
+    body.hide-pinyin .dlp-py,
+    body.hide-pinyin .ctx-krt,
+    body.hide-pinyin .plp-py,
+    body.hide-pinyin .fc-py { display: none !important; }
+
+    body.hide-en .en,
+    body.hide-en .ctx-en,
+    body.hide-en .dlp-en,
+    body.hide-en .plp-en,
+    body.hide-en .fc-en { display: none !important; }
+
+    /* ── Mobile portrait ─────────────────────────────────────── */
+    @media (max-width: 420px) {
+      .btn { padding: 14px 10px; font-size: 14px; }
+      .plp-pause-btn, .plp-replay-btn, .plp-go-btn { padding: 13px 6px; font-size: 12px; }
+      .fc-zh { font-size: 40px; }
+      .cover-title-zh { font-size: 30px; }
+      .cover-start-btn { font-size: 15px; padding: 16px; }
+      .header-toggles { gap: 4px; }
+      .tgl-btn { padding: 4px 8px; font-size: 10px; }
+    }
   </style>
 </head>
 
@@ -1587,6 +1715,10 @@
         </div>
       </div>
       <div class="header-right">
+        <div class="header-toggles">
+          <button class="tgl-btn" id="tgl-py" onclick="togglePy()" title="拼音 Pinyin">拼音</button>
+          <button class="tgl-btn" id="tgl-en" onclick="toggleEn()" title="英文 English">英文</button>
+        </div>
         <div class="counter" id="counter">1 / 5</div>
         <div class="practice-count" id="practice-count"></div>
       </div>
@@ -1769,6 +1901,14 @@
               { c: "谢", p: "xie4" }, { c: "谢", p: "xie4" }
             ]
           }
+        ],
+        vocab: [
+          { zh: '不好意思', py: 'bù hǎo yì si', en: 'Excuse me / Sorry to bother you' },
+          { zh: '市区',    py: 'shì qū',        en: 'City center / Downtown' },
+          { zh: '大巴',    py: 'dà bā',          en: 'Coach bus / Airport bus' },
+          { zh: '请问',    py: 'qǐng wèn',       en: 'May I ask... (polite opener)' },
+          { zh: '扫码',    py: 'sǎo mǎ',         en: 'Scan QR code (for mobile payment)' },
+          { zh: '现金',    py: 'xiàn jīn',       en: 'Cash' },
         ],
         insiderTip: {
           textbook: { zh: '请向右转。', en: 'Please turn right.' },
@@ -4745,15 +4885,129 @@
       if (page) page.classList.remove('show');
     }
 
+    // ── Lesson Cover ──────────────────────────────────────────
+    function startLesson() {
+      document.getElementById('cover-page').classList.remove('show');
+      showFlashcardPage();
+    }
+
+    // ── Vocab Flashcards ──────────────────────────────────────
+    var fcIdx = 0;
+    var fcTimer = null;
+    var FC_DURATION = 5000; // ms per card
+
+    function showFlashcardPage() {
+      var lesson = LESSONS[lessonIdx];
+      if (!lesson.vocab || !lesson.vocab.length) { showPreListenPage(); return; }
+      fcIdx = 0;
+      document.getElementById('flashcard-page').classList.add('show');
+      fcShowCard();
+    }
+
+    function fcShowCard() {
+      var lesson = LESSONS[lessonIdx];
+      var vocab = lesson.vocab;
+      if (fcIdx >= vocab.length) { fcDone(); return; }
+      var v = vocab[fcIdx];
+      document.getElementById('fc-zh').textContent   = v.zh;
+      document.getElementById('fc-py').textContent   = v.py;
+      document.getElementById('fc-en').textContent   = v.en;
+      document.getElementById('fc-count').textContent = (fcIdx + 1) + ' / ' + vocab.length;
+      var isLast = (fcIdx === vocab.length - 1);
+      document.getElementById('fc-next-btn').textContent = isLast ? '开始对话 Start →' : '下一个 Next →';
+      // animate timer bar
+      var fill = document.getElementById('fc-timer-fill');
+      fill.style.transition = 'none';
+      fill.style.width = '100%';
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          fill.style.transition = 'width ' + (FC_DURATION / 1000) + 's linear';
+          fill.style.width = '0%';
+        });
+      });
+      // auto-advance
+      if (fcTimer) clearTimeout(fcTimer);
+      fcTimer = setTimeout(fcNext, FC_DURATION);
+    }
+
+    function fcNext() {
+      if (fcTimer) { clearTimeout(fcTimer); fcTimer = null; }
+      var lesson = LESSONS[lessonIdx];
+      fcIdx++;
+      if (fcIdx >= lesson.vocab.length) { fcDone(); return; }
+      fcShowCard();
+    }
+
+    function fcSkipAll() {
+      if (fcTimer) { clearTimeout(fcTimer); fcTimer = null; }
+      fcDone();
+    }
+
+    function fcDone() {
+      document.getElementById('flashcard-page').classList.remove('show');
+      showPreListenPage();
+    }
+
+    // ── Pinyin / English Toggles ──────────────────────────────
+    var pyOn = true;
+    var enOn = true;
+
+    function togglePy() {
+      pyOn = !pyOn;
+      document.body.classList.toggle('hide-pinyin', !pyOn);
+      var btn = document.getElementById('tgl-py');
+      if (btn) btn.classList.toggle('off', !pyOn);
+    }
+
+    function toggleEn() {
+      enOn = !enOn;
+      document.body.classList.toggle('hide-en', !enOn);
+      var btn = document.getElementById('tgl-en');
+      if (btn) btn.classList.toggle('off', !enOn);
+    }
+
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       loadState();
       setupAudio(LESSONS[lessonIdx].audio);
       updateUI();
       initDialogMode();
-      showPreListenPage();
+      // Cover page is already shown (has class="show" in HTML)
+      // Pre-listen page stays hidden until user completes flashcards
     });
   </script>
+  <!-- 课程封面 Lesson Cover -->
+  <div id="cover-page" class="show">
+    <div class="cover-inner">
+      <div class="cover-lesson-num">第一课 · Lesson 1</div>
+      <div class="cover-title-zh" id="cover-title-zh">机场问路</div>
+      <div class="cover-title-en" id="cover-title-en">Asking for Directions at the Airport</div>
+      <div class="cover-divider"></div>
+      <div class="cover-scene" id="cover-scene">卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。Luke has just arrived at Shanghai Pudong Airport and needs to find the bus to the city center.</div>
+      <button class="cover-start-btn" onclick="startLesson()">开始学习 · Start Learning →</button>
+    </div>
+  </div>
+
+  <!-- 生词闪卡 Vocab Flashcards -->
+  <div id="flashcard-page">
+    <div class="fc-inner">
+      <div class="fc-header">
+        <div class="fc-title">⚡ 核心生词 · Key Vocabulary</div>
+        <div class="fc-count" id="fc-count">1 / 6</div>
+      </div>
+      <div class="fc-timer-bar"><div class="fc-timer-fill" id="fc-timer-fill"></div></div>
+      <div class="fc-card" onclick="fcNext()">
+        <div class="fc-zh" id="fc-zh">不好意思</div>
+        <div class="fc-py" id="fc-py">bù hǎo yì si</div>
+        <div class="fc-en" id="fc-en">Excuse me / Sorry to bother you</div>
+      </div>
+      <div class="fc-footer">
+        <button class="fc-skip-btn" onclick="fcSkipAll()">跳过 Skip</button>
+        <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">下一个 Next →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 预听页面：自动播放完整对话，上=卢克，下=工作人员 -->
   <div id="pre-listen-page">
   <div class="plp-inner">
