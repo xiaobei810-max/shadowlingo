@@ -3555,11 +3555,18 @@
           mediaRecorder.requestData();
         }
         setTimeout(function () {
-          _stopCurrentRecorder(); // release this session's recorder; mic stream stays alive
+          // Tear down recorder WITHOUT clearing audioChunks — blob must be built first
+          _isCapturing = false;
+          _flushPending = false;
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.ondataavailable = null;
+            try { mediaRecorder.stop(); } catch (e) {}
+          }
+          mediaRecorder = null;
           bn.disabled = false;
           if (audioChunks.length === 0) { setStatus('准备好了 Ready'); busy = false; return; }
           var blob = new Blob(audioChunks, { type: _mimeType });
-          audioChunks = [];
+          audioChunks = []; // clear AFTER blob is built
           evaluateAudio(blob);
         }, 120);
       }, 400);
