@@ -2299,17 +2299,26 @@
         if (p) pairs.push({ cat: '', zh: p, en: p });
       });
 
-      // 始终过滤泛化条目——只保留有具体指导意义的反馈
-      // 「发音需加强/有误（正确：xxx）」这类提示不告诉学习者该如何改善，
-      // 去掉后字体颜色已足够传达「此字有问题」的信号。
-      // 注意：这里不再有任何兜底 push，若过滤后 pairs 为空则返回 null。
+      // 有具体错误时去掉泛化兜底（保留具体的平翘舌/声母/鼻音等）
+      // 没有具体错误时保留泛化兜底，让学习者知道此字发音偏低
       var isGenericPair = function (p) {
         return /^(mispronounced|needs improvement|syllable too soft|syllable unclear)/.test(p.en);
       };
-      pairs = pairs.filter(function (p) { return !isGenericPair(p); });
+      var hasSpecific = pairs.some(function (p) { return !isGenericPair(p); });
+      if (hasSpecific) {
+        // 有具体反馈时，过滤掉泛化描述，只保留有指导意义的内容
+        pairs = pairs.filter(function (p) { return !isGenericPair(p); });
+      }
 
-      // 无具体反馈 → 此字不加入发音指南（红/黄下划线已告知学习者）
-      if (!pairs.length) return null;
+      // 若仍无任何 pair，加入兜底（告诉学习者该字发音偏低，附上正确读音）
+      if (!pairs.length) {
+        var py0 = correctPy || (entry && entry.p ? toToneMark(entry.p) : '');
+        if (py0) {
+          pairs.push({ cat: '', zh: '发音需加强，正确读音为 ' + py0, en: 'needs improvement — correct: ' + py0 });
+        } else {
+          pairs.push({ cat: '', zh: isRed ? '发音有误' : '发音需改进', en: isRed ? 'mispronounced' : 'needs improvement' });
+        }
+      }
 
       var icon   = isRed ? '🔴' : '🟡';
       var result = pairsToSentence(w.content, isRed, pairs);
@@ -2334,14 +2343,12 @@
       reds.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        var item = buildHintLine(w, true, sandhiQueue);
-        if (item) items.push(item);   // null = 无具体反馈，跳过
+        items.push(buildHintLine(w, true, sandhiQueue));
       });
       yellows.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        var item = buildHintLine(w, false, sandhiQueue);
-        if (item) items.push(item);   // null = 无具体反馈，跳过
+        items.push(buildHintLine(w, false, sandhiQueue));
       });
       return items;
     }

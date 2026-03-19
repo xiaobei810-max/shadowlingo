@@ -799,20 +799,17 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
       }
       const isWeak = WEAK_CHARS.has(ch);
       if (isWeak) {
-        // 高频字/虚词：Azure 在连读中对这类字评分系统性偏低，单纯低分不代表发音有误
-        // 只有 Azure 明确报 Mispronunciation 才标为黄色，且绝不标红（避免误报）
-        if (err === 'Mispronunciation' && acc < 65) return 1;
+        // 高频虚词/轻声字：Azure 连读中对这类字系统性低分，需更严格的触发条件
+        // 只有 Azure 明确报 Mispronunciation 才标黄，不标红（分数低不代表真的读错）
+        if (err === 'Mispronunciation' && acc < 70) return 1;
         return 0;
       }
-      // 普通字评级规则：
-      // 红（level 2）：Azure 明确说 Mispronunciation 且分数低，或分数极低（≤30）
-      //   ⚠️ 不能只凭低分标红：连读/句首时 Azure 常给正确发音 35-45 分，
-      //      但 errType 仍为 None（词被正确识别），低分是声学打分波动，不是真正读错
-      if (err === 'Mispronunciation' && acc < 55) return 2;
-      if (acc < 30) return 2;
-      // 黄（level 1）：低分或 Azure 判为有一定问题
-      if (err === 'Mispronunciation' && acc < 75) return 1;
-      if (acc < 65) return 1;
+      // ── 普通字阈值（用户指定）──────────────────────────────────
+      //   < 70 分 → 红（发音明显有问题）
+      //  70-84 分 → 黄（发音偏弱，需改善）
+      //   ≥ 85 分 → 不标（发音可接受）
+      if (acc < 70) return 2;
+      if (acc < 85) return 1;
       return 0;
     };
 
