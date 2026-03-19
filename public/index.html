@@ -2087,6 +2087,7 @@
     var mediaRecorder = null;   // current MediaRecorder (fresh per recording session)
     var micStream = null;       // MediaStream kept alive across recordings (no re-permission)
     var audioChunks = [];
+    var _webmInitChunk = null;  // first chunk from recorder (EBML/container header) — always saved
     var _isCapturing = false;   // true only between countdown-end and stop
     var _flushPending = false;  // one-shot: capture the requestData() tail chunk
     var _countdownTimer = null;
@@ -2889,6 +2890,7 @@
       _isCapturing = false;
       _flushPending = false;
       audioChunks = [];
+      _webmInitChunk = null;
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.ondataavailable = null; // silence further events
         try { mediaRecorder.stop(); } catch (e) {}
@@ -2903,6 +2905,12 @@
       mediaRecorder = new MediaRecorder(micStream);
       mediaRecorder.ondataavailable = function (e) {
         if (!e.data || e.data.size === 0) return;
+        // Always save the first chunk — it is the EBML/WebM container header.
+        // Without it the blob is invalid and decodeAudioData fails.
+        if (!_webmInitChunk) {
+          _webmInitChunk = e.data;
+          return; // don't add to audioChunks; it is only warmup noise
+        }
         if (_isCapturing || _flushPending) {
           audioChunks.push(e.data);
           if (_flushPending) _flushPending = false;
@@ -3565,8 +3573,11 @@
           mediaRecorder = null;
           bn.disabled = false;
           if (audioChunks.length === 0) { setStatus('准备好了 Ready'); busy = false; return; }
-          var blob = new Blob(audioChunks, { type: _mimeType });
+          // Prepend EBML/container header chunk so the blob is a valid WebM file
+          var blobParts = _webmInitChunk ? [_webmInitChunk].concat(audioChunks) : audioChunks;
+          var blob = new Blob(blobParts, { type: _mimeType });
           audioChunks = []; // clear AFTER blob is built
+          _webmInitChunk = null;
           evaluateAudio(blob);
         }, 120);
       }, 400);
