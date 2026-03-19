@@ -2299,19 +2299,17 @@
         if (p) pairs.push({ cat: '', zh: p, en: p });
       });
 
-      // 有具体问题时去掉泛化描述
-      // 用正则前缀匹配，兼容 "needs improvement (correct: xxx)" 等变体
-      if (pairs.length > 1) {
-        var isGenericPair = function (p) {
-          return /^(mispronounced|needs improvement|syllable too soft|syllable unclear)/.test(p.en);
-        };
-        var hasSpecific = pairs.some(function (p) { return !isGenericPair(p) && p.en !== p.zh; });
-        if (hasSpecific) pairs = pairs.filter(function (p) { return !isGenericPair(p); });
-      }
+      // 始终过滤泛化条目——只保留有具体指导意义的反馈
+      // 「发音需加强/有误（正确：xxx）」这类提示不告诉学习者该如何改善，
+      // 去掉后字体颜色已足够传达「此字有问题」的信号。
+      // 注意：这里不再有任何兜底 push，若过滤后 pairs 为空则返回 null。
+      var isGenericPair = function (p) {
+        return /^(mispronounced|needs improvement|syllable too soft|syllable unclear)/.test(p.en);
+      };
+      pairs = pairs.filter(function (p) { return !isGenericPair(p); });
 
-      if (!pairs.length) {
-        pairs.push({ cat: '', zh: isRed?'发音有误':'发音需改进', en: isRed?'mispronounced':'needs improvement' });
-      }
+      // 无具体反馈 → 此字不加入发音指南（红/黄下划线已告知学习者）
+      if (!pairs.length) return null;
 
       var icon   = isRed ? '🔴' : '🟡';
       var result = pairsToSentence(w.content, isRed, pairs);
@@ -2336,12 +2334,14 @@
       reds.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        items.push(buildHintLine(w, true, sandhiQueue));
+        var item = buildHintLine(w, true, sandhiQueue);
+        if (item) items.push(item);   // null = 无具体反馈，跳过
       });
       yellows.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
-        items.push(buildHintLine(w, false, sandhiQueue));
+        var item = buildHintLine(w, false, sandhiQueue);
+        if (item) items.push(item);   // null = 无具体反馈，跳过
       });
       return items;
     }
