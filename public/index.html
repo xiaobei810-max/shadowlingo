@@ -5642,13 +5642,13 @@
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v3')) {
+      if (!localStorage.getItem('echo_coin_reset_v4')) {
         try {
           localStorage.removeItem('echo_coins');
           Object.keys(localStorage).forEach(function(k) {
-            if (/^\d{8}_L/.test(k)) localStorage.removeItem(k);
+            if (/^echo_earn_/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v3', '1');
+          localStorage.setItem('echo_coin_reset_v4', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
