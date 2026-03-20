@@ -827,6 +827,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
 
       // 优先用 Syllable（字级），再用 Phoneme（音素级）
       const syl = syllables.find(s => s.Grapheme === ch) || syllables[i] || null;
+      if (syl) console.log(`[syl] char="${ch}" Phoneme="${syl.Phoneme}" Grapheme="${syl.Grapheme}" PA=${JSON.stringify(syl.PronunciationAssessment||{})}`);
 
       // ⚠️ Bug fix: Azure 的 Phoneme 对象上通常没有 Grapheme 字段
       // 对于单字词，所有音素都属于该字；对多字词，按位置分配
@@ -884,6 +885,33 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
             cMsgs[i].unshift('发音有误');
           }
           userSyllable = userSyllable || sttMis.gotPy || null; // 把STT结果当userSyllable用于后续声调检查
+        }
+
+        // 方案E：音节级声调检测 ─────────────────────────────────────────────
+        // Azure 对中文 Syllable.Phoneme 包含完整拼音+声调数字（如 "ming2"），
+        // 这是 Azure 声学模型对该音节的直接判断，不经过 NBest 重建（方案A/B），
+        // 因此不会产生假阳性声母错误。
+        // 条件：
+        //   1. 有有效音节数据（syl.Phoneme 存在）
+        //   2. 期望声调已知（wantTone ≠ 0）
+        //   3. STT 未检出字级替换（!userSyllable）—— 避免与 sttMis 重复
+        //   4. 字准确度 ≥ 40（过低时 Azure 对该字识别不可靠，忽略）
+        if (syl && syl.Phoneme && wantPy && wantTone !== 0 && !userSyllable) {
+          const sylPy   = normalizePy(syl.Phoneme);
+          const sylTone = getTone(sylPy);
+          const sylBase = sylPy.replace(/\d$/, '');
+          const wantBase = wantPy.replace(/\d$/, '');
+          console.log(`[TierE] char="${ch}" syl.Phoneme="${syl.Phoneme}" sylPy="${sylPy}" tone=${sylTone} wantTone=${wantTone} charAcc=${charAcc}`);
+          if (sylBase === wantBase && sylTone > 0 && charAcc >= 40 && sylTone !== wantTone) {
+            // 变调豁免：参考声调为3，Azure 检测到2声 → 可能是连读变调（3+3 → 2+3 规则）
+            const sandhiExempt = (wantTone === 3 && sylTone === 2);
+            if (!sandhiExempt) {
+              userSyllable = sylPy;
+              console.log(`[TierE] 声调偏差 char="${ch}" 期望${wantPy}(${wantTone}声) 检测到${sylPy}(${sylTone}声)`);
+            } else {
+              console.log(`[TierE] 变调豁免 char="${ch}" 3声→2声（连读规则）`);
+            }
+          }
         }
 
         // 方案D：主动翘舌/前后鼻音检测（对所有相关字，不受准确度阈值限制）
