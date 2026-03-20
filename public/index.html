@@ -973,56 +973,47 @@
       white-space: pre-line;
     }
 
-    /* ── 回声币系统 Echo Coin (深色磨砂玻璃 + 霓虹绿声波) ─────── */
+    /* ── 回声币系统 Echo Coin (Premium Crypto Token) ────────── */
 
-    /* ─── 通用硬币底座 ─────────────────────────────────────── */
+    /* ─── 硬币底座：金属磨砂玻璃质感 ──────────────────────── */
     .echo-coin {
       position: relative;
       border-radius: 50%;
-      background: radial-gradient(circle at 30% 25%, #1c2330, #0d1117);
+      background: linear-gradient(135deg, #2a2d35 0%, #161b22 100%);
+      border: 1px solid rgba(31,204,102,0.40);
       box-shadow:
-        0 0 0 1px rgba(31,204,102,0.28),
-        0 0 14px rgba(31,204,102,0.22),
-        0 0 30px rgba(31,204,102,0.10),
-        inset 0 1px 1px rgba(255,255,255,0.07),
-        inset -1px -1px 4px rgba(0,0,0,0.5),
-        2px 3px 12px rgba(0,0,0,0.55);
+        0 0 16px rgba(31,204,102,0.22),
+        0 0 40px rgba(31,204,102,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        inset 0 -1px 0 rgba(0,0,0,0.45),
+        inset 1px 0 0 rgba(255,255,255,0.05),
+        0 6px 24px rgba(0,0,0,0.65);
       flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
     }
-    /* 左上角高光 */
+    /* 左上角弧形高光（模拟光源） */
     .echo-coin::before {
       content: '';
       position: absolute;
-      top: 13%; left: 11%;
-      width: 40%; height: 18%;
-      background: white;
-      opacity: 0.08;
+      top: 9%; left: 12%;
+      width: 42%; height: 22%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.20), transparent);
       border-radius: 50%;
-      transform: rotate(-30deg);
-      filter: blur(2px);
+      transform: rotate(-18deg);
       pointer-events: none;
     }
-    .echo-coin-lg { width: 56px; height: 56px; }
-    .echo-coin-sm { width: 20px; height: 20px; }
-    /* SVG 占满硬币 */
-    .ec-svg {
-      position: absolute;
-      inset: 0; width: 100%; height: 100%;
-      overflow: visible;
-    }
-    /* 静态同心圆：内→外 粗→细 亮→暗 */
-    .ec-r1 { opacity: 0.92; }
-    .ec-r2 { opacity: 0.68; }
-    .ec-r3 { opacity: 0.44; }
-    .ec-r4 { opacity: 0.22; }
-    /* 脉冲扩散圆 */
-    .ec-p { opacity: 0; transform-origin: 24px 24px; }
-    .echo-coin-pulse .ec-p {
-      animation: ecRingPulse 1.6s cubic-bezier(0,.55,.35,1) infinite;
-    }
-    @keyframes ecRingPulse {
-      0%   { opacity: 0.72; transform: scale(1); }
-      100% { opacity: 0;    transform: scale(4.8); }
+    .echo-coin-lg { width: 58px; height: 58px; }
+    .echo-coin-sm { width: 22px; height: 22px; }
+
+    /* ─── 声波竖条图标 ──────────────────────────────────────── */
+    .ec-svg { display: block; overflow: visible; }
+    .ec-bar { fill: #1fcc66; }
+
+    /* ─── 悬浮动画（套在外层 wrapper 上，不影响 coinPop） ─── */
+    .coin-float-wrap { animation: ecFloat 3s ease-in-out infinite; }
+    @keyframes ecFloat {
+      0%, 100% { transform: translateY(0px);  }
+      50%       { transform: translateY(-4px); }
     }
 
     /* ─── 顶部余额徽章 ──────────────────────────────────────── */
@@ -1038,14 +1029,16 @@
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
       display: none; align-items: center; justify-content: center;
-      gap: 12px; margin: 12px 0 6px;
+      gap: 14px; margin: 12px 0 6px;
     }
     .eval-coin-plus {
-      font-size: 32px; font-weight: 900; color: #1fcc66;
-      line-height: 1;
+      font-size: 38px; font-weight: 800; color: #1fcc66; line-height: 1;
+      text-shadow: 0 0 12px rgba(31,204,102,0.55), 0 0 32px rgba(31,204,102,0.25);
     }
-    .eval-coin-label { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+    .eval-coin-label { line-height: 1.55; }
     .eval-coin-label span { display: block; }
+    .ec-label-main { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+    .ec-label-sub  { font-size: 11px; color: #8b949e; }
 
     /* ─── 分数不足重练提示 ──────────────────────────────────── */
     .eval-coin-retry {
@@ -1062,33 +1055,36 @@
     /* ─── 完成课程得币行 ────────────────────────────────────── */
     .completion-coin-row {
       display: flex; align-items: center; justify-content: center;
-      gap: 10px; margin: 14px 0 4px;
+      gap: 12px; margin: 14px 0 4px;
     }
     .completion-coin-text {
-      font-size: 15px; font-weight: 700; color: #1fcc66;
+      font-size: 16px; font-weight: 800; color: #1fcc66;
+      text-shadow: 0 0 10px rgba(31,204,102,0.4);
     }
-    .completion-coin-sub {
-      font-size: 11px; color: #94a3b8; margin-top: 2px;
-    }
+    .completion-coin-sub { font-size: 11px; color: #8b949e; margin-top: 3px; }
 
     /* ─── 动画 ──────────────────────────────────────────────── */
     @keyframes coinPop {
-      0%   { opacity: 0; transform: scale(0.2) translateY(24px); }
-      60%  { transform: scale(1.28) translateY(-8px); }
-      80%  { transform: scale(0.90) translateY(3px); }
+      0%   { opacity: 0; transform: scale(0.15) translateY(28px); }
+      55%  { transform: scale(1.32) translateY(-10px); }
+      75%  { transform: scale(0.88) translateY(4px); }
+      90%  { transform: scale(1.06) translateY(-2px); }
       100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     @keyframes coinGlow {
-      0%,100% { box-shadow: 0 0 0 1px rgba(31,204,102,0.28), 0 0 14px rgba(31,204,102,0.22), 0 0 30px rgba(31,204,102,0.10), inset 0 1px 1px rgba(255,255,255,0.07), inset -1px -1px 4px rgba(0,0,0,0.5), 2px 3px 12px rgba(0,0,0,0.55); }
-      50%     { box-shadow: 0 0 0 1px rgba(31,204,102,0.55), 0 0 22px rgba(31,204,102,0.55), 0 0 50px rgba(31,204,102,0.30), inset 0 1px 1px rgba(255,255,255,0.10), inset -1px -1px 4px rgba(0,0,0,0.5), 2px 3px 12px rgba(0,0,0,0.55); }
+      0%,100% { box-shadow: 0 0 16px rgba(31,204,102,0.22), 0 0 40px rgba(31,204,102,0.08), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.65); }
+      50%     { box-shadow: 0 0 28px rgba(31,204,102,0.60), 0 0 60px rgba(31,204,102,0.28), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.65); }
     }
     @keyframes balBounce {
       0%,100% { transform: scale(1); }
       40%     { transform: scale(1.22); }
       70%     { transform: scale(0.92); }
     }
-    .coin-pop-anim  { animation: coinPop  0.48s cubic-bezier(.34,1.56,.64,1) forwards; }
-    .coin-glow-anim { animation: coinGlow 1.4s ease-in-out 0.3s 2; }
+    /* coinPop + coinGlow 同时运行（避免 cascade 互相覆盖） */
+    .coin-pop-anim  {
+      animation: coinPop 0.52s cubic-bezier(.34,1.56,.64,1) forwards,
+                 coinGlow 1.6s ease-in-out 0.4s 2;
+    }
     .bal-bounce-anim { animation: balBounce 0.5s ease-in-out; }
 
     /* ── Score animations ───────────────────────────── */
@@ -1864,10 +1860,11 @@
       <div class="header-right">
         <div class="coin-bal-wrap" id="coin-bal-practice" style="display:none">
           <div class="echo-coin echo-coin-sm">
-            <svg viewBox="0 0 48 48" class="ec-svg">
-              <circle class="ec-r1" cx="24" cy="24" r="5"   fill="none" stroke="#1fcc66" stroke-width="3.5"/>
-              <circle class="ec-r2" cx="24" cy="24" r="10"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
-              <circle class="ec-r3" cx="24" cy="24" r="15"  fill="none" stroke="#1fcc66" stroke-width="1.5"/>
+            <svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg">
+              <rect class="ec-bar" x="0"    y="4"   width="2.2" height="3"  rx="1.1"/>
+              <rect class="ec-bar" x="3.1"  y="1"   width="2.2" height="9"  rx="1.1"/>
+              <rect class="ec-bar" x="6.2"  y="2.5" width="2.2" height="6"  rx="1.1"/>
+              <rect class="ec-bar" x="9.3"  y="4"   width="2.2" height="3"  rx="1.1"/>
             </svg>
           </div>
           <span id="coin-bal-num-practice">0</span>
@@ -1988,16 +1985,15 @@
       <div class="praise-block" id="praise-block"></div>
       <!-- 本课获得回声币 -->
       <div class="completion-coin-row" id="completion-coin-row" style="display:none">
-        <div class="echo-coin echo-coin-lg echo-coin-pulse" id="completion-coin-icon">
-          <svg viewBox="0 0 48 48" class="ec-svg">
-            <circle class="ec-r1" cx="24" cy="24" r="4.5"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
-            <circle class="ec-r2" cx="24" cy="24" r="9.5"  fill="none" stroke="#1fcc66" stroke-width="1.8"/>
-            <circle class="ec-r3" cx="24" cy="24" r="14"   fill="none" stroke="#1fcc66" stroke-width="1.2"/>
-            <circle class="ec-r4" cx="24" cy="24" r="18.5" fill="none" stroke="#1fcc66" stroke-width="0.7"/>
-            <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2"/>
-            <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:.5s"/>
-            <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:1s"/>
-          </svg>
+        <div class="coin-float-wrap">
+          <div class="echo-coin echo-coin-lg" id="completion-coin-icon">
+            <svg width="28" height="24" viewBox="0 0 28 24" class="ec-svg">
+              <rect class="ec-bar" x="0"    y="8" width="5" height="8"  rx="2.5"/>
+              <rect class="ec-bar" x="7.5"  y="1" width="5" height="22" rx="2.5"/>
+              <rect class="ec-bar" x="15"   y="4" width="5" height="16" rx="2.5"/>
+              <rect class="ec-bar" x="22.5" y="8" width="5" height="8"  rx="2.5"/>
+            </svg>
+          </div>
         </div>
         <div>
           <div class="completion-coin-text" id="completion-coin-text">本课获得 +0 回声币</div>
@@ -2314,11 +2310,10 @@
           var badge = document.getElementById('eval-coin-badge');
           var plus  = rewardEl.querySelector('.eval-coin-plus');
           if (badge) {
-            badge.classList.remove('coin-pop-anim', 'coin-glow-anim', 'echo-coin-pulse');
+            badge.classList.remove('coin-pop-anim');
             void badge.offsetWidth;
-            badge.classList.add('coin-pop-anim', 'coin-glow-anim', 'echo-coin-pulse');
+            badge.classList.add('coin-pop-anim');
           }
-          if (plus)  { plus.classList.remove('coin-glow-anim');  void plus.offsetWidth;  plus.classList.add('coin-glow-anim'); }
           playCoinSound(earned);
           // 余额跳动
           refreshCoinDisplay();
@@ -5717,10 +5712,11 @@
         <div class="eval-badge" id="eval-badge">第 1/5 句</div>
         <div class="coin-bal-wrap" id="coin-bal-eval" style="display:none">
           <div class="echo-coin echo-coin-sm">
-            <svg viewBox="0 0 48 48" class="ec-svg">
-              <circle class="ec-r1" cx="24" cy="24" r="5"   fill="none" stroke="#1fcc66" stroke-width="3.5"/>
-              <circle class="ec-r2" cx="24" cy="24" r="10"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
-              <circle class="ec-r3" cx="24" cy="24" r="15"  fill="none" stroke="#1fcc66" stroke-width="1.5"/>
+            <svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg">
+              <rect class="ec-bar" x="0"    y="4"   width="2.2" height="3"  rx="1.1"/>
+              <rect class="ec-bar" x="3.1"  y="1"   width="2.2" height="9"  rx="1.1"/>
+              <rect class="ec-bar" x="6.2"  y="2.5" width="2.2" height="6"  rx="1.1"/>
+              <rect class="ec-bar" x="9.3"  y="4"   width="2.2" height="3"  rx="1.1"/>
             </svg>
           </div>
           <span id="coin-bal-num-eval">0</span>
@@ -5748,24 +5744,21 @@
           <div class="eval-score-sub">发音评分</div>
           <!-- 回声币奖励（分数滚完后弹入） -->
           <div class="eval-coin-reward" id="eval-coin-reward">
-            <div class="echo-coin echo-coin-lg" id="eval-coin-badge">
-              <svg viewBox="0 0 48 48" class="ec-svg">
-                <!-- 静态同心圆：内→外 粗→细 亮→暗 -->
-                <circle class="ec-r1" cx="24" cy="24" r="4.5"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
-                <circle class="ec-r2" cx="24" cy="24" r="9.5"  fill="none" stroke="#1fcc66" stroke-width="1.8"/>
-                <circle class="ec-r3" cx="24" cy="24" r="14"   fill="none" stroke="#1fcc66" stroke-width="1.2"/>
-                <circle class="ec-r4" cx="24" cy="24" r="18.5" fill="none" stroke="#1fcc66" stroke-width="0.7"/>
-                <!-- 脉冲扩散圆（3圈错位） -->
-                <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2"/>
-                <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:.5s"/>
-                <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:1s"/>
-              </svg>
+            <div class="coin-float-wrap">
+              <div class="echo-coin echo-coin-lg" id="eval-coin-badge">
+                <svg width="28" height="24" viewBox="0 0 28 24" class="ec-svg">
+                  <rect class="ec-bar" x="0"   y="8"  width="5" height="8"  rx="2.5"/>
+                  <rect class="ec-bar" x="7.5" y="1"  width="5" height="22" rx="2.5"/>
+                  <rect class="ec-bar" x="15"  y="4"  width="5" height="16" rx="2.5"/>
+                  <rect class="ec-bar" x="22.5" y="8" width="5" height="8"  rx="2.5"/>
+                </svg>
+              </div>
             </div>
             <div>
               <div class="eval-coin-plus" id="eval-coin-plus">+3</div>
               <div class="eval-coin-label">
-                <span>回声币</span>
-                <span style="color:#64748b;font-size:11px">Echo Coins</span>
+                <span class="ec-label-main">回声币</span>
+                <span class="ec-label-sub">Echo Coins</span>
               </div>
             </div>
           </div>
