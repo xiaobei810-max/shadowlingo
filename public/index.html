@@ -2073,7 +2073,6 @@
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-overlay">0</span>
           </div>
-          <div class="counter" id="overlay-lesson-label">本课完成</div>
         </div>
       </div>
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
@@ -2368,9 +2367,6 @@
       wrapIds.forEach(function(id) {
         var el = document.getElementById(id); if (el) el.style.display = '';
       });
-      // 封面页课序提示
-      var coverCtr = document.getElementById('cover-lesson-counter');
-      if (coverCtr) coverCtr.textContent = '第 ' + (lessonIdx + 1) + ' 课';
     }
     // Web Audio 硬币音效（升调，数量越多音符越多）
     function playCoinSound(count) {
@@ -4600,8 +4596,6 @@
       var coinText = document.getElementById('completion-coin-text');
       var coinSub  = document.getElementById('completion-coin-sub');
       // 更新顶部 header 的课序标签
-      var overlayLabel = document.getElementById('overlay-lesson-label');
-      if (overlayLabel) overlayLabel.textContent = '第 ' + (lessonIdx + 1) + ' 课';
       if (coinRow && !noPractice) {
         var coinFloat = document.getElementById('completion-coin-float');
         if (coinFloat) coinFloat.style.display = ''; // reset in case previous run hid it
@@ -5738,7 +5732,6 @@
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-cover">0</span>
           </div>
-          <div class="counter" id="cover-lesson-counter">第 1 课</div>
         </div>
       </div>
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:0%"></div></div>
@@ -5767,7 +5760,6 @@
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-fc">0</span>
           </div>
-          <div class="counter" id="fc-top-count">1 / 6</div>
         </div>
       </div>
       <div class="pth-bar-wrap"><div class="pth-bar-fill" id="fc-top-prog" style="width:0%"></div></div>
@@ -5803,7 +5795,6 @@
           <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
           <span id="coin-bal-num-plp">0</span>
         </div>
-        <div class="counter">完整对话</div>
       </div>
     </div>
     <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:60%"></div></div>
@@ -6020,7 +6011,6 @@
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-tip">0</span>
           </div>
-          <div class="counter">地道指南</div>
         </div>
       </div>
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
