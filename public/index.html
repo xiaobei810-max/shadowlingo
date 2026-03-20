@@ -3486,7 +3486,9 @@
           var el = document.getElementById('rcd-number');
           if (el) { el.textContent = _countdownN; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
         } else {
+          var _t = _countdownTimer;
           _countdownTimer = null;
+          clearInterval(_t); // must clear BEFORE setting null, with the real timer ID
           _armRecording();
         }
       }, 1000);
