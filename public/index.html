@@ -5,6 +5,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EchoChinese</title>
+  <!-- 现代无衬线中文字体：Noto Sans SC（Bold/Black） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@700;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0a0f1a;
@@ -51,16 +55,33 @@
     }
 
     .logo-icon {
-      width: 44px;
-      height: 44px;
-      background: var(--green);
-      border-radius: 12px;
+      width: 46px;
+      height: 46px;
+      /* 深邃暗黑底盘 — 磨砂玻璃质感 */
+      background: linear-gradient(145deg, #1c212e 0%, #0d1117 100%);
+      border-radius: 14px;
+      border: 1px solid rgba(31,204,102,0.18);
+      box-shadow:
+        0 0 18px rgba(31,204,102,0.07),
+        inset 0 1px 0 rgba(255,255,255,0.09),
+        inset 0 -1px 0 rgba(0,0,0,0.45),
+        0 4px 18px rgba(0,0,0,0.65);
       display: flex;
       align-items: center;
       justify-content: center;
+      /* 现代几何黑体字，首选系统 PingFang / HeiTi，降级 Noto Sans SC */
+      font-family: 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB',
+                   'Microsoft YaHei UI', 'Source Han Sans CN', sans-serif;
       font-size: 22px;
-      font-weight: 800;
-      color: #000;
+      font-weight: 900;
+      /* 高饱和亮绿，从磨砂玻璃透出的收敛柔光 */
+      color: #1fcc66;
+      text-shadow:
+        0 0  6px rgba(31,204,102,0.80),
+        0 0 16px rgba(31,204,102,0.35),
+        0 0 34px rgba(31,204,102,0.14);
+      letter-spacing: -0.02em;
+      user-select: none;
     }
 
     .logo-text {
