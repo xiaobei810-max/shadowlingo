@@ -998,17 +998,10 @@
     }
 
     .eval-grade {
-      font-size: 22px;
-      font-weight: 700;
-    }
-
-    .eval-praise {
       font-size: 17px;
-      color: #94a3b8;
-      margin-top: 14px;
-      line-height: 1.8;
-      padding: 0 8px;
-      white-space: pre-line;
+      font-weight: 700;
+      margin-top: 16px;
+      margin-bottom: 24px;
     }
 
     /* ── 回声币系统 Echo Coin (Premium Crypto Token) ────────── */
@@ -4206,7 +4199,7 @@
       gradeEl.textContent = grade;
       gradeEl.style.color = color;
 
-      document.getElementById("eval-praise").textContent = sentence.praise + "\n" + getPraise(score);
+      // eval-praise removed — grade label below coin is sufficient
 
       // ── 回声币结算（防刷：同一句子当天只能按档位差累计） ──
       var _coinLIdx = lessonIdx, _coinSIdx = idx;
@@ -5921,7 +5914,6 @@
           <!-- 低分提示：重练赚币 -->
           <div class="eval-coin-retry" id="eval-coin-retry" style="display:none"></div>
           <div class="eval-grade" id="eval-grade"></div>
-          <div class="eval-praise" id="eval-praise"></div>
           <div class="eval-error-notice" id="eval-error-notice" style="display:none"></div>
         </div>
       </div>
