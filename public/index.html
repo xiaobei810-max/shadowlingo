@@ -3890,6 +3890,10 @@
       var allAcoustic  = acousticErrors  || [];
       var hasAny = allHintItems.length > 0 || allDtErrors.length > 0 || allAcoustic.length > 0;
 
+      // Guide card (with 录音/原声 buttons) is always visible.
+      // Body shows error items when hasAny; stays empty on a perfect score.
+      guideCard.style.display = "";
+
       if (hasAny) {
         var html = '';
 
@@ -3961,10 +3965,8 @@
         }
 
         guideBody.innerHTML = html;
-        guideCard.style.display = "";
       } else {
         guideBody.innerHTML = '';
-        guideCard.style.display = "none";
       }
     }
 
