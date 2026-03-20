@@ -2006,7 +2006,6 @@
               <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" style="width:28px;height:28px;" onerror="this.style.display='none'" />
               <div class="mascot-ring" id="ring"></div>
             </div>
-            <span class="sentence-badge" id="badge">第 1/4 句</span>
           </div>
         </div>
         <!-- 卡拉OK字幕 -->
@@ -3726,7 +3725,6 @@
 
       if (el("pinyin")) el("pinyin").textContent = s.pinyin;
       if (el("en")) el("en").textContent = s.en;
-      if (el("badge")) el("badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
       if (el("counter")) el("counter").textContent = (idx + 1) + " / " + total;
       if (el("progress")) el("progress").style.width = ((idx + 1) / total * 100) + "%";
 
@@ -4003,7 +4001,6 @@
 
     function showEvalPageLoading(sentence) {
       var total = LESSONS[lessonIdx].sentences.length;
-      document.getElementById("eval-badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
       var pf = document.getElementById("eval-prog-fill");
       if (pf) pf.style.width = Math.round((idx + 1) / total * 100) + '%';
       // Show score card with loading animation (not hidden — fixes black screen)
@@ -5919,7 +5916,6 @@
   <div class="eval-page" id="eval-page">
     <div class="eval-inner">
       <div class="eval-header">
-        <div class="eval-badge" id="eval-badge">第 1/5 句</div>
         <div class="coin-bal-wrap" id="coin-bal-eval" style="display:none">
           <div class="echo-coin echo-coin-sm">
             <svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg">
