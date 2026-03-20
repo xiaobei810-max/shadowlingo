@@ -1955,8 +1955,6 @@
           </div>
           <span id="coin-bal-num-practice">0</span>
         </div>
-        <div class="counter" id="counter">1 / 5</div>
-        <div class="practice-count" id="practice-count"></div>
       </div>
     </div>
     <div class="progress-bar">
@@ -3402,8 +3400,6 @@
         var displayScore = Math.max(0, baseScore - acousticPenalty);
         sessionScores[idx] = displayScore;   // 用索引赋值：重复录音时替换而非追加
         incPracticeCount(lessonIdx, idx);
-        document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
-
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           iseHintText(result.wordResults, s.chars), s, null, recText,
           result.dualTrackErrors || [], acousticErrors);
@@ -3411,7 +3407,6 @@
         console.error('评测失败:', err);
         sessionScores[idx] = 0;   // 同上，替换而非追加
         incPracticeCount(lessonIdx, idx);
-        document.getElementById('practice-count').textContent = '已练 ' + getPracticeCount(lessonIdx, idx) + ' 次';
         fillEvalResult(0, null, [], s, '评测失败：' + err.message);
       }
       busy = false;
@@ -3725,11 +3720,7 @@
 
       if (el("pinyin")) el("pinyin").textContent = s.pinyin;
       if (el("en")) el("en").textContent = s.en;
-      if (el("counter")) el("counter").textContent = (idx + 1) + " / " + total;
       if (el("progress")) el("progress").style.width = ((idx + 1) / total * 100) + "%";
-
-      var cnt = getPracticeCount(lessonIdx, idx);
-      if (el("practice-count")) el("practice-count").textContent = cnt > 0 ? "已练 " + cnt + " 次" : "";
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
