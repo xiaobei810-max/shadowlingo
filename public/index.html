@@ -620,6 +620,31 @@
       color: var(--green);
     }
 
+    /* ── Record button: primary (green) when idle ───────────── */
+    #bn:not(.active) {
+      background: var(--green);
+      color: #000;
+      font-weight: 700;
+      border-color: var(--green);
+    }
+    #bn:not(.active):hover:not(:disabled) { background: #16a34a; border-color: #16a34a; }
+
+    /* ── Pulsing red dot while recording ────────────────────── */
+    #bn.active::before {
+      content: '';
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #f87171;
+      margin-right: 7px;
+      vertical-align: middle;
+      animation: recDot 1s ease-in-out infinite;
+    }
+    @keyframes recDot {
+      0%, 100% { opacity: 1;    transform: scale(1); }
+      50%      { opacity: 0.22; transform: scale(0.6); }
+    }
+
     .btn-nav {
       display: flex;
       gap: 8px;
@@ -803,6 +828,31 @@
     .praise-block {
       margin-top: 12px;
     }
+
+    /* ── Completion score summary card ──────────────────────── */
+    .score-summary-card {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+      padding: 28px 20px 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* ── Eval page progress bar ─────────────────────────────── */
+    .eval-prog-wrap {
+      width: 100%; height: 3px; background: var(--border);
+      margin-top: 14px; border-radius: 99px; overflow: hidden;
+    }
+    .eval-prog-fill {
+      height: 100%; background: var(--green);
+      border-radius: 99px; transition: width 0.4s ease; width: 0%;
+    }
+
+    /* Flashcard counter: hide the "1 / 6" text, bar is enough */
+    #fc-top-count { display: none; }
 
     .btn-restart {
       margin-top: 16px;
@@ -2028,12 +2078,14 @@
     <div class="completion-card">
       <div class="completion-title">🎉 本课完成！</div>
       <div class="completion-sub">Lesson Complete!</div>
-      <div class="avg-score" id="avg-score">--</div>
-      <div class="avg-label">本课平均分</div>
-      <div class="score-grade" id="score-grade"></div>
-      <div class="praise-block" id="praise-block"></div>
-      <!-- 本课获得回声币 -->
-      <div class="completion-coin-row" id="completion-coin-row" style="display:none">
+      <!-- 成绩单容器 -->
+      <div class="score-summary-card">
+        <div class="avg-score" id="avg-score">--</div>
+        <div class="avg-label">本课平均分 · Lesson Score</div>
+        <div class="score-grade" id="score-grade"></div>
+        <div class="praise-block" id="praise-block"></div>
+        <!-- 本课获得回声币 -->
+        <div class="completion-coin-row" id="completion-coin-row" style="display:none">
         <div class="coin-float-wrap" id="completion-coin-float">
           <div class="echo-coin echo-coin-lg" id="completion-coin-icon">
             <svg width="28" height="24" viewBox="0 0 28 24" class="ec-svg">
@@ -2049,6 +2101,7 @@
           <div class="completion-coin-sub" id="completion-coin-sub">累计余额：0 枚</div>
         </div>
       </div>
+      </div><!-- /.score-summary-card -->
       <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 Native Insider Tip →</button>
     </div>
   </div>
@@ -3945,6 +3998,8 @@
     function showEvalPageLoading(sentence) {
       var total = LESSONS[lessonIdx].sentences.length;
       document.getElementById("eval-badge").textContent = "第 " + (idx + 1) + "/" + total + " 句";
+      var pf = document.getElementById("eval-prog-fill");
+      if (pf) pf.style.width = Math.round((idx + 1) / total * 100) + '%';
       // Show score card with loading animation (not hidden — fixes black screen)
       document.getElementById("eval-score-card").style.display = "";
       document.getElementById("eval-score-card").classList.remove("score-card-glow");
@@ -5871,6 +5926,8 @@
           <span id="coin-bal-num-eval">0</span>
         </div>
       </div>
+      <!-- 句子进度条 -->
+      <div class="eval-prog-wrap"><div class="eval-prog-fill" id="eval-prog-fill"></div></div>
 
       <!-- 分数 -->
       <div class="eval-score-card" id="eval-score-card">
