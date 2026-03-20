@@ -97,6 +97,23 @@
       letter-spacing: 0.05em;
     }
 
+    /* ── 页面角落品牌 Logo（封面 / 闪卡 / 预听页通用） ─────── */
+    .page-logo-corner {
+      position: absolute; top: 14px; left: 16px;
+      display: flex; align-items: center; gap: 8px;
+      z-index: 10; user-select: none; pointer-events: none;
+    }
+    .page-logo-corner .logo-icon {
+      width: 32px; height: 32px;
+      font-size: 15px; border-radius: 9px;
+    }
+    .page-logo-corner .plc-text {
+      font-size: 13px; font-weight: 700; color: #e2e8f0; line-height: 1;
+    }
+    .page-logo-corner .plc-sub {
+      font-size: 10px; color: #4b5563; margin-top: 2px; line-height: 1;
+    }
+
     .header-right {
       display: flex;
       flex-direction: column;
@@ -5597,6 +5614,10 @@
   </script>
   <!-- 课程封面 Lesson Cover -->
   <div id="cover-page" class="show">
+    <div class="page-logo-corner">
+      <div class="logo-icon">影</div>
+      <div><div class="plc-text">EchoChinese</div><div class="plc-sub">轻松学中文</div></div>
+    </div>
     <div class="cover-inner">
       <div class="cover-lesson-num">第一课 · Lesson 1</div>
       <div class="cover-title-zh" id="cover-title-zh">机场问路</div>
@@ -5610,6 +5631,10 @@
 
   <!-- 生词闪卡 Vocab Flashcards -->
   <div id="flashcard-page">
+    <div class="page-logo-corner">
+      <div class="logo-icon">影</div>
+      <div><div class="plc-text">EchoChinese</div><div class="plc-sub">轻松学中文</div></div>
+    </div>
     <div class="fc-inner">
       <div class="fc-header">
         <div class="fc-title">⚡ 核心生词 · Key Vocabulary</div>
@@ -5631,6 +5656,10 @@
 
   <!-- 预听页面：自动播放完整对话，上=卢克，下=工作人员 -->
   <div id="pre-listen-page">
+  <div class="page-logo-corner">
+    <div class="logo-icon">影</div>
+    <div><div class="plc-text">EchoChinese</div><div class="plc-sub">轻松学中文</div></div>
+  </div>
   <div class="plp-inner">
     <div class="plp-header">
       <div>
