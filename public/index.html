@@ -3816,6 +3816,26 @@
       }, warmupMs || 0);
     }
 
+    // ── Mic Pre-warming ───────────────────────────────────────
+    // Called at the first user-interaction point (cover page "Start" button)
+    // so getUserMedia + hardware init completes well before the first record tap.
+    // micStream is the same variable startRecording() checks; if it's already
+    // active it passes warmupMs=0 → recorder arms instantly → no dropped syllables.
+    function prewarmMic() {
+      if (micStream && micStream.active) return; // already warm
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(s) {
+          micStream = s;
+          console.log('[Mic] Pre-warmed ✓');
+        })
+        .catch(function(e) {
+          // Permission denied or unavailable — startRecording() will handle it later
+          console.log('[Mic] Pre-warm skipped:', e.name);
+        });
+    }
+    // ─────────────────────────────────────────────────────────
+
     function startRecording() {
       stopMediaRecorderIfRunning(); // cancel any previous recording/countdown
       clearTimers();
@@ -5436,6 +5456,7 @@
       _needsGesture = false; _gestureCallback = null;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       stopAudio();
+      prewarmMic(); // 保底预热：确保进入跟读前麦克风已就绪
       idx = 0; // always start shadow reading from sentence 1
       updateUI();
       var page = document.getElementById('pre-listen-page');
@@ -5444,6 +5465,7 @@
 
     // ── Lesson Cover ──────────────────────────────────────────
     function startLesson() {
+      prewarmMic(); // 提前初始化麦克风，消除第一句录音的冷启动延迟
       document.getElementById('cover-page').classList.remove('show');
       showFlashcardPage();
     }
