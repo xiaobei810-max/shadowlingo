@@ -4579,13 +4579,13 @@
         inner.innerHTML =
           "<div class='tip-compare'>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag'>书面语 · 📖 Textbook</div>" +
+              "<div class='tip-tag'>📖 书面语 · Textbook</div>" +
               "<div class='tip-zh-big'>" + tip.textbook.zh + "</div>" +
               "<div class='tip-en-sm'>" + tip.textbook.en + "</div>" +
               "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.textbook.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
             "</div>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag street'>口语 · 🗣 Real Street</div>" +
+              "<div class='tip-tag street'>🗣 口语 · Real Street</div>" +
               "<div class='tip-zh-big'>" + tip.street.zh + "</div>" +
               (tip.street.pinyin ? "<div class='tip-py'>" + tip.street.pinyin + "</div>" : "") +
               "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.street.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
@@ -5641,6 +5641,17 @@
 
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
+      // ── 一次性代币重置（测试用，部署后只执行一次）────────────
+      if (!localStorage.getItem('echo_coin_reset_v2')) {
+        try {
+          localStorage.removeItem('echo_coins');
+          Object.keys(localStorage).forEach(function(k) {
+            if (/^\d{8}_L/.test(k)) localStorage.removeItem(k);
+          });
+          localStorage.setItem('echo_coin_reset_v2', '1');
+        } catch(e) {}
+      }
+      // ────────────────────────────────────────────────────────
       loadState();
       setupAudio(LESSONS[lessonIdx].audio);
       updateUI();
