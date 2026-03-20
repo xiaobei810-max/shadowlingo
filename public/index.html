@@ -3474,16 +3474,15 @@
       setStatus('🎙 录音中 Recording...');
     }
 
-    function _startCountdown() {
+    function _startCountdown(warmupMs) {
       _cancelCountdown();
-      // 300 ms invisible warmup — no visible countdown needed.
-      // micStream stays open between sentences so hardware is already warm;
-      // 300 ms is enough for first-recording hardware init on any platform.
-      // This keeps the blob near-instant (≤300 ms silence at start vs 2 s before).
+      // warmupMs = 0  for warm stream (sentences 2+): recorder is ready immediately.
+      // warmupMs = 600 for first getUserMedia call: hardware needs ~600 ms to init.
+      // No visible countdown; blob silence at start = warmupMs (imperceptible at 0).
       _countdownTimer = setTimeout(function () {
         _countdownTimer = null;
         _armRecording();
-      }, 300);
+      }, warmupMs || 0);
     }
 
     function startRecording() {
@@ -3497,17 +3496,17 @@
       document.getElementById('bn').classList.remove('active');
       setStatus('准备录音中...');
 
-      function _go(stream) {
+      function _go(stream, warmupMs) {
         micStream = stream;
-        _createFreshRecorder(); // brand-new recorder → timestamps start at 0
-        _startCountdown();      // 2-s countdown; pipeline warms; _isCapturing armed at zero
+        _createFreshRecorder();
+        _startCountdown(warmupMs);
       }
 
       if (micStream && micStream.active) {
-        _go(micStream);
+        _go(micStream, 0);          // stream already warm → start immediately
       } else {
         navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (s) { _go(s); })
+          .then(function (s) { _go(s, 600); }) // first getUserMedia: hardware needs ~600ms
           .catch(function () {
             setStatus('⚠️ 麦克风权限被拒绝');
             busy = false; phase = 'idle';
@@ -3549,19 +3548,26 @@
           mediaRecorder.requestData();
         }
         setTimeout(function () {
-          // Tear down recorder WITHOUT clearing audioChunks — blob must be built first
           _isCapturing = false;
           _flushPending = false;
-          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.ondataavailable = null;
-            try { mediaRecorder.stop(); } catch (e) {}
-          }
-          mediaRecorder = null;
           bn.disabled = false;
-          if (audioChunks.length === 0) { setStatus('准备好了 Ready'); busy = false; return; }
-          var blob = new Blob(audioChunks, { type: _mimeType });
-          audioChunks = []; // clear AFTER blob is built
-          evaluateAudio(blob);
+          function _finalize() {
+            if (audioChunks.length === 0) { setStatus('准备好了 Ready'); busy = false; return; }
+            var blob = new Blob(audioChunks, { type: _mimeType });
+            audioChunks = [];
+            evaluateAudio(blob);
+          }
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            var mr = mediaRecorder;
+            mediaRecorder = null;
+            // Use onstop so the final encoder-flush ondataavailable fires BEFORE we build
+            // the blob — this captures the last syllable that was still in the codec buffer.
+            mr.onstop = function () { mr.ondataavailable = null; _finalize(); };
+            try { mr.stop(); } catch (e) { mr.ondataavailable = null; _finalize(); }
+          } else {
+            mediaRecorder = null;
+            _finalize();
+          }
         }, 120);
       }, 400);
     }
