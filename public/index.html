@@ -2879,7 +2879,7 @@
     // _webmInitChunk is intentionally preserved so the next recording is still valid.
     // ── helpers ───────────────────────────────────────────────
     function _cancelCountdown() {
-      if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+      if (_countdownTimer) { clearTimeout(_countdownTimer); _countdownTimer = null; }
       document.getElementById('rec-countdown').classList.remove('show');
     }
 
@@ -3476,22 +3476,14 @@
 
     function _startCountdown() {
       _cancelCountdown();
-      _countdownN = 2;
-      var numEl = document.getElementById('rcd-number');
-      if (numEl) numEl.textContent = _countdownN;
-      document.getElementById('rec-countdown').classList.add('show');
-      _countdownTimer = setInterval(function () {
-        _countdownN--;
-        if (_countdownN > 0) {
-          var el = document.getElementById('rcd-number');
-          if (el) { el.textContent = _countdownN; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
-        } else {
-          var _t = _countdownTimer;
-          _countdownTimer = null;
-          clearInterval(_t); // must clear BEFORE setting null, with the real timer ID
-          _armRecording();
-        }
-      }, 1000);
+      // 300 ms invisible warmup — no visible countdown needed.
+      // micStream stays open between sentences so hardware is already warm;
+      // 300 ms is enough for first-recording hardware init on any platform.
+      // This keeps the blob near-instant (≤300 ms silence at start vs 2 s before).
+      _countdownTimer = setTimeout(function () {
+        _countdownTimer = null;
+        _armRecording();
+      }, 300);
     }
 
     function startRecording() {
