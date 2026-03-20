@@ -980,10 +980,10 @@
       position: relative;
       border-radius: 50%;
       background: linear-gradient(135deg, #2a2d35 0%, #161b22 100%);
-      border: 1px solid rgba(31,204,102,0.40);
+      border: 1px solid rgba(31,204,102,0.22);
       box-shadow:
-        0 0 16px rgba(31,204,102,0.22),
-        0 0 40px rgba(31,204,102,0.08),
+        0 0 10px rgba(31,204,102,0.13),
+        0 0 26px rgba(31,204,102,0.05),
         inset 0 1px 0 rgba(255,255,255,0.12),
         inset 0 -1px 0 rgba(0,0,0,0.45),
         inset 1px 0 0 rgba(255,255,255,0.05),
@@ -1007,7 +1007,7 @@
 
     /* ─── 声波竖条图标 ──────────────────────────────────────── */
     .ec-svg { display: block; overflow: visible; }
-    .ec-bar { fill: #1fcc66; }
+    .ec-bar { fill: #1fcc66; rx: 2px; } /* rx 兜底（SVG attr 优先） */
 
     /* ─── 悬浮动画（套在外层 wrapper 上，不影响 coinPop） ─── */
     .coin-float-wrap { animation: ecFloat 3s ease-in-out infinite; }
@@ -1072,8 +1072,8 @@
       100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     @keyframes coinGlow {
-      0%,100% { box-shadow: 0 0 16px rgba(31,204,102,0.22), 0 0 40px rgba(31,204,102,0.08), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.65); }
-      50%     { box-shadow: 0 0 28px rgba(31,204,102,0.60), 0 0 60px rgba(31,204,102,0.28), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.65); }
+      0%,100% { box-shadow: 0 0 10px rgba(31,204,102,0.13), 0 0 26px rgba(31,204,102,0.05), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.65); }
+      50%     { box-shadow: 0 0 18px rgba(31,204,102,0.38), 0 0 40px rgba(31,204,102,0.16), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.65); }
     }
     @keyframes balBounce {
       0%,100% { transform: scale(1); }
