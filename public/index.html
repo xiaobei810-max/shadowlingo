@@ -2296,10 +2296,12 @@
       } catch(e) {}
     }
     // 触发硬币入账动画（分数数完后 delay ms 出现）
-    function showCoinReward(earned, delay) {
+    // tier: 本次分数的档位（0-3）；earned: 实际入账数（防刷后可为0）
+    function showCoinReward(earned, delay, tier) {
       var rewardEl = document.getElementById('eval-coin-reward');
       var retryEl  = document.getElementById('eval-coin-retry');
       var plusEl   = document.getElementById('eval-coin-plus');
+      var retryMsg = retryEl ? retryEl.querySelector('span') || retryEl : null;
       if (!rewardEl) return;
       // 先隐藏两者
       rewardEl.style.display = 'none';
@@ -2326,9 +2328,17 @@
             if (el) { el.classList.remove('bal-bounce-anim'); void el.offsetWidth; el.classList.add('bal-bounce-anim'); }
           });
         }, delay || 500);
-      } else {
-        // 低分：不给币，但提示重练
+      } else if (tier > 0) {
+        // 分数够，但今日已拿过同等或更高档——不重复发币
         setTimeout(function() {
+          retryEl.innerHTML = '✅ 今日该句已获最高奖励 · 明天继续练习可再次获得回声币';
+          retryEl.style.display = 'block';
+        }, delay || 400);
+      } else {
+        // 分数不足60，提示重练
+        setTimeout(function() {
+          retryEl.innerHTML = '发音准确率不足，暂未获得回声币' +
+            '<button class="eval-coin-retry-btn" onclick="doRecord()">🔄 再练一次</button>';
           retryEl.style.display = 'block';
         }, delay || 400);
       }
@@ -4127,11 +4137,12 @@
 
       // ── 回声币结算（防刷：同一句子当天只能按档位差累计） ──
       var _coinLIdx = lessonIdx, _coinSIdx = idx;
+      var _scoreTier = coinTierForScore(score);   // 本次分数对应档位（0-3）
       var coinsEarned = calcCoinsEarned(score, _coinLIdx, _coinSIdx);
 
       // 触发对应分数段的动态效果；分数数完后弹入硬币
       triggerScoreAnimation(score, numEl, function() {
-        showCoinReward(coinsEarned, 300);
+        showCoinReward(coinsEarned, 300, _scoreTier);
       });
 
       // 发音对比（ISE 字符注释）
@@ -5759,10 +5770,7 @@
             </div>
           </div>
           <!-- 低分提示：重练赚币 -->
-          <div class="eval-coin-retry" id="eval-coin-retry" style="display:none">
-            发音准确率不足，暂未获得回声币
-            <button class="eval-coin-retry-btn" onclick="doRecord()">🔄 再练一次</button>
-          </div>
+          <div class="eval-coin-retry" id="eval-coin-retry" style="display:none"></div>
           <div class="eval-grade" id="eval-grade"></div>
           <div class="eval-praise" id="eval-praise"></div>
           <div class="eval-error-notice" id="eval-error-notice" style="display:none"></div>
