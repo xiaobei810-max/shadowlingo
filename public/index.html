@@ -1073,7 +1073,8 @@
 
     /* ─── 分数不足重练提示 ──────────────────────────────────── */
     .eval-coin-retry {
-      margin: 6px 0 2px; font-size: 13px; color: #64748b; text-align: center;
+      margin: 6px 0 16px; font-size: 13px; color: #7d8fa3; text-align: center;
+      white-space: nowrap;
     }
     .eval-coin-retry-btn {
       background: none; border: 1px solid rgba(31,204,102,0.35);
@@ -2377,7 +2378,7 @@
       } else if (tier > 0) {
         // 分数够，但今日已拿过同等或更高档——不重复发币
         setTimeout(function() {
-          retryEl.innerHTML = '✅ 今日该句已获最高奖励 · 明天继续练习可再次获得回声币<br><span style="font-size:11px;color:#8b949e;line-height:1.8">Already earned today\'s max reward · Come back tomorrow to earn more</span>';
+          retryEl.innerHTML = '💡 今日奖励已达上限，明日重置。 Max daily reward reached.';
           retryEl.style.display = 'block';
         }, delay || 400);
       } else {
@@ -4190,11 +4191,10 @@
       numEl.textContent = "0";
       numEl.style.color = score === 100 ? "" : color; // perfect uses gradient
 
-      var grade = score === 100 ? "💯 完美 Perfect"
-        : score >= 90 ? "🏆 优秀 Excellent"
-        : score >= 80 ? "👏 良好 Good"
-        : score >= 70 ? "🤔 继续努力 Keep Going"
-        : "💪 再来一次 Try Again";
+      var grade = score >= 95 ? "👑 完美发音！简直像个本地人！ Perfect! Just like a local!"
+        : score >= 85 ? "🌟 太棒了！语感非常自然流畅！ Awesome! Very natural flow!"
+        : score >= 70 ? "👏 表现不错！就差一点点完美了！ Great effort! You're almost there!"
+        : "💪 别灰心！影子跟读多练几次就顺了！ Keep trying! Practice makes perfect!";
       var gradeEl = document.getElementById("eval-grade");
       gradeEl.textContent = grade;
       gradeEl.style.color = color;
