@@ -688,12 +688,13 @@
     /* ── 地道指南页 Insider Tip Page ─────────────────────────────── */
     #tip-page {
       display: none; position: fixed; inset: 0; z-index: 500;
-      background: var(--bg); flex-direction: column; overflow-y: auto;
+      background: var(--bg); flex-direction: column;
+      align-items: center; justify-content: flex-start; overflow-y: auto;
     }
     #tip-page.show { display: flex; }
     .tip-inner {
-      flex: 1; padding: 32px 24px 24px;
-      max-width: 680px; margin: 0 auto; width: 100%;
+      flex: 1; padding: 24px 24px 24px;
+      max-width: 480px; margin: 0; width: 100%;
     }
     .tip-section-title {
       font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 2px;
@@ -749,33 +750,21 @@
     }
     .tip-btn-next:hover { background: #16a34a; }
 
-    /* Completion overlay */
+    /* ── 得分完成页（全屏，与其他页面统一布局） ────────────── */
     .overlay {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.88);
-      z-index: 999;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--bg);
+      flex-direction: column; align-items: center;
+      justify-content: flex-start; overflow-y: auto;
     }
-
-    .overlay.show {
-      display: flex;
-    }
+    .overlay.show { display: flex; }
 
     .completion-card {
-      background: #0d1520;
-      border: 1px solid #22c55e;
-      border-radius: 24px;
-      padding: 56px 52px;
-      max-width: 640px;
-      width: 100%;
+      flex: 1; width: 100%; max-width: 480px;
+      padding: 24px 24px 48px;
       text-align: center;
-      position: relative;
-      z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
     }
 
     .completion-title {
@@ -2026,6 +2015,22 @@
   </div>
 
   <div class="overlay" id="overlay">
+    <div class="page-top-bar">
+      <div class="pth-inner">
+        <div class="logo">
+          <div class="logo-icon">影</div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+        </div>
+        <div class="header-right">
+          <div class="coin-bal-wrap" id="coin-bal-overlay" style="display:none">
+            <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
+            <span id="coin-bal-num-overlay">0</span>
+          </div>
+          <div class="counter" id="overlay-lesson-label">本课完成</div>
+        </div>
+      </div>
+      <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
+    </div>
     <div class="completion-card">
       <div class="completion-title">🎉 本课完成！</div>
       <div class="completion-sub">Lesson Complete!</div>
@@ -2035,7 +2040,7 @@
       <div class="praise-block" id="praise-block"></div>
       <!-- 本课获得回声币 -->
       <div class="completion-coin-row" id="completion-coin-row" style="display:none">
-        <div class="coin-float-wrap">
+        <div class="coin-float-wrap" id="completion-coin-float">
           <div class="echo-coin echo-coin-lg" id="completion-coin-icon">
             <svg width="28" height="24" viewBox="0 0 28 24" class="ec-svg">
               <rect class="ec-bar" x="0"    y="8" width="5" height="8"  rx="2.5"/>
@@ -2305,8 +2310,8 @@
     // 刷新所有余额显示元素
     function refreshCoinDisplay() {
       var bal = getCoins();
-      var numIds  = ['coin-bal-num-practice','coin-bal-num-eval','coin-bal-num-cover','coin-bal-num-fc','coin-bal-num-plp'];
-      var wrapIds = ['coin-bal-practice','coin-bal-eval','coin-bal-cover','coin-bal-fc','coin-bal-plp'];
+      var numIds  = ['coin-bal-num-practice','coin-bal-num-eval','coin-bal-num-cover','coin-bal-num-fc','coin-bal-num-plp','coin-bal-num-overlay','coin-bal-num-tip'];
+      var wrapIds = ['coin-bal-practice','coin-bal-eval','coin-bal-cover','coin-bal-fc','coin-bal-plp','coin-bal-overlay','coin-bal-tip'];
       numIds.forEach(function(id) {
         var el = document.getElementById(id); if (el) el.textContent = bal;
       });
@@ -4528,20 +4533,34 @@
           "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>" + praiseMsg + "</div>";
       }
 
-      // 本课回声币汇总
+      // 本课回声币汇总（始终显示，0币也展示）
       var coinRow  = document.getElementById('completion-coin-row');
       var coinText = document.getElementById('completion-coin-text');
       var coinSub  = document.getElementById('completion-coin-sub');
-      if (coinRow && !noPractice && _sessionCoinsEarned > 0) {
-        coinText.textContent = '本课获得 +' + _sessionCoinsEarned + ' 回声币';
-        coinSub.textContent  = '累计余额：' + getCoins() + ' 枚';
-        coinRow.style.display = 'flex';
-        // 稍延迟让入场动画更明显
-        setTimeout(function() {
-          var icon = document.getElementById('completion-coin-icon');
-          if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
-          playCoinSound(_sessionCoinsEarned);
-        }, 600);
+      // 更新顶部 header 的课序标签
+      var overlayLabel = document.getElementById('overlay-lesson-label');
+      if (overlayLabel) overlayLabel.textContent = '第 ' + (lessonIdx + 1) + ' 课';
+      if (coinRow && !noPractice) {
+        var coinFloat = document.getElementById('completion-coin-float');
+        if (coinFloat) coinFloat.style.display = ''; // reset in case previous run hid it
+        if (_sessionCoinsEarned > 0) {
+          coinText.textContent = '本课获得 +' + _sessionCoinsEarned + ' 回声币';
+          coinSub.textContent  = '累计余额：' + getCoins() + ' 枚';
+          coinRow.style.display = 'flex';
+          setTimeout(function() {
+            var icon = document.getElementById('completion-coin-icon');
+            if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
+            playCoinSound(_sessionCoinsEarned);
+          }, 600);
+        } else {
+          // 0 币：展示但不显示动画硬币
+          coinText.textContent = '本课回声币：0';
+          coinSub.textContent  = '继续练习争取更高分来赚取回声币！';
+          coinRow.style.display = 'flex';
+          // 隐藏大硬币，只留文字
+          var coinFloat = document.getElementById('completion-coin-float');
+          if (coinFloat) coinFloat.style.display = 'none';
+        }
       } else if (coinRow) {
         coinRow.style.display = 'none';
       }
@@ -5915,6 +5934,22 @@
 
   <!-- 地道指南页 Insider Tip Page -->
   <div id="tip-page">
+    <div class="page-top-bar">
+      <div class="pth-inner">
+        <div class="logo">
+          <div class="logo-icon">影</div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+        </div>
+        <div class="header-right">
+          <div class="coin-bal-wrap" id="coin-bal-tip" style="display:none">
+            <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
+            <span id="coin-bal-num-tip">0</span>
+          </div>
+          <div class="counter">地道指南</div>
+        </div>
+      </div>
+      <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
+    </div>
     <div class="tip-inner">
       <div class="tip-section-title">📚 本课地道指南</div>
       <div class="tip-section-sub">Native Insider Tip</div>
