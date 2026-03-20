@@ -97,21 +97,32 @@
       letter-spacing: 0.05em;
     }
 
-    /* ── 页面角落品牌 Logo（封面 / 闪卡 / 预听页通用） ─────── */
-    .page-logo-corner {
-      position: absolute; top: 14px; left: 16px;
-      display: flex; align-items: center; gap: 8px;
-      z-index: 10; user-select: none; pointer-events: none;
+    /* ── 统一页面顶部 Header（封面 / 闪卡 / 预听页通用） ────── */
+    .page-top-bar {
+      width: 100%; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center;
     }
-    .page-logo-corner .logo-icon {
+    .pth-inner {
+      width: 100%; max-width: 480px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 0;
+    }
+    /* 小尺寸 logo（32px） */
+    .pth-inner .logo-icon {
       width: 32px; height: 32px;
       font-size: 15px; border-radius: 9px;
     }
-    .page-logo-corner .plc-text {
-      font-size: 13px; font-weight: 700; color: #e2e8f0; line-height: 1;
+    .pth-inner .logo-text { font-size: 15px; }
+    .pth-inner .logo-sub  { font-size: 11px; }
+    /* 进度条容器（与 .app 的 progress-bar 等宽对齐） */
+    .pth-bar-wrap {
+      width: 100%; max-width: 480px;
+      height: 3px; background: var(--border);
+      margin: 12px auto 0;
     }
-    .page-logo-corner .plc-sub {
-      font-size: 10px; color: #4b5563; margin-top: 2px; line-height: 1;
+    .pth-bar-fill {
+      height: 100%; background: var(--green);
+      transition: width 0.4s ease; width: 0%;
     }
 
     .header-right {
@@ -1733,12 +1744,13 @@
     #cover-page {
       display: none; position: fixed; inset: 0; z-index: 700;
       background: var(--bg); flex-direction: column; align-items: center;
-      justify-content: center; overflow-y: auto;
+      justify-content: flex-start; overflow-y: auto;
     }
     #cover-page.show { display: flex; }
     .cover-inner {
-      width: 100%; max-width: 480px; padding: 48px 32px 56px;
-      display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px;
+      flex: 1; width: 100%; max-width: 480px; padding: 32px 32px 56px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; gap: 16px;
     }
     .cover-lesson-num {
       font-size: 24px; font-weight: 700; color: var(--green);
@@ -1770,12 +1782,12 @@
     #flashcard-page {
       display: none; position: fixed; inset: 0; z-index: 650;
       background: var(--bg); flex-direction: column; align-items: center;
-      justify-content: center; overflow-y: auto;
+      justify-content: flex-start; overflow-y: auto;
     }
     #flashcard-page.show { display: flex; }
     .fc-inner {
-      width: 100%; max-width: 480px; padding: 0 20px 40px;
-      display: flex; flex-direction: column; gap: 16px;
+      flex: 1; width: 100%; max-width: 480px; padding: 20px 20px 40px;
+      display: flex; flex-direction: column; justify-content: center; gap: 16px;
     }
     .fc-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -2293,14 +2305,17 @@
     // 刷新所有余额显示元素
     function refreshCoinDisplay() {
       var bal = getCoins();
-      var els = ['coin-bal-num-practice', 'coin-bal-num-eval'];
-      var wraps = ['coin-bal-practice', 'coin-bal-eval'];
-      els.forEach(function(id) {
+      var numIds  = ['coin-bal-num-practice','coin-bal-num-eval','coin-bal-num-cover','coin-bal-num-fc','coin-bal-num-plp'];
+      var wrapIds = ['coin-bal-practice','coin-bal-eval','coin-bal-cover','coin-bal-fc','coin-bal-plp'];
+      numIds.forEach(function(id) {
         var el = document.getElementById(id); if (el) el.textContent = bal;
       });
-      wraps.forEach(function(id) {
+      wrapIds.forEach(function(id) {
         var el = document.getElementById(id); if (el) el.style.display = '';
       });
+      // 封面页课序提示
+      var coverCtr = document.getElementById('cover-lesson-counter');
+      if (coverCtr) coverCtr.textContent = '第 ' + (lessonIdx + 1) + ' 课';
     }
     // Web Audio 硬币音效（升调，数量越多音符越多）
     function playCoinSound(count) {
@@ -5435,7 +5450,11 @@
       document.getElementById('fc-zh').textContent   = v.zh;
       document.getElementById('fc-py').textContent   = v.py;
       document.getElementById('fc-en').textContent   = v.en;
-      document.getElementById('fc-count').textContent = (fcIdx + 1) + ' / ' + vocab.length;
+      // 顶部 bar 同步（原 fc-count 已移至顶部 header-right）
+      var fcTopCount = document.getElementById('fc-top-count');
+      if (fcTopCount) fcTopCount.textContent = (fcIdx + 1) + ' / ' + vocab.length;
+      var fcTopProg = document.getElementById('fc-top-prog');
+      if (fcTopProg) fcTopProg.style.width = Math.round(fcIdx / vocab.length * 100) + '%';
       var isLast = (fcIdx === vocab.length - 1);
       document.getElementById('fc-next-btn').textContent = isLast ? '开始对话 Start →' : '下一个 Next →';
       // animate timer bar
@@ -5614,9 +5633,21 @@
   </script>
   <!-- 课程封面 Lesson Cover -->
   <div id="cover-page" class="show">
-    <div class="page-logo-corner">
-      <div class="logo-icon">影</div>
-      <div><div class="plc-text">EchoChinese</div><div class="plc-sub">轻松学中文</div></div>
+    <div class="page-top-bar">
+      <div class="pth-inner">
+        <div class="logo">
+          <div class="logo-icon">影</div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+        </div>
+        <div class="header-right">
+          <div class="coin-bal-wrap" id="coin-bal-cover" style="display:none">
+            <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
+            <span id="coin-bal-num-cover">0</span>
+          </div>
+          <div class="counter" id="cover-lesson-counter">第 1 课</div>
+        </div>
+      </div>
+      <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:0%"></div></div>
     </div>
     <div class="cover-inner">
       <div class="cover-lesson-num">第一课 · Lesson 1</div>
@@ -5631,14 +5662,25 @@
 
   <!-- 生词闪卡 Vocab Flashcards -->
   <div id="flashcard-page">
-    <div class="page-logo-corner">
-      <div class="logo-icon">影</div>
-      <div><div class="plc-text">EchoChinese</div><div class="plc-sub">轻松学中文</div></div>
+    <div class="page-top-bar">
+      <div class="pth-inner">
+        <div class="logo">
+          <div class="logo-icon">影</div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+        </div>
+        <div class="header-right">
+          <div class="coin-bal-wrap" id="coin-bal-fc" style="display:none">
+            <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
+            <span id="coin-bal-num-fc">0</span>
+          </div>
+          <div class="counter" id="fc-top-count">1 / 6</div>
+        </div>
+      </div>
+      <div class="pth-bar-wrap"><div class="pth-bar-fill" id="fc-top-prog" style="width:0%"></div></div>
     </div>
     <div class="fc-inner">
       <div class="fc-header">
         <div class="fc-title">⚡ 核心生词 · Key Vocabulary</div>
-        <div class="fc-count" id="fc-count">1 / 6</div>
       </div>
       <div class="fc-timer-bar"><div class="fc-timer-fill" id="fc-timer-fill"></div></div>
       <div class="fc-card">
@@ -5656,9 +5698,21 @@
 
   <!-- 预听页面：自动播放完整对话，上=卢克，下=工作人员 -->
   <div id="pre-listen-page">
-  <div class="page-logo-corner">
-    <div class="logo-icon">影</div>
-    <div><div class="plc-text">EchoChinese</div><div class="plc-sub">轻松学中文</div></div>
+  <div class="page-top-bar">
+    <div class="pth-inner">
+      <div class="logo">
+        <div class="logo-icon">影</div>
+        <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+      </div>
+      <div class="header-right">
+        <div class="coin-bal-wrap" id="coin-bal-plp" style="display:none">
+          <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
+          <span id="coin-bal-num-plp">0</span>
+        </div>
+        <div class="counter">完整对话</div>
+      </div>
+    </div>
+    <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:60%"></div></div>
   </div>
   <div class="plp-inner">
     <div class="plp-header">
