@@ -973,57 +973,105 @@
       white-space: pre-line;
     }
 
-    /* ── 回声币系统 Echo Coin ──────────────────────────────────── */
-    /* 顶部余额徽章 */
+    /* ── 回声币系统 Echo Coin (深色磨砂玻璃 + 霓虹绿声波) ─────── */
+
+    /* ─── 通用硬币底座 ─────────────────────────────────────── */
+    .echo-coin {
+      position: relative;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, #1c2330, #0d1117);
+      box-shadow:
+        0 0 0 1px rgba(31,204,102,0.28),
+        0 0 14px rgba(31,204,102,0.22),
+        0 0 30px rgba(31,204,102,0.10),
+        inset 0 1px 1px rgba(255,255,255,0.07),
+        inset -1px -1px 4px rgba(0,0,0,0.5),
+        2px 3px 12px rgba(0,0,0,0.55);
+      flex-shrink: 0;
+    }
+    /* 左上角高光 */
+    .echo-coin::before {
+      content: '';
+      position: absolute;
+      top: 13%; left: 11%;
+      width: 40%; height: 18%;
+      background: white;
+      opacity: 0.08;
+      border-radius: 50%;
+      transform: rotate(-30deg);
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    .echo-coin-lg { width: 56px; height: 56px; }
+    .echo-coin-sm { width: 20px; height: 20px; }
+    /* SVG 占满硬币 */
+    .ec-svg {
+      position: absolute;
+      inset: 0; width: 100%; height: 100%;
+      overflow: visible;
+    }
+    /* 静态同心圆：内→外 粗→细 亮→暗 */
+    .ec-r1 { opacity: 0.92; }
+    .ec-r2 { opacity: 0.68; }
+    .ec-r3 { opacity: 0.44; }
+    .ec-r4 { opacity: 0.22; }
+    /* 脉冲扩散圆 */
+    .ec-p { opacity: 0; transform-origin: 24px 24px; }
+    .echo-coin-pulse .ec-p {
+      animation: ecRingPulse 1.6s cubic-bezier(0,.55,.35,1) infinite;
+    }
+    @keyframes ecRingPulse {
+      0%   { opacity: 0.72; transform: scale(1); }
+      100% { opacity: 0;    transform: scale(4.8); }
+    }
+
+    /* ─── 顶部余额徽章 ──────────────────────────────────────── */
     .coin-bal-wrap {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(255,185,0,0.12); border: 1px solid rgba(255,185,0,0.28);
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(31,204,102,0.08); border: 1px solid rgba(31,204,102,0.22);
       border-radius: 20px; padding: 3px 10px 3px 5px;
-      font-size: 13px; font-weight: 700; color: #FFD700;
+      font-size: 13px; font-weight: 700; color: #1fcc66;
       user-select: none; transition: transform 0.15s;
     }
     .coin-bal-wrap:active { transform: scale(0.94); }
-    /* 小号金币图标 */
-    .coin-icon-sm {
-      width: 20px; height: 20px; border-radius: 50%;
-      background: linear-gradient(145deg, #FFE566, #FFA500);
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 900; color: #7B4700;
-      box-shadow: 0 1px 5px rgba(255,165,0,0.45);
-      flex-shrink: 0;
-    }
-    /* 评分卡奖励区 */
+
+    /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
       display: none; align-items: center; justify-content: center;
-      gap: 10px; margin: 12px 0 6px;
-    }
-    /* 大号金币 */
-    .eval-coin-badge {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: linear-gradient(145deg, #FFE566, #FF9500);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: 900; color: #7B4700;
-      box-shadow: 0 4px 16px rgba(255,165,0,0.55);
-      flex-shrink: 0;
+      gap: 12px; margin: 12px 0 6px;
     }
     .eval-coin-plus {
-      font-size: 32px; font-weight: 900; color: #FFD700;
+      font-size: 32px; font-weight: 900; color: #1fcc66;
       line-height: 1;
     }
     .eval-coin-label { font-size: 12px; color: #94a3b8; line-height: 1.4; }
     .eval-coin-label span { display: block; }
-    /* "不足分数，重练赚币" 提示 */
+
+    /* ─── 分数不足重练提示 ──────────────────────────────────── */
     .eval-coin-retry {
       margin: 6px 0 2px; font-size: 13px; color: #64748b; text-align: center;
     }
     .eval-coin-retry-btn {
-      background: none; border: 1px solid rgba(255,185,0,0.35);
-      color: #FFD700; padding: 4px 14px; border-radius: 12px;
+      background: none; border: 1px solid rgba(31,204,102,0.35);
+      color: #1fcc66; padding: 4px 14px; border-radius: 12px;
       font-size: 12px; cursor: pointer; margin-left: 8px;
       transition: background 0.2s;
     }
-    .eval-coin-retry-btn:hover { background: rgba(255,185,0,0.14); }
-    /* 弹出动画 */
+    .eval-coin-retry-btn:hover { background: rgba(31,204,102,0.10); }
+
+    /* ─── 完成课程得币行 ────────────────────────────────────── */
+    .completion-coin-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin: 14px 0 4px;
+    }
+    .completion-coin-text {
+      font-size: 15px; font-weight: 700; color: #1fcc66;
+    }
+    .completion-coin-sub {
+      font-size: 11px; color: #94a3b8; margin-top: 2px;
+    }
+
+    /* ─── 动画 ──────────────────────────────────────────────── */
     @keyframes coinPop {
       0%   { opacity: 0; transform: scale(0.2) translateY(24px); }
       60%  { transform: scale(1.28) translateY(-8px); }
@@ -1031,8 +1079,8 @@
       100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     @keyframes coinGlow {
-      0%,100% { text-shadow: 0 0 8px rgba(255,215,0,0.5); }
-      50%     { text-shadow: 0 0 30px rgba(255,215,0,1), 0 0 50px rgba(255,165,0,0.7); }
+      0%,100% { box-shadow: 0 0 0 1px rgba(31,204,102,0.28), 0 0 14px rgba(31,204,102,0.22), 0 0 30px rgba(31,204,102,0.10), inset 0 1px 1px rgba(255,255,255,0.07), inset -1px -1px 4px rgba(0,0,0,0.5), 2px 3px 12px rgba(0,0,0,0.55); }
+      50%     { box-shadow: 0 0 0 1px rgba(31,204,102,0.55), 0 0 22px rgba(31,204,102,0.55), 0 0 50px rgba(31,204,102,0.30), inset 0 1px 1px rgba(255,255,255,0.10), inset -1px -1px 4px rgba(0,0,0,0.5), 2px 3px 12px rgba(0,0,0,0.55); }
     }
     @keyframes balBounce {
       0%,100% { transform: scale(1); }
@@ -1815,7 +1863,13 @@
       </div>
       <div class="header-right">
         <div class="coin-bal-wrap" id="coin-bal-practice" style="display:none">
-          <span class="coin-icon-sm">回</span>
+          <div class="echo-coin echo-coin-sm">
+            <svg viewBox="0 0 48 48" class="ec-svg">
+              <circle class="ec-r1" cx="24" cy="24" r="5"   fill="none" stroke="#1fcc66" stroke-width="3.5"/>
+              <circle class="ec-r2" cx="24" cy="24" r="10"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
+              <circle class="ec-r3" cx="24" cy="24" r="15"  fill="none" stroke="#1fcc66" stroke-width="1.5"/>
+            </svg>
+          </div>
           <span id="coin-bal-num-practice">0</span>
         </div>
         <div class="counter" id="counter">1 / 5</div>
@@ -1932,6 +1986,24 @@
       <div class="avg-label">本课平均分</div>
       <div class="score-grade" id="score-grade"></div>
       <div class="praise-block" id="praise-block"></div>
+      <!-- 本课获得回声币 -->
+      <div class="completion-coin-row" id="completion-coin-row" style="display:none">
+        <div class="echo-coin echo-coin-lg echo-coin-pulse" id="completion-coin-icon">
+          <svg viewBox="0 0 48 48" class="ec-svg">
+            <circle class="ec-r1" cx="24" cy="24" r="4.5"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
+            <circle class="ec-r2" cx="24" cy="24" r="9.5"  fill="none" stroke="#1fcc66" stroke-width="1.8"/>
+            <circle class="ec-r3" cx="24" cy="24" r="14"   fill="none" stroke="#1fcc66" stroke-width="1.2"/>
+            <circle class="ec-r4" cx="24" cy="24" r="18.5" fill="none" stroke="#1fcc66" stroke-width="0.7"/>
+            <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2"/>
+            <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:.5s"/>
+            <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:1s"/>
+          </svg>
+        </div>
+        <div>
+          <div class="completion-coin-text" id="completion-coin-text">本课获得 +0 回声币</div>
+          <div class="completion-coin-sub" id="completion-coin-sub">累计余额：0 枚</div>
+        </div>
+      </div>
       <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 Native Insider Tip →</button>
     </div>
   </div>
@@ -2045,6 +2117,7 @@
     let busy = false;
     let segTimer = null;
     let sessionScores = [];
+    var _sessionCoinsEarned = 0; // 本课本次会话累计获得的回声币
     let slowSpeed = 0.7;
 
     // ── Dialogue meta（内嵌，不依赖 fetch） ──────────────────────
@@ -2179,6 +2252,7 @@
       if (earned > 0) {
         setDailyTier(lIdx, sIdx, tier);
         setCoins(getCoins() + earned);
+        _sessionCoinsEarned += earned; // 累计本课本次会话获得的币数
       }
       return earned;
     }
@@ -2234,10 +2308,14 @@
         setTimeout(function() {
           plusEl.textContent = '+' + earned;
           rewardEl.style.display = 'flex';
-          // 动画：弹入 + 发光
-          var badge = rewardEl.querySelector('.eval-coin-badge');
+          // 动画：硬币弹入 + 声波脉冲 + +N 数字发光
+          var badge = document.getElementById('eval-coin-badge');
           var plus  = rewardEl.querySelector('.eval-coin-plus');
-          if (badge) { badge.classList.remove('coin-pop-anim'); void badge.offsetWidth; badge.classList.add('coin-pop-anim'); }
+          if (badge) {
+            badge.classList.remove('coin-pop-anim', 'coin-glow-anim', 'echo-coin-pulse');
+            void badge.offsetWidth;
+            badge.classList.add('coin-pop-anim', 'coin-glow-anim', 'echo-coin-pulse');
+          }
           if (plus)  { plus.classList.remove('coin-glow-anim');  void plus.offsetWidth;  plus.classList.add('coin-glow-anim'); }
           playCoinSound(earned);
           // 余额跳动
@@ -3466,7 +3544,7 @@
       if (next < 0 || next >= LESSONS.length) return;
       lessonIdx = next;
       idx = 0;
-      sessionScores = [];
+      sessionScores = []; _sessionCoinsEarned = 0;
       setupAudio(LESSONS[lessonIdx].audio);
       updateUI();
       saveState();
@@ -4391,6 +4469,24 @@
           "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>" + praiseMsg + "</div>";
       }
 
+      // 本课回声币汇总
+      var coinRow  = document.getElementById('completion-coin-row');
+      var coinText = document.getElementById('completion-coin-text');
+      var coinSub  = document.getElementById('completion-coin-sub');
+      if (coinRow && !noPractice && _sessionCoinsEarned > 0) {
+        coinText.textContent = '本课获得 +' + _sessionCoinsEarned + ' 回声币';
+        coinSub.textContent  = '累计余额：' + getCoins() + ' 枚';
+        coinRow.style.display = 'flex';
+        // 稍延迟让入场动画更明显
+        setTimeout(function() {
+          var icon = document.getElementById('completion-coin-icon');
+          if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
+          playCoinSound(_sessionCoinsEarned);
+        }, 600);
+      } else if (coinRow) {
+        coinRow.style.display = 'none';
+      }
+
       document.getElementById("overlay").classList.add("show");
       if (!noPractice) launchFireworks();
     }
@@ -4438,7 +4534,7 @@
       document.getElementById("overlay").classList.remove("show");
       stopFireworks();
       idx = 0;
-      sessionScores = [];
+      sessionScores = []; _sessionCoinsEarned = 0;
       updateUI();
     }
 
@@ -4449,13 +4545,13 @@
       if (lessonIdx < LESSONS.length - 1) {
         lessonIdx++;
         idx = 0;
-        sessionScores = [];
+        sessionScores = []; _sessionCoinsEarned = 0;
         updateUI();
       } else {
         // 当前已是最后一课，返回第一课
         lessonIdx = 0;
         idx = 0;
-        sessionScores = [];
+        sessionScores = []; _sessionCoinsEarned = 0;
         updateUI();
       }
     }
@@ -4464,7 +4560,7 @@
       document.getElementById("overlay").classList.remove("show");
       stopFireworks();
       idx = 0;
-      sessionScores = [];
+      sessionScores = []; _sessionCoinsEarned = 0;
       updateUI();
     }
 
@@ -5609,7 +5705,13 @@
       <div class="eval-header">
         <div class="eval-badge" id="eval-badge">第 1/5 句</div>
         <div class="coin-bal-wrap" id="coin-bal-eval" style="display:none">
-          <span class="coin-icon-sm">回</span>
+          <div class="echo-coin echo-coin-sm">
+            <svg viewBox="0 0 48 48" class="ec-svg">
+              <circle class="ec-r1" cx="24" cy="24" r="5"   fill="none" stroke="#1fcc66" stroke-width="3.5"/>
+              <circle class="ec-r2" cx="24" cy="24" r="10"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
+              <circle class="ec-r3" cx="24" cy="24" r="15"  fill="none" stroke="#1fcc66" stroke-width="1.5"/>
+            </svg>
+          </div>
           <span id="coin-bal-num-eval">0</span>
         </div>
       </div>
@@ -5635,7 +5737,19 @@
           <div class="eval-score-sub">发音评分</div>
           <!-- 回声币奖励（分数滚完后弹入） -->
           <div class="eval-coin-reward" id="eval-coin-reward">
-            <div class="eval-coin-badge">回</div>
+            <div class="echo-coin echo-coin-lg" id="eval-coin-badge">
+              <svg viewBox="0 0 48 48" class="ec-svg">
+                <!-- 静态同心圆：内→外 粗→细 亮→暗 -->
+                <circle class="ec-r1" cx="24" cy="24" r="4.5"  fill="none" stroke="#1fcc66" stroke-width="2.5"/>
+                <circle class="ec-r2" cx="24" cy="24" r="9.5"  fill="none" stroke="#1fcc66" stroke-width="1.8"/>
+                <circle class="ec-r3" cx="24" cy="24" r="14"   fill="none" stroke="#1fcc66" stroke-width="1.2"/>
+                <circle class="ec-r4" cx="24" cy="24" r="18.5" fill="none" stroke="#1fcc66" stroke-width="0.7"/>
+                <!-- 脉冲扩散圆（3圈错位） -->
+                <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2"/>
+                <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:.5s"/>
+                <circle class="ec-p" cx="24" cy="24" r="4.5" fill="none" stroke="#1fcc66" stroke-width="2" style="animation-delay:1s"/>
+              </svg>
+            </div>
             <div>
               <div class="eval-coin-plus" id="eval-coin-plus">+3</div>
               <div class="eval-coin-label">
