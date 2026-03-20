@@ -101,6 +101,7 @@
     .page-top-bar {
       width: 100%; flex-shrink: 0;
       display: flex; flex-direction: column; align-items: center;
+      position: relative; z-index: 2; /* above fw-canvas inside overlay */
     }
     .pth-inner {
       width: 100%; max-width: 480px;
@@ -117,7 +118,7 @@
     /* 进度条容器（与 .app 的 progress-bar 等宽对齐） */
     .pth-bar-wrap {
       width: 100%; max-width: 480px;
-      height: 3px; background: var(--border);
+      height: 3px; background: rgba(255,255,255,0.09);
       margin: 12px auto 0;
     }
     .pth-bar-fill {
@@ -146,7 +147,7 @@
     /* Progress bar */
     .progress-bar {
       height: 3px;
-      background: var(--border);
+      background: rgba(255,255,255,0.09);
       margin: 12px 0 0;
     }
 
@@ -790,6 +791,7 @@
       padding: 24px 24px 48px;
       text-align: center;
       display: flex; flex-direction: column; align-items: center;
+      position: relative; z-index: 2; /* above #fw-canvas (z:1) inside overlay */
     }
 
     .completion-title {
@@ -810,13 +812,14 @@
       font-weight: 800;
       color: #22c55e;
       line-height: 1;
-      margin-bottom: 4px;
+      margin-top: 8px;
+      margin-bottom: 8px;
     }
 
     .avg-label {
       font-size: 12px;
-      color: #4b5563;
-      margin-bottom: 12px;
+      color: #6b7280;
+      margin-bottom: 16px;
     }
 
     .score-grade {
@@ -835,7 +838,7 @@
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 22px;
-      padding: 28px 20px 22px;
+      padding: 24px 20px 36px;
       margin-bottom: 20px;
       box-shadow: 0 6px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
       display: flex; flex-direction: column; align-items: center;
@@ -843,7 +846,7 @@
 
     /* ── Eval page progress bar ─────────────────────────────── */
     .eval-prog-wrap {
-      width: 100%; height: 3px; background: var(--border);
+      width: 100%; height: 3px; background: rgba(255,255,255,0.09);
       margin-top: 14px; border-radius: 99px; overflow: hidden;
     }
     .eval-prog-fill {
@@ -1551,11 +1554,12 @@
       margin-top: 10px;
     }
 
-    /* Fireworks */
+    /* Fireworks — lives inside .overlay's stacking context (z:999)
+       so card content (z-index:2) always paints above the particles */
     #fw-canvas {
       position: fixed;
       inset: 0;
-      z-index: 1000;
+      z-index: 1;        /* layer 1 within overlay's stacking context */
       pointer-events: none;
     }
 
@@ -1929,7 +1933,6 @@
 </head>
 
 <body>
-  <canvas id="fw-canvas"></canvas>
 
   <div class="app">
     <div class="header">
@@ -2059,6 +2062,9 @@
   </div>
 
   <div class="overlay" id="overlay">
+    <!-- Fireworks canvas sits at z-index:1 inside overlay's stacking context;
+         .completion-card at z-index:2 always paints above the particles -->
+    <canvas id="fw-canvas"></canvas>
     <div class="page-top-bar">
       <div class="pth-inner">
         <div class="logo">
