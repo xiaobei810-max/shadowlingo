@@ -1114,7 +1114,7 @@
     .wallet-panel {
       position: fixed; top: 68px; right: 12px; z-index: 9000;
       background: #1c212e; border: 1px solid rgba(31,204,102,0.24);
-      border-radius: 16px; padding: 16px 18px; width: 224px;
+      border-radius: 16px; padding: 14px 16px 12px; width: 196px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(31,204,102,0.07);
       animation: walletSlide 0.22s cubic-bezier(.34,1.56,.64,1);
       transform-origin: top right;
@@ -1124,56 +1124,69 @@
       to   { transform: none; opacity: 1; }
     }
     .wallet-panel::before {
-      content: ''; position: absolute; top: -7px; right: 22px;
+      content: ''; position: absolute; top: -7px; right: 20px;
       width: 12px; height: 12px; background: #1c212e;
       border-left: 1px solid rgba(31,204,102,0.24);
       border-top:  1px solid rgba(31,204,102,0.24);
       transform: rotate(45deg);
     }
-    .wp-bal-label { font-size: 10px; color: #4b5563; letter-spacing: 0.6px;
-      text-transform: uppercase; margin-bottom: 3px; }
-    .wp-bal-num   { font-size: 28px; font-weight: 800; color: #1fcc66;
-      line-height: 1; margin-bottom: 12px; }
+    /* balance row: big green number only */
+    .wp-bal-num { font-size: 30px; font-weight: 800; color: #1fcc66;
+      line-height: 1; margin-bottom: 10px; display: flex; align-items: baseline; gap: 4px; }
+    .wp-bal-unit { font-size: 13px; font-weight: 600; color: #1fcc66; }
+    /* progress */
     .wp-track { height: 4px; background: rgba(255,255,255,0.07); border-radius: 99px;
       overflow: hidden; margin-bottom: 6px; }
-    .wp-fill  { height: 100%; background: #1fcc66; border-radius: 99px;
-      transition: width 0.5s ease; }
-    .wp-sub   { font-size: 11px; color: #6b7280; margin-bottom: 14px; line-height: 1.5; }
-    .wp-cta   { width: 100%; padding: 9px; background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09); border-radius: 10px;
+    .wp-fill  { height: 100%; background: #1fcc66; border-radius: 99px; transition: width 0.5s ease; }
+    /* hint line: "还需 N 枚 | N more" */
+    .wp-hint { display: flex; align-items: baseline; gap: 5px; margin-bottom: 12px; }
+    .wp-hint-zh { font-size: 12px; font-weight: 600; color: #94a3b8; }
+    .wp-hint-sep { font-size: 10px; color: #374151; }
+    .wp-hint-en { font-size: 10px; color: #4b5563; }
+    /* locked CTA */
+    .wp-cta { width: 100%; padding: 9px; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
       color: #4b5563; font-size: 12px; font-weight: 600; cursor: default;
-      text-align: center; }
+      text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; }
 
     /* ─── Aha! Moment Spotlight ──────────────────────────────── */
     .aha-overlay {
       position: fixed; inset: 0; z-index: 10002;
-      background: rgba(0,0,0,0.58);
-      display: flex; align-items: flex-start; justify-content: flex-end;
-      padding: 64px 12px 0;
+      background: rgba(0,0,0,0.62);
+      display: flex; align-items: center; justify-content: center;
       animation: ahaFadeIn 0.3s ease;
     }
     @keyframes ahaFadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .aha-tooltip {
+    .aha-card {
       background: #1c212e; border: 1px solid rgba(31,204,102,0.32);
-      border-radius: 16px; padding: 18px 20px; max-width: 268px;
-      box-shadow: 0 0 0 1px rgba(31,204,102,0.07), 0 20px 60px rgba(0,0,0,0.75);
-      position: relative;
+      border-radius: 20px; padding: 24px 24px 20px; width: 288px;
+      box-shadow: 0 0 0 1px rgba(31,204,102,0.07), 0 24px 64px rgba(0,0,0,0.8);
       animation: ahaSlideIn 0.38s cubic-bezier(.34,1.56,.64,1);
+      display: flex; flex-direction: column; gap: 0;
     }
     @keyframes ahaSlideIn {
-      from { transform: translateY(-14px) scale(0.93); opacity: 0; }
+      from { transform: translateY(20px) scale(0.94); opacity: 0; }
       to   { transform: none; opacity: 1; }
     }
-    .aha-tooltip::before {
-      content: ''; position: absolute; top: -7px; right: 20px;
-      width: 12px; height: 12px; background: #1c212e;
-      border-left: 1px solid rgba(31,204,102,0.32);
-      border-top:  1px solid rgba(31,204,102,0.32);
-      transform: rotate(45deg);
+    .aha-title {
+      font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 16px;
+      letter-spacing: -0.2px;
     }
-    .aha-title  { font-size: 15px; font-weight: 800; color: #1fcc66; margin-bottom: 10px; }
-    .aha-body   { font-size: 13px; color: #94a3b8; line-height: 1.65; }
-    .aha-hint   { margin-top: 12px; font-size: 11px; color: #374151; text-align: center; }
+    .aha-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .aha-row {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px;
+    }
+    .aha-icon { font-size: 20px; flex-shrink: 0; }
+    .aha-text { display: flex; flex-direction: column; gap: 1px; }
+    .aha-zh { font-size: 14px; font-weight: 700; color: #e2e8f0; }
+    .aha-en { font-size: 11px; color: #4b5563; }
+    .aha-btn {
+      width: 100%; padding: 12px; background: #1fcc66; border: none;
+      border-radius: 12px; color: #000; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .aha-btn:hover { background: #18b859; }
 
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
@@ -2478,11 +2491,14 @@
       var p = document.createElement('div');
       p.className = 'wallet-panel'; p.id = 'wallet-panel';
       p.innerHTML =
-        '<div class="wp-bal-label">回声币余额 Echo Coins</div>' +
-        '<div class="wp-bal-num">' + bal + ' 枚</div>' +
+        '<div class="wp-bal-num">' + bal + '<span class="wp-bal-unit">枚</span></div>' +
         '<div class="wp-track"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
-        '<div class="wp-sub">距开启神秘盲盒还差 <strong style="color:#94a3b8">' + rem + '</strong> 枚 · ' + pct + '% reached</div>' +
-        '<div class="wp-cta">🛍️ 前往盲盒商店（50 枚解锁）</div>';
+        '<div class="wp-hint">' +
+          '<span class="wp-hint-zh">还需 ' + rem + ' 枚</span>' +
+          '<span class="wp-hint-sep">|</span>' +
+          '<span class="wp-hint-en">' + rem + ' more</span>' +
+        '</div>' +
+        '<div class="wp-cta"><span>🔒</span><span>盲盒商店 Store (50)</span></div>';
       p.addEventListener('click', function(e) { e.stopPropagation(); });
       document.body.appendChild(p);
       _walletEl = p; _walletOpen = true;
@@ -2501,15 +2517,28 @@
       var ov = document.createElement('div');
       ov.className = 'aha-overlay';
       ov.innerHTML =
-        '<div class="aha-tooltip">' +
-          '<div class="aha-title">你的第一枚回声币！🎉</div>' +
-          '<div class="aha-body">收集回声币，可在【盲盒商店】抽取卢克的新衣服和专属文化卡片！发音越准，奖励越丰厚。</div>' +
-          '<div class="aha-hint">点击任意位置关闭</div>' +
+        '<div class="aha-card">' +
+          '<div class="aha-title">🎉 First Echo Coin!</div>' +
+          '<div class="aha-rows">' +
+            '<div class="aha-row">' +
+              '<span class="aha-icon">🎁</span>' +
+              '<div class="aha-text"><span class="aha-zh">开盲盒</span><span class="aha-en">Open Blind Boxes</span></div>' +
+            '</div>' +
+            '<div class="aha-row">' +
+              '<span class="aha-icon">👕</span>' +
+              '<div class="aha-text"><span class="aha-zh">换新衣</span><span class="aha-en">Unlock Outfits</span></div>' +
+            '</div>' +
+          '</div>' +
+          '<button class="aha-btn" id="aha-got-it">我知道了 Got it</button>' +
         '</div>';
-      ov.addEventListener('click', function() {
+      function dismiss() {
         ov.style.animation = 'ahaFadeIn 0.18s ease reverse forwards';
         setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 180);
-      });
+      }
+      ov.addEventListener('click', dismiss);
+      // prevent card clicks from bubbling to overlay (only btn dismisses)
+      ov.querySelector('.aha-card').addEventListener('click', function(e) { e.stopPropagation(); });
+      ov.querySelector('#aha-got-it').addEventListener('click', dismiss);
       document.body.appendChild(ov);
     }
 
