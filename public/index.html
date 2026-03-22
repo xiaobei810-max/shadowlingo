@@ -1109,15 +1109,13 @@
       user-select: none; transition: transform 0.15s; cursor: pointer;
       animation: coinBadgePulse 3.6s ease-in-out infinite;
     }
-    /* ▾ chevron — pure CSS, no HTML changes needed */
-    .coin-bal-wrap::after {
-      content: '▾'; font-size: 9px; opacity: 0.65; margin-left: 1px; line-height: 1;
-    }
+    /* SVG chevron injected via JS into each badge — see refreshCoinDisplay() */
+    .cbw-chevron { display: flex; align-items: center; margin-left: 1px; flex-shrink: 0; }
     @keyframes coinBadgePulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(31,204,102,0); }
-      50%       { box-shadow: 0 0 7px 2px rgba(31,204,102,0.22); }
+      0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(31,204,102,0); }
+      50%       { transform: scale(1.04); box-shadow: 0 0 8px 2px rgba(31,204,102,0.20); }
     }
-    .coin-bal-wrap:active { transform: scale(0.94); animation: none; }
+    .coin-bal-wrap:active { transform: scale(0.94) !important; animation: none; }
 
     /* ─── Wallet Modal ───────────────────────────────────────── */
     .wallet-overlay {
@@ -1137,14 +1135,12 @@
       animation: walletSlide 0.28s cubic-bezier(.34,1.56,.64,1);
     }
     .wp-close {
-      position: absolute; top: 16px; right: 16px;
-      width: 26px; height: 26px; border-radius: 50%;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-      color: #4b5563; font-size: 13px; line-height: 1;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background 0.15s, color 0.15s;
+      position: absolute; top: 18px; right: 20px;
+      background: none; border: none; padding: 0;
+      color: #6b7280; font-size: 18px; line-height: 1;
+      cursor: pointer; transition: color 0.15s;
     }
-    .wp-close:hover { background: rgba(255,255,255,0.12); color: #94a3b8; }
+    .wp-close:hover { color: #e2e8f0; }
     @keyframes walletSlide {
       from { transform: scale(0.90) translateY(16px); opacity: 0; }
       to   { transform: none; opacity: 1; }
@@ -1157,9 +1153,9 @@
     .wp-header-label { font-size: 16px; font-weight: 700; color: #e2e8f0; }
     .wp-header-sub   { font-size: 11px; color: #4b5563; margin-top: 1px; }
     /* balance */
-    .wp-bal-num { font-size: 52px; font-weight: 800; color: #1fcc66;
+    .wp-bal-num { font-size: 64px; font-weight: 900; color: #1fcc66;
       line-height: 1; display: flex; align-items: baseline; gap: 6px; margin-bottom: 20px; }
-    .wp-bal-unit { font-size: 18px; font-weight: 600; color: rgba(31,204,102,0.7); }
+    .wp-bal-unit { font-size: 14px; font-weight: 500; color: #4b5563; }
     /* progress track — tall + high-contrast */
     .wp-track-wrap { margin-bottom: 10px; }
     .wp-track-label { display: flex; justify-content: space-between;
@@ -2468,6 +2464,14 @@
       return earned;
     }
     // 刷新所有余额显示元素
+    // SVG chevron injected into every badge (white, crisp)
+    var _CHEVRON_SVG =
+      '<span class="cbw-chevron">' +
+        '<svg width="8" height="5" viewBox="0 0 8 5" fill="none">' +
+          '<path d="M1 1l3 3 3-3" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>' +
+      '</span>';
+
     function refreshCoinDisplay() {
       var bal = getCoins();
       var numIds  = ['coin-bal-num-practice','coin-bal-num-eval','coin-bal-num-cover','coin-bal-num-fc','coin-bal-num-plp','coin-bal-num-overlay','coin-bal-num-tip'];
@@ -2476,7 +2480,13 @@
         var el = document.getElementById(id); if (el) el.textContent = bal;
       });
       wrapIds.forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.style.display = '';
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = '';
+        // inject chevron once
+        if (!el.querySelector('.cbw-chevron')) {
+          el.insertAdjacentHTML('beforeend', _CHEVRON_SVG);
+        }
       });
     }
     // Web Audio 硬币音效（升调，数量越多音符越多）
