@@ -1110,44 +1110,58 @@
     }
     .coin-bal-wrap:active { transform: scale(0.94); }
 
-    /* ─── Mini Wallet Panel ──────────────────────────────────── */
+    /* ─── Wallet Modal ───────────────────────────────────────── */
+    .wallet-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.60);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      animation: wOverlayIn 0.22s ease;
+    }
+    @keyframes wOverlayIn { from { opacity: 0; } to { opacity: 1; } }
     .wallet-panel {
-      position: fixed; top: 68px; right: 12px; z-index: 9000;
-      background: #1c212e; border: 1px solid rgba(31,204,102,0.24);
-      border-radius: 16px; padding: 14px 16px 12px; width: 196px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(31,204,102,0.07);
-      animation: walletSlide 0.22s cubic-bezier(.34,1.56,.64,1);
-      transform-origin: top right;
+      background: #1c212e; border: 1px solid rgba(31,204,102,0.22);
+      border-radius: 24px; padding: 28px 28px 24px;
+      width: min(340px, calc(100vw - 40px));
+      box-shadow: 0 0 0 1px rgba(31,204,102,0.07), 0 32px 80px rgba(0,0,0,0.8);
+      animation: walletSlide 0.28s cubic-bezier(.34,1.56,.64,1);
     }
     @keyframes walletSlide {
-      from { transform: scale(0.88) translateY(-10px); opacity: 0; }
+      from { transform: scale(0.90) translateY(16px); opacity: 0; }
       to   { transform: none; opacity: 1; }
     }
-    .wallet-panel::before {
-      content: ''; position: absolute; top: -7px; right: 20px;
-      width: 12px; height: 12px; background: #1c212e;
-      border-left: 1px solid rgba(31,204,102,0.24);
-      border-top:  1px solid rgba(31,204,102,0.24);
-      transform: rotate(45deg);
-    }
-    /* balance row: big green number only */
-    .wp-bal-num { font-size: 30px; font-weight: 800; color: #1fcc66;
-      line-height: 1; margin-bottom: 10px; display: flex; align-items: baseline; gap: 4px; }
-    .wp-bal-unit { font-size: 13px; font-weight: 600; color: #1fcc66; }
-    /* progress */
-    .wp-track { height: 4px; background: rgba(255,255,255,0.07); border-radius: 99px;
-      overflow: hidden; margin-bottom: 6px; }
-    .wp-fill  { height: 100%; background: #1fcc66; border-radius: 99px; transition: width 0.5s ease; }
-    /* hint line: "还需 N 枚 | N more" */
-    .wp-hint { display: flex; align-items: baseline; gap: 5px; margin-bottom: 12px; }
-    .wp-hint-zh { font-size: 12px; font-weight: 600; color: #94a3b8; }
-    .wp-hint-sep { font-size: 10px; color: #374151; }
-    .wp-hint-en { font-size: 10px; color: #4b5563; }
-    /* locked CTA */
-    .wp-cta { width: 100%; padding: 9px; background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
-      color: #4b5563; font-size: 12px; font-weight: 600; cursor: default;
-      text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    /* header row: icon + label */
+    .wp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .wp-header-icon { width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(31,204,102,0.10); border: 1px solid rgba(31,204,102,0.20);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .wp-header-label { font-size: 16px; font-weight: 700; color: #e2e8f0; }
+    .wp-header-sub   { font-size: 11px; color: #4b5563; margin-top: 1px; }
+    /* balance */
+    .wp-bal-num { font-size: 52px; font-weight: 800; color: #1fcc66;
+      line-height: 1; display: flex; align-items: baseline; gap: 6px; margin-bottom: 20px; }
+    .wp-bal-unit { font-size: 18px; font-weight: 600; color: rgba(31,204,102,0.7); }
+    /* progress track — tall + high-contrast */
+    .wp-track-wrap { margin-bottom: 10px; }
+    .wp-track-label { display: flex; justify-content: space-between;
+      font-size: 11px; margin-bottom: 7px; }
+    .wp-track-label-l { color: #6b7280; }
+    .wp-track-label-r { color: #4b5563; }
+    .wp-track { height: 10px; background: rgba(255,255,255,0.07); border-radius: 99px;
+      overflow: hidden; }
+    .wp-fill  { height: 100%; background: linear-gradient(90deg, #16a34a, #1fcc66);
+      border-radius: 99px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    /* hint */
+    .wp-hint { display: flex; align-items: baseline; gap: 6px; margin-bottom: 22px; }
+    .wp-hint-zh  { font-size: 13px; font-weight: 600; color: #94a3b8; }
+    .wp-hint-sep { font-size: 11px; color: #2d333b; }
+    .wp-hint-en  { font-size: 11px; color: #4b5563; }
+    /* full-width locked CTA */
+    .wp-cta { width: 100%; padding: 15px; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+      color: #4b5563; font-size: 15px; font-weight: 700; cursor: default;
+      text-align: center; display: flex; align-items: center; justify-content: center; gap: 7px;
+      letter-spacing: 0.2px; }
 
     /* ─── Aha! Moment Spotlight ──────────────────────────────── */
     .aha-overlay {
@@ -2476,8 +2490,6 @@
     // ── Mini Wallet Panel ─────────────────────────────────────
     var _walletOpen = false;
     var _walletEl   = null;
-    function _closeWalletOutside() { closeWallet(); }
-
     function toggleWallet(e) {
       if (e) e.stopPropagation();
       _walletOpen ? closeWallet() : openWallet();
@@ -2488,26 +2500,48 @@
       var goal = 50;
       var pct  = Math.min(100, Math.round(bal / goal * 100));
       var rem  = Math.max(0, goal - bal);
-      var p = document.createElement('div');
-      p.className = 'wallet-panel'; p.id = 'wallet-panel';
-      p.innerHTML =
+      // outer overlay (click to dismiss)
+      var ov = document.createElement('div');
+      ov.className = 'wallet-overlay'; ov.id = 'wallet-panel';
+      ov.addEventListener('click', closeWallet);
+      // inner card (stop propagation)
+      var card = document.createElement('div');
+      card.className = 'wallet-panel';
+      card.addEventListener('click', function(e) { e.stopPropagation(); });
+      card.innerHTML =
+        '<div class="wp-header">' +
+          '<div class="wp-header-icon">' +
+            '<svg width="18" height="16" viewBox="0 0 28 24" style="display:block">' +
+              '<rect fill="#1fcc66" x="0"    y="8"  width="5" height="8"  rx="2.5"/>' +
+              '<rect fill="#1fcc66" x="7.5"  y="1"  width="5" height="22" rx="2.5"/>' +
+              '<rect fill="#1fcc66" x="15"   y="4"  width="5" height="16" rx="2.5"/>' +
+              '<rect fill="#1fcc66" x="22.5" y="8"  width="5" height="8"  rx="2.5"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div><div class="wp-header-label">回声币 Echo Coins</div>' +
+          '<div class="wp-header-sub">点击背景关闭 · Tap outside to close</div></div>' +
+        '</div>' +
         '<div class="wp-bal-num">' + bal + '<span class="wp-bal-unit">枚</span></div>' +
-        '<div class="wp-track"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="wp-track-wrap">' +
+          '<div class="wp-track-label">' +
+            '<span class="wp-track-label-l">0</span>' +
+            '<span class="wp-track-label-r">50 · 神秘盲盒</span>' +
+          '</div>' +
+          '<div class="wp-track"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>' +
         '<div class="wp-hint">' +
           '<span class="wp-hint-zh">还需 ' + rem + ' 枚</span>' +
-          '<span class="wp-hint-sep">|</span>' +
-          '<span class="wp-hint-en">' + rem + ' more</span>' +
+          '<span class="wp-hint-sep">·</span>' +
+          '<span class="wp-hint-en">' + rem + ' more to unlock</span>' +
         '</div>' +
         '<div class="wp-cta"><span>🔒</span><span>盲盒商店 Store (50)</span></div>';
-      p.addEventListener('click', function(e) { e.stopPropagation(); });
-      document.body.appendChild(p);
-      _walletEl = p; _walletOpen = true;
-      setTimeout(function() { document.addEventListener('click', _closeWalletOutside); }, 50);
+      ov.appendChild(card);
+      document.body.appendChild(ov);
+      _walletEl = ov; _walletOpen = true;
     }
     function closeWallet() {
       if (_walletEl && _walletEl.parentNode) _walletEl.parentNode.removeChild(_walletEl);
       _walletEl = null; _walletOpen = false;
-      document.removeEventListener('click', _closeWalletOutside);
     }
 
     // ── Aha! first-coin spotlight ──────────────────────────────
