@@ -1106,9 +1106,74 @@
       background: rgba(31,204,102,0.08); border: 1px solid rgba(31,204,102,0.22);
       border-radius: 20px; padding: 3px 10px 3px 5px;
       font-size: 13px; font-weight: 700; color: #1fcc66;
-      user-select: none; transition: transform 0.15s;
+      user-select: none; transition: transform 0.15s; cursor: pointer;
     }
     .coin-bal-wrap:active { transform: scale(0.94); }
+
+    /* ─── Mini Wallet Panel ──────────────────────────────────── */
+    .wallet-panel {
+      position: fixed; top: 68px; right: 12px; z-index: 9000;
+      background: #1c212e; border: 1px solid rgba(31,204,102,0.24);
+      border-radius: 16px; padding: 16px 18px; width: 224px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(31,204,102,0.07);
+      animation: walletSlide 0.22s cubic-bezier(.34,1.56,.64,1);
+      transform-origin: top right;
+    }
+    @keyframes walletSlide {
+      from { transform: scale(0.88) translateY(-10px); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
+    .wallet-panel::before {
+      content: ''; position: absolute; top: -7px; right: 22px;
+      width: 12px; height: 12px; background: #1c212e;
+      border-left: 1px solid rgba(31,204,102,0.24);
+      border-top:  1px solid rgba(31,204,102,0.24);
+      transform: rotate(45deg);
+    }
+    .wp-bal-label { font-size: 10px; color: #4b5563; letter-spacing: 0.6px;
+      text-transform: uppercase; margin-bottom: 3px; }
+    .wp-bal-num   { font-size: 28px; font-weight: 800; color: #1fcc66;
+      line-height: 1; margin-bottom: 12px; }
+    .wp-track { height: 4px; background: rgba(255,255,255,0.07); border-radius: 99px;
+      overflow: hidden; margin-bottom: 6px; }
+    .wp-fill  { height: 100%; background: #1fcc66; border-radius: 99px;
+      transition: width 0.5s ease; }
+    .wp-sub   { font-size: 11px; color: #6b7280; margin-bottom: 14px; line-height: 1.5; }
+    .wp-cta   { width: 100%; padding: 9px; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09); border-radius: 10px;
+      color: #4b5563; font-size: 12px; font-weight: 600; cursor: default;
+      text-align: center; }
+
+    /* ─── Aha! Moment Spotlight ──────────────────────────────── */
+    .aha-overlay {
+      position: fixed; inset: 0; z-index: 10002;
+      background: rgba(0,0,0,0.58);
+      display: flex; align-items: flex-start; justify-content: flex-end;
+      padding: 64px 12px 0;
+      animation: ahaFadeIn 0.3s ease;
+    }
+    @keyframes ahaFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .aha-tooltip {
+      background: #1c212e; border: 1px solid rgba(31,204,102,0.32);
+      border-radius: 16px; padding: 18px 20px; max-width: 268px;
+      box-shadow: 0 0 0 1px rgba(31,204,102,0.07), 0 20px 60px rgba(0,0,0,0.75);
+      position: relative;
+      animation: ahaSlideIn 0.38s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes ahaSlideIn {
+      from { transform: translateY(-14px) scale(0.93); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
+    .aha-tooltip::before {
+      content: ''; position: absolute; top: -7px; right: 20px;
+      width: 12px; height: 12px; background: #1c212e;
+      border-left: 1px solid rgba(31,204,102,0.32);
+      border-top:  1px solid rgba(31,204,102,0.32);
+      transform: rotate(45deg);
+    }
+    .aha-title  { font-size: 15px; font-weight: 800; color: #1fcc66; margin-bottom: 10px; }
+    .aha-body   { font-size: 13px; color: #94a3b8; line-height: 1.65; }
+    .aha-hint   { margin-top: 12px; font-size: 11px; color: #374151; text-align: center; }
 
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
@@ -1944,7 +2009,7 @@
         </div>
       </div>
       <div class="header-right">
-        <div class="coin-bal-wrap" id="coin-bal-practice" style="display:none">
+        <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-practice" style="display:none">
           <div class="echo-coin echo-coin-sm">
             <svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg">
               <rect class="ec-bar" x="0"    y="4"   width="2.2" height="3"  rx="1.1"/>
@@ -2069,7 +2134,7 @@
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
         </div>
         <div class="header-right">
-          <div class="coin-bal-wrap" id="coin-bal-overlay" style="display:none">
+          <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-overlay" style="display:none">
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-overlay">0</span>
           </div>
@@ -2395,6 +2460,59 @@
         }
       } catch(e) {}
     }
+    // ── Mini Wallet Panel ─────────────────────────────────────
+    var _walletOpen = false;
+    var _walletEl   = null;
+    function _closeWalletOutside() { closeWallet(); }
+
+    function toggleWallet(e) {
+      if (e) e.stopPropagation();
+      _walletOpen ? closeWallet() : openWallet();
+    }
+    function openWallet() {
+      if (_walletEl && _walletEl.parentNode) _walletEl.parentNode.removeChild(_walletEl);
+      var bal  = getCoins();
+      var goal = 50;
+      var pct  = Math.min(100, Math.round(bal / goal * 100));
+      var rem  = Math.max(0, goal - bal);
+      var p = document.createElement('div');
+      p.className = 'wallet-panel'; p.id = 'wallet-panel';
+      p.innerHTML =
+        '<div class="wp-bal-label">回声币余额 Echo Coins</div>' +
+        '<div class="wp-bal-num">' + bal + ' 枚</div>' +
+        '<div class="wp-track"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="wp-sub">距开启神秘盲盒还差 <strong style="color:#94a3b8">' + rem + '</strong> 枚 · ' + pct + '% reached</div>' +
+        '<div class="wp-cta">🛍️ 前往盲盒商店（50 枚解锁）</div>';
+      p.addEventListener('click', function(e) { e.stopPropagation(); });
+      document.body.appendChild(p);
+      _walletEl = p; _walletOpen = true;
+      setTimeout(function() { document.addEventListener('click', _closeWalletOutside); }, 50);
+    }
+    function closeWallet() {
+      if (_walletEl && _walletEl.parentNode) _walletEl.parentNode.removeChild(_walletEl);
+      _walletEl = null; _walletOpen = false;
+      document.removeEventListener('click', _closeWalletOutside);
+    }
+
+    // ── Aha! first-coin spotlight ──────────────────────────────
+    function maybeShowAha() {
+      if (localStorage.getItem('echo_coin_aha_seen')) return;
+      localStorage.setItem('echo_coin_aha_seen', '1');
+      var ov = document.createElement('div');
+      ov.className = 'aha-overlay';
+      ov.innerHTML =
+        '<div class="aha-tooltip">' +
+          '<div class="aha-title">你的第一枚回声币！🎉</div>' +
+          '<div class="aha-body">收集回声币，可在【盲盒商店】抽取卢克的新衣服和专属文化卡片！发音越准，奖励越丰厚。</div>' +
+          '<div class="aha-hint">点击任意位置关闭</div>' +
+        '</div>';
+      ov.addEventListener('click', function() {
+        ov.style.animation = 'ahaFadeIn 0.18s ease reverse forwards';
+        setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 180);
+      });
+      document.body.appendChild(ov);
+    }
+
     // 触发硬币入账动画（分数数完后 delay ms 出现）
     // tier: 本次分数的档位（0-3）；earned: 实际入账数（防刷后可为0）
     function showCoinReward(earned, delay, tier) {
@@ -2426,6 +2544,8 @@
           [balPractice, balEval].forEach(function(el) {
             if (el) { el.classList.remove('bal-bounce-anim'); void el.offsetWidth; el.classList.add('bal-bounce-anim'); }
           });
+          // 第一次拿到代币时触发 Aha! 引导气泡（终生仅一次，1.2s 后弹出）
+          setTimeout(maybeShowAha, 1200);
         }, delay || 500);
       } else if (tier > 0) {
         // 分数够，但今日已拿过同等或更高档——不重复发币
@@ -3660,6 +3780,7 @@
     function el(id) { return document.getElementById(id); }
 
     function updateUI() {
+      closeWallet();
       clearTimers();
       if (audio) { audio.pause(); audio.playbackRate = 1; }
       speak(false);
@@ -5728,7 +5849,7 @@
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
         </div>
         <div class="header-right">
-          <div class="coin-bal-wrap" id="coin-bal-cover" style="display:none">
+          <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-cover" style="display:none">
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-cover">0</span>
           </div>
@@ -5756,7 +5877,7 @@
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
         </div>
         <div class="header-right">
-          <div class="coin-bal-wrap" id="coin-bal-fc" style="display:none">
+          <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-fc" style="display:none">
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-fc">0</span>
           </div>
@@ -5791,7 +5912,7 @@
         <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
       </div>
       <div class="header-right">
-        <div class="coin-bal-wrap" id="coin-bal-plp" style="display:none">
+        <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-plp" style="display:none">
           <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
           <span id="coin-bal-num-plp">0</span>
         </div>
@@ -5898,7 +6019,7 @@
   <div class="eval-page" id="eval-page">
     <div class="eval-inner">
       <div class="eval-header">
-        <div class="coin-bal-wrap" id="coin-bal-eval" style="display:none">
+        <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-eval" style="display:none">
           <div class="echo-coin echo-coin-sm">
             <svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg">
               <rect class="ec-bar" x="0"    y="4"   width="2.2" height="3"  rx="1.1"/>
@@ -6007,7 +6128,7 @@
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
         </div>
         <div class="header-right">
-          <div class="coin-bal-wrap" id="coin-bal-tip" style="display:none">
+          <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-tip" style="display:none">
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-tip">0</span>
           </div>
