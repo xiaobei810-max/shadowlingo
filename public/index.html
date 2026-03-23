@@ -2108,10 +2108,10 @@
         <div class="ctx-en" id="ctx-en"></div>
       </div>
 
-      <!-- 卢克练习面板（下方） -->
+      <!-- 诺拉练习面板（下方） -->
       <div class="sentence-box">
         <div class="learner-panel-hdr">
-          <span class="ctx-speaker" style="color:var(--green)">卢克 · Luke</span>
+          <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">Nora · 诺拉</span>
           <div style="display:flex;align-items:center;gap:8px;">
             <div class="mascot-wrap" style="width:28px;height:28px;">
               <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" style="width:28px;height:28px;" onerror="this.style.display='none'" />
@@ -3908,7 +3908,7 @@
           var ctxZh = document.getElementById('ctx-zh');
           var ctxEn = document.getElementById('ctx-en');
           var ctxBtn = document.getElementById('ctx-play-btn');
-          if (ctxSpeaker) ctxSpeaker.textContent = s.context.speaker + ' · Staff';
+          if (ctxSpeaker) ctxSpeaker.textContent = s.context.speaker;
           buildCtxKara(ctxZh, s.context.zh, s.context.pinyin);
           if (ctxEn) ctxEn.textContent = s.context.en;
           if (ctxBtn) { ctxBtn.textContent = '▶ 播放 Play'; ctxBtn.classList.remove('playing'); }
@@ -3925,7 +3925,7 @@
           var cbZh = document.getElementById('ctx-zh-below');
           var cbEn = document.getElementById('ctx-en-below');
           var cbBtn = document.getElementById('ctx-play-btn-below');
-          if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker + ' · Staff';
+          if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker;
           buildCtxKara(cbZh, s.contextBelow.zh, s.contextBelow.pinyin);
           if (cbEn) cbEn.textContent = s.contextBelow.en;
           if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
@@ -3937,6 +3937,9 @@
       if (el("pinyin")) el("pinyin").textContent = s.pinyin;
       if (el("en")) el("en").textContent = s.en;
       if (el("progress")) el("progress").style.width = ((idx + 1) / total * 100) + "%";
+      // 动态更新练习面板的角色名（支持多课不同主角）
+      var lpName = document.getElementById('learner-panel-name');
+      if (lpName) lpName.textContent = s.speaker || (lesson.learnerName || 'Nora · 诺拉');
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");

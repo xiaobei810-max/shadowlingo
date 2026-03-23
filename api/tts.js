@@ -5,25 +5,36 @@ const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
 
 // Voice config per role
 const VOICES = {
-  // 工作人员：40岁左右女性，沉稳干练
-  local: {
-    name:     'zh-CN-XiaoruiNeural',
-    xmlLang:  'zh-CN',
-    style:    'calm',
-    rateScale: 1.0,
-    pitchAdj: '-4%'
-  },
-  // 卢克：美国20岁交换生，跨语言合成 → 带外国口音的中文
+  // ── Nora（诺拉）：美国女留学生，HSK2-3，跨语言合成 → 带外国口音的中文
+  // en-US-AvaMultilingualNeural: 自然亲切的美国年轻女性，多语言模型
   learner: {
-    name:       'en-US-AndrewMultilingualNeural',
+    name:       'en-US-AvaMultilingualNeural',
     xmlLang:    'en-US',
     crossLang:  'zh-CN',   // <lang xml:lang="zh-CN"> 包裹中文文本
+    style:      null,
+    rateScale:  0.92,      // 非母语者语速稍慢
+    pitchAdj:   '+4%'      // 年轻女性音调
+  },
+  // ── 赵明轩（明轩）：热情开朗的中国男学长，语速稍快，口语化
+  // zh-CN-YunxiNeural: 年轻中文男声，支持 chat 风格（接地气、自然活泼）
+  local: {
+    name:      'zh-CN-YunxiNeural',
+    xmlLang:   'zh-CN',
+    style:     'chat',     // 轻松聊天风格，符合阳光学长定位
+    rateScale:  1.10,      // 语速稍快，体现活力
+    pitchAdj:  '+2%'
+  },
+  // ── 大卫（David）：保留卢克的声音，美国男生，留作后续角色
+  david: {
+    name:       'en-US-AndrewMultilingualNeural',
+    xmlLang:    'en-US',
+    crossLang:  'zh-CN',
     style:      null,
     rateScale:  0.95,
     pitchAdj:   '+8%'
   },
-  // 林欣悦：主角之一，清脆亲切，留作后续故事
-  linyue: {
+  // ── 林晚（Lin Wan）：清脆亲切，留作后续故事
+  linwan: {
     name:     'zh-CN-XiaoxiaoNeural',
     xmlLang:  'zh-CN',
     style:    'customerservice',
