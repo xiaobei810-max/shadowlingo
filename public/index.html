@@ -1187,39 +1187,41 @@
     /* ─── Aha! Moment Spotlight ──────────────────────────────── */
     .aha-overlay {
       position: fixed; inset: 0; z-index: 10002;
-      background: rgba(0,0,0,0.62);
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
       display: flex; align-items: center; justify-content: center;
       animation: ahaFadeIn 0.3s ease;
     }
     @keyframes ahaFadeIn { from { opacity: 0; } to { opacity: 1; } }
     .aha-card {
-      background: #1c212e; border: 1px solid rgba(31,204,102,0.32);
-      border-radius: 20px; padding: 24px 24px 20px; width: 288px;
-      box-shadow: 0 0 0 1px rgba(31,204,102,0.07), 0 24px 64px rgba(0,0,0,0.8);
+      background: #1c212e; border: 1px solid rgba(31,204,102,0.35);
+      border-radius: 24px; padding: 32px 28px 26px; width: 340px; max-width: 92vw;
+      box-shadow: 0 0 0 1px rgba(31,204,102,0.10),
+                  0 0 40px rgba(31,204,102,0.14),
+                  0 32px 80px rgba(0,0,0,0.85);
       animation: ahaSlideIn 0.38s cubic-bezier(.34,1.56,.64,1);
       display: flex; flex-direction: column; gap: 0;
     }
     @keyframes ahaSlideIn {
-      from { transform: translateY(20px) scale(0.94); opacity: 0; }
+      from { transform: translateY(24px) scale(0.93); opacity: 0; }
       to   { transform: none; opacity: 1; }
     }
     .aha-title {
-      font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 16px;
-      letter-spacing: -0.2px;
+      font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 22px;
+      letter-spacing: -0.4px; line-height: 1.2;
     }
-    .aha-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .aha-rows { display: flex; flex-direction: column; gap: 18px; margin-bottom: 26px; }
     .aha-row {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px;
+      display: flex; align-items: center; gap: 16px;
     }
-    .aha-icon { font-size: 20px; flex-shrink: 0; }
-    .aha-text { display: flex; flex-direction: column; gap: 1px; }
-    .aha-zh { font-size: 14px; font-weight: 700; color: #e2e8f0; }
-    .aha-en { font-size: 11px; color: #4b5563; }
+    .aha-icon { font-size: 36px; flex-shrink: 0; line-height: 1; }
+    .aha-text { display: flex; flex-direction: column; gap: 4px; }
+    .aha-zh { font-size: 20px; font-weight: 700; color: #f1f5f9; }
+    .aha-en { font-size: 13px; color: #94a3b8; font-weight: 400; }
     .aha-btn {
-      width: 100%; padding: 12px; background: #1fcc66; border: none;
-      border-radius: 12px; color: #000; font-size: 14px; font-weight: 700;
-      cursor: pointer; transition: background 0.15s;
+      width: 100%; padding: 14px; background: #1fcc66; border: none;
+      border-radius: 14px; color: #000; font-size: 16px; font-weight: 800;
+      cursor: pointer; transition: background 0.15s; letter-spacing: 0.2px;
     }
     .aha-btn:hover { background: #18b859; }
 
@@ -3930,23 +3932,9 @@
           ctxPanel.style.display = 'none';
         }
       }
-      // Context panel below (staff's response for sentence 1 where Luke initiates)
+      // Context panel below — hidden to keep page to 2 sentences max
       var ctxBelowPanel = document.getElementById('context-panel-below');
-      if (ctxBelowPanel) {
-        if (s.contextBelow) {
-          ctxBelowPanel.style.display = 'block';
-          var cbSpeaker = document.getElementById('ctx-speaker-below');
-          var cbZh = document.getElementById('ctx-zh-below');
-          var cbEn = document.getElementById('ctx-en-below');
-          var cbBtn = document.getElementById('ctx-play-btn-below');
-          if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker;
-          buildCtxKara(cbZh, s.contextBelow.zh, s.contextBelow.pinyin);
-          if (cbEn) cbEn.textContent = s.contextBelow.en;
-          if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
-        } else {
-          ctxBelowPanel.style.display = 'none';
-        }
-      }
+      if (ctxBelowPanel) ctxBelowPanel.style.display = 'none';
 
       if (el("pinyin")) el("pinyin").textContent = s.pinyin;
       if (el("en")) el("en").textContent = s.en;
@@ -5952,14 +5940,14 @@
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v6')) {
+      if (!localStorage.getItem('echo_coin_reset_v7')) {
         try {
           localStorage.removeItem('echo_coins');
           localStorage.removeItem('echo_coin_aha_seen'); // reset Aha! modal so it shows fresh
           Object.keys(localStorage).forEach(function(k) {
             if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v6', '1');
+          localStorage.setItem('echo_coin_reset_v7', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
