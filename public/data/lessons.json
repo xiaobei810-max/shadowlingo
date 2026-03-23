@@ -2,50 +2,66 @@
   "lessons": [
     {
       "id": 1,
-      "title": "机场大巴问路",
-      "scene": "卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。",
+      "title": "机场问路",
+      "titleEn": "The Unexpected Pickup",
+      "scene": "Nora 刚抵达机场，找不到接机人，只好向路人询问去市区的路线。",
+      "sceneEn": "Nora has just arrived at the airport and can't find her pickup, so she asks a passerby for directions to the city center.",
       "dialogue": [
         {
-          "speaker": "工作人员",
-          "role": "local",
-          "zh": "大巴吗？一直往前走，出三号门，往右拐。",
-          "pinyin": "Dàbā ma? Yìzhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.",
-          "en": "The bus? Go straight ahead, exit through Gate 3, then turn right."
-        },
-        {
-          "speaker": "卢克",
+          "speaker": "Nora",
           "role": "learner",
-          "zh": "三号门右拐，对吧？",
-          "pinyin": "Sān hào mén yòu guǎi, duì ba?",
-          "en": "Gate 3, turn right, right?"
+          "zh": "你好，请问去市区怎么走？",
+          "pinyin": "Nǐ hǎo, qǐng wèn qù shì qū zěn me zǒu?",
+          "en": "Hello, excuse me, how do I get to the city center?"
         },
         {
-          "speaker": "工作人员",
+          "speaker": "明轩 · Mingxuan",
           "role": "local",
-          "zh": "对，在那边排队上车。",
-          "pinyin": "Duì, zài nàbiān páiduì shàng chē.",
-          "en": "That's right, queue over there to board."
+          "zh": "往前走，右拐坐大巴。",
+          "pinyin": "Wǎng qián zǒu, yòu guǎi zuò dà bā.",
+          "en": "Walk straight ahead, turn right to take the bus."
         },
         {
-          "speaker": "卢克",
+          "speaker": "Nora",
           "role": "learner",
-          "zh": "好的。请问是在车上买票吗？",
-          "pinyin": "Hǎo de. Qǐngwèn shì zài chē shàng mǎi piào ma?",
-          "en": "Got it. Excuse me, do we buy tickets on the bus?"
+          "zh": "谢谢。大巴到京华大学吗？",
+          "pinyin": "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
+          "en": "Thank you. Does the bus go to Jinghua University?"
         },
         {
-          "speaker": "工作人员",
+          "speaker": "明轩 · Mingxuan",
           "role": "local",
-          "zh": "对，上车扫码或者付现金都行。",
-          "pinyin": "Duì, shàng chē sǎo mǎ huòzhě fù xiànjīn dōu xíng.",
-          "en": "Yes, you can scan a QR code or pay cash on the bus."
+          "zh": "你是去京华大学的留学生？",
+          "pinyin": "Nǐ shì qù Jīng huá dà xué de liú xué shēng?",
+          "en": "Are you an international student going to Jinghua University?"
         },
         {
-          "speaker": "卢克",
+          "speaker": "Nora",
           "role": "learner",
-          "zh": "我明白了，谢谢！",
-          "pinyin": "Wǒ míngbai le, xièxie!",
-          "en": "I understand, thank you!"
+          "zh": "对，我是 Nora。",
+          "pinyin": "Duì, wǒ shì Nora.",
+          "en": "Yes, I'm Nora."
+        },
+        {
+          "speaker": "明轩 · Mingxuan",
+          "role": "local",
+          "zh": "太好了！我是来接你的。",
+          "pinyin": "Tài hǎo le! Wǒ shì lái jiē nǐ de.",
+          "en": "Great! I'm here to pick you up."
+        },
+        {
+          "speaker": "Nora",
+          "role": "learner",
+          "zh": "真的吗？太感谢了。",
+          "pinyin": "Zhēn de ma? Tài gǎn xiè le.",
+          "en": "Really? Thank you so much."
+        },
+        {
+          "speaker": "明轩 · Mingxuan",
+          "role": "local",
+          "zh": "我叫明轩。行李给我吧。",
+          "pinyin": "Wǒ jiào Míng xuān. Xíng li gěi wǒ ba.",
+          "en": "I'm Mingxuan. Give me your luggage."
         }
       ],
       "correct": [
@@ -53,19 +69,13 @@
           "zh": "往右拐",
           "pinyin": "Wǎng yòu guǎi",
           "en": "Turn right",
-          "note": "口语中用"拐"，不用"转"，听起来更自然。"
+          "note": "口语问路用【拐】不用【转】，更自然。"
         },
         {
-          "zh": "一直走",
-          "pinyin": "Yìzhí zǒu",
-          "en": "Go straight",
-          "note": "问路常用表达，简洁直接。"
-        },
-        {
-          "zh": "往左拐",
-          "pinyin": "Wǎng zuǒ guǎi",
-          "en": "Turn left",
-          "note": "❌ 错误说法：请向右/左转"
+          "zh": "向右转",
+          "pinyin": "Xiàng yòu zhuǎn",
+          "en": "Please turn right (textbook)",
+          "note": "书面语，日常口语极少使用。"
         }
       ]
     }

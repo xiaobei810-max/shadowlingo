@@ -2229,86 +2229,84 @@
     const LESSONS = [
       {
         id: "lesson-1",
-        titleZh: "第一课：机场问路", titleEn: "Lesson 1: Asking for Directions at the Airport",
+        titleZh: "第一课：机场问路", titleEn: "Lesson 1: The Unexpected Pickup",
         audio: "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a",
         sentences: [
           {
-            zh: "你好，不好意思。请问去市区在哪儿坐车？",
-            pinyin: "Nǐ hǎo, bù hǎo yì si. Qǐngwèn qù shìqū zài nǎr zuò chē?",
-            en: "Hello, excuse me. Where do I take the bus to the city center?",
+            zh: "你好，请问去市区怎么走？",
+            pinyin: "Nǐ hǎo, qǐng wèn qù shì qū zěn me zǒu?",
+            en: "Hello, excuse me, how do I get to the city center?",
             context: null,
-            contextBelow: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dà bā ma? Yì zhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
+            contextBelow: { speaker: "明轩 · Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
             role: "learner",
             start: 0, end: 4,
-            praise: "👏 开口问路很勇敢！Great initiative!",
-            hint: "【不好意思】is super useful — politely gets someone's attention · 【在哪儿】asks 'where'",
+            praise: "👏 开口问路很棒！Great initiative!",
+            hint: "【请问】is a polite opener · 【怎么走】asks 'how do I get there?' — super versatile",
             chars: [
               { c: "你", p: "ni3" }, { c: "好", p: "hao3" },
-              { c: "不", p: "bu4" }, { c: "好", p: "hao3" }, { c: "意", p: "yi4" }, { c: "思", p: "si5" },
               { c: "请", p: "qing3" }, { c: "问", p: "wen4" },
               { c: "去", p: "qu4" }, { c: "市", p: "shi4" }, { c: "区", p: "qu1" },
-              { c: "在", p: "zai4" }, { c: "哪", p: "na3" }, { c: "儿", p: "er5" }, { c: "坐", p: "zuo4" }, { c: "车", p: "che1" }
+              { c: "怎", p: "zen3" }, { c: "么", p: "me5" }, { c: "走", p: "zou3" }
             ]
           },
           {
-            zh: "三号门右拐，对吧？",
-            pinyin: "Sān hào mén yòu guǎi, duì ba?",
-            en: "Gate 3, turn right, right?",
-            context: { speaker: "工作人员", zh: "大巴吗？一直往前走，出三号门，往右拐。", pinyin: "Dà bā ma? Yì zhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.", en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
+            zh: "谢谢。大巴到京华大学吗？",
+            pinyin: "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
+            en: "Thank you. Does the bus go to Jinghua University?",
+            context: { speaker: "明轩 · Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
+            contextBelow: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?", en: "Are you an international student going to Jinghua University?" },
             role: "learner",
-            start: 1, end: 5,
-            praise: "🌟 确认方向很自然！Great confirmation!",
-            hint: "【对吧？】is a great way to confirm — rising tone on 吧",
+            start: 0, end: 0,
+            praise: "🌟 追问很自然！Natural follow-up!",
+            hint: "【到...吗？】asks if something goes to a place — very useful for transport",
             chars: [
-              { c: "三", p: "san1" }, { c: "号", p: "hao4" }, { c: "门", p: "men2" },
-              { c: "右", p: "you4" }, { c: "拐", p: "guai3" },
-              { c: "对", p: "dui4" }, { c: "吧", p: "ba5" }
+              { c: "谢", p: "xie4" }, { c: "谢", p: "xie4" },
+              { c: "大", p: "da4" }, { c: "巴", p: "ba1" }, { c: "到", p: "dao4" },
+              { c: "京", p: "jing1" }, { c: "华", p: "hua2" }, { c: "大", p: "da4" }, { c: "学", p: "xue2" },
+              { c: "吗", p: "ma5" }
             ]
           },
           {
-            zh: "好的。请问是在车上买票吗？",
-            pinyin: "Hǎo de. Qǐngwèn shì zài chē shàng mǎi piào ma?",
-            en: "Got it. Excuse me, do we buy tickets on the bus?",
-            context: { speaker: "工作人员", zh: "对，在那边排队上车。", pinyin: "Duì, zài nà biān pái duì shàng chē.", en: "That's right, queue over there to board." },
+            zh: "对，我是 Nora。",
+            pinyin: "Duì, wǒ shì Nora.",
+            en: "Yes, I'm Nora.",
+            context: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?", en: "Are you an international student going to Jinghua University?" },
+            contextBelow: { speaker: "明轩 · Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
             role: "learner",
-            start: 6, end: 12,
-            praise: "😎 问问题很礼貌！Politely done!",
-            hint: "【请问】is polite — always use it when asking strangers · 【是...吗？】is a yes/no question pattern",
+            start: 0, end: 0,
+            praise: "😎 简洁有力！Nice and confident!",
+            hint: "【对】as confirmation at the start flows naturally in spoken Chinese",
             chars: [
-              { c: "好", p: "hao3" }, { c: "的", p: "de5" },
-              { c: "请", p: "qing3" }, { c: "问", p: "wen4" }, { c: "是", p: "shi4" },
-              { c: "在", p: "zai4" }, { c: "车", p: "che1" }, { c: "上", p: "shang4" },
-              { c: "买", p: "mai3" }, { c: "票", p: "piao4" }, { c: "吗", p: "ma5" }
+              { c: "对", p: "dui4" }, { c: "我", p: "wo3" }, { c: "是", p: "shi4" }
             ]
           },
           {
-            zh: "我明白了，谢谢！",
-            pinyin: "Wǒ míngbai le, xièxie!",
-            en: "I understand, thank you!",
-            context: { speaker: "工作人员", zh: "对，上车扫码或者付现金都行。", pinyin: "Duì, shàng chē sǎo mǎ huò zhě fù xiàn jīn dōu xíng.", en: "Yes, you can scan a QR code or pay cash on the bus." },
+            zh: "真的吗？太感谢了。",
+            pinyin: "Zhēn de ma? Tài gǎn xiè le.",
+            en: "Really? Thank you so much.",
+            context: { speaker: "明轩 · Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
+            contextBelow: { speaker: "明轩 · Mingxuan", zh: "我叫明轩。行李给我吧。", pinyin: "Wǒ jiào Míng xuān. Xíng li gěi wǒ ba.", en: "I'm Mingxuan. Give me your luggage." },
             role: "learner",
-            start: 13, end: 17,
-            praise: "🔥 收尾很有礼貌！Perfectly polite sign-off!",
-            hint: "【我明白了】shows you understood — a natural wrap-up after getting information",
+            start: 0, end: 0,
+            praise: "🔥 表达感谢很真诚！So genuine!",
+            hint: "【真的吗？】shows surprise naturally · 【太...了】intensifies any emotion or adjective",
             chars: [
-              { c: "我", p: "wo3" }, { c: "明", p: "ming2" }, { c: "白", p: "bai2" }, { c: "了", p: "le5" },
-              { c: "谢", p: "xie4" }, { c: "谢", p: "xie4" }
+              { c: "真", p: "zhen1" }, { c: "的", p: "de5" }, { c: "吗", p: "ma5" },
+              { c: "太", p: "tai4" }, { c: "感", p: "gan3" }, { c: "谢", p: "xie4" }, { c: "了", p: "le5" }
             ]
           }
         ],
         vocab: [
-          { zh: '不好意思', py: 'bù hǎo yì si', en: 'Excuse me / Sorry to bother you' },
-          { zh: '市区',    py: 'shì qū',        en: 'City center / Downtown' },
-          { zh: '大巴',    py: 'dà bā',          en: 'Coach bus / Airport bus' },
-          { zh: '请问',    py: 'qǐng wèn',       en: 'May I ask... (polite opener)' },
-          { zh: '扫码',    py: 'sǎo mǎ',         en: 'Scan QR code (for mobile payment)' },
-          { zh: '现金',    py: 'xiàn jīn',       en: 'Cash' },
+          { zh: '市区',    py: 'shì qū',          en: 'City center / Downtown' },
+          { zh: '右拐',    py: 'yòu guǎi',         en: 'Turn right' },
+          { zh: '留学生',  py: 'liú xué shēng',    en: 'International student' },
+          { zh: '接',      py: 'jiē',              en: 'To pick up (someone)' },
         ],
         insiderTip: {
-          textbook: { zh: '请向右转。', en: 'Please turn right.' },
+          textbook: { zh: '向右转。', en: 'Please turn right.' },
           street:   { zh: '往右拐。', pinyin: 'Wǎng yòu guǎi.' },
-          noteZh: '在中国问路，记住这三个最常见的方向动词："一直走 (keep straight)"、"往左拐 (turn left)"和"往右拐 (turn right)"。口语中人们极少使用书面语的"转 (zhuǎn)"，而是用更干脆的"拐 (guǎi)"。听到"拐"，跟着转弯就对了。',
-          noteEn: 'When asking for directions in China, remember these three most common directional phrases: "一直走 (keep straight)", "往左拐 (turn left)", and "往右拐 (turn right)". In spoken Chinese, people rarely use the formal "转 (zhuǎn)" for turning; instead, they use the snappier "拐 (guǎi)". When you hear "guǎi", just make the turn!'
+          noteZh: '在中国问路，记住这个最常见的方向动词："往右拐"。口语中人们极少使用书面语的"转 (zhuǎn)"，而是用更干脆的"拐 (guǎi)"。听到"拐"，跟着转弯就对了。另外，明轩最后说的"行李给我吧"，虽然听起来很直接，但在中国文化中是展现热情和照顾的极其地道的表达，绝不是没礼貌。',
+          noteEn: 'When asking for directions in China, remember the directional phrase: "往右拐 (turn right)". In spoken Chinese, people rarely use the formal "转 (zhuǎn)" for turning; instead, they use the snappier "拐 (guǎi)". Also, Mingxuan\'s last sentence "Give me your luggage" might sound direct in English, but in Chinese culture, it\'s a very natural and warm way to show hospitality and care.'
         }
       }
       // 更多课时在此扩展：
@@ -2338,41 +2336,44 @@
       {
         id: 1,
         title: "机场问路",
-        scene: "卢克刚抵达上海浦东机场，向机场工作人员询问去市区的巴士。",
+        scene: "Nora 刚抵达机场，找不到接机人，只好向路人询问去市区的路线。",
         dialogue: [
-          { speaker: "卢克", role: "learner",
-            zh: "你好，不好意思。请问去市区在哪儿坐车？",
-            pinyin: "Nǐ hǎo, bù hǎo yì si. Qǐngwèn qù shìqū zài nǎr zuò chē?",
-            en: "Hello, excuse me. Where do I take the bus to the city center?" },
-          { speaker: "工作人员", role: "local",
-            zh: "大巴吗？一直往前走，出三号门，往右拐。",
-            pinyin: "Dà bā ma? Yì zhí wǎng qián zǒu, chū sān hào mén, wǎng yòu guǎi.",
-            en: "The bus? Go straight ahead, exit through Gate 3, then turn right." },
-          { speaker: "卢克", role: "learner",
-            zh: "三号门右拐，对吧？",
-            pinyin: "Sān hào mén yòu guǎi, duì ba?",
-            en: "Gate 3, turn right, right?" },
-          { speaker: "工作人员", role: "local",
-            zh: "对，在那边排队上车。",
-            pinyin: "Duì, zài nà biān pái duì shàng chē.",
-            en: "That's right, queue over there to board." },
-          { speaker: "卢克", role: "learner",
-            zh: "好的。请问是在车上买票吗？",
-            pinyin: "Hǎo de. Qǐngwèn shì zài chē shàng mǎi piào ma?",
-            en: "Got it. Excuse me, do we buy tickets on the bus?" },
-          { speaker: "工作人员", role: "local",
-            zh: "对，上车扫码或者付现金都行。",
-            pinyin: "Duì, shàng chē sǎo mǎ huò zhě fù xiàn jīn dōu xíng.",
-            en: "Yes, you can scan a QR code or pay cash on the bus." },
-          { speaker: "卢克", role: "learner",
-            zh: "我明白了，谢谢！",
-            pinyin: "Wǒ míngbai le, xièxie!",
-            en: "I understand, thank you!" }
+          { speaker: "Nora", role: "learner",
+            zh: "你好，请问去市区怎么走？",
+            pinyin: "Nǐ hǎo, qǐng wèn qù shì qū zěn me zǒu?",
+            en: "Hello, excuse me, how do I get to the city center?" },
+          { speaker: "明轩 · Mingxuan", role: "local",
+            zh: "往前走，右拐坐大巴。",
+            pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.",
+            en: "Walk straight ahead, turn right to take the bus." },
+          { speaker: "Nora", role: "learner",
+            zh: "谢谢。大巴到京华大学吗？",
+            pinyin: "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
+            en: "Thank you. Does the bus go to Jinghua University?" },
+          { speaker: "明轩 · Mingxuan", role: "local",
+            zh: "你是去京华大学的留学生？",
+            pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?",
+            en: "Are you an international student going to Jinghua University?" },
+          { speaker: "Nora", role: "learner",
+            zh: "对，我是 Nora。",
+            pinyin: "Duì, wǒ shì Nora.",
+            en: "Yes, I'm Nora." },
+          { speaker: "明轩 · Mingxuan", role: "local",
+            zh: "太好了！我是来接你的。",
+            pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.",
+            en: "Great! I'm here to pick you up." },
+          { speaker: "Nora", role: "learner",
+            zh: "真的吗？太感谢了。",
+            pinyin: "Zhēn de ma? Tài gǎn xiè le.",
+            en: "Really? Thank you so much." },
+          { speaker: "明轩 · Mingxuan", role: "local",
+            zh: "我叫明轩。行李给我吧。",
+            pinyin: "Wǒ jiào Míng xuān. Xíng li gěi wǒ ba.",
+            en: "I'm Mingxuan. Give me your luggage." }
         ],
         correct: [
           { zh: "往右拐", pinyin: "Wǎng yòu guǎi", en: "Turn right", note: "口语问路用【拐】不用【转】，更自然。" },
-          { zh: "一直走", pinyin: "Yìzhí zǒu", en: "Go straight", note: "问路常用表达，简洁直接。" },
-          { zh: "往左拐", pinyin: "Wǎng zuǒ guǎi", en: "Turn left", note: "错误说法：请向右/左转" }
+          { zh: "向右转", pinyin: "Xiàng yòu zhuǎn", en: "Please turn right (textbook)", note: "书面语，日常口语极少使用。" }
         ]
       }
     ];
@@ -5958,10 +5959,10 @@
     <div class="cover-inner">
       <div class="cover-lesson-num">第一课 · Lesson 1</div>
       <div class="cover-title-zh" id="cover-title-zh">机场问路</div>
-      <div class="cover-title-en" id="cover-title-en">Asking for Directions at the Airport</div>
+      <div class="cover-title-en" id="cover-title-en">The Unexpected Pickup</div>
       <div class="cover-divider"></div>
-      <div class="cover-scene-zh" id="cover-scene-zh">卢克刚抵达上海浦东机场，<br>向机场工作人员询问去市区的巴士。</div>
-      <div class="cover-scene-en" id="cover-scene-en">Luke has just arrived at Shanghai Pudong Airport and needs to find the bus to the city center.</div>
+      <div class="cover-scene-zh" id="cover-scene-zh">Nora 刚抵达机场，找不到接机人，<br>只好向路人询问去市区的路线。</div>
+      <div class="cover-scene-en" id="cover-scene-en">Nora has just arrived at the airport and can't find her pickup, so she asks a passerby for directions to the city center.</div>
       <button class="cover-start-btn" onclick="startLesson()">开始学习 · Start Learning →</button>
     </div>
   </div>
