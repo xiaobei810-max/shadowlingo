@@ -408,6 +408,10 @@
       color: #60a5fa;
     }
 
+    /* Punctuation inherits karaoke color from its preceding character */
+    .kchar.active + .kpunct { color: var(--text); }
+    .kchar.done   + .kpunct { color: var(--green); }
+
     /* Karaoke progress bar */
     .kara-bar {
       height: 3px;
@@ -1750,6 +1754,9 @@
     .dlp-kchar.dlp-active .dlp-hz { color: #ffffff; }
     .dlp-kchar.dlp-done   .dlp-py { color: #60a5fa; opacity: 0.8; }
     .dlp-kchar.dlp-done   .dlp-hz { color: var(--green); }
+    /* Punctuation follows its preceding character's karaoke state */
+    .dlp-kchar.dlp-active + .kpunct { color: #ffffff; }
+    .dlp-kchar.dlp-done   + .kpunct { color: var(--green); }
     .dlp-bar { height: 2px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; flex-shrink: 0; }
     .dlp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
     .dlp-en { font-size: 13px; color: #6b7280; line-height: 1.5; font-style: italic; flex-shrink: 0; }
@@ -2363,8 +2370,8 @@
             pinyin: "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
             en: "Thank you. Does the bus go to Jinghua University?" },
           { speaker: "明轩 · Mingxuan", role: "local",
-            zh: "你是去京华大学的留学生？",
-            pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?",
+            zh: "你是去京华大学的留学生吗？",
+            pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?",
             en: "Are you an international student going to Jinghua University?" },
           { speaker: "Nora", role: "learner",
             zh: "对，我是诺拉。",
@@ -6049,14 +6056,14 @@
       // ── 加载静态音频映射表 ────────────────────────────────────
       _loadAudioMap();
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v9')) {
+      if (!localStorage.getItem('echo_coin_reset_v10')) {
         try {
           localStorage.removeItem('echo_coins');
           localStorage.removeItem('echo_coin_aha_seen'); // reset Aha! modal so it shows fresh
           Object.keys(localStorage).forEach(function(k) {
             if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v9', '1');
+          localStorage.setItem('echo_coin_reset_v10', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
