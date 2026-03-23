@@ -5226,9 +5226,9 @@
       dlpBuildKara(containerId, d.zh, d.pinyin);
       dlpSetSpeaking(d.role);
       var role = isLocal ? 'local' : 'learner';
-      // Pre-fetch next sentence while current plays
+      // Pre-fetch next sentence while current plays (skip when static audio exists)
       var nextD = dlpSeq[idx + 1];
-      if (nextD) {
+      if (nextD && !getStaticAudioUrl(nextD.zh)) {
         var nextRole = nextD.role === 'local' ? 'local' : 'learner';
         var nextKey = nextRole + ':1.00:' + nextD.zh;
         if (!_ttsCache[nextKey]) {
@@ -5270,6 +5270,31 @@
 
     // ── Azure Neural TTS ──────────────────────────────────────────
     var _ttsCache = {};    // cacheKey → blob URL
+    // ── Static audio map (loaded from /audio/audioMap.json) ──────
+    // Structure: { lessonId: { zhText: '/audio/lesson-1/line-N.mp3' } }
+    var _audioMap = {};
+    function _loadAudioMap() {
+      fetch('/audio/audioMap.json')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data) return;
+          Object.keys(data).forEach(function (lessonId) {
+            if (!Array.isArray(data[lessonId])) return;
+            _audioMap[lessonId] = {};
+            data[lessonId].forEach(function (entry) {
+              if (entry.zh && entry.file) _audioMap[lessonId][entry.zh] = '/' + entry.file;
+            });
+          });
+          console.log('[Audio] Static map loaded:', Object.keys(_audioMap));
+        })
+        .catch(function () { console.log('[Audio] No audioMap.json — using TTS API'); });
+    }
+    // Returns static MP3 URL for the current lesson + zh text, or null if not mapped
+    function getStaticAudioUrl(zh) {
+      var lesson = LESSONS[lessonIdx];
+      var lid = lesson && lesson.id;
+      return (lid && _audioMap[lid] && _audioMap[lid][zh]) || null;
+    }
     var _lastUserRecordingUrl = null;   // blob URL of the most recent user recording
     var _lastEvalSentenceZh = '';       // Chinese text of the last evaluated sentence
     var _lastEvalSentenceRole = 'learner'; // TTS role of the last evaluated sentence
@@ -5303,6 +5328,41 @@
     function speakAzure(text, role, rate, onend, onplay) {
       stopAudio();
       var cacheKey = role + ':' + (rate || 1.0).toFixed(2) + ':' + text;
+
+      // ── Static audio shortcut (only at normal speed 1.0×) ──────
+      if (Math.abs((rate || 1.0) - 1.0) < 0.05) {
+        var staticUrl = getStaticAudioUrl(text);
+        if (staticUrl) {
+          var sAu = new Audio(staticUrl);
+          _currentAudio = sAu;
+          var _sMeta = false;
+          sAu.onloadedmetadata = function () {
+            _sMeta = true;
+            if (isFinite(sAu.duration) && onplay) onplay(sAu.duration);
+          };
+          sAu.onplay = function () { if (!_sMeta && onplay) { /* wait for metadata */ } };
+          sAu.onended = function () {
+            if (_currentAudio === sAu) _currentAudio = null;
+            if (onend) onend();
+          };
+          sAu.onerror = function () {
+            // File missing / not yet uploaded — silently fall through to TTS
+            if (_currentAudio === sAu) _currentAudio = null;
+            _doAzureFetch();
+          };
+          sAu.play().catch(function (err) {
+            if (_currentAudio === sAu) _currentAudio = null;
+            if (err && err.name === 'NotAllowedError') {
+              _needsGesture = true;
+              _gestureCallback = function () { _needsGesture = false; speakAzure(text, role, rate, onend, onplay); };
+              plpSetPauseBtn('play');
+            } else {
+              _doAzureFetch();
+            }
+          });
+          return;
+        }
+      }
 
       function playUrl(url) {
         var audio = new Audio(url);
@@ -5345,25 +5405,27 @@
         });
       }
 
-      if (_ttsCache[cacheKey]) { playUrl(_ttsCache[cacheKey]); return; }
-
-      fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text, role: role, rate: rate || 1.0 })
-      })
-      .then(function (r) {
-        if (!r.ok) throw new Error('tts ' + r.status);
-        return r.blob();
-      })
-      .then(function (blob) {
-        var url = URL.createObjectURL(blob);
-        _ttsCache[cacheKey] = url;
-        playUrl(url);
-      })
-      .catch(function () {
-        fallbackBrowserTTS(text, role, rate, onend, onplay);
-      });
+      function _doAzureFetch() {
+        if (_ttsCache[cacheKey]) { playUrl(_ttsCache[cacheKey]); return; }
+        fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, role: role, rate: rate || 1.0 })
+        })
+        .then(function (r) {
+          if (!r.ok) throw new Error('tts ' + r.status);
+          return r.blob();
+        })
+        .then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          _ttsCache[cacheKey] = url;
+          playUrl(url);
+        })
+        .catch(function () {
+          fallbackBrowserTTS(text, role, rate, onend, onplay);
+        });
+      }
+      _doAzureFetch();
     }
 
     function fallbackBrowserTTS(text, role, rate, onend, onplay) {
@@ -5707,9 +5769,9 @@
       if (idx % 2 === 0) { plpRenderPair(idx); }
       plpSetActive(d.role);
       var plpRole = isLearner ? 'learner' : 'local';
-      // Pre-fetch next sentence while current plays
+      // Pre-fetch next sentence while current plays (skip when static audio exists)
       var plpNextD = plpSeq[idx + 1];
-      if (plpNextD) {
+      if (plpNextD && !getStaticAudioUrl(plpNextD.zh)) {
         var plpNextRole = plpNextD.role === 'learner' ? 'learner' : 'local';
         var plpNextKey = plpNextRole + ':1.00:' + plpNextD.zh;
         if (!_ttsCache[plpNextKey]) {
@@ -5975,6 +6037,8 @@
 
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
+      // ── 加载静态音频映射表 ────────────────────────────────────
+      _loadAudioMap();
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
       if (!localStorage.getItem('echo_coin_reset_v9')) {
         try {
