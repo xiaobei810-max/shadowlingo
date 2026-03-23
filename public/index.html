@@ -1210,7 +1210,8 @@
       font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 22px;
       letter-spacing: -0.4px; line-height: 1.2;
     }
-    .aha-rows { display: flex; flex-direction: column; gap: 18px; margin-bottom: 26px; }
+    .aha-rows { display: flex; flex-direction: column; gap: 18px; margin-bottom: 26px;
+                width: fit-content; margin-left: auto; margin-right: auto; min-width: 60%; }
     .aha-row {
       display: flex; align-items: center; gap: 16px;
     }
@@ -1222,6 +1223,7 @@
       width: 100%; padding: 14px; background: #1fcc66; border: none;
       border-radius: 14px; color: #000; font-size: 16px; font-weight: 800;
       cursor: pointer; transition: background 0.15s; letter-spacing: 0.2px;
+      margin-top: 10px;
     }
     .aha-btn:hover { background: #18b859; }
 
@@ -3915,10 +3917,14 @@
       buildKara(s.zh, s.chars);
       resetKara();
 
-      // Context panel above (staff's preceding line for sentences 2-4)
+      // First/last sentence use contextBelow (response pair); middle sentences use context-above (prompt)
+      var isFirstSentence = (idx === 0);
+      var isLastSentence  = (idx === total - 1);
+
+      // Context panel above — shown for middle sentences (idx 1 … total-2) only
       var ctxPanel = document.getElementById('context-panel');
       if (ctxPanel) {
-        if (s.context) {
+        if (s.context && !isFirstSentence && !isLastSentence) {
           ctxPanel.style.display = 'block';
           var ctxSpeaker = document.getElementById('ctx-speaker');
           var ctxZh = document.getElementById('ctx-zh');
@@ -3932,9 +3938,23 @@
           ctxPanel.style.display = 'none';
         }
       }
-      // Context panel below — hidden to keep page to 2 sentences max
+      // Context panel below — shown for first & last sentence (pairs learner line with Mingxuan's response)
       var ctxBelowPanel = document.getElementById('context-panel-below');
-      if (ctxBelowPanel) ctxBelowPanel.style.display = 'none';
+      if (ctxBelowPanel) {
+        if ((isFirstSentence || isLastSentence) && s.contextBelow) {
+          ctxBelowPanel.style.display = 'block';
+          var cbSpeaker = document.getElementById('ctx-speaker-below');
+          var cbZh      = document.getElementById('ctx-zh-below');
+          var cbEn      = document.getElementById('ctx-en-below');
+          var cbBtn     = document.getElementById('ctx-play-btn-below');
+          if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker;
+          buildCtxKara(cbZh, s.contextBelow.zh, s.contextBelow.pinyin);
+          if (cbEn) cbEn.textContent = s.contextBelow.en;
+          if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
+        } else {
+          ctxBelowPanel.style.display = 'none';
+        }
+      }
 
       if (el("pinyin")) el("pinyin").textContent = s.pinyin;
       if (el("en")) el("en").textContent = s.en;
