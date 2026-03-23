@@ -3738,14 +3738,26 @@
       return base.replace('v', 'ü');
     }
 
+    // 判断字符是否为标点（不应作为独立 flex 项，应附在前一字符后）
+    function isPunct(c) {
+      return /[，。！？、：；（）【】""''「」…—～,.!?;:()\s]/.test(c);
+    }
+
     function buildKara(text, chars) {
       var wrap = document.getElementById("kara");
       wrap.innerHTML = "";
-      // 建立 字→拼音 队列（同一个字可能出现多次）
       var pyQ = {}, pyI = {};
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
 
+      var lastKchar = null;
       Array.from(text).forEach(function (c) {
+        // 标点附在前一个字符后，避免单独换行
+        if (isPunct(c) && lastKchar) {
+          var nodes = lastKchar.childNodes;
+          // 文字节点是最后一个子节点
+          nodes[nodes.length - 1].textContent += c;
+          return;
+        }
         var kchar = document.createElement("span");
         kchar.className = "kchar";
 
@@ -3759,6 +3771,7 @@
         kchar.appendChild(rt);
         kchar.appendChild(document.createTextNode(c));
         wrap.appendChild(kchar);
+        lastKchar = kchar;
       });
     }
 
@@ -4654,7 +4667,13 @@
         return s.length > 0 && /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(s);
       });
       var rIdx = 0;
+      var lastSpan = null;
       Array.from(zhText).forEach(function (c) {
+        if (isPunct(c) && lastSpan) {
+          var nodes = lastSpan.childNodes;
+          nodes[nodes.length - 1].textContent += c;
+          return;
+        }
         var span = document.createElement('span');
         span.className = 'ctx-kchar';
         var rt = document.createElement('span');
@@ -4663,6 +4682,7 @@
         span.appendChild(rt);
         span.appendChild(document.createTextNode(c));
         containerEl.appendChild(span);
+        lastSpan = span;
       });
     }
 
@@ -5034,7 +5054,14 @@
       var rawSyls = (pinyinStr || '').trim().split(/\s+/).filter(function (s) { return s.length > 0; });
       rawSyls = rawSyls.filter(function (s) { return /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/.test(s); });
       var rIdx = 0;
+      var lastSpan = null;
       Array.from(text).forEach(function (c) {
+        if (isPunct(c) && lastSpan) {
+          // 标点附在前一字符的 dlp-hz 后，不新建 flex 项
+          var hz = lastSpan.querySelector('.dlp-hz');
+          if (hz) hz.textContent += c;
+          return;
+        }
         var span = document.createElement('span');
         span.className = 'dlp-kchar';
         var pySpan = document.createElement('span');
@@ -5050,6 +5077,7 @@
         span.appendChild(pySpan);
         span.appendChild(hzSpan);
         wrap.appendChild(span);
+        lastSpan = span;
       });
     }
 
@@ -5924,13 +5952,14 @@
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v5')) {
+      if (!localStorage.getItem('echo_coin_reset_v6')) {
         try {
           localStorage.removeItem('echo_coins');
+          localStorage.removeItem('echo_coin_aha_seen'); // reset Aha! modal so it shows fresh
           Object.keys(localStorage).forEach(function(k) {
-            if (/^echo_earn_/.test(k)) localStorage.removeItem(k);
+            if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v5', '1');
+          localStorage.setItem('echo_coin_reset_v6', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
