@@ -5,26 +5,26 @@ const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
 
 // Voice config per role
 const VOICES = {
-  // ── Nora（诺拉）：美国女留学生，HSK2-3，跨语言合成 → 带外国口音的中文
-  // en-US-AvaMultilingualNeural: 自然亲切的美国年轻女性，多语言模型
+  // ── Nora（诺拉）：美国女留学生，HSK2-3，外国口音明显，语速较慢
+  // en-US-AvaMultilingualNeural 跨语言合成：用英语引擎读中文 → 外国口音
+  // rateScale 0.82：刻意放慢，模拟非母语者逐字斟酌的节奏
   learner: {
     name:       'en-US-AvaMultilingualNeural',
     xmlLang:    'en-US',
-    crossLang:  'zh-CN',   // <lang xml:lang="zh-CN"> 包裹中文文本
+    crossLang:  'zh-CN',
     style:      null,
-    rateScale:  0.92,      // 非母语者语速稍慢
-    pitchAdj:   '+4%'      // 年轻女性音调
+    rateScale:  0.82,      // 明显慢于母语者，非母语感
+    pitchAdj:   '+6%'      // 音调偏高，外国口音特征
   },
-  // ── 赵明轩（明轩）：热情开朗的中国男学长，语速稍快，口语化
-  // zh-CN-YunxiNeural: 年轻中文男声，支持 chat 风格（接地气、自然活泼）
+  // ── 赵明轩：阳光学长，地道普通话，语速自然（不快）
   local: {
     name:      'zh-CN-YunxiNeural',
     xmlLang:   'zh-CN',
-    style:     'chat',     // 轻松聊天风格，符合阳光学长定位
-    rateScale:  1.10,      // 语速稍快，体现活力
+    style:     'chat',     // 轻松聊天风格
+    rateScale:  1.02,      // 接近正常语速，不刻意加快
     pitchAdj:  '+2%'
   },
-  // ── 大卫（David）：保留卢克的声音，美国男生，留作后续角色
+  // ── 大卫（David）：保留卢克声音，美国男生，留作后续角色
   david: {
     name:       'en-US-AndrewMultilingualNeural',
     xmlLang:    'en-US',
@@ -33,8 +33,8 @@ const VOICES = {
     rateScale:  0.95,
     pitchAdj:   '+8%'
   },
-  // ── 林晚（Lin Wan）：清脆亲切，留作后续故事
-  linwan: {
+  // ── 夏七七（Xia Qiqi）：清脆亲切女声，后续角色
+  xiaqiqi: {
     name:     'zh-CN-XiaoxiaoNeural',
     xmlLang:  'zh-CN',
     style:    'customerservice',

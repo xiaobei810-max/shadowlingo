@@ -2101,7 +2101,7 @@
       <!-- 对方台词面板（上方，无前置台词时隐藏） -->
       <div class="context-panel" id="context-panel" style="display:none">
         <div class="ctx-header">
-          <span class="ctx-speaker" id="ctx-speaker">工作人员 · Staff</span>
+          <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
         </div>
         <div class="ctx-zh" id="ctx-zh"></div>
@@ -2133,7 +2133,7 @@
       <!-- 下方配对台词面板（用于卢克开口时显示对方回应） -->
       <div class="context-panel" id="context-panel-below" style="display:none">
         <div class="ctx-header">
-          <span class="ctx-speaker" id="ctx-speaker-below">工作人员 · Staff</span>
+          <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
         </div>
         <div class="ctx-zh" id="ctx-zh-below"></div>
@@ -5323,7 +5323,7 @@
       setTimeout(function () { window.speechSynthesis.speak(utter); }, 50);
     }
 
-    // 语音选择 —— local=工作人员(中国女性20s), learner=卢克(澳大利亚男性)
+    // 语音选择 —— local=赵明轩(中国男性20s), learner=Nora(美国女性20s)
     var _voiceCache = {};
     function pickVoice(role) {
       if (_voiceCache[role]) return _voiceCache[role];
@@ -5433,7 +5433,7 @@
     // 进入第 2 步：Your Turn
     function enterDialogStep2() {
       dialogStep = 2;
-      setStepTitle("第2步：轮到你说 🎯", "上方听工作人员，下方轮到你用中文回答");
+      setStepTitle("第2步：轮到你说 🎯", "上方听赵明轩，下方轮到你用中文回答");
       dialogRoundIdx = 0;
       renderDialogYourTurn();
     }
@@ -5595,8 +5595,8 @@
     }
 
     function plpSetActive(role) {
-      var topPanel = document.getElementById('plp-panel-top');   // 卢克（learner）
-      var botPanel = document.getElementById('plp-panel-bottom'); // 工作人员（local）
+      var topPanel = document.getElementById('plp-panel-top');   // Nora（learner）
+      var botPanel = document.getElementById('plp-panel-bottom'); // 赵明轩（local）
       if (!topPanel || !botPanel) return;
       if (role === 'learner') {
         topPanel.classList.remove('dimmed'); topPanel.classList.add('active');
@@ -6029,11 +6029,11 @@
         <div class="plp-header-sub">听一遍完整对话 · Listen to the full dialogue</div>
       </div>
     </div>
-    <!-- 上半部分：卢克（先说话） -->
+    <!-- 上半部分：Nora（先说话） -->
     <div class="plp-panel plp-panel-top dimmed" id="plp-panel-top">
       <div class="plp-speaker-row">
         <div>
-          <div class="plp-name">卢克 · Luke</div>
+          <div class="plp-name">Nora · 诺拉</div>
           <div class="plp-role-tag">You · 你（学员 Learner）</div>
         </div>
       </div>
@@ -6043,12 +6043,12 @@
         <div class="plp-en" id="plp-en-top"></div>
       </div>
     </div>
-    <!-- 下半部分：工作人员 -->
+    <!-- 下半部分：赵明轩 -->
     <div class="plp-panel plp-panel-bottom dimmed" id="plp-panel-bottom">
       <div class="plp-speaker-row">
         <img src="mascot.jpg" alt="Staff" class="plp-avatar" onerror="this.style.display='none'" />
         <div>
-          <div class="plp-name">工作人员 · Staff</div>
+          <div class="plp-name">赵明轩 · Mingxuan</div>
           <div class="plp-role-tag">Local · 本地说话人 Native Speaker</div>
         </div>
       </div>
@@ -6072,7 +6072,7 @@
     <div class="dlp-header">
       <div>
         <div class="dlp-title">完整对话 · 先听一遍</div>
-        <div class="dlp-subtitle">上：工作人员 · 下：卢克 —— 每句带拼音和英文</div>
+        <div class="dlp-subtitle">上：赵明轩 · 下：Nora —— 每句带拼音和英文</div>
       </div>
       <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">跳过，去练习 ▶</button>
     </div>
@@ -6082,7 +6082,7 @@
         <div class="dlp-speaker-row">
           <img src="mascot.jpg" alt="Lin Yue" class="dlp-avatar" onerror="this.style.display='none'" />
           <div>
-            <div class="dlp-name">工作人员</div>
+            <div class="dlp-name">赵明轩</div>
             <div class="dlp-role-tag">Local · 本地说话人</div>
           </div>
         </div>
@@ -6094,12 +6094,12 @@
           <div class="dlp-en" id="dlp-en-local"></div>
         </div>
       </div>
-      <!-- 下半部分：卢克 -->
+      <!-- 下半部分：Nora -->
       <div class="dlp-block learner dimmed" id="dlp-block-learner">
         <div class="dlp-speaker-row">
-          <img src="luke.png" alt="Luke" class="dlp-avatar" onerror="this.style.display='none'" />
+          <img src="luke.png" alt="Nora" class="dlp-avatar" onerror="this.style.display='none'" />
           <div>
-            <div class="dlp-name">卢克</div>
+            <div class="dlp-name">Nora</div>
             <div class="dlp-role-tag">You · 学员</div>
           </div>
         </div>
