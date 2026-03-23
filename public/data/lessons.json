@@ -31,15 +31,15 @@
         {
           "speaker": "明轩 · Mingxuan",
           "role": "local",
-          "zh": "你是去京华大学的留学生？",
-          "pinyin": "Nǐ shì qù Jīng huá dà xué de liú xué shēng?",
+          "zh": "你是去京华大学的留学生吗？",
+          "pinyin": "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?",
           "en": "Are you an international student going to Jinghua University?"
         },
         {
           "speaker": "Nora",
           "role": "learner",
-          "zh": "对，我是 Nora。",
-          "pinyin": "Duì, wǒ shì Nora.",
+          "zh": "对，我是诺拉。",
+          "pinyin": "Duì, wǒ shì Nuò lā.",
           "en": "Yes, I'm Nora."
         },
         {

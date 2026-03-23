@@ -2254,7 +2254,7 @@
             pinyin: "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
             en: "Thank you. Does the bus go to Jinghua University?",
             context: { speaker: "明轩 · Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
-            contextBelow: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?", en: "Are you an international student going to Jinghua University?" },
+            contextBelow: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
             role: "learner",
             start: 0, end: 0,
             praise: "🌟 追问很自然！Natural follow-up!",
@@ -2267,17 +2267,18 @@
             ]
           },
           {
-            zh: "对，我是 Nora。",
-            pinyin: "Duì, wǒ shì Nora.",
+            zh: "对，我是诺拉。",
+            pinyin: "Duì, wǒ shì Nuò lā.",
             en: "Yes, I'm Nora.",
-            context: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?", en: "Are you an international student going to Jinghua University?" },
+            context: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
             contextBelow: { speaker: "明轩 · Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
             role: "learner",
             start: 0, end: 0,
             praise: "😎 简洁有力！Nice and confident!",
             hint: "【对】as confirmation at the start flows naturally in spoken Chinese",
             chars: [
-              { c: "对", p: "dui4" }, { c: "我", p: "wo3" }, { c: "是", p: "shi4" }
+              { c: "对", p: "dui4" }, { c: "我", p: "wo3" }, { c: "是", p: "shi4" },
+              { c: "诺", p: "nuo4" }, { c: "拉", p: "la1" }
             ]
           },
           {
@@ -2355,8 +2356,8 @@
             pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?",
             en: "Are you an international student going to Jinghua University?" },
           { speaker: "Nora", role: "learner",
-            zh: "对，我是 Nora。",
-            pinyin: "Duì, wǒ shì Nora.",
+            zh: "对，我是诺拉。",
+            pinyin: "Duì, wǒ shì Nuò lā.",
             en: "Yes, I'm Nora." },
           { speaker: "明轩 · Mingxuan", role: "local",
             zh: "太好了！我是来接你的。",
@@ -5923,13 +5924,13 @@
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v4')) {
+      if (!localStorage.getItem('echo_coin_reset_v5')) {
         try {
           localStorage.removeItem('echo_coins');
           Object.keys(localStorage).forEach(function(k) {
             if (/^echo_earn_/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v4', '1');
+          localStorage.setItem('echo_coin_reset_v5', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
