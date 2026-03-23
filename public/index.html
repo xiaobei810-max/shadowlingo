@@ -361,6 +361,14 @@
       word-break: keep-all;
     }
 
+    /* Punctuation fix: group wraps kchar + trailing punct as one flex item */
+    .kchar-group {
+      display: inline-flex; flex-direction: row; align-items: flex-end;
+    }
+    .kpunct { line-height: 1; color: #e2e8f0; }
+    .dlp-kara .kpunct { font-size: 22px; font-weight: 700; }
+    #pre-listen-page .dlp-kara .kpunct { font-size: 28px; }
+
     /* Each char is a vertical stack: pinyin on top, hanzi below */
     .kchar {
       display: inline-flex;
@@ -2006,10 +2014,10 @@
 
     /* ── 拼音/英文 Toggle ────────────────────────────────────── */
     .toggle-row {
-      display: flex; gap: 8px; justify-content: center; padding: 8px 20px 0;
+      display: flex; gap: 20px; justify-content: center; padding: 8px 20px 0;
     }
     .tgl-btn {
-      padding: 6px 14px; border-radius: 99px; border: 1.5px solid var(--green);
+      padding: 6px 22px; border-radius: 99px; border: 1.5px solid var(--green);
       background: rgba(34,197,94,0.12); color: var(--green);
       cursor: pointer; transition: all 0.2s;
       display: flex; align-items: center; gap: 4px;
@@ -2115,7 +2123,7 @@
       <!-- 诺拉练习面板（下方） -->
       <div class="sentence-box">
         <div class="learner-panel-hdr">
-          <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">Nora · 诺拉</span>
+          <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">诺拉 · Nora</span>
           <div style="display:flex;align-items:center;gap:8px;">
             <div class="mascot-wrap" style="width:28px;height:28px;">
               <img class="mascot-img" id="mascot" src="mascot.jpg" alt="mascot" style="width:28px;height:28px;" onerror="this.style.display='none'" />
@@ -3752,29 +3760,31 @@
       var pyQ = {}, pyI = {};
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
 
-      var lastKchar = null;
+      var lastGroup = null;
       Array.from(text).forEach(function (c) {
-        // 标点附在前一个字符后，避免单独换行
-        if (isPunct(c) && lastKchar) {
-          var nodes = lastKchar.childNodes;
-          // 文字节点是最后一个子节点
-          nodes[nodes.length - 1].textContent += c;
+        // 标点作为 kpunct 附在前一个 kchar-group 内，不新建 flex 项
+        if (isPunct(c) && lastGroup) {
+          var punct = document.createElement("span");
+          punct.className = "kpunct";
+          punct.textContent = c;
+          lastGroup.appendChild(punct);
           return;
         }
         var kchar = document.createElement("span");
         kchar.className = "kchar";
-
         var rt = document.createElement("span");
         rt.className = "krt";
         var idx = pyI[c] || 0;
         var py = pyQ[c] ? (pyQ[c][idx] || '') : '';
         pyI[c] = idx + 1;
         rt.textContent = toToneMark(py);
-
         kchar.appendChild(rt);
         kchar.appendChild(document.createTextNode(c));
-        wrap.appendChild(kchar);
-        lastKchar = kchar;
+        var group = document.createElement("span");
+        group.className = "kchar-group";
+        group.appendChild(kchar);
+        wrap.appendChild(group);
+        lastGroup = group;
       });
     }
 
@@ -3960,7 +3970,7 @@
       if (el("progress")) el("progress").style.width = ((idx + 1) / total * 100) + "%";
       // 动态更新练习面板的角色名（支持多课不同主角）
       var lpName = document.getElementById('learner-panel-name');
-      if (lpName) lpName.textContent = s.speaker || (lesson.learnerName || 'Nora · 诺拉');
+      if (lpName) lpName.textContent = s.speaker || (lesson.learnerName || '诺拉 · Nora');
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
@@ -4674,11 +4684,13 @@
         return s.length > 0 && /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(s);
       });
       var rIdx = 0;
-      var lastSpan = null;
+      var lastGroup = null;
       Array.from(zhText).forEach(function (c) {
-        if (isPunct(c) && lastSpan) {
-          var nodes = lastSpan.childNodes;
-          nodes[nodes.length - 1].textContent += c;
+        if (isPunct(c) && lastGroup) {
+          var punct = document.createElement('span');
+          punct.className = 'kpunct';
+          punct.textContent = c;
+          lastGroup.appendChild(punct);
           return;
         }
         var span = document.createElement('span');
@@ -4688,8 +4700,11 @@
         if (/[\u4e00-\u9fff]/.test(c)) { rt.textContent = rawSyls[rIdx] || ''; rIdx++; }
         span.appendChild(rt);
         span.appendChild(document.createTextNode(c));
-        containerEl.appendChild(span);
-        lastSpan = span;
+        var group = document.createElement('span');
+        group.className = 'kchar-group';
+        group.appendChild(span);
+        containerEl.appendChild(group);
+        lastGroup = group;
       });
     }
 
@@ -5059,12 +5074,13 @@
       var rawSyls = (pinyinStr || '').trim().split(/\s+/).filter(function (s) { return s.length > 0; });
       rawSyls = rawSyls.filter(function (s) { return /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/.test(s); });
       var rIdx = 0;
-      var lastSpan = null;
+      var lastGroup = null;
       Array.from(text).forEach(function (c) {
-        if (isPunct(c) && lastSpan) {
-          // 标点附在前一字符的 dlp-hz 后，不新建 flex 项
-          var hz = lastSpan.querySelector('.dlp-hz');
-          if (hz) hz.textContent += c;
+        if (isPunct(c) && lastGroup) {
+          var punct = document.createElement('span');
+          punct.className = 'kpunct';
+          punct.textContent = c;
+          lastGroup.appendChild(punct);
           return;
         }
         var span = document.createElement('span');
@@ -5081,8 +5097,11 @@
         }
         span.appendChild(pySpan);
         span.appendChild(hzSpan);
-        wrap.appendChild(span);
-        lastSpan = span;
+        var group = document.createElement('span');
+        group.className = 'kchar-group';
+        group.appendChild(span);
+        wrap.appendChild(group);
+        lastGroup = group;
       });
     }
 
@@ -6068,7 +6087,7 @@
     <div class="plp-panel plp-panel-top dimmed" id="plp-panel-top">
       <div class="plp-speaker-row">
         <div>
-          <div class="plp-name">Nora · 诺拉</div>
+          <div class="plp-name">诺拉 · Nora</div>
           <div class="plp-role-tag">You · 你（学员 Learner）</div>
         </div>
       </div>
@@ -6107,7 +6126,7 @@
     <div class="dlp-header">
       <div>
         <div class="dlp-title">完整对话 · 先听一遍</div>
-        <div class="dlp-subtitle">上：赵明轩 · 下：Nora —— 每句带拼音和英文</div>
+        <div class="dlp-subtitle">上：赵明轩 · 下：诺拉 · Nora —— 每句带拼音和英文</div>
       </div>
       <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">跳过，去练习 ▶</button>
     </div>
@@ -6134,7 +6153,7 @@
         <div class="dlp-speaker-row">
           <img src="luke.png" alt="Nora" class="dlp-avatar" onerror="this.style.display='none'" />
           <div>
-            <div class="dlp-name">Nora</div>
+            <div class="dlp-name">诺拉 · Nora</div>
             <div class="dlp-role-tag">You · 学员</div>
           </div>
         </div>
