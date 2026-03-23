@@ -2233,7 +2233,7 @@
     const LESSONS = [
       {
         id: "lesson-1",
-        titleZh: "第一课：机场问路", titleEn: "Lesson 1: The Unexpected Pickup",
+        titleZh: "第一课：机场相遇", titleEn: "Lesson 1: Encounter at the Airport",
         audio: "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a",
         sentences: [
           {
@@ -2340,7 +2340,7 @@
     const LESSONS_META = [
       {
         id: 1,
-        title: "机场问路",
+        title: "机场相遇",
         scene: "Nora 刚抵达机场，找不到接机人，只好向路人询问去市区的路线。",
         dialogue: [
           { speaker: "Nora", role: "learner",
@@ -5960,14 +5960,14 @@
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v7')) {
+      if (!localStorage.getItem('echo_coin_reset_v8')) {
         try {
           localStorage.removeItem('echo_coins');
           localStorage.removeItem('echo_coin_aha_seen'); // reset Aha! modal so it shows fresh
           Object.keys(localStorage).forEach(function(k) {
             if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v7', '1');
+          localStorage.setItem('echo_coin_reset_v8', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
@@ -5999,8 +5999,8 @@
     </div>
     <div class="cover-inner">
       <div class="cover-lesson-num">第一课 · Lesson 1</div>
-      <div class="cover-title-zh" id="cover-title-zh">机场问路</div>
-      <div class="cover-title-en" id="cover-title-en">The Unexpected Pickup</div>
+      <div class="cover-title-zh" id="cover-title-zh">机场相遇</div>
+      <div class="cover-title-en" id="cover-title-en">Encounter at the Airport</div>
       <div class="cover-divider"></div>
       <div class="cover-scene-zh" id="cover-scene-zh">Nora 刚抵达机场，找不到接机人，<br>只好向路人询问去市区的路线。</div>
       <div class="cover-scene-en" id="cover-scene-en">Nora has just arrived at the airport and can't find her pickup, so she asks a passerby for directions to the city center.</div>
@@ -6063,7 +6063,7 @@
   <div class="plp-inner">
     <div class="plp-header">
       <div>
-        <div class="plp-header-title" id="plp-title">机场问路 · Asking for Directions at the Airport</div>
+        <div class="plp-header-title" id="plp-title">机场相遇 · Encounter at the Airport</div>
         <div class="plp-header-sub">听一遍完整对话 · Listen to the full dialogue</div>
       </div>
     </div>
