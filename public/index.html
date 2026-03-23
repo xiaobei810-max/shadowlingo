@@ -2200,7 +2200,6 @@
       <!-- 成绩单容器 -->
       <div class="score-summary-card">
         <div class="avg-score" id="avg-score">--</div>
-        <div class="avg-label">本课平均分 · Lesson Score</div>
         <div class="score-grade" id="score-grade"></div>
         <div class="praise-block" id="praise-block"></div>
         <!-- 本课获得回声币 -->
@@ -4832,9 +4831,7 @@
           "<div style='font-size:15px;font-weight:600;margin-bottom:8px;color:#94a3b8;'>💡 点击麦克风录音，才能获得分数</div>" +
           "<div style='font-size:13px;color:#64748b;'>Try recording each sentence to see your score!</div>";
       } else {
-        var completionNote = recorded < totalSentences
-          ? "<div style='font-size:12px;color:#64748b;margin-bottom:6px;'>📊 已练 " + recorded + "/" + totalSentences + " 句（未练句子计 0 分）</div>"
-          : "";
+        var completionNote = "";
         var best = PRAISES.find(function (p) { return overall >= p.min; });
         var praiseMsg = best ? best.msgs[Math.floor(Math.random() * best.msgs.length)] : "";
         var lastS = LESSONS[lessonIdx].sentences[idx];
@@ -4863,7 +4860,7 @@
         } else {
           // 0 币：展示但不显示动画硬币
           coinText.textContent = '本课回声币：0';
-          coinSub.textContent  = '继续练习争取更高分来赚取回声币！';
+          coinSub.textContent  = '';
           coinRow.style.display = 'flex';
           // 隐藏大硬币，只留文字
           var coinFloat = document.getElementById('completion-coin-float');
@@ -5960,14 +5957,14 @@
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v8')) {
+      if (!localStorage.getItem('echo_coin_reset_v9')) {
         try {
           localStorage.removeItem('echo_coins');
           localStorage.removeItem('echo_coin_aha_seen'); // reset Aha! modal so it shows fresh
           Object.keys(localStorage).forEach(function(k) {
             if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v8', '1');
+          localStorage.setItem('echo_coin_reset_v9', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
