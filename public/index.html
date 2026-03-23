@@ -1208,7 +1208,7 @@
     }
     .aha-title {
       font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 22px;
-      letter-spacing: -0.4px; line-height: 1.2;
+      letter-spacing: -0.4px; line-height: 1.2; text-align: center;
     }
     .aha-rows { display: flex; flex-direction: column; gap: 18px; margin-bottom: 26px;
                 width: fit-content; margin-left: auto; margin-right: auto; min-width: 60%; }
@@ -2319,11 +2319,11 @@
     ];
 
     const PRAISES = [
-      { min: 100, msgs: ["💯 完美！声调拿捏精准！Perfect tones!"] },
-      { min: 90,  msgs: ["🏆 优秀！几乎像个本地人！Almost like a local!", "🌟 太棒了，说得非常地道！So natural!"] },
-      { min: 80,  msgs: ["👏 不错！继续保持！Good job! Keep it up!", "💪 发音很稳，越来越自然了！Getting smoother!"] },
-      { min: 70,  msgs: ["🤔 还可以！注意声调哦。Not bad! Watch those tones.", "💡 有进步，多听几遍能做到！Keep it up!"] },
-      { min: 0,   msgs: ["💪 别灰心！再试一次！Don't give up! Try again!", "🌱 开口就是最大的勇气！Brave start!"] }
+      { min: 100, msgs: ["💯 完美！声调拿捏精准！<br>Perfect tones!"] },
+      { min: 90,  msgs: ["🏆 优秀！几乎像个本地人！<br>Almost like a local!", "🌟 太棒了，说得非常地道！<br>So natural!"] },
+      { min: 80,  msgs: ["👏 不错！继续保持！<br>Good job! Keep it up!", "💪 发音很稳，越来越自然了！<br>Getting smoother!"] },
+      { min: 70,  msgs: ["🤔 还可以！注意声调哦。<br>Not bad! Watch those tones.", "💡 有进步，多听几遍能做到！<br>Keep it up!"] },
+      { min: 0,   msgs: ["💪 别灰心！再试一次！<br>Don't give up! Try again!", "🌱 开口就是最大的勇气！<br>Brave start!"] }
     ];
 
     // ── State ─────────────────────────────────────────────────
@@ -2593,7 +2593,7 @@
       ov.className = 'aha-overlay';
       ov.innerHTML =
         '<div class="aha-card">' +
-          '<div class="aha-title">🎉 First Echo Coin!</div>' +
+          '<div class="aha-title">First Echo Coin!</div>' +
           '<div class="aha-rows">' +
             '<div class="aha-row">' +
               '<span class="aha-icon">🎁</span>' +
@@ -4481,12 +4481,12 @@
       numEl.textContent = "0";
       numEl.style.color = score === 100 ? "" : color; // perfect uses gradient
 
-      var grade = score >= 95 ? "👑 完美发音！简直像个本地人！ Perfect! Just like a local!"
-        : score >= 85 ? "🌟 太棒了！语感非常自然流畅！ Awesome! Very natural flow!"
-        : score >= 70 ? "👏 表现不错！就差一点点完美了！ Great effort! You're almost there!"
-        : "💪 别灰心！影子跟读多练几次就顺了！ Keep trying! Practice makes perfect!";
+      var grade = score >= 95 ? "👑 完美发音！简直像个本地人！<br>Perfect! Just like a local!"
+        : score >= 85 ? "🌟 太棒了！语感非常自然流畅！<br>Awesome! Very natural flow!"
+        : score >= 70 ? "👏 表现不错！就差一点点完美了！<br>Great effort! You're almost there!"
+        : "💪 别灰心！影子跟读多练几次就顺了！<br>Keep trying! Practice makes perfect!";
       var gradeEl = document.getElementById("eval-grade");
-      gradeEl.textContent = grade;
+      gradeEl.innerHTML = grade;
       gradeEl.style.color = color;
 
       // eval-praise removed — grade label below coin is sufficient
@@ -4820,11 +4820,11 @@
       document.getElementById("avg-score").textContent = noPractice ? '--' : overall;
       document.getElementById("avg-score").style.color = oColor;
 
-      var grade = noPractice ? "🎤 未录音 No Practice" :
-        overall >= 90 ? "🏆 优秀 Excellent" :
-        overall >= 80 ? "🌟 良好 Great" :
-        overall >= 70 ? "💪 一般 Good" : "🌱 继续加油 Keep Going";
-      document.getElementById("score-grade").textContent = grade;
+      var grade = noPractice ? "🎤 未录音<br>No Practice" :
+        overall >= 90 ? "🏆 优秀<br>Excellent" :
+        overall >= 80 ? "🌟 良好<br>Great" :
+        overall >= 70 ? "💪 一般<br>Good" : "🌱 继续加油<br>Keep Going";
+      document.getElementById("score-grade").innerHTML = grade;
       document.getElementById("score-grade").style.color = oColor;
 
       if (noPractice) {
@@ -6192,7 +6192,6 @@
         </div>
         <div class="eval-result-area" id="eval-result-area">
           <div class="eval-score-num" id="eval-score-num">--</div>
-          <div class="eval-score-sub">发音评分</div>
           <!-- 回声币奖励（分数滚完后弹入） -->
           <div class="eval-coin-reward" id="eval-coin-reward">
             <div class="coin-float-wrap">
