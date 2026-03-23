@@ -5271,18 +5271,27 @@
     // ── Azure Neural TTS ──────────────────────────────────────────
     var _ttsCache = {};    // cacheKey → blob URL
     // ── Static audio map (loaded from /audio/audioMap.json) ──────
-    // Structure: { lessonId: { zhText: '/audio/lesson-1/line-N.mp3' } }
+    // audioMap.json format (produced by sync_audio.py):
+    //   { "lesson01": { "1": "/audio/lesson01/L01_01_Nora.mp3", ... } }
+    // Internally we index by lesson id ("lesson-1") + zh text for fast lookup.
     var _audioMap = {};
     function _loadAudioMap() {
       fetch('/audio/audioMap.json')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (data) {
           if (!data) return;
-          Object.keys(data).forEach(function (lessonId) {
-            if (!Array.isArray(data[lessonId])) return;
-            _audioMap[lessonId] = {};
-            data[lessonId].forEach(function (entry) {
-              if (entry.zh && entry.file) _audioMap[lessonId][entry.zh] = '/' + entry.file;
+          // Cross-reference with LESSONS_META to build zh-text keyed lookup.
+          // "lesson01" → LESSONS[0].id = "lesson-1"; line "1" → dialogue[0].zh
+          LESSONS.forEach(function (lesson, li) {
+            var meta = LESSONS_META[li];
+            if (!meta) return;
+            var mapKey = 'lesson' + String(li + 1).padStart(2, '0'); // "lesson01"
+            var lineMap = data[mapKey];
+            if (!lineMap) return;
+            _audioMap[lesson.id] = {};
+            meta.dialogue.forEach(function (d, di) {
+              var filePath = lineMap[String(di + 1)];  // 1-indexed key
+              if (filePath && d.zh) _audioMap[lesson.id][d.zh] = filePath;
             });
           });
           console.log('[Audio] Static map loaded:', Object.keys(_audioMap));

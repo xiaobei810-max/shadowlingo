@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.local
+.env*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build output
+.vercel/
+dist/
+
+# Generated audio files (large; commit manually when ready to deploy)
+# public/audio/**/*.mp3
+# Uncomment the line above to exclude MP3s from git.
+# For now we keep them tracked so Vercel picks them up automatically.

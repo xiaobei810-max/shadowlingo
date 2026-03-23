@@ -1,13 +1,8 @@
 {
-  "_comment": "Static audio map — add MP3 files to the lesson folders, then entries here take precedence over TTS API calls.",
-  "lesson-1": [
-    { "line": 0, "role": "learner", "zh": "你好，请问去市区怎么走？",         "file": "audio/lesson-1/line-0.mp3" },
-    { "line": 1, "role": "local",   "zh": "往前走，右拐坐大巴。",             "file": "audio/lesson-1/line-1.mp3" },
-    { "line": 2, "role": "learner", "zh": "谢谢。大巴到京华大学吗？",         "file": "audio/lesson-1/line-2.mp3" },
-    { "line": 3, "role": "local",   "zh": "你是去京华大学的留学生吗？",       "file": "audio/lesson-1/line-3.mp3" },
-    { "line": 4, "role": "learner", "zh": "对，我是诺拉。",                   "file": "audio/lesson-1/line-4.mp3" },
-    { "line": 5, "role": "local",   "zh": "太好了！我是来接你的。",           "file": "audio/lesson-1/line-5.mp3" },
-    { "line": 6, "role": "learner", "zh": "真的吗？太感谢了。",               "file": "audio/lesson-1/line-6.mp3" },
-    { "line": 7, "role": "local",   "zh": "我叫明轩。行李给我吧。",           "file": "audio/lesson-1/line-7.mp3" }
-  ]
+  "_readme": "由 sync_audio.py 自动生成。运行脚本后此文件会被覆盖。格式: { lessonXX: { lineNum: url } }",
+  "lesson01": {},
+  "lesson02": {},
+  "lesson03": {},
+  "lesson04": {},
+  "lesson05": {}
 }
