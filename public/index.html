@@ -1784,11 +1784,13 @@
       display: flex; align-items: center; justify-content: center;
       text-align: center; padding: 0; flex-shrink: 0;
     }
-    .plp-header-title { font-size: 18px; font-weight: 700; color: var(--text); text-align: center; }
-    .plp-header-sub { font-size: 13px; color: #94a3b8; margin-top: 4px; text-align: center; }
+    .plp-header-title { text-align: center; }
+    .plp-title-zh { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.3; }
+    .plp-title-en { font-size: 13px; color: #94a3b8; margin-top: 4px; font-weight: 400; }
+    .plp-header-sub { font-size: 12px; color: #64748b; margin-top: 8px; text-align: center; letter-spacing: 0.2px; }
     .plp-cards-wrap {
       flex: 1; display: flex; flex-direction: column;
-      justify-content: center; gap: 18px; padding: 20px 20px 20px;
+      justify-content: center; gap: 14px; padding: 14px 20px 8px;
     }
     .plp-panel {
       flex: none; display: flex; flex-direction: column;
@@ -1924,9 +1926,9 @@
     }
     #cover-page.show { display: flex; }
     .cover-inner {
-      flex: 1; width: 100%; max-width: 480px; padding: 32px 32px 56px;
+      flex: 1; width: 100%; max-width: 480px; padding: 48px 32px 56px;
       display: flex; flex-direction: column; align-items: center;
-      justify-content: center; text-align: center; gap: 16px;
+      justify-content: flex-start; text-align: center; gap: 16px;
     }
     .cover-lesson-num {
       font-size: 24px; font-weight: 700; color: var(--green);
@@ -1962,8 +1964,8 @@
     }
     #flashcard-page.show { display: flex; }
     .fc-inner {
-      flex: 1; width: 100%; max-width: 480px; padding: 20px 20px 40px;
-      display: flex; flex-direction: column; justify-content: center; gap: 16px;
+      flex: 1; width: 100%; max-width: 480px; padding: 48px 20px 40px;
+      display: flex; flex-direction: column; justify-content: flex-start; gap: 16px;
     }
     .fc-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -5694,8 +5696,9 @@
         var lesson = LESSONS[lessonIdx] || LESSONS[0];
         var lessonNum = lessonIdx + 1;
         var enTitle = lesson && lesson.titleEn ? lesson.titleEn.replace(/^Lesson \d+:\s*/i, '') : '';
-        titleEl.textContent = '第' + lessonNum + '课 ' + dialogLessonMeta.title +
-          (enTitle ? ' · Lesson ' + lessonNum + ' ' + enTitle : '');
+        titleEl.innerHTML =
+          '<div class="plp-title-zh">第' + lessonNum + '课 · ' + dialogLessonMeta.title + '</div>' +
+          (enTitle ? '<div class="plp-title-en">Lesson ' + lessonNum + ': ' + enTitle + '</div>' : '');
       }
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.add('show');
@@ -6194,7 +6197,10 @@
     <div class="plp-cards-wrap">
     <div class="plp-header">
       <div>
-        <div class="plp-header-title" id="plp-title">第一课 机场相遇 · Lesson 1 Encounter at the Airport</div>
+        <div class="plp-header-title" id="plp-title">
+          <div class="plp-title-zh">第1课 · 机场相遇</div>
+          <div class="plp-title-en">Lesson 1: Encounter at the Airport</div>
+        </div>
         <div class="plp-header-sub">听一遍完整对话 · Listen to the full dialogue</div>
       </div>
     </div>
