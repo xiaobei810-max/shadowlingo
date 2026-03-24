@@ -1778,17 +1778,17 @@
     #pre-listen-page.show { display: flex; }
     .plp-inner {
       width: 100%; max-width: 480px; display: flex; flex-direction: column;
-      flex: 1; padding: 0 0 32px;
+      flex: 1; padding: 0;
     }
     .plp-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 0; flex-shrink: 0;
     }
-    .plp-header-title { font-size: 19px; font-weight: 700; color: var(--text); }
-    .plp-header-sub { font-size: 13px; color: #94a3b8; margin-top: 3px; }
+    .plp-header-title { font-size: 18px; font-weight: 700; color: var(--text); text-align: center; }
+    .plp-header-sub { font-size: 13px; color: #94a3b8; margin-top: 4px; text-align: center; }
     .plp-cards-wrap {
       flex: 1; display: flex; flex-direction: column;
-      justify-content: center; gap: 16px; padding: 8px 20px 8px;
+      justify-content: center; gap: 18px; padding: 20px 20px 20px;
     }
     .plp-panel {
       flex: none; display: flex; flex-direction: column;
@@ -5692,8 +5692,10 @@
       var titleEl = document.getElementById('plp-title');
       if (titleEl && dialogLessonMeta.title) {
         var lesson = LESSONS[lessonIdx] || LESSONS[0];
+        var lessonNum = lessonIdx + 1;
         var enTitle = lesson && lesson.titleEn ? lesson.titleEn.replace(/^Lesson \d+:\s*/i, '') : '';
-        titleEl.textContent = dialogLessonMeta.title + (enTitle ? ' · ' + enTitle : '');
+        titleEl.textContent = '第' + lessonNum + '课 ' + dialogLessonMeta.title +
+          (enTitle ? ' · Lesson ' + lessonNum + ' ' + enTitle : '');
       }
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.add('show');
@@ -6188,14 +6190,14 @@
     <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:60%"></div></div>
   </div>
   <div class="plp-inner">
+    <!-- 对话卡片：标题+卡片整体垂直居中 -->
+    <div class="plp-cards-wrap">
     <div class="plp-header">
       <div>
-        <div class="plp-header-title" id="plp-title">机场相遇 · Encounter at the Airport</div>
+        <div class="plp-header-title" id="plp-title">第一课 机场相遇 · Lesson 1 Encounter at the Airport</div>
         <div class="plp-header-sub">听一遍完整对话 · Listen to the full dialogue</div>
       </div>
     </div>
-    <!-- 对话卡片：垂直居中于剩余空间 -->
-    <div class="plp-cards-wrap">
     <!-- 上半部分：Nora（先说话） -->
     <div class="plp-panel plp-panel-top dimmed" id="plp-panel-top">
       <div class="plp-speaker-row">
