@@ -1790,7 +1790,7 @@
     .plp-header-sub { font-size: 12px; color: #64748b; margin-top: 8px; text-align: center; letter-spacing: 0.2px; }
     .plp-cards-wrap {
       flex: 1; display: flex; flex-direction: column;
-      justify-content: center; gap: 14px; padding: 14px 20px 8px;
+      justify-content: flex-start; gap: 16px; padding: 32px 20px 20px;
     }
     .plp-panel {
       flex: none; display: flex; flex-direction: column;
@@ -6196,14 +6196,13 @@
     <!-- 对话卡片：标题+卡片整体垂直居中 -->
     <div class="plp-cards-wrap">
     <div class="plp-header">
-      <div>
-        <div class="plp-header-title" id="plp-title">
-          <div class="plp-title-zh">第1课 · 机场相遇</div>
-          <div class="plp-title-en">Lesson 1: Encounter at the Airport</div>
-        </div>
-        <div class="plp-header-sub">听一遍完整对话 · Listen to the full dialogue</div>
+      <div class="plp-header-title" id="plp-title">
+        <div class="plp-title-zh">第1课 · 机场相遇</div>
+        <div class="plp-title-en">Lesson 1: Encounter at the Airport</div>
       </div>
     </div>
+    <!-- 引导标签 -->
+    <div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:-4px;">🎧 先听完整对话</div>
     <!-- 上半部分：Nora（先说话） -->
     <div class="plp-panel plp-panel-top dimmed" id="plp-panel-top">
       <div class="plp-speaker-row">
