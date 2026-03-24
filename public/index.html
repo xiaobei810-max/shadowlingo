@@ -205,7 +205,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1px;
+      gap: 5px;
     }
 
     .lesson-title-zh {
@@ -296,7 +296,7 @@
       background: rgba(17,24,39,0.7);
       border: 1.5px solid var(--green);
       border-radius: 14px;
-      padding: 14px 18px 12px;
+      padding: 14px 18px 14px;
       margin-bottom: 10px;
       text-align: left;
     }
@@ -428,9 +428,8 @@
     }
 
     .info-box {
-      background: #0a1120;
-      border-radius: 14px;
-      padding: 14px 16px;
+      background: transparent;
+      padding: 0;
       text-align: left;
     }
 
@@ -1834,16 +1833,16 @@
     /* ── 双面板练习页 Dual-panel practice ─────────────────────── */
     .context-panel {
       background: rgba(17,24,39,0.7);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 14px;
-      padding: 14px 18px 12px;
+      padding: 14px 18px 14px;
       margin-bottom: 10px;
     }
     .ctx-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .ctx-speaker {
       font-size: 13px;
@@ -1869,7 +1868,7 @@
       font-weight: 700;
       color: var(--text);
       line-height: 1;
-      margin-bottom: 4px;
+      margin-bottom: 12px;
       display: flex;
       flex-wrap: wrap;
       gap: 4px 3px;
@@ -2025,7 +2024,7 @@
 
     /* ── 拼音/英文 Toggle ────────────────────────────────────── */
     .toggle-row {
-      display: flex; gap: 20px; justify-content: center; padding: 8px 20px 0;
+      display: flex; gap: 20px; justify-content: center; padding: 22px 20px 0;
     }
     .tgl-btn {
       padding: 6px 22px; border-radius: 99px; border: 1.5px solid var(--green);
@@ -2124,7 +2123,7 @@
       <!-- 对方台词面板（上方，无前置台词时隐藏） -->
       <div class="context-panel" id="context-panel" style="display:none">
         <div class="ctx-header">
-          <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Mingxuan</span>
+          <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
         </div>
         <div class="ctx-zh" id="ctx-zh"></div>
@@ -2153,7 +2152,7 @@
       <!-- 下方配对台词面板（用于卢克开口时显示对方回应） -->
       <div class="context-panel" id="context-panel-below" style="display:none">
         <div class="ctx-header">
-          <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Mingxuan</span>
+          <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
         </div>
         <div class="ctx-zh" id="ctx-zh-below"></div>
@@ -2256,7 +2255,7 @@
             pinyin: "Nǐ hǎo, qǐng wèn qù shì qū zěn me zǒu?",
             en: "Hello, excuse me, how do I get to the city center?",
             context: null,
-            contextBelow: { speaker: "明轩 · Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
+            contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
             role: "learner",
             start: 0, end: 4,
             praise: "👏 开口问路很棒！Great initiative!",
@@ -2272,8 +2271,8 @@
             zh: "谢谢。大巴到京华大学吗？",
             pinyin: "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
             en: "Thank you. Does the bus go to Jinghua University?",
-            context: { speaker: "明轩 · Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
-            contextBelow: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
+            context: { speaker: "赵明轩 · Zhao Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
+            contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
             role: "learner",
             start: 0, end: 0,
             praise: "🌟 追问很自然！Natural follow-up!",
@@ -2289,8 +2288,8 @@
             zh: "对，我是诺拉。",
             pinyin: "Duì, wǒ shì Nuò lā.",
             en: "Yes, I'm Nora.",
-            context: { speaker: "明轩 · Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
-            contextBelow: { speaker: "明轩 · Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
+            context: { speaker: "赵明轩 · Zhao Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
+            contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
             role: "learner",
             start: 0, end: 0,
             praise: "😎 简洁有力！Nice and confident!",
@@ -2304,8 +2303,8 @@
             zh: "真的吗？太感谢了。",
             pinyin: "Zhēn de ma? Tài gǎn xiè le.",
             en: "Really? Thank you so much.",
-            context: { speaker: "明轩 · Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
-            contextBelow: { speaker: "明轩 · Mingxuan", zh: "我叫明轩。行李给我吧。", pinyin: "Wǒ jiào Míng xuān. Xíng li gěi wǒ ba.", en: "I'm Mingxuan. Give me your luggage." },
+            context: { speaker: "赵明轩 · Zhao Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
+            contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "我叫明轩。行李给我吧。", pinyin: "Wǒ jiào Míng xuān. Xíng li gěi wǒ ba.", en: "I'm Mingxuan. Give me your luggage." },
             role: "learner",
             start: 0, end: 0,
             praise: "🔥 表达感谢很真诚！So genuine!",
@@ -2362,7 +2361,7 @@
             zh: "你好，请问去市区怎么走？",
             pinyin: "Nǐ hǎo, qǐng wèn qù shì qū zěn me zǒu?",
             en: "Hello, excuse me, how do I get to the city center?" },
-          { speaker: "明轩 · Mingxuan", role: "local",
+          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
             zh: "往前走，右拐坐大巴。",
             pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.",
             en: "Walk straight ahead, turn right to take the bus." },
@@ -2370,7 +2369,7 @@
             zh: "谢谢。大巴到京华大学吗？",
             pinyin: "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
             en: "Thank you. Does the bus go to Jinghua University?" },
-          { speaker: "明轩 · Mingxuan", role: "local",
+          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
             zh: "你是去京华大学的留学生吗？",
             pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?",
             en: "Are you an international student going to Jinghua University?" },
@@ -2378,7 +2377,7 @@
             zh: "对，我是诺拉。",
             pinyin: "Duì, wǒ shì Nuò lā.",
             en: "Yes, I'm Nora." },
-          { speaker: "明轩 · Mingxuan", role: "local",
+          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
             zh: "太好了！我是来接你的。",
             pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.",
             en: "Great! I'm here to pick you up." },
@@ -2386,7 +2385,7 @@
             zh: "真的吗？太感谢了。",
             pinyin: "Zhēn de ma? Tài gǎn xiè le.",
             en: "Really? Thank you so much." },
-          { speaker: "明轩 · Mingxuan", role: "local",
+          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
             zh: "我叫明轩。行李给我吧。",
             pinyin: "Wǒ jiào Míng xuān. Xíng li gěi wǒ ba.",
             en: "I'm Mingxuan. Give me your luggage." }
@@ -6213,7 +6212,7 @@
     <div class="plp-panel plp-panel-bottom dimmed" id="plp-panel-bottom">
       <div class="plp-speaker-row">
         <div>
-          <div class="plp-name">赵明轩 · Mingxuan</div>
+          <div class="plp-name">赵明轩 · Zhao Mingxuan</div>
           <div class="plp-role-tag">Local · 本地说话人 Native Speaker</div>
         </div>
       </div>
@@ -6237,7 +6236,7 @@
     <div class="dlp-header">
       <div>
         <div class="dlp-title">完整对话 · 先听一遍</div>
-        <div class="dlp-subtitle">上：赵明轩 · 下：诺拉 · Nora —— 每句带拼音和英文</div>
+        <div class="dlp-subtitle">上：赵明轩 Zhao Mingxuan · 下：诺拉 Nora —— 每句带拼音和英文</div>
       </div>
       <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">跳过，去练习 ▶</button>
     </div>
@@ -6246,7 +6245,7 @@
       <div class="dlp-block local dimmed" id="dlp-block-local">
         <div class="dlp-speaker-row">
           <div>
-            <div class="dlp-name">赵明轩</div>
+            <div class="dlp-name">赵明轩 · Zhao Mingxuan</div>
             <div class="dlp-role-tag">Local · 本地说话人</div>
           </div>
         </div>
