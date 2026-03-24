@@ -4724,9 +4724,9 @@
         var elapsed = performance.now() - start;
         chars.forEach(function (el, i) {
           var t = timings[i]; if (!t) return;
-          if (elapsed >= t.end)        el.className = 'ctx-kchar ctx-done';
-          else if (elapsed >= t.start) el.className = 'ctx-kchar ctx-active';
-          else                         el.className = 'ctx-kchar';
+          if (elapsed >= t.end * 1000)        el.className = 'ctx-kchar ctx-done';
+          else if (elapsed >= t.start * 1000) el.className = 'ctx-kchar ctx-active';
+          else                                el.className = 'ctx-kchar';
         });
         if (elapsed >= durationMs) {
           clearInterval(_ctxKaraTimer); _ctxKaraTimer = null;
