@@ -1786,11 +1786,15 @@
     }
     .plp-header-title { font-size: 19px; font-weight: 700; color: var(--text); }
     .plp-header-sub { font-size: 13px; color: #94a3b8; margin-top: 3px; }
+    .plp-cards-wrap {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; gap: 16px; padding: 8px 20px 8px;
+    }
     .plp-panel {
       flex: none; display: flex; flex-direction: column;
       padding: 16px 20px 14px; transition: opacity 0.3s;
       background: rgba(17,24,39,0.7); border: 1px solid var(--border);
-      border-radius: 14px; margin: 0 20px 10px;
+      border-radius: 14px; margin: 0;
     }
     .plp-panel-top { }
     .plp-panel-bottom { }
@@ -6190,6 +6194,8 @@
         <div class="plp-header-sub">听一遍完整对话 · Listen to the full dialogue</div>
       </div>
     </div>
+    <!-- 对话卡片：垂直居中于剩余空间 -->
+    <div class="plp-cards-wrap">
     <!-- 上半部分：Nora（先说话） -->
     <div class="plp-panel plp-panel-top dimmed" id="plp-panel-top">
       <div class="plp-speaker-row">
@@ -6218,6 +6224,7 @@
         <div class="plp-en" id="plp-en-bottom"></div>
       </div>
     </div>
+    </div><!-- /.plp-cards-wrap -->
     <!-- 按钮：上一页 · 播放 · 下一页 -->
     <div class="plp-footer">
       <button class="plp-replay-btn" onclick="plpGoBack()">◀ 上一页<br>Prev</button>
