@@ -2210,7 +2210,7 @@
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
     </div>
     <div class="completion-card">
-      <div class="completion-title">🎉 本课完成！</div>
+      <div class="completion-title">本课完成！</div>
       <div class="completion-sub">Lesson Complete!</div>
       <!-- 成绩单容器 -->
       <div class="score-summary-card">
@@ -4873,9 +4873,9 @@
       document.getElementById("avg-score").style.color = oColor;
 
       var grade = noPractice ? "🎤 未录音<br>No Practice" :
-        overall >= 90 ? "🏆 优秀<br>Excellent" :
-        overall >= 80 ? "🌟 良好<br>Great" :
-        overall >= 70 ? "💪 一般<br>Good" : "🌱 继续加油<br>Keep Going";
+        overall >= 90 ? "优秀<br>Excellent" :
+        overall >= 80 ? "良好<br>Great" :
+        overall >= 70 ? "一般<br>Good" : "继续加油<br>Keep Going";
       document.getElementById("score-grade").innerHTML = grade;
       document.getElementById("score-grade").style.color = oColor;
 
@@ -4884,13 +4884,9 @@
           "<div style='font-size:15px;font-weight:600;margin-bottom:8px;color:#94a3b8;'>💡 点击麦克风录音，才能获得分数</div>" +
           "<div style='font-size:13px;color:#64748b;'>Try recording each sentence to see your score!</div>";
       } else {
-        var completionNote = "";
-        var best = PRAISES.find(function (p) { return overall >= p.min; });
-        var praiseMsg = best ? best.msgs[Math.floor(Math.random() * best.msgs.length)] : "";
-        var lastS = LESSONS[lessonIdx].sentences[idx];
         document.getElementById("praise-block").innerHTML =
-          completionNote +
-          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>" + praiseMsg + "</div>";
+          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>✨ 发音纯正！几乎像个本地人！</div>" +
+          "<div style='font-size:13px;color:#94a3b8;'>Almost like a local!</div>";
       }
 
       // 本课回声币汇总（始终显示，0币也展示）
@@ -4903,7 +4899,7 @@
         if (coinFloat) coinFloat.style.display = ''; // reset in case previous run hid it
         if (_sessionCoinsEarned > 0) {
           coinText.textContent = '本课获得 +' + _sessionCoinsEarned + ' 回声币';
-          coinSub.textContent  = '累计余额：' + getCoins() + ' 枚';
+          if (coinSub) coinSub.style.display = 'none';
           coinRow.style.display = 'flex';
           setTimeout(function() {
             var icon = document.getElementById('completion-coin-icon');
