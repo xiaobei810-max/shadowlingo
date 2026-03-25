@@ -1790,11 +1790,11 @@
     .plp-header-sub { font-size: 12px; color: #64748b; margin-top: 8px; text-align: center; letter-spacing: 0.2px; }
     .plp-cards-wrap {
       flex: 1; display: flex; flex-direction: column;
-      justify-content: flex-start; gap: 16px; padding: 32px 20px 20px;
+      justify-content: center; gap: 24px; padding: 0 20px;
     }
     .plp-panel {
       flex: none; display: flex; flex-direction: column;
-      padding: 16px 20px 14px; transition: opacity 0.3s;
+      padding: 24px 20px; transition: opacity 0.3s;
       background: rgba(17,24,39,0.7); border: 1px solid var(--border);
       border-radius: 14px; margin: 0;
     }
@@ -1819,8 +1819,8 @@
     .plp-bar { height: 3px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; flex-shrink: 0; }
     .plp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
     .plp-footer {
-      display: flex; gap: 8px; padding: 14px 20px;
-      border-top: 1px solid var(--border); flex-shrink: 0; margin-top: auto;
+      display: flex; gap: 8px; padding: 14px 20px 40px;
+      border-top: 1px solid var(--border); flex-shrink: 0;
     }
     .plp-pause-btn, .plp-replay-btn, .plp-go-btn {
       flex: 1; padding: 13px 8px; border-radius: 14px;
@@ -6092,14 +6092,14 @@
       // ── 加载静态音频映射表 ────────────────────────────────────
       _loadAudioMap();
       // ── 一次性代币重置（测试用，部署后只执行一次）────────────
-      if (!localStorage.getItem('echo_coin_reset_v10')) {
+      if (!localStorage.getItem('echo_coin_reset_v11')) {
         try {
           localStorage.removeItem('echo_coins');
           localStorage.removeItem('echo_coin_aha_seen'); // reset Aha! modal so it shows fresh
           Object.keys(localStorage).forEach(function(k) {
             if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_coin_reset_v10', '1');
+          localStorage.setItem('echo_coin_reset_v11', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
