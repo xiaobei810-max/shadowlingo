@@ -1081,7 +1081,14 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'AZURE_SPEECH_KEY env var not configured' });
 
   try {
-    const { audioBase64, refText } = req.body;
+    let parsed = req.body;
+    if (!parsed || typeof parsed !== 'object' || Buffer.isBuffer(parsed)) {
+      let raw = '';
+      await new Promise(resolve => { req.on('data', c => raw += c); req.on('end', resolve); });
+      try { parsed = JSON.parse(raw); }
+      catch { return res.status(400).json({ error: 'invalid JSON body' }); }
+    }
+    const { audioBase64, refText } = parsed;
     if (!audioBase64 || !refText)
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
 

@@ -112,7 +112,12 @@ module.exports = async function handler(req, res) {
     await new Promise((resolve, reject) => {
       const azReq = https.request(options, azRes => {
         if (azRes.statusCode !== 200) {
-          reject(new Error(`Azure TTS ${azRes.statusCode}`));
+          const errChunks = [];
+          azRes.on('data', c => errChunks.push(c));
+          azRes.on('end', () => {
+            const body = Buffer.concat(errChunks).toString('utf-8');
+            reject(new Error(`Azure TTS ${azRes.statusCode}: ${body.slice(0, 300)}`));
+          });
           return;
         }
         azRes.on('data', c => chunks.push(c));
