@@ -1,9 +1,24 @@
-const https = require('https');
+/**
+ * api/evaluate.js — 发音评测（腾讯云智聆 SOE）
+ *
+ * 接口契约与原 Azure 版 100% 一致：
+ *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
+ *
+ * 内部流程：
+ *   1. 腾讯 SOE 评测 → 适配器转 Azure 格式
+ *   2. Gemini 生成期望拼音
+ *   3. Whisper 双轨检测（可选）
+ *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
+ */
 
-const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
-const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
-const GEMINI_KEY   = process.env.GEMINI_API_KEY;
-const OPENAI_KEY   = process.env.OPENAI_API_KEY; // 双轨 Whisper 检测（可选）
+const https = require('https');
+const crypto = require('crypto');
+
+const TENCENT_SECRET_ID  = process.env.TENCENT_SECRET_ID;
+const TENCENT_SECRET_KEY = process.env.TENCENT_SECRET_KEY;
+const TENCENT_REGION     = process.env.TENCENT_REGION || 'ap-guangzhou';
+const GEMINI_KEY         = process.env.GEMINI_API_KEY;
+const OPENAI_KEY         = process.env.OPENAI_API_KEY;
 
 // ── PCM → WAV（44 字节 RIFF 头）────────────────────────────────
 function pcmToWav(pcmBuf) {
@@ -25,113 +40,155 @@ function pcmToWav(pcmBuf) {
   return wav;
 }
 
-// ── Azure 发音评测 REST API ──────────────────────────────────────
-function azureAssess(pcmBase64, refText) {
-  return new Promise((resolve, reject) => {
-    const wavBuf   = pcmToWav(Buffer.from(pcmBase64, 'base64'));
-    const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
-    console.log('[Azure] WAV大小:', wavBuf.length, '字节，refText:', cleanRef);
+// ══════════════════════════════════════════════════════════════════
+//  腾讯云 TC3-HMAC-SHA256 签名 + SOE 评测
+// ══════════════════════════════════════════════════════════════════
 
-    const cfg = Buffer.from(JSON.stringify({
-      ReferenceText:     cleanRef,
-      GradingSystem:     'HundredMark',
-      Granularity:       'Phoneme',
-      Dimension:         'Comprehensive',
-      EnableMiscue:      true,
-      NBestPhonemeCount: 5          // ← 关键：返回用户最可能读的5个音素候选
-    })).toString('base64');
+function sha256Hex(msg) {
+  return crypto.createHash('sha256').update(msg).digest('hex');
+}
+function hmacSha256(key, msg) {
+  return crypto.createHmac('sha256', key).update(msg).digest();
+}
 
-    const options = {
-      hostname: `${AZURE_REGION}.stt.speech.microsoft.com`,
-      path:     '/speech/recognition/conversation/cognitiveservices/v1' +
-                '?language=zh-CN&format=detailed',
-      method:   'POST',
-      headers:  {
-        'Ocp-Apim-Subscription-Key': AZURE_KEY,
-        'Content-Type':             'audio/wav; codecs=audio/pcm; samplerate=16000',
-        'Pronunciation-Assessment': cfg,
-        'Content-Length':           wavBuf.length
+async function tencentSoeAssess(pcmBase64, refText) {
+  const wavBuf    = pcmToWav(Buffer.from(pcmBase64, 'base64'));
+  const wavBase64 = wavBuf.toString('base64');
+  const cleanRef  = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+
+  const sessionId = crypto.randomUUID();
+  const action    = 'TransmitOralProcessWithInit';
+  const version   = '2018-07-24';
+  const service   = 'soe';
+  const host      = 'soe.tencentcloudapi.com';
+
+  const payload = JSON.stringify({
+    SeqId:           1,
+    IsEnd:           1,
+    VoiceFileType:   2,       // WAV
+    VoiceEncodeType: 1,       // PCM
+    UserVoiceData:   wavBase64,
+    SessionId:       sessionId,
+    RefText:         cleanRef,
+    WorkMode:        1,       // 非流式（一次性）
+    EvalMode:        1,       // 句子评测
+    ScoreCoeff:      1.0,     // 严格评分
+    ServerType:      1,       // 中文
+    TextMode:        0        // 普通文本
+  });
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const date      = new Date(timestamp * 1000).toISOString().slice(0, 10);
+
+  // ── Canonical Request ──
+  const ct               = 'application/json; charset=utf-8';
+  const canonicalHeaders = `content-type:${ct}\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
+  const signedHeaders    = 'content-type;host;x-tc-action';
+  const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
+
+  // ── String to Sign ──
+  const credentialScope = `${date}/${service}/tc3_request`;
+  const stringToSign    = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
+
+  // ── Signing Key ──
+  const secretDate    = hmacSha256(`TC3${TENCENT_SECRET_KEY}`, date);
+  const secretService = hmacSha256(secretDate, service);
+  const secretSigning = hmacSha256(secretService, 'tc3_request');
+  const signature     = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
+
+  const authorization = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  console.log('[Tencent] WAV大小:', wavBuf.length, '字节, refText:', cleanRef, 'sessionId:', sessionId);
+
+  const resp = await fetch(`https://${host}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type':   ct,
+      'Host':           host,
+      'X-TC-Action':    action,
+      'X-TC-Version':   version,
+      'X-TC-Timestamp': String(timestamp),
+      'X-TC-Region':    TENCENT_REGION,
+      'Authorization':  authorization
+    },
+    body: payload
+  });
+
+  const data = await resp.json();
+  console.log('[Tencent] HTTP状态:', resp.status, '响应(前800):', JSON.stringify(data).slice(0, 800));
+
+  if (data.Response && data.Response.Error) {
+    throw new Error(`Tencent SOE: ${data.Response.Error.Code} - ${data.Response.Error.Message}`);
+  }
+  return data;
+}
+
+// ── 腾讯 → Azure 格式适配器 ──────────────────────────────────────
+// 让 parseAzureResult 无需任何修改即可处理腾讯数据
+function tencentToAzureFormat(tencentResp, refText) {
+  const r = tencentResp.Response;
+
+  // MatchTag → ErrorType
+  const MATCH_TAG = { 0: 'None', 1: 'Mispronunciation', 2: 'Omission', 3: 'Insertion' };
+
+  const words = (r.Words || []).map(w => {
+    const errorType     = MATCH_TAG[w.MatchTag] || 'None';
+    const offsetTicks   = (w.MemBeginTime || 0) * 10000;     // ms → 100ns
+    const durationTicks = ((w.MemEndTime || 0) - (w.MemBeginTime || 0)) * 10000;
+
+    // 构造 Phonemes（保留腾讯 PhoneInfos 的精度）
+    const phonemes = (w.PhoneInfos || []).map(p => ({
+      Phoneme: p.Phone || '',
+      PronunciationAssessment: {
+        AccuracyScore:   p.PronAccuracy || 0,
+        NBestPhonemes:   []   // 腾讯无此数据，Tier D 将静默跳过
       }
+    }));
+
+    // 构造 Syllables（拼接 phones 近似音节）
+    const phones = (w.PhoneInfos || []).map(p => p.Phone || '').join('');
+    const syllables = [{
+      Grapheme: w.Word,
+      Phoneme:  phones,
+      PronunciationAssessment: { AccuracyScore: w.PronAccuracy || 0 }
+    }];
+
+    return {
+      Word:     w.Word,
+      Offset:   offsetTicks,
+      Duration: durationTicks,
+      PronunciationAssessment: {
+        AccuracyScore: w.PronAccuracy || 0,
+        ErrorType:     errorType
+      },
+      Phonemes:  phonemes,
+      Syllables: syllables
     };
-
-    const req = https.request(options, (res) => {
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => {
-        const raw = Buffer.concat(chunks).toString('utf-8');
-        console.log('[Azure] HTTP状态:', res.statusCode);
-        console.log('[Azure] 原始响应(前1200):', raw.slice(0, 1200));
-        if (res.statusCode !== 200)
-          return reject(new Error(`Azure HTTP ${res.statusCode}: ${raw.slice(0, 300)}`));
-        try { resolve(JSON.parse(raw)); }
-        catch(e) { reject(new Error('JSON解析失败: ' + raw.slice(0, 200))); }
-      });
-    });
-    req.on('error', reject);
-    req.write(wavBuf);
-    req.end();
   });
+
+  return {
+    RecognitionStatus: 'Success',
+    NBest: [{
+      PronunciationAssessment: {
+        AccuracyScore:      r.PronAccuracy   || 0,
+        CompletenessScore:  r.PronCompletion || 100,
+        FluencyScore:       r.PronFluency    || 0,
+        PronScore:          r.SuggestedScore || 0
+      },
+      Words:   words,
+      Lexical: refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '')
+    }]
+  };
 }
 
-// ── Azure 无参考 Free STT（并行调用，获取用户实际读了什么）────────
-// 使用 format=detailed 返回多个识别候选（NBest），
-// 提高平翘舌音误读被捕获的概率——即使 top-1 被语境纠正，
-// 其他候选可能反映真实音素输出
-function azureFreeStt(pcmBase64) {
-  return new Promise((resolve) => {
-    try {
-      const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
-      const options = {
-        hostname: `${AZURE_REGION}.stt.speech.microsoft.com`,
-        path:     '/speech/recognition/conversation/cognitiveservices/v1' +
-                  '?language=zh-CN&format=detailed',   // detailed → 返回 NBest 候选列表
-        method:   'POST',
-        headers:  {
-          'Ocp-Apim-Subscription-Key': AZURE_KEY,
-          'Content-Type':  'audio/wav; codecs=audio/pcm; samplerate=16000',
-          'Content-Length': wavBuf.length
-        }
-      };
-      const req = https.request(options, (res) => {
-        const chunks = [];
-        res.on('data', c => chunks.push(c));
-        res.on('end', () => {
-          try {
-            const data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
-            // 取最多 3 个 NBest 候选文本（去标点取纯汉字）
-            const nbestArr = data.NBest || [];
-            if (nbestArr.length > 0) {
-              const alts = nbestArr.slice(0, 3).map(n =>
-                (n.Display || n.Lexical || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '')
-              ).filter(t => t.length > 0);
-              console.log('[FreeStt] NBest候选:', alts);
-              resolve(alts);
-            } else {
-              // fallback: format=detailed 有时在 DisplayText 返回
-              const raw = (data.DisplayText || '').replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '');
-              console.log('[FreeStt] fallback:', raw);
-              resolve(raw ? [raw] : []);
-            }
-          } catch(e) { resolve([]); }
-        });
-      });
-      req.on('error', () => resolve([]));
-      req.write(wavBuf);
-      req.end();
-    } catch(e) { resolve([]); }
-  });
-}
+// ══════════════════════════════════════════════════════════════════
+//  OpenAI Whisper STT（双轨检测，可选）
+// ══════════════════════════════════════════════════════════════════
 
-// ── OpenAI Whisper STT（双轨检测，裸声学识别）──────────────────────
-// 不带 prompt / referenceText，纯声学模型识别，不受语言模型上下文偏置
-// 用于检测 Azure 语境 ASR 会"自动纠正"的平翘舌误读
-// 需要环境变量 OPENAI_API_KEY；不存在或调用失败时静默跳过
 async function whisperStt(pcmBase64) {
   if (!OPENAI_KEY) return '';
   try {
     const wavBuf = pcmToWav(Buffer.from(pcmBase64, 'base64'));
-
-    // 手工构造 multipart/form-data（无需第三方库）
     const boundary = 'WBound' + Date.now().toString(36);
     const textFields = [
       { name: 'model',           value: 'whisper-1' },
@@ -144,13 +201,9 @@ async function whisperStt(pcmBase64) {
     const fileHeader =
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`;
     const footer = `\r\n--${boundary}--\r\n`;
-
     const bodyBuf = Buffer.concat([
-      Buffer.from(textPart + fileHeader),
-      wavBuf,
-      Buffer.from(footer)
+      Buffer.from(textPart + fileHeader), wavBuf, Buffer.from(footer)
     ]);
-
     const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method:  'POST',
       headers: {
@@ -160,12 +213,10 @@ async function whisperStt(pcmBase64) {
       },
       body: bodyBuf,
     });
-
     if (!resp.ok) {
       console.error('[Whisper] HTTP错误:', resp.status, (await resp.text().catch(() => '')).slice(0, 200));
       return '';
     }
-    // response_format=text → 纯文本响应
     const raw = await resp.text();
     const cleaned = raw.trim().replace(/[，。！？,.!?\s]/g, '').replace(/[^\u4e00-\u9fa5]/g, '');
     console.log('[Whisper] 识别结果:', cleaned);
@@ -176,23 +227,20 @@ async function whisperStt(pcmBase64) {
   }
 }
 
-// ── 双轨平翘舌/鼻音检测：对比 Whisper 识别字 vs 参考文本 ────────────
-// 原理：Whisper 是裸声学模型，听到什么写什么；Azure 有语言模型会"纠正"。
-// 若 Whisper 将参考翘舌字识别为平舌字，高置信度认为用户确实读错了。
-// 返回: { whisperText, dualTrackErrors: [{position, targetChar, targetPy,
-//          whisperHeard, whisperPy, type, message, messageEn}] }
+// ══════════════════════════════════════════════════════════════════
+//  双轨平翘舌/鼻音/声调检测
+// ══════════════════════════════════════════════════════════════════
+
 function dualTrackAnalysis(refChars, whisperText, pyMap) {
   if (!whisperText) return { whisperText: '', dualTrackErrors: [] };
-
   const whisperChars = Array.from(whisperText.replace(/\s/g, ''));
   if (!whisperChars.length) return { whisperText, dualTrackErrors: [] };
 
-  const RETRO    = ['zh', 'ch', 'sh', 'r'];
-  const FLAT     = ['z',  'c',  's' ];
-  const LATERAL  = ['l',  'n' ];   // 南方口音 r↔l/n 混淆
-
-  const errors = [];
-  const minLen = Math.min(refChars.length, whisperChars.length);
+  const RETRO   = ['zh', 'ch', 'sh', 'r'];
+  const FLAT    = ['z',  'c',  's' ];
+  const LATERAL = ['l',  'n' ];
+  const errors  = [];
+  const minLen  = Math.min(refChars.length, whisperChars.length);
 
   for (let i = 0; i < minLen; i++) {
     const ref   = refChars[i];
@@ -201,12 +249,10 @@ function dualTrackAnalysis(refChars, whisperText, pyMap) {
 
     const refPy   = normalizePy(pyMap[ref]   || CHAR_PY[ref]   || '');
     const heardPy = normalizePy(CHAR_PY[heard] || '');
-    if (!refPy) continue; // 参考字拼音未知，跳过
+    if (!refPy) continue;
 
     const refInit   = getInitial(refPy);
     const heardInit = getInitial(heardPy || '');
-
-    // 声调比对：基础拼音相同（去声调数字后）但声调不同 → 声调错误
     const refBase   = refPy.replace(/\d$/, '');
     const heardBase = heardPy ? heardPy.replace(/\d$/, '') : '';
     const refTone   = getTone(refPy);
@@ -216,7 +262,6 @@ function dualTrackAnalysis(refChars, whisperText, pyMap) {
     let type = '', message = '', messageEn = '';
 
     if (refBase && heardBase && refBase === heardBase && refTone > 0 && heardTone > 0 && refTone !== heardTone) {
-      // 同音异调：如 问(wèn/4) vs 文(wén/2)
       type      = 'tone_confusion';
       message   = `"${ref}"声调有误：应读${TONE_ZH[refTone]||'第'+refTone+'声'}（${ref} ${refPy}），Whisper听到${TONE_ZH[heardTone]||'第'+heardTone+'声'}（${heard} ${heardPy}）`;
       messageEn = `"${ref}" tone error: should be tone ${refTone} (${refPy}), Whisper heard tone ${heardTone} ("${heard}" ${heardPy})`;
@@ -245,11 +290,12 @@ function dualTrackAnalysis(refChars, whisperText, pyMap) {
   return { whisperText, dualTrackErrors: errors };
 }
 
-// ── 内置常见汉字拼音表（用于 FreeStt 比对，覆盖主要平翘舌/前后鼻音混淆字）
-// 格式：汉字 → 拼音+声调数字（按最常用读音）
+// ══════════════════════════════════════════════════════════════════
+//  常见汉字拼音表（覆盖主要平翘舌/前后鼻音/声调混淆字）
+// ══════════════════════════════════════════════════════════════════
+
 const CHAR_PY = {
-  // ── 翘舌音字（zh/ch/sh/r）─────────────────────────────────────
-  // zh 组
+  // ── 翘舌音字（zh/ch/sh/r）
   '知':'zhi1','直':'zhi2','值':'zhi2','执':'zhi2','植':'zhi2','职':'zhi2',
   '止':'zhi3','只':'zhi3','纸':'zhi3','指':'zhi3','至':'zhi4','志':'zhi4',
   '智':'zhi4','制':'zhi4','治':'zhi4','致':'zhi4','质':'zhi4',
@@ -263,7 +309,6 @@ const CHAR_PY = {
   '长':'zhang3','找':'zhao3','照':'zhao4','招':'zhao1','赵':'zhao4',
   '展':'zhan3','站':'zhan4','战':'zhan4','沾':'zhan1',
   '准':'zhun3','砖':'zhuan1','转':'zhuan3','抓':'zhua1',
-  // ch 组
   '车':'che1','扯':'che3','彻':'che4',
   '吃':'chi1','赤':'chi4','迟':'chi2','尺':'chi3','痴':'chi1',
   '出':'chu1','处':'chu4','初':'chu1','触':'chu4','储':'chu3',
@@ -274,7 +319,6 @@ const CHAR_PY = {
   '穿':'chuan1','传':'chuan2','船':'chuan2','串':'chuan4',
   '春':'chun1','纯':'chun2','唇':'chun2',
   '吹':'chui1','锤':'chui2',
-  // sh 组
   '是':'shi4','事':'shi4','时':'shi2','市':'shi4','使':'shi3','世':'shi4',
   '式':'shi4','实':'shi2','师':'shi1','史':'shi3','始':'shi3','室':'shi4',
   '诗':'shi1','试':'shi4','识':'shi2','石':'shi2','食':'shi2',
@@ -288,7 +332,6 @@ const CHAR_PY = {
   '少':'shao3','勺':'shao2','烧':'shao1','哨':'shao4',
   '社':'she4','设':'she4','蛇':'she2','舌':'she2',
   '山':'shan1','删':'shan1','善':'shan4','闪':'shan3','扇':'shan4',
-  // r 组
   '人':'ren2','认':'ren4','任':'ren4','仁':'ren2',
   '热':'re4','日':'ri4',
   '如':'ru2','入':'ru4','软':'ruan3',
@@ -296,14 +339,12 @@ const CHAR_PY = {
   '荣':'rong2','融':'rong2','容':'rong2','绒':'rong2',
   '揉':'rou2','柔':'rou2',
   '染':'ran3','燃':'ran2',
-  // ── 平舌音字（z/c/s，用于检测翻转：读翘为平或读平为翘）────
-  // z 组
+  // ── 平舌音字（z/c/s）
   '资':'zi1','字':'zi4','自':'zi4','紫':'zi3','子':'zi3',
   '走':'zou3','足':'zu2','组':'zu3','祖':'zu3','租':'zu1','阻':'zu3',
   '做':'zuo4','坐':'zuo4','座':'zuo4','作':'zuo4','左':'zuo3','昨':'zuo2',
   '再':'zai4','载':'zai4','在':'zai4','灾':'zai1',
   '赞':'zan4','暂':'zan4','脏':'zang1','葬':'zang4',
-  // c 组
   '菜':'cai4','采':'cai3','猜':'cai1','财':'cai2',
   '草':'cao3','曹':'cao2','操':'cao1','糙':'cao1',
   '层':'ceng2','曾':'ceng2',
@@ -312,7 +353,6 @@ const CHAR_PY = {
   '粗':'cu1','促':'cu4','醋':'cu4',
   '存':'cun2','村':'cun1','寸':'cun4',
   '错':'cuo4','磋':'cuo1',
-  // s 组
   '四':'si4','死':'si3','撕':'si1','丝':'si1','私':'si1','寺':'si4','司':'si1',
   '送':'song4','松':'song1','颂':'song4','宋':'song4',
   '苏':'su1','速':'su4','素':'su4','俗':'su2','酸':'suan1',
@@ -320,90 +360,74 @@ const CHAR_PY = {
   '三':'san1','散':'san4','桑':'sang1',
   '色':'se4','涩':'se4','塞':'se1',
   '森':'sen1',
-  '算':'suan4','酸':'suan1',
-  // ── 前后鼻音字（-n vs -ng 混淆）──────────────────────────────
-  // 前鼻音 -n
+  '算':'suan4',
+  // ── 前后鼻音字
   '安':'an1','暗':'an4','按':'an4','岸':'an3','案':'an4',
   '恩':'en1','嗯':'en2',
   '因':'yin1','音':'yin1','银':'yin2','饮':'yin3','印':'yin4',
   '温':'wen1','文':'wen2','问':'wen4','稳':'wen3',
-  '民':'min2','敏':'min3','明':'ming2','命':'ming4',  // 注意 ming 是后鼻
+  '民':'min2','敏':'min3','明':'ming2','命':'ming4',
   '今':'jin1','近':'jin4','进':'jin4','金':'jin1','紧':'jin3',
-  '真':'zhen1','阵':'zhen4','陈':'chen2','神':'shen2','深':'shen1',
+  '陈':'chen2',
   '宾':'bin1','品':'pin3','林':'lin2','心':'xin1','信':'xin4',
-  // 后鼻音 -ng
   '昂':'ang2','帮':'bang1','房':'fang2','方':'fang1','香':'xiang1',
-  '明':'ming2','名':'ming2','命':'ming4',
+  '名':'ming2',
   '星':'xing1','行':'xing2','形':'xing2','性':'xing4','姓':'xing4',
-  '东':'dong1','风':'feng1','公':'gong1','工':'gong1','中':'zhong1',
-  '生':'sheng1','声':'sheng1','城':'cheng2','成':'cheng2',
-  '长':'chang2','常':'chang2','场':'chang3',
-  '等':'deng3','能':'neng2','层':'ceng2','冷':'leng3',
+  '东':'dong1','风':'feng1','公':'gong1','工':'gong1',
+  '等':'deng3','能':'neng2','冷':'leng3',
   '轻':'qing1','请':'qing3','情':'qing2','青':'qing1','庆':'qing4',
   '英':'ying1','应':'ying4','影':'ying3','营':'ying2',
-
-  // ── 高频声调对（用于 Whisper 声调混淆检测）──────────────────────
-  // 声调1组
+  // ── 高频声调对
   '妈':'ma1','巴':'ba1','花':'hua1','喝':'he1','喊':'han3',
   '他':'ta1','她':'ta1','它':'ta1','家':'jia1','加':'jia1',
   '天':'tian1','先':'xian1','边':'bian1','年':'nian2','前':'qian2',
-  '书':'shu1','需':'xu1','车':'che1','喝':'he1',
-  // 声调2组（上升）
-  '来':'lai2','才':'cai2','没':'mei2','还':'hai2','能':'neng2',
-  '人':'ren2','国':'guo2','合':'he2','和':'he2','何':'he2',
-  '时':'shi2','直':'zhi2','值':'zhi2','行':'xing2',
+  '需':'xu1',
+  '来':'lai2','才':'cai2','没':'mei2','还':'hai2',
+  '国':'guo2','合':'he2','和':'he2','何':'he2',
   '学':'xue2','白':'bai2','同':'tong2','朋':'peng2','平':'ping2',
-  // 声调3组（低降升）
   '我':'wo3','你':'ni3','好':'hao3','也':'ye3','可':'ke3',
   '小':'xiao3','有':'you3','美':'mei3','所':'suo3','里':'li3',
-  '找':'zhao3','想':'xiang3','请':'qing3','买':'mai3','女':'nv3',
-  '走':'zou3','语':'yu3','比':'bi3','米':'mi3','体':'ti3',
-  // 声调4组（下降）
-  '是':'shi4','不':'bu4','对':'dui4','大':'da4','去':'qu4',
-  '要':'yao4','会':'hui4','做':'zuo4','看':'kan4','用':'yong4',
-  '到':'dao4','说':'shuo4','告':'gao4','但':'dan4','意':'yi4',
-  '问':'wen4','号':'hao4','电':'dian4','面':'mian4','汉':'han4',
-  '字':'zi4','站':'zhan4','上':'shang4','下':'xia4','外':'wai4',
-  '内':'nei4','右':'you4','后':'hou4','再':'zai4','又':'you4',
-  // 轻声
+  '想':'xiang3','买':'mai3','女':'nv3',
+  '语':'yu3','比':'bi3','米':'mi3','体':'ti3',
+  '不':'bu4','对':'dui4','大':'da4','去':'qu4',
+  '要':'yao4','会':'hui4','看':'kan4','用':'yong4',
+  '到':'dao4','但':'dan4','意':'yi4',
+  '号':'hao4','电':'dian4','面':'mian4','汉':'han4',
+  '站':'zhan4','下':'xia4','外':'wai4',
+  '内':'nei4','右':'you4','后':'hou4','又':'you4',
   '吗':'ma0','呢':'ne0','吧':'ba0','啊':'a0','的':'de0','了':'le0',
-  '着':'zhe0','过':'guo0','们':'men0','子':'zi0','么':'me0',
-  // 更多同音异调对
-  '买':'mai3','卖':'mai4','迈':'mai4',
-  '买':'mai3','买':'mai3',
-  '大':'da4','打':'da3','达':'da2','搭':'da1',
-  '课':'ke4','科':'ke1','可':'ke3','刻':'ke4',
-  '号':'hao4','好':'hao3','毫':'hao2','蒿':'hao1',
-  '女':'nv3','旅':'lv3',
+  '过':'guo0','们':'men0','么':'me0',
+  '卖':'mai4','迈':'mai4',
+  '打':'da3','达':'da2','搭':'da1',
+  '课':'ke4','科':'ke1','刻':'ke4',
   '图':'tu2','土':'tu3','兔':'tu4','突':'tu1',
   '高':'gao1','搞':'gao3','告':'gao4','糕':'gao1',
-  '低':'di1','的':'di4','底':'di3','地':'di4',
+  '低':'di1','底':'di3','地':'di4',
   '多':'duo1','躲':'duo3','朵':'duo3',
-  '国':'guo2','果':'guo3','过':'guo4','锅':'guo1',
-  '花':'hua1','化':'hua4','画':'hua4','话':'hua4','华':'hua2',
+  '果':'guo3',
+  '化':'hua4','画':'hua4','话':'hua4','华':'hua2',
   '就':'jiu4','九':'jiu3','久':'jiu3','救':'jiu4',
   '快':'kuai4','块':'kuai4','筷':'kuai4',
-  '里':'li3','力':'li4','立':'li4','历':'li4','例':'li4','粒':'li4',
-  '面':'mian4','免':'mian3','棉':'mian2','绵':'mian2',
-  '年':'nian2','念':'nian4','鸟':'niao3',
-  '期':'qi1','起':'qi3','气':'qi4','去':'qu4','取':'qu3','区':'qu1',
-  '然':'ran2','让':'rang4','染':'ran3',
+  '力':'li4','立':'li4','历':'li4','例':'li4','粒':'li4',
+  '免':'mian3','棉':'mian2','绵':'mian2',
+  '念':'nian4','鸟':'niao3',
+  '期':'qi1','起':'qi3','气':'qi4','取':'qu3','区':'qu1',
+  '让':'rang4',
   '特':'te4','疼':'teng2',
   '位':'wei4','为':'wei4','围':'wei2','味':'wei4','微':'wei1',
-  '下':'xia4','夏':'xia4','吓':'xia4','虾':'xia1',
+  '夏':'xia4','吓':'xia4','虾':'xia1',
   '样':'yang4','羊':'yang2','养':'yang3','洋':'yang2',
-  '意':'yi4','以':'yi3','已':'yi3','椅':'yi3','一':'yi1',
-  '用':'yong4','勇':'yong3','拥':'yong1','永':'yong3',
-  '在':'zai4','再':'zai4',
-  '早':'zao3','造':'zao4','好':'hao3',
+  '以':'yi3','已':'yi3','椅':'yi3','一':'yi1',
+  '勇':'yong3','拥':'yong1','永':'yong3',
+  '早':'zao3','造':'zao4',
 };
 
-// ── 编辑距离对齐：返回操作序列 [{type,ri,si}] ─────────────────────
-// type: 'match' | 'sub' | 'del'(ref多) | 'ins'(stt多)
-// 避免纯位置比较在 STT 有插入/删除时产生"整体位移"假阳性
+// ══════════════════════════════════════════════════════════════════
+//  编辑距离对齐 + STT 字级替换检测
+// ══════════════════════════════════════════════════════════════════
+
 function alignChars(refArr, sttArr) {
   const m = refArr.length, n = sttArr.length;
-  // DP table
   const dp = [];
   for (let i = 0; i <= m; i++) {
     dp[i] = new Array(n + 1);
@@ -416,30 +440,22 @@ function alignChars(refArr, sttArr) {
         : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
     }
   }
-  // Backtrack
   const ops = [];
   let i = m, j = n;
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && refArr[i-1] === sttArr[j-1]) {
-      ops.unshift({ type: 'match', ri: i-1, si: j-1 });
-      i--; j--;
+      ops.unshift({ type: 'match', ri: i-1, si: j-1 }); i--; j--;
     } else if (i > 0 && j > 0 && dp[i][j] === dp[i-1][j-1] + 1) {
-      ops.unshift({ type: 'sub', ri: i-1, si: j-1 });
-      i--; j--;
+      ops.unshift({ type: 'sub', ri: i-1, si: j-1 }); i--; j--;
     } else if (j === 0 || (i > 0 && dp[i-1][j] <= dp[i][j-1])) {
-      ops.unshift({ type: 'del', ri: i-1, si: -1 });
-      i--;
+      ops.unshift({ type: 'del', ri: i-1, si: -1 }); i--;
     } else {
-      ops.unshift({ type: 'ins', ri: -1, si: j-1 });
-      j--;
+      ops.unshift({ type: 'ins', ri: -1, si: j-1 }); j--;
     }
   }
   return ops;
 }
 
-// ── 利用 STT 多候选结果对比参考文本，检测字级替换错误 ───────────────
-// 使用编辑距离对齐取代纯位置比较，正确处理STT的插入/删除，
-// 避免"STT少识别一个字导致后续全部错位"的假阳性连锁反应
 function detectSttMismatches(refChars, sttAlts, pyMap) {
   const mismatches = new Map();
   if (!sttAlts || !sttAlts.length) return mismatches;
@@ -450,9 +466,9 @@ function detectSttMismatches(refChars, sttAlts, pyMap) {
 
     const ops = alignChars(refChars, sttChars);
     for (const op of ops) {
-      if (op.type !== 'sub') continue;          // 只处理真正的替换
+      if (op.type !== 'sub') continue;
       const ri = op.ri;
-      if (mismatches.has(ri)) continue;          // 先到先得
+      if (mismatches.has(ri)) continue;
 
       const expected = refChars[ri];
       const got      = sttChars[op.si];
@@ -461,7 +477,6 @@ function detectSttMismatches(refChars, sttAlts, pyMap) {
       if (!wantPy) continue;
 
       console.log(`[SttAlign] pos=${ri} expected="${expected}"(${wantPy}) got="${got}"(${gotPy})`);
-
       const diag = gotPy ? diagnoseError(wantPy, gotPy) : [];
       mismatches.set(ri, { expected, got, gotPy, diag });
     }
@@ -469,7 +484,10 @@ function detectSttMismatches(refChars, sttAlts, pyMap) {
   return mismatches;
 }
 
-// ── Gemini 生成期望拼音（内存缓存，同句不重复调用）─────────────
+// ══════════════════════════════════════════════════════════════════
+//  Gemini 生成期望拼音
+// ══════════════════════════════════════════════════════════════════
+
 const pinyinCache = new Map();
 
 const GEMINI_SYSTEM =
@@ -542,28 +560,22 @@ async function getPinyinMap(refText) {
     console.log('[Gemini] 缓存命中:', refText);
     return pinyinCache.get(refText);
   }
-
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
   console.log('[Gemini] 请求拼音 for:', refText);
-
   const body = {
     contents: [{ parts: [{ text: `${GEMINI_SYSTEM}\n\n句子：${refText}\n请返回每个汉字的拼音JSON：` }] }]
   };
-
   const resp = await fetch(url, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(body)
   });
-
   const data = await resp.json();
   console.log('[Gemini] HTTP状态:', resp.status, '原始返回:', JSON.stringify(data).slice(0, 400));
-
   if (!resp.ok) throw Object.assign(new Error(data?.error?.message || 'Gemini error'), { status: resp.status, body: data });
 
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
   console.log('[Gemini] 文本返回:', raw);
-
   let pyMap;
   try {
     pyMap = JSON.parse(raw);
@@ -572,12 +584,10 @@ async function getPinyinMap(refText) {
     if (m) pyMap = JSON.parse(m[0]);
     else throw new Error('Gemini拼音返回格式错误: ' + raw.slice(0, 150));
   }
-
   pinyinCache.set(refText, pyMap);
   return pyMap;
 }
 
-// 带降级的包装
 async function getPinyinMapSafe(refText) {
   try {
     return { map: await getPinyinMap(refText), error: null };
@@ -588,7 +598,10 @@ async function getPinyinMapSafe(refText) {
   }
 }
 
-// ── 拼音辅助函数 ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  拼音辅助函数 + 精确诊断
+// ══════════════════════════════════════════════════════════════════
+
 function normalizePy(py) {
   return (py || '').toLowerCase().replace(/\s+(\d)/, '$1').trim();
 }
@@ -608,25 +621,16 @@ function getFinal(py) {
   return base.slice(getInitial(base).length) || base;
 }
 
-// ── 从 NBestPhonemes 提取用户最可能读的音节（与参考不同的那个）──
-// Azure NBestPhonemes[0] = 用户实际读音最高置信候选
-// 如果[0]就是参考音，则用户读对了；否则[0]就是用户实际读的
 function extractUserPhoneme(ph) {
   const pa   = ph.PronunciationAssessment || {};
   const list = pa.NBestPhonemes || [];
   if (!list.length) return null;
   const refPhone = normalizePy(ph.Phoneme);
-  // NBest[0] 是得分最高的，即用户最可能读的那个音
-  // 与参考相同 → 用户读对了，返回 null（不能把 NBest[1] 当用户读音！
-  //   对于中文连读，NBest[1] 往往是下一个字的音节，会导致 off-by-one 假报错）
-  // 与参考不同 → 用户确实读成了 NBest[0]
   const top = normalizePy(list[0].Phoneme || '');
   if (top && top !== refPhone) return top;
   return null;
 }
 
-// ── 精确诊断发音错误：参考拼音 vs 用户实际拼音 ──────────────────
-// 返回结构化错误对象数组 [{cat, msg, en}]
 function diagnoseError(refPy, userPy) {
   if (!refPy || !userPy) return [];
   const rN = normalizePy(refPy);
@@ -649,7 +653,6 @@ function diagnoseError(refPy, userPy) {
 
   const errors = [];
 
-  // 1. 声母对比
   if (rInit !== uInit) {
     const rRetro = RETROFLEX.includes(rInit);
     const rSibi  = SIBILANT.includes(rInit);
@@ -677,7 +680,6 @@ function diagnoseError(refPy, userPy) {
     }
   }
 
-  // 2. 韵母对比（声母相同时）
   if (rInit === uInit && rFinal !== uFinal && rFinal && uFinal) {
     const nasalSwap = NASAL_PAIRS.some(([f, b]) =>
       (rFinal === f && uFinal === b) || (rFinal === b && uFinal === f));
@@ -697,7 +699,6 @@ function diagnoseError(refPy, userPy) {
     }
   }
 
-  // 3. 声调对比（声母韵母正确时，或单独报声调）
   if (rInit === uInit && rFinal === uFinal && rTone !== 0 && uTone && rTone !== uTone) {
     const TONE_NAMES = ['','第1声（ā 高平）','第2声（á 上升）','第3声（ǎ 低降升）','第4声（à 下降）','轻声'];
     errors.push({
@@ -710,12 +711,18 @@ function diagnoseError(refPy, userPy) {
   return errors;
 }
 
-// ── Azure 响应格式兼容 ───────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  Azure 响应格式兼容（适配器产出的数据也能用这些函数）
+// ══════════════════════════════════════════════════════════════════
+
 function wordAcc(w) { return Math.round((w.PronunciationAssessment || {}).AccuracyScore ?? w.AccuracyScore ?? 0); }
 function wordErr(w) { return (w.PronunciationAssessment || {}).ErrorType || w.ErrorType || 'None'; }
 function subAcc(p)  { return Math.round((p.PronunciationAssessment || {}).AccuracyScore ?? p.AccuracyScore ?? 0); }
 
-// ── 解析 Azure 响应 ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  核心解析（业务逻辑完整保留，接受适配器转换后的数据）
+// ══════════════════════════════════════════════════════════════════
+
 async function parseAzureResult(resp, refText, pyMap, sttText) {
   console.log('[parse] RecognitionStatus:', resp.RecognitionStatus);
 
@@ -740,30 +747,18 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
 
   const wordResults = [];
 
-  // ── Free STT 预处理：对齐参考文本与所有 STT 候选 ─────────────
+  // ── STT 预处理 ─────────────────────────────────────
   const refClean  = Array.from(refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
-  // sttText 现在是字符串数组（NBest 候选），兼容旧格式（单字符串）
   const sttAlts   = Array.isArray(sttText) ? sttText : (sttText ? [sttText] : []);
   const sttMismap = sttAlts.length ? detectSttMismatches(refClean, sttAlts, pyMap) : new Map();
   if (sttMismap.size > 0) {
     console.log('[SttMis] 发现', sttMismap.size, '个字级差异:', JSON.stringify([...sttMismap.entries()]));
   }
 
-  // ── 建立字→STT 误读信息的映射（按字位置索引）──────────────────
-  // 字位置基于 refClean，与 Words 数组对齐
-  let refCharIdx = 0; // 追踪 refClean 的全局索引，用于匹配 sttMismap
+  let refCharIdx = 0;
 
-  // WEAK_CHARS：只含真正的轻声虚词/语气词
-  // ⚠️ 设计原则：此集合只放「结构上永远轻读」的字——Azure 对它们系统性低分是正常的。
-  //   内容词（你/好/打/请/问/去/市/车 等）不在此列，应接受正常阈值评判。
-  //   之前大量内容词在这里是因为 Plan A/B 假报错的权宜之计，Plan A/B 已删除，
-  //   这些词回归正常评判。
   const WEAK_CHARS = new Set([
-    // 结构助词（轻声）
-    '的','地','得','着','过',
-    // 完成/持续体标记（轻声）
-    '了',
-    // 语气助词（轻声）
+    '的','地','得','着','过','了',
     '吗','呢','吧','啊','呀','嘛','么','哦','嗯','哈','喂',
   ]);
 
@@ -774,14 +769,9 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
     const phonemes  = w.Phonemes  || [];
     const syllables = w.Syllables || [];
 
-    // ── 区分真实漏读 vs Azure 对齐失败 ─────────────────────────
-    // Azure EnableMiscue 模式下，即使用户说了某字，也可能因 ASR 文本与参考不一致
-    // 而标记为 Omission。真实漏读的特征：w.Duration === 0（没有音频时长数据）。
-    // 若 Duration > 0，说明 Azure 找到了对应音频，只是对齐分数低，不应报"漏读"。
     const wordHasDuration = (w.Duration || 0) > 0;
 
     console.log(`[parse] word="${text}" acc=${accuracy} err=${errType} ph=${phonemes.length} syl=${syllables.length} dur=${w.Duration||0}`);
-    // 记录第一个phoneme的NBestPhonemes结构，帮助理解格式
     if (phonemes.length > 0 && phonemes[0].PronunciationAssessment) {
       console.log(`[parse] ph[0]="${phonemes[0].Phoneme}" NBest:`, JSON.stringify((phonemes[0].PronunciationAssessment.NBestPhonemes||[]).slice(0,3)));
     }
@@ -792,29 +782,13 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
 
     const levelOf = (acc, err, ch) => {
       if (err === 'Omission') {
-        // 无时长 → 真实漏读，强制红色
         if (!wordHasDuration) return 2;
-        // 有时长 → Azure 对齐误判（用户实际说了），按准确度正常评级
-        // 用稍严阈值（不给免死金牌）
       }
       const isWeak = WEAK_CHARS.has(ch);
       if (isWeak) {
-        // 高频虚词/轻声字：Azure 连读中对这类字系统性低分，需更严格的触发条件
-        // 只有 Azure 明确报 Mispronunciation 才标黄，不标红（分数低不代表真的读错）
         if (err === 'Mispronunciation' && acc < 70) return 1;
         return 0;
       }
-      // ── 普通字阈值 ────────────────────────────────────────────
-      // 红（level 2）：Mispronunciation + acc < 60（双条件）
-      //
-      // 黄（level 1）：
-      //   a) acc < 60（任意 errType）— 分数很低，肯定有问题
-      //   b) Mispronunciation + acc < 75 — Azure 认为有误，分数中等偏低
-      //
-      // 不标（level 0）：acc 60-75 且 errType ≠ Mispronunciation
-      //   → 连读语流中的正常打分波动，Azure 本身未报此词读错
-      //   → 典型例子：句末字(坐/车)能量自然下降、前鼻韵(问/门)连读转接、
-      //              第三声字在连读中声调曲线缩短 — 均属于标准普通话连读特征
       if (err === 'Mispronunciation' && acc < 60) return 2;
       if (acc < 60) return 1;
       if (err === 'Mispronunciation' && acc < 75) return 1;
@@ -822,21 +796,17 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
     };
 
     charArr.forEach((ch, i) => {
-      // 当前字在 refClean 中的全局位置
       const globalIdx = refCharIdx + i;
 
-      // 优先用 Syllable（字级），再用 Phoneme（音素级）
       const syl = syllables.find(s => s.Grapheme === ch) || syllables[i] || null;
       if (syl) console.log(`[syl] char="${ch}" Phoneme="${syl.Phoneme}" Grapheme="${syl.Grapheme}" PA=${JSON.stringify(syl.PronunciationAssessment||{})}`);
 
-      // ⚠️ Bug fix: Azure 的 Phoneme 对象上通常没有 Grapheme 字段
-      // 对于单字词，所有音素都属于该字；对多字词，按位置分配
       const charPhonemesByGrapheme = phonemes.filter(p => p.Grapheme === ch);
       const effectivePhonemes = charPhonemesByGrapheme.length > 0
         ? charPhonemesByGrapheme
         : charArr.length === 1
-          ? phonemes   // 单字词：全部音素归该字
-          : (() => {   // 多字词：按音素数量均分
+          ? phonemes
+          : (() => {
               const ppc = Math.ceil(phonemes.length / charArr.length);
               return phonemes.slice(i * ppc, (i + 1) * ppc);
             })();
@@ -845,7 +815,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
       const charAcc = syl ? subAcc(syl) : (phFallback ? subAcc(phFallback) : accuracy);
       cLevel[i] = levelOf(charAcc, errType, ch);
 
-      // ── 基础错误标签 ────────────────────────────────────────
+      // ── 基础错误标签 ──
       if (cLevel[i] === 2) {
         if (errType === 'Omission' && !wordHasDuration) cMsgs[i].push('漏读');
         else cMsgs[i].push(`准确度过低（${charAcc}分）`);
@@ -855,47 +825,32 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         else cMsgs[i].push(`发音需改进（${charAcc}分）`);
       }
 
-      // ── 精确错误诊断（漏读且无时长时跳过，其余情况都分析）──
-      // errType === 'Omission' 但有时长 → 对齐误判，仍尝试诊断具体问题
+      // ── 精确错误诊断 ──
       if (!(errType === 'Omission' && !wordHasDuration)) {
         const wantPy = normalizePy(pyMap[ch] || '');
         const wantTone = getTone(wantPy);
 
-        // ⚠️ 方案A/B 已移除：音素级 NBest 重建 userSyllable 会产生大量假阳性声母错误
-        // 原因：Azure phoneme NBest 是音素的声学相似排名，不是用户实际读音的 ASR 结果
-        // 例：「你」ni3 的声母音素 [n] 的 NBest[0] 可能是 [h]（声学近似），
-        //   但用户根本没读成 "hi3"。拼接后 diagnoseError 产生假报错。
-        // userSyllable 现在只由下方「方案STT」填入（STT 字符替换是真实 ASR 证据）
         let userSyllable = null;
 
-        // 方案STT：使用 Free STT 字符替换证据（高置信度，优先采用）
+        // STT 字符替换证据
         const sttMis = sttMismap.get(globalIdx);
         if (sttMis && sttMis.diag.length > 0) {
           console.log(`[SttMis] char="${ch}" pos=${globalIdx} got="${sttMis.got}" diag:`, JSON.stringify(sttMis.diag));
           sttMis.diag.forEach(e => {
             cMsgs[i].push(e.msg);
             if (e.cat === 'RETROFLEX' || e.cat === 'NASAL') {
-              cLevel[i] = Math.max(cLevel[i], 2); // 明确的平翘舌/前后鼻音错误 → 红
+              cLevel[i] = Math.max(cLevel[i], 2);
             } else {
               cLevel[i] = Math.max(cLevel[i], 1);
             }
           });
-          // STT 已经给出具体诊断，补充基础错误标签（如果还没有）
           if (!cMsgs[i].some(m => m.includes('发音'))) {
             cMsgs[i].unshift('发音有误');
           }
-          userSyllable = userSyllable || sttMis.gotPy || null; // 把STT结果当userSyllable用于后续声调检查
+          userSyllable = userSyllable || sttMis.gotPy || null;
         }
 
-        // 方案E：音节级声调检测 ─────────────────────────────────────────────
-        // Azure 对中文 Syllable.Phoneme 包含完整拼音+声调数字（如 "ming2"），
-        // 这是 Azure 声学模型对该音节的直接判断，不经过 NBest 重建（方案A/B），
-        // 因此不会产生假阳性声母错误。
-        // 条件：
-        //   1. 有有效音节数据（syl.Phoneme 存在）
-        //   2. 期望声调已知（wantTone ≠ 0）
-        //   3. STT 未检出字级替换（!userSyllable）—— 避免与 sttMis 重复
-        //   4. 字准确度 ≥ 40（过低时 Azure 对该字识别不可靠，忽略）
+        // 音节级声调检测（Tier E）
         if (syl && syl.Phoneme && wantPy && wantTone !== 0 && !userSyllable) {
           const sylPy   = normalizePy(syl.Phoneme);
           const sylTone = getTone(sylPy);
@@ -903,7 +858,6 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           const wantBase = wantPy.replace(/\d$/, '');
           console.log(`[TierE] char="${ch}" syl.Phoneme="${syl.Phoneme}" sylPy="${sylPy}" tone=${sylTone} wantTone=${wantTone} charAcc=${charAcc}`);
           if (sylBase === wantBase && sylTone > 0 && charAcc >= 40 && sylTone !== wantTone) {
-            // 变调豁免：参考声调为3，Azure 检测到2声 → 可能是连读变调（3+3 → 2+3 规则）
             const sandhiExempt = (wantTone === 3 && sylTone === 2);
             if (!sandhiExempt) {
               userSyllable = sylPy;
@@ -914,10 +868,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           }
         }
 
-        // 方案D：主动翘舌/前后鼻音检测（对所有相关字，不受准确度阈值限制）
-        // Azure 的语境 ASR 可能把平舌读音"纠正"回翘舌字，导致分数偏高但发音有误
-        // 对此类字：直接检查 effectivePhonemes 的 NBestPhonemes，
-        // 若有平舌/鼻音替代候选且置信度 > 0.15，则主动标记
+        // Tier D（NBest 翘舌/鼻音检测）— 腾讯无 NBest 数据时静默跳过
         if (wantPy && !sttMis && cLevel[i] === 0 && effectivePhonemes.length > 0) {
           const wInit  = getInitial(wantPy);
           const wFinal = getFinal(wantPy);
@@ -925,11 +876,10 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           const FLAT_INITS  = ['z', 'c', 's', 'l', 'n'];
 
           for (const ph of effectivePhonemes) {
-            const nbl    = (ph.PronunciationAssessment || {}).NBestPhonemes || [];
+            const nbl = (ph.PronunciationAssessment || {}).NBestPhonemes || [];
             if (!nbl.length) continue;
-            const refPh  = normalizePy(ph.Phoneme || '');
+            const refPh = normalizePy(ph.Phoneme || '');
 
-            // 检查翘舌 ↔ 平舌混淆
             if (RETRO_INITS.includes(wInit) && RETRO_INITS.includes(refPh)) {
               const flatAlt = nbl.slice(0, 3).find(n => {
                 const p = normalizePy(n.Phoneme || '');
@@ -945,7 +895,6 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
               }
             }
 
-            // 检查前后鼻音混淆（-n vs -ng）
             const nasal_n  = ['n', 'an', 'en', 'in', 'un', 'ün', 'ian', 'uan'];
             const nasal_ng = ['ng', 'ang', 'eng', 'ing', 'ong', 'iong', 'uang', 'iang'];
             if (nasal_n.some(f => wFinal === f) || nasal_ng.some(f => wFinal === f)) {
@@ -967,19 +916,13 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           }
         }
 
-        // 方案C：低准确度时，用 Gemini 的期望拼音做规则推断
-        // （当 Azure 无法提供 NBest 时的保底诊断）
-        // 对翘舌音字放宽阈值到 95，提高漏报灵敏度
+        // Tier C：低准确度规则推断
         const isRetroflex = ['zh','ch','sh','r'].includes(getInitial(wantPy));
         if (wantPy && (charAcc < (isRetroflex ? 95 : 90) || errType === 'Mispronunciation')) {
-          // ⚠️ 不再用 userSyllable（来自NBest重建）做 diagnoseError，见方案A/B移除说明
-          // 只用 wantPy 特征做固定规则提示，避免假阳性声母错误
           if (wantTone === 0 && charAcc < 55) {
             cMsgs[i].push('轻声字：读得过重，应短促轻读');
             if (cLevel[i] === 0) cLevel[i] = 1;
           }
-          // 当 Azure 明确报 Mispronunciation 时，根据期望拼音特征给针对性提示
-          // （STT/TierD 已处理过的不再重复）
           if (errType === 'Mispronunciation' && wantPy && cLevel[i] >= 1 && !sttMis) {
             const wInit  = getInitial(wantPy);
             const wFinal = getFinal(wantPy);
@@ -1004,9 +947,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           }
         }
 
-        // ── 声调检查：仅在有 NBest 证据时才比对 ──────────────
-        // ph.Phoneme 是 Azure 的音素标识符，不适合直接提取声调
-        // 只用 NBest 中的声调信息（如果 NBest 中的音节包含声调数字）
+        // 声调检查
         if (wantPy && wantTone !== 0 && userSyllable) {
           const userTone = getTone(normalizePy(userSyllable));
           if (userTone && userTone !== wantTone) {
@@ -1019,7 +960,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
           }
         }
 
-        // ── 儿化音检查 ──────────────────────────────────────
+        // 儿化音检查
         const wantPy2 = normalizePy(pyMap[ch] || '');
         if (wantPy2 && wantPy2.includes('r') && ch === '儿' && wantTone === 0) {
           if (charAcc < 60) {
@@ -1032,7 +973,7 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
       console.log(`[parse] char="${ch}" acc=${charAcc} level=${cLevel[i]} msgs=${JSON.stringify(cMsgs[i])}`);
     });
 
-    // Azure Offset/Duration 单位为100纳秒，转换为秒供前端声学分析使用
+    // 时间信息
     const wordOffsetSec   = (w.Offset   || 0) / 10_000_000;
     const wordDurationSec = (w.Duration || 0) / 10_000_000;
     const charDurSec      = charArr.length > 0 ? wordDurationSec / charArr.length : 0;
@@ -1042,14 +983,14 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
         content:   ch,
         perrLevel: cLevel[i],
         perrMsg:   cMsgs[i].join('；'),
-        offset:    wordOffsetSec + i * charDurSec,   // 字起始时刻（秒）
-        duration:  charDurSec,                        // 字时长（秒）
+        offset:    wordOffsetSec + i * charDurSec,
+        duration:  charDurSec,
       });
     });
-    refCharIdx += charArr.length; // 推进全局字索引
+    refCharIdx += charArr.length;
   }
 
-  // ── 分段线性映射，让分数对学习者更友好 ──────────────────────
+  // ── 分段线性映射 ──
   const segments = [
     [90, 100, 95, 100],
     [75,  89, 85,  94],
@@ -1070,17 +1011,22 @@ async function parseAzureResult(resp, refText, pyMap, sttText) {
   return { totalScore, rawScore, accuracyScore, completenessScore, fluencyScore, wordResults };
 }
 
-// ── Vercel Serverless 入口 ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  Vercel Serverless 入口
+// ══════════════════════════════════════════════════════════════════
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
-  if (!AZURE_KEY)
-    return res.status(500).json({ error: 'AZURE_SPEECH_KEY env var not configured' });
+
+  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY)
+    return res.status(500).json({ error: 'TENCENT_SECRET_ID / TENCENT_SECRET_KEY env vars not configured' });
 
   try {
+    // ── 解析请求体 ──
     let parsed = req.body;
     if (!parsed || typeof parsed !== 'object' || Buffer.isBuffer(parsed)) {
       let raw = '';
@@ -1092,47 +1038,51 @@ module.exports = async function handler(req, res) {
     if (!audioBase64 || !refText)
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
 
-    const [azureResp, { map: pyMap, error: claudeErr }, sttText, whisperText] = await Promise.all([
-      azureAssess(audioBase64, refText),
+    // ── 并行调用：腾讯 SOE + Gemini 拼音 + Whisper（可选）──
+    const [tencentResp, { map: pyMap, error: geminiErr }, whisperText] = await Promise.all([
+      tencentSoeAssess(audioBase64, refText),
       getPinyinMapSafe(refText),
-      azureFreeStt(audioBase64),
-      whisperStt(audioBase64)   // 双轨 Whisper 识别（可选，无 KEY 时返回空字符串）
+      whisperStt(audioBase64)
     ]);
-    console.log('[handler] FreeStt候选:', Array.isArray(sttText) ? sttText : (sttText || '（空）'));
     console.log('[handler] Whisper识别:', whisperText || '（空）');
 
-    const result = await parseAzureResult(azureResp, refText, pyMap, sttText);
+    // ── 适配器：腾讯 → Azure 格式 ──
+    const azureFormat = tencentToAzureFormat(tencentResp, refText);
 
-    // ── 双轨分析 ─────────────────────────────────────────────────
+    // ── 用 Whisper 作为 STT 来源（替代原 azureFreeStt）──
+    const sttText = whisperText ? [whisperText] : [];
+
+    // ── 核心解析（全部业务逻辑在此）──
+    const result = await parseAzureResult(azureFormat, refText, pyMap, sttText);
+
+    // ── 双轨分析 ──
     const refClean = Array.from(refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
     const dualTrack = dualTrackAnalysis(refClean, whisperText, pyMap);
     result.dualTrackErrors = dualTrack.dualTrackErrors;
     result.whisperText     = dualTrack.whisperText;
 
-    // ── _debug ───────────────────────────────────────────────────
-    const nbest0 = azureResp.NBest && azureResp.NBest[0];
-    const w0 = nbest0 && nbest0.Words && nbest0.Words[0];
-    const w1 = nbest0 && nbest0.Words && nbest0.Words[1];
+    // ── _debug ──
+    const tr = tencentResp.Response;
     result._debug = {
-      RecognitionStatus: azureResp.RecognitionStatus,
-      'NBest[0].PronunciationAssessment': nbest0 ? nbest0.PronunciationAssessment : null,
-      'NBest[0].Lexical':  nbest0 ? nbest0.Lexical : null,
-      WordCount:           nbest0 && nbest0.Words ? nbest0.Words.length : 0,
+      engine:           'tencent-soe',
+      tencentRaw: {
+        PronAccuracy:   tr.PronAccuracy,
+        PronFluency:    tr.PronFluency,
+        PronCompletion: tr.PronCompletion,
+        SuggestedScore: tr.SuggestedScore,
+        WordCount:      (tr.Words || []).length,
+        SessionId:      tr.SessionId
+      },
       rawScore:          result.rawScore,
       accuracyScore:     result.accuracyScore,
       completenessScore: result.completenessScore,
       fluencyScore:      result.fluencyScore,
       pyMap,
-      freeSttAlts:  Array.isArray(sttText) ? sttText : (sttText ? [sttText] : null),
-      whisperText:  whisperText || null,
-      dualTrackErrors: dualTrack.dualTrackErrors,
-      geminiError: claudeErr || null,
-      'Words[0]_full':           w0 || null,
-      'Words[0].Phonemes_full':  w0 ? w0.Phonemes  : null,
-      'Words[0].Syllables_full': w0 ? w0.Syllables : null,
-      'Words[1]_full':           w1 || null,
-      'Words[1].Phonemes_full':  w1 ? w1.Phonemes  : null,
+      whisperText:       whisperText || null,
+      dualTrackErrors:   dualTrack.dualTrackErrors,
+      geminiError:       geminiErr || null
     };
+
     res.status(200).json(result);
   } catch (err) {
     console.error('[evaluate] error:', err.message);
