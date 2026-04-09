@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "tencentcloud-sdk-nodejs-soe": "^4.0.1006"
   }
 }

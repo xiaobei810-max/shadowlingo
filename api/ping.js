@@ -124,35 +124,30 @@ async function testTencentKeys() {
 async function testTencentSoe() {
   if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) return { ok: false, error: 'keys not set' };
   try {
-    const host = 'soe.tencentcloudapi.com';
+    // 使用官方 SDK，让 SDK 处理签名细节
+    const tencentcloud = require('tencentcloud-sdk-nodejs-soe');
+    const SoeClient = tencentcloud.soe.v20180724.Client;
+    const client = new SoeClient({
+      credential: { secretId: TENCENT_SECRET_ID, secretKey: TENCENT_SECRET_KEY },
+      region: TENCENT_REGION,
+      profile: { httpProfile: { endpoint: 'soe.tencentcloudapi.com', reqTimeout: 10 } }
+    });
     const pcmLen = 3200;
     const wav = Buffer.alloc(44 + pcmLen, 0);
     wav.write('RIFF',0); wav.writeUInt32LE(36+pcmLen,4); wav.write('WAVE',8); wav.write('fmt ',12);
     wav.writeUInt32LE(16,16); wav.writeUInt16LE(1,20); wav.writeUInt16LE(1,22);
     wav.writeUInt32LE(16000,24); wav.writeUInt32LE(32000,28); wav.writeUInt16LE(2,32); wav.writeUInt16LE(16,34);
     wav.write('data',36); wav.writeUInt32LE(pcmLen,40);
-    const payload = JSON.stringify({
+    const result = await client.TransmitOralProcessWithInit({
       SeqId: 1, IsEnd: 1, VoiceFileType: 2, VoiceEncodeType: 1,
       UserVoiceData: wav.toString('base64'),
       SessionId: crypto.randomUUID(),
       RefText: '你好', WorkMode: 1, EvalMode: 1, ScoreCoeff: 1.0, ServerType: 1, TextMode: 0
     });
-    // 同时测试带 Region 和不带 Region 两种方式
-    const headersWithRegion = {
-      ...buildTc3('soe', host, 'TransmitOralProcessWithInit', '2018-07-24', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY),
-      'X-TC-Region': TENCENT_REGION
-    };
-    const headersNoRegion = buildTc3('soe', host, 'TransmitOralProcessWithInit', '2018-07-24', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY);
-    const [dataWith, dataWithout] = await Promise.all([
-      httpsPost(host, headersWithRegion, payload),
-      httpsPost(host, headersNoRegion, payload)
-    ]);
-    const errWith    = dataWith.Response?.Error    ? `${dataWith.Response.Error.Code}: ${dataWith.Response.Error.Message}`       : null;
-    const errWithout = dataWithout.Response?.Error ? `${dataWithout.Response.Error.Code}: ${dataWithout.Response.Error.Message}` : null;
-    if (!errWith)    return { ok: true, engine: 'tencent-soe', mode: 'with-region', score: dataWith.Response?.SuggestedScore };
-    if (!errWithout) return { ok: true, engine: 'tencent-soe', mode: 'no-region',   score: dataWithout.Response?.SuggestedScore };
-    return { ok: false, withRegion: errWith, withoutRegion: errWithout };
-  } catch(e) { return { ok: false, error: e.message }; }
+    return { ok: true, engine: 'tencent-soe-sdk', score: result.SuggestedScore };
+  } catch(e) {
+    return { ok: false, error: e.message || String(e) };
+  }
 }
 
 module.exports = async function handler(req, res) {
