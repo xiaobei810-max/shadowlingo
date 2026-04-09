@@ -1,47 +1,46 @@
-const https = require('https');
+/**
+ * api/tts.js — Edge TTS (免费，无需 API Key)
+ *
+ * 接口契约与原 Azure 版 100% 一致：
+ *   POST { text, role?, rate? }  →  audio/mpeg binary
+ *
+ * 使用 Edge Read-Aloud WebSocket 协议，支持同样的微软语音名称。
+ */
 
-const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
-const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
+const WebSocket = require('ws');
+const crypto    = require('crypto');
 
-// Voice config per role
+// ── 声音配置（与原 Azure 版完全一致）──────────────────────
 const VOICES = {
-  // ── Nora（诺拉）：美国女留学生，HSK2-3，外国口音明显，语速较慢
-  // en-US-AvaMultilingualNeural 跨语言合成：用英语引擎读中文 → 外国口音
-  // rateScale 0.82：刻意放慢，模拟非母语者逐字斟酌的节奏
   learner: {
-    name:       'en-US-AvaMultilingualNeural',
-    xmlLang:    'en-US',
-    crossLang:  'zh-CN',
-    style:      null,
-    rateScale:  0.82,      // 明显慢于母语者，非母语感
-    pitchAdj:   '+6%'      // 音调偏高，外国口音特征
+    name:      'en-US-AvaMultilingualNeural',
+    rateScale:  0.82,
+    pitchAdj:   '+6%'
   },
-  // ── 赵明轩：阳光学长，地道普通话，语速自然（不快）
   local: {
     name:      'zh-CN-YunxiNeural',
-    xmlLang:   'zh-CN',
-    style:     'chat',     // 轻松聊天风格
-    rateScale:  1.02,      // 接近正常语速，不刻意加快
-    pitchAdj:  '+2%'
+    rateScale:  1.02,
+    pitchAdj:   '+2%'
   },
-  // ── 大卫（David）：保留卢克声音，美国男生，留作后续角色
   david: {
-    name:       'en-US-AndrewMultilingualNeural',
-    xmlLang:    'en-US',
-    crossLang:  'zh-CN',
-    style:      null,
+    name:      'en-US-AndrewMultilingualNeural',
     rateScale:  0.95,
     pitchAdj:   '+8%'
   },
-  // ── 夏七七（Xia Qiqi）：清脆亲切女声，后续角色
   xiaqiqi: {
-    name:     'zh-CN-XiaoxiaoNeural',
-    xmlLang:  'zh-CN',
-    style:    'customerservice',
-    rateScale: 1.05,
-    pitchAdj: '+5%'
+    name:      'zh-CN-XiaoxiaoNeural',
+    rateScale:  1.05,
+    pitchAdj:   '+5%'
   }
 };
+
+const TRUSTED_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const WSS_URL = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}`;
+const OUTPUT_FORMAT = 'audio-24khz-96kbitrate-mono-mp3';
+
+function uuid() {
+  return crypto.randomUUID().replace(/-/g, '');
+}
 
 function escapeXml(s) {
   return String(s)
@@ -52,88 +51,138 @@ function escapeXml(s) {
     .replace(/'/g, '&apos;');
 }
 
-function buildSSML(text, role, rate) {
-  const v = VOICES[role] || VOICES.local;
-  const finalRate = ((rate || 1.0) * v.rateScale).toFixed(2);
-  const escaped = escapeXml(text);
+function rateToStr(r) {
+  // Edge TTS 的 rate 格式："+0%", "+50%", "-20%" 等
+  const pct = Math.round((r - 1) * 100);
+  return (pct >= 0 ? '+' : '') + pct + '%';
+}
 
-  let prosody;
-  if (v.crossLang) {
-    // 跨语言合成：用英语发音引擎读中文，产生外国口音（必须用 mstts:lang）
-    prosody = `<mstts:lang xml:lang="${v.crossLang}">` +
-      `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>` +
-      `</mstts:lang>`;
-  } else if (v.style) {
-    prosody = `<mstts:express-as style="${v.style}">` +
-      `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>` +
-      `</mstts:express-as>`;
-  } else {
-    prosody = `<prosody rate="${finalRate}" pitch="${v.pitchAdj}">${escaped}</prosody>`;
-  }
+function buildSSML(text, voice, rate) {
+  const finalRate = (rate || 1.0) * voice.rateScale;
+  const escaped   = escapeXml(text);
+  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>` +
+    `<voice name='${voice.name}'>` +
+    `<prosody rate='${rateToStr(finalRate)}' pitch='${voice.pitchAdj}'>${escaped}</prosody>` +
+    `</voice></speak>`;
+}
 
-  return `<speak version='1.0' ` +
-    `xmlns='http://www.w3.org/2001/10/synthesis' ` +
-    `xmlns:mstts='https://www.w3.org/2001/mstts' ` +
-    `xml:lang='${v.xmlLang}'>` +
-    `<voice name='${v.name}'>${prosody}</voice>` +
-    `</speak>`;
+/**
+ * 通过 Edge TTS WebSocket 合成语音，返回 MP3 Buffer
+ */
+function synthesize(ssml, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const connId    = uuid();
+    const requestId = uuid();
+    const url       = `${WSS_URL}&ConnectionId=${connId}`;
+
+    const ws = new WebSocket(url, {
+      headers: {
+        'User-Agent':  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
+        'Origin':      'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold'
+      }
+    });
+
+    const audioChunks = [];
+    let   done        = false;
+    const timer = setTimeout(() => {
+      if (!done) { done = true; ws.close(); reject(new Error('Edge TTS timeout')); }
+    }, timeoutMs || 15000);
+
+    ws.on('open', () => {
+      // 1) 发送 speech.config
+      ws.send(
+        `Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n` +
+        JSON.stringify({
+          context: {
+            synthesis: {
+              audio: {
+                metadataoptions: { sentenceBoundaryEnabled: 'false', wordBoundaryEnabled: 'false' },
+                outputFormat: OUTPUT_FORMAT
+              }
+            }
+          }
+        })
+      );
+
+      // 2) 发送 SSML
+      ws.send(
+        `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n${ssml}`
+      );
+    });
+
+    ws.on('message', (data, isBinary) => {
+      if (done) return;
+
+      if (isBinary) {
+        // 二进制消息：前 2 字节 = header 长度 (big-endian)，之后是 header 文本，再之后是音频数据
+        const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+        if (buf.length < 2) return;
+        const headerLen = buf.readUInt16BE(0);
+        const audioStart = 2 + headerLen;
+        if (audioStart < buf.length) {
+          audioChunks.push(buf.slice(audioStart));
+        }
+      } else {
+        // 文本消息：检查 turn.end 表示合成结束
+        const msg = data.toString();
+        if (msg.includes('Path:turn.end')) {
+          done = true;
+          clearTimeout(timer);
+          ws.close();
+          resolve(Buffer.concat(audioChunks));
+        }
+      }
+    });
+
+    ws.on('error', (err) => {
+      if (!done) { done = true; clearTimeout(timer); reject(err); }
+    });
+
+    ws.on('close', () => {
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        if (audioChunks.length > 0) {
+          resolve(Buffer.concat(audioChunks));
+        } else {
+          reject(new Error('Edge TTS connection closed without audio'));
+        }
+      }
+    });
+  });
 }
 
 module.exports = async function handler(req, res) {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
-  let body = '';
-  await new Promise(resolve => { req.on('data', c => body += c); req.on('end', resolve); });
-  let parsed;
-  try { parsed = JSON.parse(body); } catch { res.status(400).json({ error: 'bad json' }); return; }
-
-  const { text, role, rate } = parsed;
-  if (!text) { res.status(400).json({ error: 'text required' }); return; }
-  if (!AZURE_KEY) { res.status(500).json({ error: 'TTS not configured' }); return; }
-
-  const ssml = buildSSML(text, role || 'local', rate || 1.0);
-  const ssmlBuf = Buffer.from(ssml, 'utf8');
-
-  const options = {
-    hostname: `${AZURE_REGION}.tts.speech.microsoft.com`,
-    path:     '/cognitiveservices/v1',
-    method:   'POST',
-    headers:  {
-      'Ocp-Apim-Subscription-Key': AZURE_KEY,
-      'Content-Type':              'application/ssml+xml',
-      'X-Microsoft-OutputFormat':  'audio-24khz-96kbitrate-mono-mp3',
-      'User-Agent':                'ShadowLingo/1.0',
-      'Content-Length':            ssmlBuf.length
-    }
-  };
-
-  const chunks = [];
-  try {
-    await new Promise((resolve, reject) => {
-      const azReq = https.request(options, azRes => {
-        if (azRes.statusCode !== 200) {
-          const errChunks = [];
-          azRes.on('data', c => errChunks.push(c));
-          azRes.on('end', () => {
-            const body = Buffer.concat(errChunks).toString('utf-8');
-            reject(new Error(`Azure TTS ${azRes.statusCode}: ${body.slice(0, 300)}`));
-          });
-          return;
-        }
-        azRes.on('data', c => chunks.push(c));
-        azRes.on('end', resolve);
-      });
-      azReq.on('error', reject);
-      azReq.write(ssmlBuf);
-      azReq.end();
-    });
-  } catch (err) {
-    res.status(502).json({ error: err.message });
-    return;
+  // 解析请求体（兼容 Vercel 自动解析和原始流）
+  let parsed = req.body;
+  if (!parsed || typeof parsed !== 'object' || Buffer.isBuffer(parsed)) {
+    let raw = '';
+    await new Promise(resolve => { req.on('data', c => raw += c); req.on('end', resolve); });
+    try { parsed = JSON.parse(raw); }
+    catch { return res.status(400).json({ error: 'bad json' }); }
   }
 
-  const mp3 = Buffer.concat(chunks);
-  res.setHeader('Content-Type', 'audio/mpeg');
-  res.setHeader('Cache-Control', 'public, max-age=86400');
-  res.end(mp3);
+  const { text, role, rate } = parsed;
+  if (!text) { return res.status(400).json({ error: 'text required' }); }
+
+  const voice = VOICES[role] || VOICES.local;
+  const ssml  = buildSSML(text, voice, rate || 1.0);
+
+  try {
+    const mp3 = await synthesize(ssml, 15000);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.end(mp3);
+  } catch (err) {
+    console.error('Edge TTS error:', err.message);
+    res.status(502).json({ error: 'TTS synthesis failed: ' + err.message });
+  }
 };
