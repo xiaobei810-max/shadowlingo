@@ -58,6 +58,40 @@ function testEdgeTts() {
 function sha256Hex(msg) { return crypto.createHash('sha256').update(msg).digest('hex'); }
 function hmacSha256(key, msg) { return crypto.createHmac('sha256', key).update(msg).digest(); }
 
+// 用 STS GetCallerIdentity 验证密钥本身是否有效（不需要任何特定服务权限）
+async function testTencentKeys() {
+  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) return { ok: false, error: 'keys not set' };
+  try {
+    const action = 'GetCallerIdentity';
+    const version = '2018-08-13';
+    const service = 'sts';
+    const host = 'sts.tencentcloudapi.com';
+    const payload = '{}';
+    const timestamp = Math.floor(Date.now() / 1000);
+    const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
+    const ct = 'application/json; charset=utf-8';
+    const canonicalHeaders = `content-type:${ct}\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
+    const signedHeaders = 'content-type;host;x-tc-action';
+    const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
+    const credentialScope = `${date}/${service}/tc3_request`;
+    const stringToSign = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
+    const secretDate = hmacSha256(`TC3${TENCENT_SECRET_KEY}`, date);
+    const secretService = hmacSha256(secretDate, service);
+    const secretSigning = hmacSha256(secretService, 'tc3_request');
+    const signature = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
+    const authorization = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+    const resp = await fetch(`https://${host}`, {
+      method: 'POST',
+      headers: { 'Content-Type': ct, 'Host': host, 'X-TC-Action': action,
+        'X-TC-Version': version, 'X-TC-Timestamp': String(timestamp), 'Authorization': authorization },
+      body: payload
+    });
+    const data = await resp.json();
+    if (data.Response && data.Response.Error) return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
+    return { ok: true, accountId: data.Response?.AccountId, arn: data.Response?.Arn };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
 async function testTencentSoe() {
   if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) return { ok: false, error: 'TENCENT_SECRET_ID/KEY not set' };
   try {
@@ -118,9 +152,10 @@ async function testTencentSoe() {
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  const [tts, evaluate] = await Promise.all([testEdgeTts(), testTencentSoe()]);
+  const [tts, keys, evaluate] = await Promise.all([testEdgeTts(), testTencentKeys(), testTencentSoe()]);
   res.status(200).json({
     tts,
+    tencentKeys: keys,
     evaluate: { ...evaluate, region: TENCENT_REGION, keyPresent: !!TENCENT_SECRET_ID }
   });
 };
