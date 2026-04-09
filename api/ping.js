@@ -110,7 +110,10 @@ async function testTencentKeys() {
   try {
     const host = 'sts.tencentcloudapi.com';
     const payload = '{}';
-    const headers = buildTc3('sts', host, 'GetCallerIdentity', '2018-08-13', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY);
+    const headers = {
+      ...buildTc3('sts', host, 'GetCallerIdentity', '2018-08-13', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY),
+      'X-TC-Region': TENCENT_REGION
+    };
     const data = await httpsPost(host, headers, payload);
     if (data.Response?.Error) return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
     return { ok: true, accountId: data.Response?.AccountId };
@@ -133,10 +136,21 @@ async function testTencentSoe() {
       SessionId: crypto.randomUUID(),
       RefText: '你好', WorkMode: 1, EvalMode: 1, ScoreCoeff: 1.0, ServerType: 1, TextMode: 0
     });
-    const headers = buildTc3('soe', host, 'TransmitOralProcessWithInit', '2018-07-24', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY);
-    const data = await httpsPost(host, headers, payload);
-    if (data.Response?.Error) return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
-    return { ok: true, engine: 'tencent-soe', score: data.Response?.SuggestedScore };
+    // 同时测试带 Region 和不带 Region 两种方式
+    const headersWithRegion = {
+      ...buildTc3('soe', host, 'TransmitOralProcessWithInit', '2018-07-24', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY),
+      'X-TC-Region': TENCENT_REGION
+    };
+    const headersNoRegion = buildTc3('soe', host, 'TransmitOralProcessWithInit', '2018-07-24', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY);
+    const [dataWith, dataWithout] = await Promise.all([
+      httpsPost(host, headersWithRegion, payload),
+      httpsPost(host, headersNoRegion, payload)
+    ]);
+    const errWith    = dataWith.Response?.Error    ? `${dataWith.Response.Error.Code}: ${dataWith.Response.Error.Message}`       : null;
+    const errWithout = dataWithout.Response?.Error ? `${dataWithout.Response.Error.Code}: ${dataWithout.Response.Error.Message}` : null;
+    if (!errWith)    return { ok: true, engine: 'tencent-soe', mode: 'with-region', score: dataWith.Response?.SuggestedScore };
+    if (!errWithout) return { ok: true, engine: 'tencent-soe', mode: 'no-region',   score: dataWithout.Response?.SuggestedScore };
+    return { ok: false, withRegion: errWith, withoutRegion: errWithout };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
