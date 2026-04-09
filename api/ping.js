@@ -9,18 +9,29 @@ const crypto    = require('crypto');
 const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
 const TRUSTED_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const GEC_VERSION   = '1-130.0.2849.68';
+const WIN_EPOCH = 621355968000000000n;
+const S_TO_TICKS = 10000000n;
+const FIVE_MIN_TICKS = 3000000000n;
+
+function generateSecMsGec() {
+  let ticks = BigInt(Math.floor(Date.now() / 1000)) * S_TO_TICKS + WIN_EPOCH;
+  ticks = ticks - (ticks % FIVE_MIN_TICKS);
+  return crypto.createHash('sha256').update(`${ticks}${TRUSTED_TOKEN}`, 'ascii').digest('hex').toUpperCase();
+}
 
 function testEdgeTts() {
   return new Promise(resolve => {
     const connId = crypto.randomUUID().replace(/-/g, '');
     const reqId  = crypto.randomUUID().replace(/-/g, '');
-    const url    = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}&ConnectionId=${connId}`;
+    const gec    = generateSecMsGec();
+    const url    = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${GEC_VERSION}&ConnectionId=${connId}`;
     let done = false;
     let bytes = 0;
     const timer = setTimeout(() => { if (!done) { done = true; ws.close(); resolve({ ok: false, error: 'timeout' }); } }, 10000);
 
     const ws = new WebSocket(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold' }
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0', 'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold' }
     });
 
     ws.on('open', () => {

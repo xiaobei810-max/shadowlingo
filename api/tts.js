@@ -35,11 +35,32 @@ const VOICES = {
 };
 
 const TRUSTED_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
-const WSS_URL = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}`;
+const GEC_VERSION   = '1-130.0.2849.68';
+const WSS_BASE      = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1';
 const OUTPUT_FORMAT = 'audio-24khz-96kbitrate-mono-mp3';
+
+// Windows epoch offset (ticks from 0001-01-01 to 1970-01-01)
+const WIN_EPOCH = 621355968000000000n;
+const S_TO_TICKS = 10000000n;
+const FIVE_MIN_TICKS = 3000000000n; // 5 * 60 * 10_000_000
+
+/**
+ * 生成 Sec-MS-GEC token（微软反滥用验证，与 edge-tts Python 库算法一致）
+ */
+function generateSecMsGec() {
+  let ticks = BigInt(Math.floor(Date.now() / 1000)) * S_TO_TICKS + WIN_EPOCH;
+  ticks = ticks - (ticks % FIVE_MIN_TICKS);
+  const str = `${ticks}${TRUSTED_TOKEN}`;
+  return crypto.createHash('sha256').update(str, 'ascii').digest('hex').toUpperCase();
+}
 
 function uuid() {
   return crypto.randomUUID().replace(/-/g, '');
+}
+
+function buildWssUrl(connId) {
+  const gec = generateSecMsGec();
+  return `${WSS_BASE}?TrustedClientToken=${TRUSTED_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${GEC_VERSION}&ConnectionId=${connId}`;
 }
 
 function escapeXml(s) {
@@ -73,7 +94,7 @@ function synthesize(ssml, timeoutMs) {
   return new Promise((resolve, reject) => {
     const connId    = uuid();
     const requestId = uuid();
-    const url       = `${WSS_URL}&ConnectionId=${connId}`;
+    const url       = buildWssUrl(connId);
 
     const ws = new WebSocket(url, {
       headers: {
