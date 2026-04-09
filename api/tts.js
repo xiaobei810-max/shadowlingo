@@ -4,7 +4,7 @@
  * 接口契约与原 Azure 版 100% 一致：
  *   POST { text, role?, rate? }  →  audio/mpeg binary
  *
- * 使用 Edge Read-Aloud WebSocket 协议，支持同样的微软语音名称。
+ * 协议参考：https://github.com/rany2/edge-tts (constants.py + drm.py)
  */
 
 const WebSocket = require('ws');
@@ -12,55 +12,46 @@ const crypto    = require('crypto');
 
 // ── 声音配置（与原 Azure 版完全一致）──────────────────────
 const VOICES = {
-  learner: {
-    name:      'en-US-AvaMultilingualNeural',
-    rateScale:  0.82,
-    pitchAdj:   '+6%'
-  },
-  local: {
-    name:      'zh-CN-YunxiNeural',
-    rateScale:  1.02,
-    pitchAdj:   '+2%'
-  },
-  david: {
-    name:      'en-US-AndrewMultilingualNeural',
-    rateScale:  0.95,
-    pitchAdj:   '+8%'
-  },
-  xiaqiqi: {
-    name:      'zh-CN-XiaoxiaoNeural',
-    rateScale:  1.05,
-    pitchAdj:   '+5%'
-  }
+  learner: { name: 'en-US-AvaMultilingualNeural', rateScale: 0.82, pitchAdj: '+6%' },
+  local:   { name: 'zh-CN-YunxiNeural',           rateScale: 1.02, pitchAdj: '+2%' },
+  david:   { name: 'en-US-AndrewMultilingualNeural', rateScale: 0.95, pitchAdj: '+8%' },
+  xiaqiqi: { name: 'zh-CN-XiaoxiaoNeural',        rateScale: 1.05, pitchAdj: '+5%' }
 };
 
-const TRUSTED_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
-const GEC_VERSION   = '1-130.0.2849.68';
-const WSS_BASE      = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1';
+// ── Edge TTS 协议常量（与 edge-tts Python 库 constants.py 保持一致）────
+const TRUSTED_CLIENT_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const CHROMIUM_FULL_VERSION = '143.0.3650.75';
+const CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split('.')[0];
+const SEC_MS_GEC_VERSION = `1-${CHROMIUM_FULL_VERSION}`;
+const WSS_BASE = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
 const OUTPUT_FORMAT = 'audio-24khz-96kbitrate-mono-mp3';
 
-// Windows epoch offset (ticks from 0001-01-01 to 1970-01-01)
-const WIN_EPOCH = 621355968000000000n;
-const S_TO_TICKS = 10000000n;
-const FIVE_MIN_TICKS = 3000000000n; // 5 * 60 * 10_000_000
+// Windows file time epoch: seconds from 1601-01-01 to 1970-01-01
+const WIN_EPOCH = 11644473600;
 
 /**
- * 生成 Sec-MS-GEC token（微软反滥用验证，与 edge-tts Python 库算法一致）
+ * 生成 Sec-MS-GEC token（与 edge-tts Python 库 drm.py 算法完全一致）
  */
 function generateSecMsGec() {
-  let ticks = BigInt(Math.floor(Date.now() / 1000)) * S_TO_TICKS + WIN_EPOCH;
-  ticks = ticks - (ticks % FIVE_MIN_TICKS);
-  const str = `${ticks}${TRUSTED_TOKEN}`;
-  return crypto.createHash('sha256').update(str, 'ascii').digest('hex').toUpperCase();
+  // 1. 当前 Unix 时间（秒）
+  let ticks = Math.floor(Date.now() / 1000);
+  // 2. 转换为 Windows file time epoch（秒）
+  ticks += WIN_EPOCH;
+  // 3. 取整到最近的 5 分钟（300 秒）
+  ticks -= ticks % 300;
+  // 4. 转换为 100 纳秒间隔（Windows file time 格式）
+  ticks = ticks * 1e7;
+  // 5. 拼接 token 并 SHA256
+  const strToHash = `${ticks.toFixed(0)}${TRUSTED_CLIENT_TOKEN}`;
+  return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase();
+}
+
+function generateMuid() {
+  return crypto.randomBytes(16).toString('hex').toUpperCase();
 }
 
 function uuid() {
   return crypto.randomUUID().replace(/-/g, '');
-}
-
-function buildWssUrl(connId) {
-  const gec = generateSecMsGec();
-  return `${WSS_BASE}?TrustedClientToken=${TRUSTED_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${GEC_VERSION}&ConnectionId=${connId}`;
 }
 
 function escapeXml(s) {
@@ -73,7 +64,6 @@ function escapeXml(s) {
 }
 
 function rateToStr(r) {
-  // Edge TTS 的 rate 格式："+0%", "+50%", "-20%" 等
   const pct = Math.round((r - 1) * 100);
   return (pct >= 0 ? '+' : '') + pct + '%';
 }
@@ -94,23 +84,29 @@ function synthesize(ssml, timeoutMs) {
   return new Promise((resolve, reject) => {
     const connId    = uuid();
     const requestId = uuid();
-    const url       = buildWssUrl(connId);
+    const gec       = generateSecMsGec();
+    const url       = `${WSS_BASE}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}&ConnectionId=${connId}`;
 
     const ws = new WebSocket(url, {
       headers: {
-        'User-Agent':  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
-        'Origin':      'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold'
+        'Pragma':        'no-cache',
+        'Cache-Control': 'no-cache',
+        'Origin':        'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+        'User-Agent':    `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROMIUM_MAJOR_VERSION}.0.0.0 Safari/537.36 Edg/${CHROMIUM_MAJOR_VERSION}.0.0.0`,
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language':  'en-US,en;q=0.9',
+        'Cookie':        `muid=${generateMuid()};`
       }
     });
 
     const audioChunks = [];
-    let   done        = false;
+    let done = false;
     const timer = setTimeout(() => {
       if (!done) { done = true; ws.close(); reject(new Error('Edge TTS timeout')); }
     }, timeoutMs || 15000);
 
     ws.on('open', () => {
-      // 1) 发送 speech.config
+      // 1) speech.config
       ws.send(
         `Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n` +
         JSON.stringify({
@@ -124,8 +120,7 @@ function synthesize(ssml, timeoutMs) {
           }
         })
       );
-
-      // 2) 发送 SSML
+      // 2) SSML
       ws.send(
         `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n${ssml}`
       );
@@ -133,18 +128,15 @@ function synthesize(ssml, timeoutMs) {
 
     ws.on('message', (data, isBinary) => {
       if (done) return;
-
       if (isBinary) {
-        // 二进制消息：前 2 字节 = header 长度 (big-endian)，之后是 header 文本，再之后是音频数据
         const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
         if (buf.length < 2) return;
-        const headerLen = buf.readUInt16BE(0);
+        const headerLen  = buf.readUInt16BE(0);
         const audioStart = 2 + headerLen;
         if (audioStart < buf.length) {
           audioChunks.push(buf.slice(audioStart));
         }
       } else {
-        // 文本消息：检查 turn.end 表示合成结束
         const msg = data.toString();
         if (msg.includes('Path:turn.end')) {
           done = true;
@@ -163,23 +155,19 @@ function synthesize(ssml, timeoutMs) {
       if (!done) {
         done = true;
         clearTimeout(timer);
-        if (audioChunks.length > 0) {
-          resolve(Buffer.concat(audioChunks));
-        } else {
-          reject(new Error('Edge TTS connection closed without audio'));
-        }
+        audioChunks.length > 0
+          ? resolve(Buffer.concat(audioChunks))
+          : reject(new Error('Edge TTS connection closed without audio'));
       }
     });
   });
 }
 
 module.exports = async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
   // 解析请求体（兼容 Vercel 自动解析和原始流）

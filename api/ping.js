@@ -1,23 +1,25 @@
 /**
  * api/ping.js — 诊断端点
- * TTS: Edge TTS (免费)
- * Evaluate: Azure Speech (仍需 key，后续会迁移到腾讯云)
  */
 const WebSocket = require('ws');
 const crypto    = require('crypto');
 
 const AZURE_KEY    = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION || 'eastasia';
-const TRUSTED_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
-const GEC_VERSION   = '1-130.0.2849.68';
-const WIN_EPOCH = 621355968000000000n;
-const S_TO_TICKS = 10000000n;
-const FIVE_MIN_TICKS = 3000000000n;
+
+const TRUSTED_CLIENT_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const CHROMIUM_FULL_VERSION = '143.0.3650.75';
+const CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split('.')[0];
+const SEC_MS_GEC_VERSION = `1-${CHROMIUM_FULL_VERSION}`;
+const WIN_EPOCH = 11644473600;
 
 function generateSecMsGec() {
-  let ticks = BigInt(Math.floor(Date.now() / 1000)) * S_TO_TICKS + WIN_EPOCH;
-  ticks = ticks - (ticks % FIVE_MIN_TICKS);
-  return crypto.createHash('sha256').update(`${ticks}${TRUSTED_TOKEN}`, 'ascii').digest('hex').toUpperCase();
+  let ticks = Math.floor(Date.now() / 1000);
+  ticks += WIN_EPOCH;
+  ticks -= ticks % 300;
+  ticks = ticks * 1e7;
+  const strToHash = `${ticks.toFixed(0)}${TRUSTED_CLIENT_TOKEN}`;
+  return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase();
 }
 
 function testEdgeTts() {
@@ -25,13 +27,21 @@ function testEdgeTts() {
     const connId = crypto.randomUUID().replace(/-/g, '');
     const reqId  = crypto.randomUUID().replace(/-/g, '');
     const gec    = generateSecMsGec();
-    const url    = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${GEC_VERSION}&ConnectionId=${connId}`;
+    const url    = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}&ConnectionId=${connId}`;
     let done = false;
     let bytes = 0;
-    const timer = setTimeout(() => { if (!done) { done = true; ws.close(); resolve({ ok: false, error: 'timeout' }); } }, 10000);
+    const timer = setTimeout(() => { if (!done) { done = true; try { ws.close(); } catch(e) {} resolve({ ok: false, error: 'timeout' }); } }, 10000);
 
     const ws = new WebSocket(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0', 'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold' }
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache',
+        'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+        'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROMIUM_MAJOR_VERSION}.0.0.0 Safari/537.36 Edg/${CHROMIUM_MAJOR_VERSION}.0.0.0`,
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cookie': `muid=${crypto.randomBytes(16).toString('hex').toUpperCase()};`
+      }
     });
 
     ws.on('open', () => {
@@ -59,7 +69,7 @@ function testEdgeTts() {
 function testAzureStt() {
   const https = require('https');
   return new Promise(resolve => {
-    if (!AZURE_KEY) { resolve({ ok: false, error: 'AZURE_SPEECH_KEY not set (needed for evaluate only)' }); return; }
+    if (!AZURE_KEY) { resolve({ ok: false, error: 'AZURE_SPEECH_KEY not set' }); return; }
     const pcmLen = 1600;
     const wav = Buffer.alloc(44 + pcmLen, 0);
     wav.write('RIFF',0); wav.writeUInt32LE(36+pcmLen,4); wav.write('WAVE',8); wav.write('fmt ',12);
@@ -90,7 +100,8 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   const [tts, evaluate] = await Promise.all([testEdgeTts(), testAzureStt()]);
   res.status(200).json({
-    tts:      { engine: 'edge-tts (free)', ...tts },
-    evaluate: { engine: 'azure (will migrate to tencent)', region: AZURE_REGION, keyPresent: !!AZURE_KEY, ...evaluate }
+    tts: { engine: 'edge-tts (free)', ...tts },
+    evaluate: { engine: 'azure', region: AZURE_REGION, keyPresent: !!AZURE_KEY, ...evaluate },
+    debug: { gecVersion: SEC_MS_GEC_VERSION, gecToken: generateSecMsGec().slice(0, 8) + '...' }
   });
 };
