@@ -85,8 +85,9 @@ function buildTc3(service, host, action, version, payload, secretId, secretKey) 
   const timestamp = Math.floor(Date.now() / 1000);
   const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
   const ct = 'application/json; charset=utf-8';
-  const canonicalHeaders = `content-type:${ct}\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
-  const signedHeaders = 'content-type;host;x-tc-action';
+  // SOE 是 2018 年旧 API，只签 content-type;host（与 API Explorer 行为一致）
+  const canonicalHeaders = `content-type:${ct}\nhost:${host}\n`;
+  const signedHeaders = 'content-type;host';
   const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
   const credentialScope = `${date}/${service}/tc3_request`;
   const stringToSign = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;

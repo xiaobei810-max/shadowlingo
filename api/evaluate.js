@@ -82,8 +82,9 @@ async function tencentSoeAssess(pcmBase64, refText) {
 
   // ── Canonical Request ──
   const ct               = 'application/json; charset=utf-8';
-  const canonicalHeaders = `content-type:${ct}\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
-  const signedHeaders    = 'content-type;host;x-tc-action';
+  // SOE 旧 API (2018-07-24) 只签 content-type;host，与 API Explorer 一致
+  const canonicalHeaders = `content-type:${ct}\nhost:${host}\n`;
+  const signedHeaders    = 'content-type;host';
   const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
 
   // ── String to Sign ──
