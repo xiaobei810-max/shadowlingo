@@ -55,123 +55,89 @@ function testEdgeTts() {
   });
 }
 
+const https = require('https');
+
 function sha256Hex(msg) { return crypto.createHash('sha256').update(msg).digest('hex'); }
 function hmacSha256(key, msg) { return crypto.createHmac('sha256', key).update(msg).digest(); }
 
-// 用 STS GetCallerIdentity 验证密钥本身是否有效（不需要任何特定服务权限）
+// 用 https.request 完全掌控 Host header（fetch 会忽略手动设置的 Host）
+function httpsPost(host, headers, body) {
+  return new Promise((resolve, reject) => {
+    const buf = Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf8');
+    const req = https.request({
+      hostname: host, path: '/', method: 'POST',
+      headers: { ...headers, 'Content-Length': buf.length }
+    }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+        catch(e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(buf);
+    req.end();
+  });
+}
+
+function buildTc3(service, host, action, version, payload, secretId, secretKey) {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
+  const ct = 'application/json; charset=utf-8';
+  const canonicalHeaders = `content-type:${ct}\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
+  const signedHeaders = 'content-type;host;x-tc-action';
+  const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
+  const credentialScope = `${date}/${service}/tc3_request`;
+  const stringToSign = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
+  const secretDate    = hmacSha256(`TC3${secretKey}`, date);
+  const secretService = hmacSha256(secretDate, service);
+  const secretSigning = hmacSha256(secretService, 'tc3_request');
+  const signature = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
+  const authorization = `TC3-HMAC-SHA256 Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  return {
+    'Content-Type': ct,
+    'Host': host,
+    'X-TC-Action': action,
+    'X-TC-Version': version,
+    'X-TC-Timestamp': String(timestamp),
+    'Authorization': authorization
+  };
+}
+
 async function testTencentKeys() {
   if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) return { ok: false, error: 'keys not set' };
   try {
-    const action = 'GetCallerIdentity';
-    const version = '2018-08-13';
-    const service = 'sts';
     const host = 'sts.tencentcloudapi.com';
     const payload = '{}';
-    const timestamp = Math.floor(Date.now() / 1000);
-    const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
-    const ct = 'application/json; charset=utf-8';
-    const canonicalHeaders = `content-type:${ct}\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
-    const signedHeaders = 'content-type;host;x-tc-action';
-    const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
-    const credentialScope = `${date}/${service}/tc3_request`;
-    const stringToSign = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
-    const secretDate = hmacSha256(`TC3${TENCENT_SECRET_KEY}`, date);
-    const secretService = hmacSha256(secretDate, service);
-    const secretSigning = hmacSha256(secretService, 'tc3_request');
-    const signature = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
-    const authorization = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-    const resp = await fetch(`https://${host}`, {
-      method: 'POST',
-      headers: { 'Content-Type': ct, 'Host': host, 'X-TC-Action': action,
-        'X-TC-Version': version, 'X-TC-Timestamp': String(timestamp), 'Authorization': authorization },
-      body: payload
-    });
-    const data = await resp.json();
-    if (data.Response && data.Response.Error) return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
-    return { ok: true, accountId: data.Response?.AccountId, arn: data.Response?.Arn };
+    const headers = buildTc3('sts', host, 'GetCallerIdentity', '2018-08-13', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY);
+    const data = await httpsPost(host, headers, payload);
+    if (data.Response?.Error) return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
+    return { ok: true, accountId: data.Response?.AccountId };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
 async function testTencentSoe() {
-  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) return { ok: false, error: 'TENCENT_SECRET_ID/KEY not set' };
+  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) return { ok: false, error: 'keys not set' };
   try {
-    const action = 'TransmitOralProcessWithInit';
-    const version = '2018-07-24';
-    const service = 'soe';
     const host = 'soe.tencentcloudapi.com';
-
-    // 最小 WAV（静音）
-    const pcmLen = 3200; // 0.1秒 16kHz 16bit
+    const pcmLen = 3200;
     const wav = Buffer.alloc(44 + pcmLen, 0);
     wav.write('RIFF',0); wav.writeUInt32LE(36+pcmLen,4); wav.write('WAVE',8); wav.write('fmt ',12);
     wav.writeUInt32LE(16,16); wav.writeUInt16LE(1,20); wav.writeUInt16LE(1,22);
     wav.writeUInt32LE(16000,24); wav.writeUInt32LE(32000,28); wav.writeUInt16LE(2,32); wav.writeUInt16LE(16,34);
     wav.write('data',36); wav.writeUInt32LE(pcmLen,40);
-
     const payload = JSON.stringify({
       SeqId: 1, IsEnd: 1, VoiceFileType: 2, VoiceEncodeType: 1,
       UserVoiceData: wav.toString('base64'),
       SessionId: crypto.randomUUID(),
       RefText: '你好', WorkMode: 1, EvalMode: 1, ScoreCoeff: 1.0, ServerType: 1, TextMode: 0
     });
-
-    const timestamp = Math.floor(Date.now() / 1000);
-    const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
-    const ct = 'application/json; charset=utf-8';
-    const canonicalHeaders = `content-type:${ct}\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
-    const signedHeaders = 'content-type;host;x-tc-action';
-    const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
-    const credentialScope = `${date}/${service}/tc3_request`;
-    const stringToSign = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
-    const secretDate = hmacSha256(`TC3${TENCENT_SECRET_KEY}`, date);
-    const secretService = hmacSha256(secretDate, service);
-    const secretSigning = hmacSha256(secretService, 'tc3_request');
-    const signature = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
-    const authorization = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-    // 先不带 Region 试（SOE 是全球服务，Region 可能引发问题）
-    const resp = await fetch(`https://${host}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': ct, 'Host': host,
-        'X-TC-Action': action, 'X-TC-Version': version,
-        'X-TC-Timestamp': String(timestamp),
-        'Authorization': authorization
-        // 故意不传 X-TC-Region
-      },
-      body: payload
-    });
-    const data = await resp.json();
-    if (data.Response && data.Response.Error) {
-      // 也试一次带 ServerType:0（旧版服务）
-      const payload0 = JSON.stringify({
-        SeqId: 1, IsEnd: 1, VoiceFileType: 2, VoiceEncodeType: 1,
-        UserVoiceData: wav.toString('base64'),
-        SessionId: crypto.randomUUID(),
-        RefText: '你好', WorkMode: 1, EvalMode: 1, ScoreCoeff: 1.0, ServerType: 0, TextMode: 0
-      });
-      const cr0 = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload0)}`;
-      const sts0 = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(cr0)}`;
-      const sig0 = crypto.createHmac('sha256', secretSigning).update(sts0).digest('hex');
-      const auth0 = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${sig0}`;
-      const resp0 = await fetch(`https://${host}`, {
-        method: 'POST',
-        headers: { 'Content-Type': ct, 'Host': host, 'X-TC-Action': action,
-          'X-TC-Version': version, 'X-TC-Timestamp': String(timestamp), 'Authorization': auth0 },
-        body: payload0
-      });
-      const data0 = await resp0.json();
-      const err0 = data0.Response?.Error ? `${data0.Response.Error.Code}: ${data0.Response.Error.Message}` : null;
-      return {
-        ok: false,
-        errorServerType1: `${data.Response.Error.Code}: ${data.Response.Error.Message}`,
-        errorServerType0: err0 || 'ok'
-      };
-    }
-    return { ok: true, engine: 'tencent-soe', suggestedScore: data.Response?.SuggestedScore };
-  } catch(e) {
-    return { ok: false, error: e.message };
-  }
+    const headers = buildTc3('soe', host, 'TransmitOralProcessWithInit', '2018-07-24', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY);
+    const data = await httpsPost(host, headers, payload);
+    if (data.Response?.Error) return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
+    return { ok: true, engine: 'tencent-soe', score: data.Response?.SuggestedScore };
+  } catch(e) { return { ok: false, error: e.message }; }
 }
 
 module.exports = async function handler(req, res) {
