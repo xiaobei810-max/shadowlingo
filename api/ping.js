@@ -129,19 +129,44 @@ async function testTencentSoe() {
     const signature = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
     const authorization = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
+    // 先不带 Region 试（SOE 是全球服务，Region 可能引发问题）
     const resp = await fetch(`https://${host}`, {
       method: 'POST',
       headers: {
         'Content-Type': ct, 'Host': host,
         'X-TC-Action': action, 'X-TC-Version': version,
-        'X-TC-Timestamp': String(timestamp), 'X-TC-Region': TENCENT_REGION,
+        'X-TC-Timestamp': String(timestamp),
         'Authorization': authorization
+        // 故意不传 X-TC-Region
       },
       body: payload
     });
     const data = await resp.json();
     if (data.Response && data.Response.Error) {
-      return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
+      // 也试一次带 ServerType:0（旧版服务）
+      const payload0 = JSON.stringify({
+        SeqId: 1, IsEnd: 1, VoiceFileType: 2, VoiceEncodeType: 1,
+        UserVoiceData: wav.toString('base64'),
+        SessionId: crypto.randomUUID(),
+        RefText: '你好', WorkMode: 1, EvalMode: 1, ScoreCoeff: 1.0, ServerType: 0, TextMode: 0
+      });
+      const cr0 = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload0)}`;
+      const sts0 = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(cr0)}`;
+      const sig0 = crypto.createHmac('sha256', secretSigning).update(sts0).digest('hex');
+      const auth0 = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${sig0}`;
+      const resp0 = await fetch(`https://${host}`, {
+        method: 'POST',
+        headers: { 'Content-Type': ct, 'Host': host, 'X-TC-Action': action,
+          'X-TC-Version': version, 'X-TC-Timestamp': String(timestamp), 'Authorization': auth0 },
+        body: payload0
+      });
+      const data0 = await resp0.json();
+      const err0 = data0.Response?.Error ? `${data0.Response.Error.Code}: ${data0.Response.Error.Message}` : null;
+      return {
+        ok: false,
+        errorServerType1: `${data.Response.Error.Code}: ${data.Response.Error.Message}`,
+        errorServerType0: err0 || 'ok'
+      };
     }
     return { ok: true, engine: 'tencent-soe', suggestedScore: data.Response?.SuggestedScore };
   } catch(e) {
