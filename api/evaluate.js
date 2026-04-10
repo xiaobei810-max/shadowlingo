@@ -136,10 +136,28 @@ async function tencentSoeAssess(pcmBase64, refText) {
       () => finish(new Error('Tencent SOE WebSocket timeout (25s)')), 25000
     );
 
-    ws.on('open', () => {
-      console.log('[TencentWS] 连接已建立，发送音频 + 结束帧');
-      ws.send(wavBuf);
-      ws.send(JSON.stringify({ voice_id: voiceId, seq: 0, is_end: 1 }));
+    ws.on('open', async () => {
+      console.log('[TencentWS] 连接已建立，开始流式发送音频');
+      // Tencent SOE 限速：1秒内最多发送3秒音频数据
+      // 策略：把 PCM 按 ≤2秒切片，每片间隔 600ms，确保速率 ≤ 3.3x 实时
+      const pcmData  = wavBuf.slice(44);        // 去掉 44 字节 WAV 头，只保留 PCM
+      const CHUNK_PCM = 16000 * 2 * 2;          // 2秒 × 16kHz × 2字节 = 64000 bytes/帧
+      const DELAY_MS  = 600;                    // 每帧间隔 600ms
+      const totalSeq  = Math.ceil(pcmData.length / CHUNK_PCM);
+
+      for (let i = 0; i < totalSeq; i++) {
+        if (done) return;                       // 已超时/出错则停止发送
+        const slice   = pcmData.slice(i * CHUNK_PCM, (i + 1) * CHUNK_PCM);
+        const isLast  = (i === totalSeq - 1);
+        // 每帧套独立 WAV 头（服务端按完整音频帧解析）
+        ws.send(pcmToWav(slice));
+        console.log('[TencentWS] 发送帧 %d/%d，PCM %d 字节%s', i + 1, totalSeq, slice.length, isLast ? '（最后帧）' : '');
+        if (isLast) {
+          ws.send(JSON.stringify({ voice_id: voiceId, seq: i, is_end: 1 }));
+        } else {
+          await new Promise(r => setTimeout(r, DELAY_MS));
+        }
+      }
     });
 
     ws.on('message', (data) => {
