@@ -46,6 +46,38 @@ function pcmToWav(pcmBuf) {
 //  签名：HMAC-SHA1（与 TC3-HMAC-SHA256 完全不同）
 // ══════════════════════════════════════════════════════════════════
 
+// ── SOE 响应字段规范化（兼容蛇形和大驼峰两种命名）─────────────
+function normalizeSoeResponse(raw) {
+  // 兜底：如果什么都没有，返回空壳
+  if (!raw || typeof raw !== 'object') return {};
+
+  // 字段映射：蛇形 → 大驼峰
+  const r = {
+    PronAccuracy:   raw.PronAccuracy   ?? raw.pron_accuracy   ?? 0,
+    PronFluency:    raw.PronFluency    ?? raw.pron_fluency     ?? 0,
+    PronCompletion: raw.PronCompletion ?? raw.pron_completion  ?? 100,
+    SuggestedScore: raw.SuggestedScore ?? raw.suggested_score  ?? 0,
+    SessionId:      raw.SessionId      ?? raw.session_id       ?? '',
+  };
+
+  // Words 数组
+  const rawWords = raw.Words || raw.words || [];
+  r.Words = rawWords.map(w => ({
+    Word:          w.Word          ?? w.word          ?? '',
+    MemBeginTime:  w.MemBeginTime  ?? w.mem_begin_time ?? 0,
+    MemEndTime:    w.MemEndTime    ?? w.mem_end_time   ?? 0,
+    PronAccuracy:  w.PronAccuracy  ?? w.pron_accuracy  ?? 0,
+    PronFluency:   w.PronFluency   ?? w.pron_fluency   ?? 0,
+    MatchTag:      w.MatchTag      ?? w.match_tag      ?? 0,
+    PhoneInfos: (w.PhoneInfos || w.phone_infos || []).map(p => ({
+      Phone:        p.Phone        ?? p.phone         ?? '',
+      PronAccuracy: p.PronAccuracy ?? p.pron_accuracy ?? 0,
+    })),
+  }));
+
+  return r;
+}
+
 async function tencentSoeAssess(pcmBase64, refText) {
   if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
     throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
@@ -75,24 +107,22 @@ async function tencentSoeAssess(pcmBase64, refText) {
   };
 
   // ── HMAC-SHA1 签名 ──────────────────────────────────────────────
-  const sortedKeys = Object.keys(params).sort();
-  // 签名字符串：host/path?key1=val1&key2=val2... （不 URL 编码参数值）
+  const sortedKeys   = Object.keys(params).sort();
   const queryForSign = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
   const strToSign    = `soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${queryForSign}`;
   const signature    = crypto.createHmac('sha1', TENCENT_SECRET_KEY)
-                             .update(strToSign)
-                             .digest('base64');
+                             .update(strToSign).digest('base64');
 
-  // ── 构建 WSS URL（参数值 URL 编码）──────────────────────────────
+  // ── 构建 WSS URL ─────────────────────────────────────────────────
   const urlQuery = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
   const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
 
   console.log('[TencentWS] 连接 SOE, voiceId:', voiceId, 'refText:', cleanRef, 'WAV:', wavBuf.length, '字节');
 
   return new Promise((resolve, reject) => {
-    const ws   = new WebSocket(url);
-    let done   = false;
-    let result = null;
+    const ws = new WebSocket(url);
+    let done = false;
+    let lastOkMsg = null;  // 记录最后一条 code:0 的消息，关闭时兜底用
 
     const finish = (err, data) => {
       if (done) return;
@@ -102,13 +132,13 @@ async function tencentSoeAssess(pcmBase64, refText) {
       err ? reject(err) : resolve(data);
     };
 
-    const timer = setTimeout(() => finish(new Error('Tencent SOE WebSocket timeout (20s)')), 20000);
+    const timer = setTimeout(
+      () => finish(new Error('Tencent SOE WebSocket timeout (25s)')), 25000
+    );
 
     ws.on('open', () => {
       console.log('[TencentWS] 连接已建立，发送音频 + 结束帧');
-      // 1) 发送完整音频（二进制帧）
       ws.send(wavBuf);
-      // 2) 发送结束标志（文本帧）
       ws.send(JSON.stringify({ voice_id: voiceId, seq: 0, is_end: 1 }));
     });
 
@@ -116,26 +146,38 @@ async function tencentSoeAssess(pcmBase64, refText) {
       if (done) return;
       let msg;
       try { msg = JSON.parse(data.toString()); }
-      catch(e) { console.error('[TencentWS] 非 JSON 消息:', data.toString().slice(0, 200)); return; }
+      catch(e) { console.error('[TencentWS] 非JSON消息:', data.toString().slice(0, 200)); return; }
 
-      console.log('[TencentWS] 消息:', JSON.stringify(msg).slice(0, 500));
+      console.log('[TencentWS] 消息:', JSON.stringify(msg).slice(0, 600));
 
-      // 错误响应
       const code = msg.code ?? msg.Code;
+
+      // 错误码
       if (code !== undefined && code !== 0) {
         finish(new Error(`Tencent SOE 错误 code=${code}: ${msg.message || msg.Message || ''}`));
         return;
       }
 
-      // 最终评测结果（is_end/final/end 为 1，或包含 PronAccuracy）
-      const isEnd = msg.is_end === 1 || msg.final === 1 || msg.end === 1;
+      // 保存最新 code:0 消息（关闭时兜底）
+      lastOkMsg = msg;
+
+      // 提取 payload（兼容嵌套 result 和扁平结构）
       const payload = msg.result || msg.Result || msg;
 
-      if (isEnd || payload.PronAccuracy !== undefined || payload.SuggestedScore !== undefined) {
-        // 统一包装为 { Response: {...} }，与 tencentToAzureFormat 兼容
-        finish(null, { Response: payload });
+      // 判断是否为最终结果帧：
+      // 1) is_end/final/end = 1
+      // 2) 包含评分字段（大驼峰或蛇形）
+      const isEnd    = msg.is_end === 1 || msg.final === 1 || msg.end === 1;
+      const hasScore = payload.PronAccuracy   !== undefined
+                    || payload.SuggestedScore !== undefined
+                    || payload.pron_accuracy  !== undefined
+                    || payload.suggested_score !== undefined;
+
+      if (isEnd || hasScore) {
+        console.log('[TencentWS] 收到评测结果，is_end=%s hasScore=%s', isEnd, hasScore);
+        finish(null, { Response: normalizeSoeResponse(payload) });
       }
-      // 非结束帧（中间帧）：忽略，等待最终结果
+      // 中间帧（确认帧、进度帧）：继续等待最终结果
     });
 
     ws.on('error', (err) => {
@@ -143,9 +185,15 @@ async function tencentSoeAssess(pcmBase64, refText) {
       finish(err);
     });
 
-    ws.on('close', (code, reason) => {
-      if (!done) {
-        finish(new Error(`Tencent SOE WebSocket 意外关闭: code=${code} reason=${reason}`));
+    ws.on('close', (closeCode, reason) => {
+      if (done) return;
+      // WebSocket 正常关闭但未触发 finish：用最后一条 code:0 消息兜底
+      if (lastOkMsg) {
+        console.log('[TencentWS] 连接关闭，用最后消息兜底 closeCode=%s', closeCode);
+        const payload = lastOkMsg.result || lastOkMsg.Result || lastOkMsg;
+        finish(null, { Response: normalizeSoeResponse(payload) });
+      } else {
+        finish(new Error(`Tencent SOE WebSocket 关闭 code=${closeCode} reason=${reason}`));
       }
     });
   });
