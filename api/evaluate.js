@@ -83,8 +83,14 @@ async function tencentSoeAssess(pcmBase64, refText) {
     throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
   }
 
-  const wavBuf   = pcmToWav(Buffer.from(pcmBase64, 'base64'));
+  // 限制最多 3 秒音频（96000 字节 PCM），避免超过 SOE WebSocket 单帧限速
+  // 16kHz × 16-bit mono × 3s = 96000 bytes
+  const MAX_PCM  = 16000 * 2 * 3;
+  const rawPcm   = Buffer.from(pcmBase64, 'base64');
+  const trimPcm  = rawPcm.length > MAX_PCM ? rawPcm.slice(0, MAX_PCM) : rawPcm;
+  const wavBuf   = pcmToWav(trimPcm);
   const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+  console.log('[TencentWS] 原始PCM:', rawPcm.length, '字节, 截断后:', trimPcm.length, '字节, WAV:', wavBuf.length, '字节');
 
   const timestamp = Math.floor(Date.now() / 1000);
   const expired   = timestamp + 86400;
@@ -102,7 +108,7 @@ async function tencentSoeAssess(pcmBase64, refText) {
     server_engine_type: '16k_zh',
     text_mode:          '0',       // 普通文本
     timestamp:          String(timestamp),
-    voice_format:       '1',       // 原始 PCM（无需 WAV 头，流式发送更简单）
+    voice_format:       '2',       // WAV（与 ping 测试一致，服务端已验证接受此格式）
     voice_id:           voiceId,
   };
 
@@ -136,29 +142,11 @@ async function tencentSoeAssess(pcmBase64, refText) {
       () => finish(new Error('Tencent SOE WebSocket timeout (25s)')), 25000
     );
 
-    ws.on('open', async () => {
-      // Tencent SOE 限速：1秒内最多发送3秒音频（即 3× 实时，约 96KB/s）
-      // 策略：原始 PCM（无 WAV 头），3200 字节/帧（0.1秒），每帧间隔 40ms
-      // → 实际速率 3200/0.04 = 80KB/s ≈ 2.5× 实时，安全边际充足
-      const pcmData  = wavBuf.slice(44);   // 去掉 44 字节 WAV 头
-      const CHUNK    = 3200;               // 0.1 秒 @ 16kHz 16-bit mono
-      const DELAY_MS = 40;                 // 每帧间隔 40ms
-      const total    = Math.ceil(pcmData.length / CHUNK);
-      console.log('[TencentWS] 连接已建立，流式发送 PCM: %d 帧 × %d ms，共 %d 字节',
-                  total, DELAY_MS, pcmData.length);
-
-      for (let i = 0; i < total; i++) {
-        if (done) return;
-        const slice  = pcmData.slice(i * CHUNK, (i + 1) * CHUNK);
-        const isLast = (i === total - 1);
-        ws.send(slice);
-        if (isLast) {
-          ws.send(JSON.stringify({ voice_id: voiceId, seq: total, is_end: 1 }));
-          console.log('[TencentWS] 已发送全部 %d 帧 + is_end', total);
-        } else {
-          await new Promise(r => setTimeout(r, DELAY_MS));
-        }
-      }
+    ws.on('open', () => {
+      // 单帧 WAV（≤3秒）+ 结束标志，与 ping 测试完全相同的协议
+      console.log('[TencentWS] 连接已建立，发送 WAV %d 字节 + is_end', wavBuf.length);
+      ws.send(wavBuf);
+      ws.send(JSON.stringify({ voice_id: voiceId, seq: 0, is_end: 1 }));
     });
 
     ws.on('message', (data) => {
