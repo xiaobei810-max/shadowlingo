@@ -51,7 +51,7 @@ function pcmToWav(pcmBuf) {
 //  方案二：PCM 流式降级 — 若方案一收到 code=4000（端点不支持 rec_mode=1），
 //          改用 voice_format=1 原始 PCM 切片，每次发 0.5s（16000 字节），
 //          间隔 200ms，速率 = 2.5× 实时，严格低于"1秒3秒"的 3× 限制。
-//          结束帧格式：{"type":"end"}（SOE WebSocket 规范，修复旧 code=4010）
+//          结束信号：空二进制帧 Buffer.alloc(0)（腾讯 SOE 只接受 Binary Frame）
 // ══════════════════════════════════════════════════════════════════
 
 // ── SOE 响应字段规范化（兼容蛇形和大驼峰两种命名）─────────────
@@ -204,9 +204,9 @@ async function tencentSoeAssess(pcmBase64, refText) {
 
   try {
     return await runSoeWebSocket(url1, (ws) => {
+      // WAV 格式自带长度头（RIFF chunk size），服务端读完即知结束，
+      // 严禁发送任何 Text Frame，否则触发 code=4010
       ws.send(wavBuf);
-      // WAV 格式结束帧（ping 测试已证实此格式在 voice_format=2 时有效）
-      ws.send(JSON.stringify({ voice_id: voiceId1, seq: 0, is_end: 1 }));
     }, 20000);
   } catch (err) {
     // 仅 code=4000（端点不支持 rec_mode=1 而触发速率限制）时才降级
@@ -219,7 +219,7 @@ async function tencentSoeAssess(pcmBase64, refText) {
   //  方案二：voice_format=1 PCM 流式，严格控制 2.5× 实时速率
   //  每次发送 0.5s 的 PCM（16000 字节），间隔 200ms，
   //  速率 = 0.5s ÷ 0.2s = 2.5×，严格低于腾讯"1秒3秒"上限
-  //  结束帧：{"type":"end"}（SOE WebSocket API 规范格式）
+  //  结束信号：空二进制帧（腾讯 SOE 只接受 Binary Frame，Text Frame → code=4010）
   // ────────────────────────────────────────────────────────────────
   const CHUNK_BYTES = 16000;   // 0.5s @16kHz 16-bit mono
   const DELAY_MS    = 200;     // 200ms 间隔 = 2.5× 实时
@@ -238,10 +238,9 @@ async function tencentSoeAssess(pcmBase64, refText) {
       await new Promise(r => setTimeout(r, DELAY_MS));
     }
     if (ws.readyState === WebSocket.OPEN) {
-      // PCM 流式的正确结束帧（{"type":"end"} — SOE WebSocket 新版规范）
-      // 注意：此格式与 WAV 模式的 {"voice_id":...,"is_end":1} 不同，
-      //       之前用错格式导致 code=4010 "客户端上传未知文本消息"
-      ws.send(JSON.stringify({ type: 'end' }));
+      // 腾讯云 SOE 只接受 Binary Frame，Text Frame 一律触发 code=4010
+      // 用空二进制帧作为 EOF 标志（比关闭连接更明确）
+      ws.send(Buffer.alloc(0));
     }
   }, streamMs + 15000);  // 流式发送时长 + 15s 服务端处理余量
 }
