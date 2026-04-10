@@ -43,15 +43,21 @@ function pcmToWav(pcmBuf) {
 // ══════════════════════════════════════════════════════════════════
 //  腾讯云智聆口语评测（新版）WebSocket
 //  协议：wss://soe.cloud.tencent.com/soe/api/<AppId>?{signed_params}
-//  签名：HMAC-SHA1（与 TC3-HMAC-SHA256 完全不同）
+//  签名：HMAC-SHA1
+//
+//  发送策略（双保险）：
+//  方案一：rec_mode=1（录音文件模式）— 一次性发送完整 WAV，无速率限制，
+//          官方文档允许最长 60 秒，server 端不做实时速率检查。
+//  方案二：PCM 流式降级 — 若方案一收到 code=4000（端点不支持 rec_mode=1），
+//          改用 voice_format=1 原始 PCM 切片，每次发 0.5s（16000 字节），
+//          间隔 200ms，速率 = 2.5× 实时，严格低于"1秒3秒"的 3× 限制。
+//          结束帧格式：{"type":"end"}（SOE WebSocket 规范，修复旧 code=4010）
 // ══════════════════════════════════════════════════════════════════
 
 // ── SOE 响应字段规范化（兼容蛇形和大驼峰两种命名）─────────────
 function normalizeSoeResponse(raw) {
-  // 兜底：如果什么都没有，返回空壳
   if (!raw || typeof raw !== 'object') return {};
 
-  // 字段映射：蛇形 → 大驼峰
   const r = {
     PronAccuracy:   raw.PronAccuracy   ?? raw.pron_accuracy   ?? 0,
     PronFluency:    raw.PronFluency    ?? raw.pron_fluency     ?? 0,
@@ -60,7 +66,6 @@ function normalizeSoeResponse(raw) {
     SessionId:      raw.SessionId      ?? raw.session_id       ?? '',
   };
 
-  // Words 数组
   const rawWords = raw.Words || raw.words || [];
   r.Words = rawWords.map(w => ({
     Word:          w.Word          ?? w.word          ?? '',
@@ -78,58 +83,42 @@ function normalizeSoeResponse(raw) {
   return r;
 }
 
-async function tencentSoeAssess(pcmBase64, refText) {
-  if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
-    throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
-  }
-
-  // 腾讯 SOE 限制：单次 WebSocket 会话音频不超过 3 秒
-  // 为避免触及精确边界，截取到 2 秒（安全余量）
-  // 16kHz × 16-bit mono × 2s = 64000 bytes
-  const MAX_PCM  = 16000 * 2 * 2;
-  const rawPcm   = Buffer.from(pcmBase64, 'base64');
-  const trimPcm  = rawPcm.length > MAX_PCM ? rawPcm.slice(0, MAX_PCM) : rawPcm;
-  const wavBuf   = pcmToWav(trimPcm);
-  const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
-  console.log('[TencentWS] 原始PCM:', rawPcm.length, '字节, 截断至2s:', trimPcm.length, '字节, WAV:', wavBuf.length, '字节');
-
+// ── 构建已签名的 SOE WebSocket URL ──────────────────────────────
+function buildSoeUrl(extraParams, cleanRef, voiceId) {
   const timestamp = Math.floor(Date.now() / 1000);
   const expired   = timestamp + 86400;
   const nonce     = Math.floor(Math.random() * 1e8);
-  const voiceId   = crypto.randomUUID().replace(/-/g, '');
 
-  // 参数按字母序排列（签名要求）
   const params = {
-    eval_mode:          '1',       // 句子评测
+    eval_mode:          '1',
     expired:            String(expired),
     nonce:              String(nonce),
     ref_text:           cleanRef,
     score_coeff:        '1.0',
     secretid:           TENCENT_SECRET_ID,
     server_engine_type: '16k_zh',
-    text_mode:          '0',       // 普通文本
+    text_mode:          '0',
     timestamp:          String(timestamp),
-    voice_format:       '2',       // WAV（与 ping 测试一致，服务端已验证接受此格式）
     voice_id:           voiceId,
+    ...extraParams,   // 调用方可覆盖 voice_format、rec_mode 等
   };
 
-  // ── HMAC-SHA1 签名 ──────────────────────────────────────────────
   const sortedKeys   = Object.keys(params).sort();
   const queryForSign = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
   const strToSign    = `soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${queryForSign}`;
   const signature    = crypto.createHmac('sha1', TENCENT_SECRET_KEY)
                              .update(strToSign).digest('base64');
+  const urlQuery     = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
+  return `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
+}
 
-  // ── 构建 WSS URL ─────────────────────────────────────────────────
-  const urlQuery = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
-  const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
-
-  console.log('[TencentWS] 连接 SOE, voiceId:', voiceId, 'refText:', cleanRef, 'WAV:', wavBuf.length, '字节');
-
+// ── 通用 WebSocket 会话执行器 ────────────────────────────────────
+// onOpen(ws) — 可以是同步或 async，在 open 事件内完成所有发送
+function runSoeWebSocket(url, onOpen, timeoutMs) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(url);
-    let done = false;
-    let lastOkMsg = null;  // 记录最后一条 code:0 的消息，关闭时兜底用
+    let done     = false;
+    let lastOkMsg = null;
 
     const finish = (err, data) => {
       if (done) return;
@@ -140,41 +129,30 @@ async function tencentSoeAssess(pcmBase64, refText) {
     };
 
     const timer = setTimeout(
-      () => finish(new Error('Tencent SOE WebSocket timeout (25s)')), 25000
+      () => finish(new Error(`Tencent SOE 超时 (${Math.round(timeoutMs / 1000)}s)`)), timeoutMs
     );
 
-    ws.on('open', () => {
-      // 单帧 WAV（≤3秒）+ 结束标志，与 ping 测试完全相同的协议
-      console.log('[TencentWS] 连接已建立，发送 WAV %d 字节 + is_end', wavBuf.length);
-      ws.send(wavBuf);
-      ws.send(JSON.stringify({ voice_id: voiceId, seq: 0, is_end: 1 }));
+    ws.on('open', async () => {
+      try { await onOpen(ws); }
+      catch(e) { finish(e); }
     });
 
     ws.on('message', (data) => {
       if (done) return;
       let msg;
       try { msg = JSON.parse(data.toString()); }
-      catch(e) { console.error('[TencentWS] 非JSON消息:', data.toString().slice(0, 200)); return; }
+      catch(e) { console.error('[TencentWS] 非JSON消息:', data.toString().slice(0, 100)); return; }
 
       console.log('[TencentWS] 消息:', JSON.stringify(msg).slice(0, 600));
 
       const code = msg.code ?? msg.Code;
-
-      // 错误码
       if (code !== undefined && code !== 0) {
         finish(new Error(`Tencent SOE 错误 code=${code}: ${msg.message || msg.Message || ''}`));
         return;
       }
 
-      // 保存最新 code:0 消息（关闭时兜底）
       lastOkMsg = msg;
-
-      // 提取 payload（兼容嵌套 result 和扁平结构）
-      const payload = msg.result || msg.Result || msg;
-
-      // 判断是否为最终结果帧：
-      // 1) is_end/final/end = 1
-      // 2) 包含评分字段（大驼峰或蛇形）
+      const payload  = msg.result || msg.Result || msg;
       const isEnd    = msg.is_end === 1 || msg.final === 1 || msg.end === 1;
       const hasScore = payload.PronAccuracy   !== undefined
                     || payload.SuggestedScore !== undefined
@@ -182,10 +160,9 @@ async function tencentSoeAssess(pcmBase64, refText) {
                     || payload.suggested_score !== undefined;
 
       if (isEnd || hasScore) {
-        console.log('[TencentWS] 收到评测结果，is_end=%s hasScore=%s', isEnd, hasScore);
+        console.log('[TencentWS] 收到评测结果, is_end=%s hasScore=%s', isEnd, hasScore);
         finish(null, { Response: normalizeSoeResponse(payload) });
       }
-      // 中间帧（确认帧、进度帧）：继续等待最终结果
     });
 
     ws.on('error', (err) => {
@@ -195,16 +172,78 @@ async function tencentSoeAssess(pcmBase64, refText) {
 
     ws.on('close', (closeCode, reason) => {
       if (done) return;
-      // WebSocket 正常关闭但未触发 finish：用最后一条 code:0 消息兜底
       if (lastOkMsg) {
         console.log('[TencentWS] 连接关闭，用最后消息兜底 closeCode=%s', closeCode);
         const payload = lastOkMsg.result || lastOkMsg.Result || lastOkMsg;
         finish(null, { Response: normalizeSoeResponse(payload) });
       } else {
-        finish(new Error(`Tencent SOE WebSocket 关闭 code=${closeCode} reason=${reason}`));
+        finish(new Error(`Tencent SOE 关闭 code=${closeCode} reason=${reason}`));
       }
     });
   });
+}
+
+// ── 主评测函数 ───────────────────────────────────────────────────
+async function tencentSoeAssess(pcmBase64, refText) {
+  if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
+    throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
+  }
+
+  const rawPcm   = Buffer.from(pcmBase64, 'base64');
+  const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+  const durSec   = (rawPcm.length / (16000 * 2)).toFixed(1);
+  console.log('[TencentWS] PCM:', rawPcm.length, '字节 (约', durSec, 's), refText:', cleanRef);
+
+  // ────────────────────────────────────────────────────────────────
+  //  方案一：rec_mode=1 录音文件模式（完整音频一次性发送，无速率限制）
+  // ────────────────────────────────────────────────────────────────
+  const voiceId1 = crypto.randomUUID().replace(/-/g, '');
+  const wavBuf   = pcmToWav(rawPcm);
+  const url1     = buildSoeUrl({ rec_mode: '1', voice_format: '2' }, cleanRef, voiceId1);
+  console.log('[TencentWS] 方案1: rec_mode=1 WAV 一次性, voiceId:', voiceId1, 'WAV:', wavBuf.length, '字节');
+
+  try {
+    return await runSoeWebSocket(url1, (ws) => {
+      ws.send(wavBuf);
+      // WAV 格式结束帧（ping 测试已证实此格式在 voice_format=2 时有效）
+      ws.send(JSON.stringify({ voice_id: voiceId1, seq: 0, is_end: 1 }));
+    }, 20000);
+  } catch (err) {
+    // 仅 code=4000（端点不支持 rec_mode=1 而触发速率限制）时才降级
+    // 其他错误（401/403/4010 等）直接向上抛出，避免用错误的降级掩盖真实问题
+    if (!err.message.includes('code=4000')) throw err;
+    console.warn('[TencentWS] 方案1 code=4000（端点未识别 rec_mode=1），降级到方案2 PCM 流式');
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  //  方案二：voice_format=1 PCM 流式，严格控制 2.5× 实时速率
+  //  每次发送 0.5s 的 PCM（16000 字节），间隔 200ms，
+  //  速率 = 0.5s ÷ 0.2s = 2.5×，严格低于腾讯"1秒3秒"上限
+  //  结束帧：{"type":"end"}（SOE WebSocket API 规范格式）
+  // ────────────────────────────────────────────────────────────────
+  const CHUNK_BYTES = 16000;   // 0.5s @16kHz 16-bit mono
+  const DELAY_MS    = 200;     // 200ms 间隔 = 2.5× 实时
+  const totalChunks = Math.ceil(rawPcm.length / CHUNK_BYTES);
+  const streamMs    = totalChunks * DELAY_MS;
+
+  const voiceId2 = crypto.randomUUID().replace(/-/g, '');
+  const url2     = buildSoeUrl({ voice_format: '1' }, cleanRef, voiceId2);
+  console.log('[TencentWS] 方案2: PCM 流式，%d 切片 × 200ms ≈ %dms，voiceId:', totalChunks, streamMs, voiceId2);
+
+  return runSoeWebSocket(url2, async (ws) => {
+    for (let offset = 0; offset < rawPcm.length; offset += CHUNK_BYTES) {
+      if (ws.readyState !== WebSocket.OPEN) break;
+      const chunk = rawPcm.slice(offset, Math.min(offset + CHUNK_BYTES, rawPcm.length));
+      ws.send(chunk);  // 二进制帧：原始 PCM 数据
+      await new Promise(r => setTimeout(r, DELAY_MS));
+    }
+    if (ws.readyState === WebSocket.OPEN) {
+      // PCM 流式的正确结束帧（{"type":"end"} — SOE WebSocket 新版规范）
+      // 注意：此格式与 WAV 模式的 {"voice_id":...,"is_end":1} 不同，
+      //       之前用错格式导致 code=4010 "客户端上传未知文本消息"
+      ws.send(JSON.stringify({ type: 'end' }));
+    }
+  }, streamMs + 15000);  // 流式发送时长 + 15s 服务端处理余量
 }
 
 // ── 腾讯 → Azure 格式适配器 ──────────────────────────────────────
