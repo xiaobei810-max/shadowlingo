@@ -1,18 +1,18 @@
 /**
- * api/evaluate.js — 发音评测（腾讯云智聆 SOE 新版 WebSocket）
+ * api/evaluate.js — 发音评测（腾讯云智聆 SOE HTTP SDK）
  *
  * 接口契约与原 Azure 版 100% 一致：
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE WebSocket 评测 → 适配器转 Azure 格式
+ *   1. 腾讯 SOE TransmitOralProcessWithInit（HTTP SDK）→ 适配器转 Azure 格式
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
  */
 
-const WebSocket = require('ws');
 const crypto    = require('crypto');
+const { soe }   = require('tencentcloud-sdk-nodejs-soe');
 
 const TENCENT_APP_ID     = process.env.TENCENT_APP_ID;
 const TENCENT_SECRET_ID  = process.env.TENCENT_SECRET_ID;
@@ -41,211 +41,88 @@ function pcmToWav(pcmBuf) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  腾讯云智聆口语评测（新版）WebSocket
-//  协议：wss://soe.cloud.tencent.com/soe/api/<AppId>?{signed_params}
-//  签名：HMAC-SHA1
-//
-//  发送策略（双保险）：
-//  方案一：rec_mode=1（录音文件模式）— 一次性发送完整 WAV，无速率限制，
-//          官方文档允许最长 60 秒，server 端不做实时速率检查。
-//  方案二：PCM 流式降级 — 若方案一收到 code=4000（端点不支持 rec_mode=1），
-//          改用 voice_format=1 原始 PCM 切片，每次发 0.5s（16000 字节），
-//          间隔 200ms，速率 = 2.5× 实时，严格低于"1秒3秒"的 3× 限制。
-//          结束信号：空二进制帧 Buffer.alloc(0)（腾讯 SOE 只接受 Binary Frame）
+//  腾讯云智聆口语评测 — 官方 Node.js SDK（HTTP REST）
+//  接口：TransmitOralProcessWithInit（初始化+传输合一，WorkMode=1 一次性）
+//  账号后付费开通后，HTTP API 稳定可靠，彻底替代 WebSocket 方案
 // ══════════════════════════════════════════════════════════════════
 
-// ── SOE 响应字段规范化（兼容蛇形和大驼峰两种命名）─────────────
+// SOE 客户端（懒初始化）
+let _soeClient = null;
+function getSoeClient() {
+  if (_soeClient) return _soeClient;
+  _soeClient = new soe.v20180903.Client({
+    credential: { secretId: TENCENT_SECRET_ID, secretKey: TENCENT_SECRET_KEY },
+    region: 'ap-guangzhou',
+    profile: { httpProfile: { reqTimeout: 30 } },
+  });
+  return _soeClient;
+}
+
+// ── SOE 响应字段规范化（SDK 返回大驼峰命名）──────────────────────
 function normalizeSoeResponse(raw) {
   if (!raw || typeof raw !== 'object') return {};
 
   const r = {
-    PronAccuracy:   raw.PronAccuracy   ?? raw.pron_accuracy   ?? 0,
-    PronFluency:    raw.PronFluency    ?? raw.pron_fluency     ?? 0,
-    PronCompletion: raw.PronCompletion ?? raw.pron_completion  ?? 100,
-    SuggestedScore: raw.SuggestedScore ?? raw.suggested_score  ?? 0,
-    SessionId:      raw.SessionId      ?? raw.session_id       ?? '',
+    PronAccuracy:   raw.PronAccuracy   ?? 0,
+    PronFluency:    raw.PronFluency    ?? 0,
+    PronCompletion: raw.PronCompletion ?? 100,
+    SuggestedScore: raw.SuggestedScore ?? 0,
+    SessionId:      raw.SessionId      ?? '',
   };
 
-  const rawWords = raw.Words || raw.words || [];
-  r.Words = rawWords.map(w => ({
-    Word:          w.Word          ?? w.word          ?? '',
-    MemBeginTime:  w.MemBeginTime  ?? w.mem_begin_time ?? 0,
-    MemEndTime:    w.MemEndTime    ?? w.mem_end_time   ?? 0,
-    PronAccuracy:  w.PronAccuracy  ?? w.pron_accuracy  ?? 0,
-    PronFluency:   w.PronFluency   ?? w.pron_fluency   ?? 0,
-    MatchTag:      w.MatchTag      ?? w.match_tag      ?? 0,
-    PhoneInfos: (w.PhoneInfos || w.phone_infos || []).map(p => ({
-      Phone:        p.Phone        ?? p.phone         ?? '',
-      PronAccuracy: p.PronAccuracy ?? p.pron_accuracy ?? 0,
+  r.Words = (raw.Words || []).map(w => ({
+    Word:          w.Word          ?? '',
+    MemBeginTime:  w.MemBeginTime  ?? 0,
+    MemEndTime:    w.MemEndTime    ?? 0,
+    PronAccuracy:  w.PronAccuracy  ?? 0,
+    PronFluency:   w.PronFluency   ?? 0,
+    MatchTag:      w.MatchTag      ?? 0,
+    PhoneInfos: (w.PhoneInfos || []).map(p => ({
+      Phone:        p.Phone        ?? '',
+      PronAccuracy: p.PronAccuracy ?? 0,
     })),
   }));
 
   return r;
 }
 
-// ── 构建已签名的 SOE WebSocket URL ──────────────────────────────
-function buildSoeUrl(extraParams, cleanRef, voiceId) {
-  const timestamp = Math.floor(Date.now() / 1000);
-  const expired   = timestamp + 86400;
-  const nonce     = Math.floor(Math.random() * 1e8);
-
-  const params = {
-    eval_mode:          '1',
-    expired:            String(expired),
-    nonce:              String(nonce),
-    ref_text:           cleanRef,
-    score_coeff:        '1.0',
-    secretid:           TENCENT_SECRET_ID,
-    server_engine_type: '16k_zh',
-    text_mode:          '0',
-    timestamp:          String(timestamp),
-    voice_id:           voiceId,
-    ...extraParams,   // 调用方可覆盖 voice_format、rec_mode 等
-  };
-
-  const sortedKeys   = Object.keys(params).sort();
-  const queryForSign = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
-  const strToSign    = `soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${queryForSign}`;
-  const signature    = crypto.createHmac('sha1', TENCENT_SECRET_KEY)
-                             .update(strToSign).digest('base64');
-  const urlQuery     = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
-  return `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
-}
-
-// ── 通用 WebSocket 会话执行器 ────────────────────────────────────
-// onOpen(ws) — 可以是同步或 async，在 open 事件内完成所有发送
-function runSoeWebSocket(url, onOpen, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(url);
-    let done     = false;
-    let lastOkMsg = null;
-
-    const finish = (err, data) => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      try { ws.close(); } catch(_) {}
-      err ? reject(err) : resolve(data);
-    };
-
-    const timer = setTimeout(
-      () => finish(new Error(`Tencent SOE 超时 (${Math.round(timeoutMs / 1000)}s)`)), timeoutMs
-    );
-
-    ws.on('open', async () => {
-      try { await onOpen(ws); }
-      catch(e) { finish(e); }
-    });
-
-    ws.on('message', (data) => {
-      if (done) return;
-      let msg;
-      try { msg = JSON.parse(data.toString()); }
-      catch(e) { console.error('[TencentWS] 非JSON消息:', data.toString().slice(0, 100)); return; }
-
-      console.log('[TencentWS] 消息:', JSON.stringify(msg).slice(0, 600));
-
-      const code = msg.code ?? msg.Code;
-      if (code !== undefined && code !== 0) {
-        finish(new Error(`Tencent SOE 错误 code=${code}: ${msg.message || msg.Message || ''}`));
-        return;
-      }
-
-      lastOkMsg = msg;
-      const payload  = msg.result || msg.Result || msg;
-      const isEnd    = msg.is_end === 1 || msg.final === 1 || msg.end === 1;
-      const hasScore = payload.PronAccuracy   !== undefined
-                    || payload.SuggestedScore !== undefined
-                    || payload.pron_accuracy  !== undefined
-                    || payload.suggested_score !== undefined;
-
-      if (isEnd || hasScore) {
-        console.log('[TencentWS] 收到评测结果, is_end=%s hasScore=%s', isEnd, hasScore);
-        finish(null, { Response: normalizeSoeResponse(payload) });
-      }
-    });
-
-    ws.on('error', (err) => {
-      console.error('[TencentWS] 错误:', err.message);
-      finish(err);
-    });
-
-    ws.on('close', (closeCode, reason) => {
-      if (done) return;
-      if (lastOkMsg) {
-        console.log('[TencentWS] 连接关闭，用最后消息兜底 closeCode=%s', closeCode);
-        const payload = lastOkMsg.result || lastOkMsg.Result || lastOkMsg;
-        finish(null, { Response: normalizeSoeResponse(payload) });
-      } else {
-        finish(new Error(`Tencent SOE 关闭 code=${closeCode} reason=${reason}`));
-      }
-    });
-  });
-}
-
 // ── 主评测函数 ───────────────────────────────────────────────────
 async function tencentSoeAssess(pcmBase64, refText) {
-  if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
-    throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
+  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
+    throw new Error('TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
   }
 
-  const rawPcm   = Buffer.from(pcmBase64, 'base64');
-  const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
-  const durSec   = (rawPcm.length / (16000 * 2)).toFixed(1);
-  console.log('[TencentWS] PCM:', rawPcm.length, '字节 (约', durSec, 's), refText:', cleanRef);
+  const rawPcm    = Buffer.from(pcmBase64, 'base64');
+  const wavBuf    = pcmToWav(rawPcm);
+  const cleanRef  = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+  const sessionId = crypto.randomUUID().replace(/-/g, '');
+  const durSec    = (rawPcm.length / (16000 * 2)).toFixed(1);
 
-  // ────────────────────────────────────────────────────────────────
-  //  方案一：rec_mode=1 录音文件模式（完整音频一次性发送，无速率限制）
-  // ────────────────────────────────────────────────────────────────
-  const voiceId1 = crypto.randomUUID().replace(/-/g, '');
-  const wavBuf   = pcmToWav(rawPcm);
-  // rec_mode=1 要求结束标志写在 URL 参数里（is_end=1, seq=0），
-  // 而非额外的 WebSocket 帧——多发任何帧都会触发 code=4015
-  const url1     = buildSoeUrl({ rec_mode: '1', voice_format: '2', is_end: '1', seq: '0' }, cleanRef, voiceId1);
-  console.log('[TencentWS] 方案1: rec_mode=1 WAV 一次性, voiceId:', voiceId1, 'WAV:', wavBuf.length, '字节');
+  console.log('[SOE] PCM:', rawPcm.length, '字节 (约', durSec, 's), WAV:', wavBuf.length,
+              '字节, sessionId:', sessionId, 'ref:', cleanRef);
 
-  try {
-    return await runSoeWebSocket(url1, (ws) => {
-      // 唯一一次发送：完整 WAV 二进制帧
-      // is_end=1 已在 URL 中声明，服务端收到此帧即知传输完毕，立即开始评测
-      ws.send(wavBuf);
-    }, 20000);
-  } catch (err) {
-    // 仅 code=4000（端点不支持 rec_mode=1 而触发速率限制）时才降级
-    // 其他错误（401/403/4010 等）直接向上抛出，避免用错误的降级掩盖真实问题
-    if (!err.message.includes('code=4000')) throw err;
-    console.warn('[TencentWS] 方案1 code=4000（端点未识别 rec_mode=1），降级到方案2 PCM 流式');
-  }
+  const result = await getSoeClient().TransmitOralProcessWithInit({
+    SeqId:           1,         // 序号（一次性模式固定为 1）
+    IsEnd:           1,         // 1 = 最后一包（一次性模式固定为 1）
+    VoiceFileType:   2,         // 2 = WAV
+    VoiceEncodeType: 1,         // 1 = 默认编码
+    UserVoiceData:   wavBuf.toString('base64'),
+    SessionId:       sessionId,
+    RefText:         cleanRef,
+    WorkMode:        1,         // 1 = 一次性（非流式）
+    EvalMode:        1,         // 1 = 句子模式
+    ScoreCoeff:      1.0,
+    ServerType:      1,         // 1 = 中文
+    TextMode:        0,         // 0 = 普通文本
+  });
 
-  // ────────────────────────────────────────────────────────────────
-  //  方案二：voice_format=1 PCM 流式，严格控制 2.5× 实时速率
-  //  每次发送 0.5s 的 PCM（16000 字节），间隔 200ms，
-  //  速率 = 0.5s ÷ 0.2s = 2.5×，严格低于腾讯"1秒3秒"上限
-  //  结束信号：空二进制帧（腾讯 SOE 只接受 Binary Frame，Text Frame → code=4010）
-  // ────────────────────────────────────────────────────────────────
-  const CHUNK_BYTES = 16000;   // 0.5s @16kHz 16-bit mono
-  const DELAY_MS    = 200;     // 200ms 间隔 = 2.5× 实时
-  const totalChunks = Math.ceil(rawPcm.length / CHUNK_BYTES);
-  const streamMs    = totalChunks * DELAY_MS;
+  console.log('[SOE] 返回 PronAccuracy=%s SuggestedScore=%s Words=%d',
+    result.PronAccuracy, result.SuggestedScore, (result.Words || []).length);
 
-  const voiceId2 = crypto.randomUUID().replace(/-/g, '');
-  const url2     = buildSoeUrl({ voice_format: '1' }, cleanRef, voiceId2);
-  console.log('[TencentWS] 方案2: PCM 流式，%d 切片 × 200ms ≈ %dms，voiceId:', totalChunks, streamMs, voiceId2);
-
-  return runSoeWebSocket(url2, async (ws) => {
-    for (let offset = 0; offset < rawPcm.length; offset += CHUNK_BYTES) {
-      if (ws.readyState !== WebSocket.OPEN) break;
-      const chunk = rawPcm.slice(offset, Math.min(offset + CHUNK_BYTES, rawPcm.length));
-      ws.send(chunk);  // 二进制帧：原始 PCM 数据
-      await new Promise(r => setTimeout(r, DELAY_MS));
-    }
-    if (ws.readyState === WebSocket.OPEN) {
-      // 腾讯云 SOE 只接受 Binary Frame，Text Frame 一律触发 code=4010
-      // 用空二进制帧作为 EOF 标志（比关闭连接更明确）
-      ws.send(Buffer.alloc(0));
-    }
-  }, streamMs + 15000);  // 流式发送时长 + 15s 服务端处理余量
+  // SDK 直接返回 Response 字段内容，包装成统一格式供适配器使用
+  return { Response: normalizeSoeResponse(result) };
 }
+
 
 // ── 腾讯 → Azure 格式适配器 ──────────────────────────────────────
 // 让 parseAzureResult 无需任何修改即可处理腾讯数据
