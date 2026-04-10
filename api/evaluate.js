@@ -204,9 +204,11 @@ async function tencentSoeAssess(pcmBase64, refText) {
 
   try {
     return await runSoeWebSocket(url1, (ws) => {
-      // WAV 格式自带长度头（RIFF chunk size），服务端读完即知结束，
-      // 严禁发送任何 Text Frame，否则触发 code=4010
+      // 1. 发送完整 WAV 二进制帧
       ws.send(wavBuf);
+      // 2. 空二进制帧作为 EOF 触发器，通知服务端开始评测
+      //    （严禁 Text Frame，否则 code=4010；WAV 模式不发此帧则服务端等待超时）
+      ws.send(Buffer.alloc(0));
     }, 20000);
   } catch (err) {
     // 仅 code=4000（端点不支持 rec_mode=1 而触发速率限制）时才降级
