@@ -83,14 +83,15 @@ async function tencentSoeAssess(pcmBase64, refText) {
     throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
   }
 
-  // 限制最多 3 秒音频（96000 字节 PCM），避免超过 SOE WebSocket 单帧限速
-  // 16kHz × 16-bit mono × 3s = 96000 bytes
-  const MAX_PCM  = 16000 * 2 * 3;
+  // 腾讯 SOE 限制：单次 WebSocket 会话音频不超过 3 秒
+  // 为避免触及精确边界，截取到 2 秒（安全余量）
+  // 16kHz × 16-bit mono × 2s = 64000 bytes
+  const MAX_PCM  = 16000 * 2 * 2;
   const rawPcm   = Buffer.from(pcmBase64, 'base64');
   const trimPcm  = rawPcm.length > MAX_PCM ? rawPcm.slice(0, MAX_PCM) : rawPcm;
   const wavBuf   = pcmToWav(trimPcm);
   const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
-  console.log('[TencentWS] 原始PCM:', rawPcm.length, '字节, 截断后:', trimPcm.length, '字节, WAV:', wavBuf.length, '字节');
+  console.log('[TencentWS] 原始PCM:', rawPcm.length, '字节, 截断至2s:', trimPcm.length, '字节, WAV:', wavBuf.length, '字节');
 
   const timestamp = Math.floor(Date.now() / 1000);
   const expired   = timestamp + 86400;
