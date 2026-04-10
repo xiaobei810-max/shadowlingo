@@ -1,22 +1,22 @@
 /**
- * api/evaluate.js — 发音评测（腾讯云智聆 SOE）
+ * api/evaluate.js — 发音评测（腾讯云智聆 SOE 新版 WebSocket）
  *
  * 接口契约与原 Azure 版 100% 一致：
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE 评测 → 适配器转 Azure 格式
+ *   1. 腾讯 SOE WebSocket 评测 → 适配器转 Azure 格式
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
  */
 
-const https = require('https');
-const crypto = require('crypto');
+const WebSocket = require('ws');
+const crypto    = require('crypto');
 
+const TENCENT_APP_ID     = process.env.TENCENT_APP_ID;
 const TENCENT_SECRET_ID  = process.env.TENCENT_SECRET_ID;
 const TENCENT_SECRET_KEY = process.env.TENCENT_SECRET_KEY;
-const TENCENT_REGION     = process.env.TENCENT_REGION || 'ap-guangzhou';
 const GEMINI_KEY         = process.env.GEMINI_API_KEY;
 const OPENAI_KEY         = process.env.OPENAI_API_KEY;
 
@@ -41,87 +41,114 @@ function pcmToWav(pcmBuf) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  腾讯云 TC3-HMAC-SHA256 签名 + SOE 评测
+//  腾讯云智聆口语评测（新版）WebSocket
+//  协议：wss://soe.cloud.tencent.com/soe/api/<AppId>?{signed_params}
+//  签名：HMAC-SHA1（与 TC3-HMAC-SHA256 完全不同）
 // ══════════════════════════════════════════════════════════════════
 
-function sha256Hex(msg) {
-  return crypto.createHash('sha256').update(msg).digest('hex');
-}
-function hmacSha256(key, msg) {
-  return crypto.createHmac('sha256', key).update(msg).digest();
-}
-
 async function tencentSoeAssess(pcmBase64, refText) {
-  const wavBuf    = pcmToWav(Buffer.from(pcmBase64, 'base64'));
-  const wavBase64 = wavBuf.toString('base64');
-  const cleanRef  = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+  if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
+    throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
+  }
 
-  const sessionId = crypto.randomUUID();
-  const action    = 'TransmitOralProcessWithInit';
-  const version   = '2018-07-24';
-  const service   = 'soe';
-  const host      = 'soe.tencentcloudapi.com';
-
-  const payload = JSON.stringify({
-    SeqId:           1,
-    IsEnd:           1,
-    VoiceFileType:   2,       // WAV
-    VoiceEncodeType: 1,       // PCM
-    UserVoiceData:   wavBase64,
-    SessionId:       sessionId,
-    RefText:         cleanRef,
-    WorkMode:        1,       // 非流式（一次性）
-    EvalMode:        1,       // 句子评测
-    ScoreCoeff:      1.0,     // 严格评分
-    ServerType:      1,       // 中文
-    TextMode:        0        // 普通文本
-  });
+  const wavBuf   = pcmToWav(Buffer.from(pcmBase64, 'base64'));
+  const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const date      = new Date(timestamp * 1000).toISOString().slice(0, 10);
+  const expired   = timestamp + 86400;
+  const nonce     = Math.floor(Math.random() * 1e8);
+  const voiceId   = crypto.randomUUID().replace(/-/g, '');
 
-  // ── Canonical Request ──
-  const ct               = 'application/json; charset=utf-8';
-  // SOE 旧 API (2018-07-24) 只签 content-type;host，与 API Explorer 一致
-  const canonicalHeaders = `content-type:${ct}\nhost:${host}\n`;
-  const signedHeaders    = 'content-type;host';
-  const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
+  // 参数按字母序排列（签名要求）
+  const params = {
+    eval_mode:          '1',       // 句子评测
+    expired:            String(expired),
+    nonce:              String(nonce),
+    ref_text:           cleanRef,
+    score_coeff:        '1.0',
+    secretid:           TENCENT_SECRET_ID,
+    server_engine_type: '16k_zh',
+    text_mode:          '0',       // 普通文本
+    timestamp:          String(timestamp),
+    voice_format:       '2',       // WAV
+    voice_id:           voiceId,
+  };
 
-  // ── String to Sign ──
-  const credentialScope = `${date}/${service}/tc3_request`;
-  const stringToSign    = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
+  // ── HMAC-SHA1 签名 ──────────────────────────────────────────────
+  const sortedKeys = Object.keys(params).sort();
+  // 签名字符串：host/path?key1=val1&key2=val2... （不 URL 编码参数值）
+  const queryForSign = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
+  const strToSign    = `soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${queryForSign}`;
+  const signature    = crypto.createHmac('sha1', TENCENT_SECRET_KEY)
+                             .update(strToSign)
+                             .digest('base64');
 
-  // ── Signing Key ──
-  const secretDate    = hmacSha256(`TC3${TENCENT_SECRET_KEY}`, date);
-  const secretService = hmacSha256(secretDate, service);
-  const secretSigning = hmacSha256(secretService, 'tc3_request');
-  const signature     = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
+  // ── 构建 WSS URL（参数值 URL 编码）──────────────────────────────
+  const urlQuery = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
+  const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
 
-  const authorization = `TC3-HMAC-SHA256 Credential=${TENCENT_SECRET_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  console.log('[TencentWS] 连接 SOE, voiceId:', voiceId, 'refText:', cleanRef, 'WAV:', wavBuf.length, '字节');
 
-  console.log('[Tencent] WAV大小:', wavBuf.length, '字节, refText:', cleanRef, 'sessionId:', sessionId);
+  return new Promise((resolve, reject) => {
+    const ws   = new WebSocket(url);
+    let done   = false;
+    let result = null;
 
-  const resp = await fetch(`https://${host}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type':   ct,
-      'Host':           host,
-      'X-TC-Action':    action,
-      'X-TC-Version':   version,
-      'X-TC-Timestamp': String(timestamp),
-      'X-TC-Region':    TENCENT_REGION,
-      'Authorization':  authorization
-    },
-    body: payload
+    const finish = (err, data) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { ws.close(); } catch(_) {}
+      err ? reject(err) : resolve(data);
+    };
+
+    const timer = setTimeout(() => finish(new Error('Tencent SOE WebSocket timeout (20s)')), 20000);
+
+    ws.on('open', () => {
+      console.log('[TencentWS] 连接已建立，发送音频 + 结束帧');
+      // 1) 发送完整音频（二进制帧）
+      ws.send(wavBuf);
+      // 2) 发送结束标志（文本帧）
+      ws.send(JSON.stringify({ voice_id: voiceId, seq: 0, is_end: 1 }));
+    });
+
+    ws.on('message', (data) => {
+      if (done) return;
+      let msg;
+      try { msg = JSON.parse(data.toString()); }
+      catch(e) { console.error('[TencentWS] 非 JSON 消息:', data.toString().slice(0, 200)); return; }
+
+      console.log('[TencentWS] 消息:', JSON.stringify(msg).slice(0, 500));
+
+      // 错误响应
+      const code = msg.code ?? msg.Code;
+      if (code !== undefined && code !== 0) {
+        finish(new Error(`Tencent SOE 错误 code=${code}: ${msg.message || msg.Message || ''}`));
+        return;
+      }
+
+      // 最终评测结果（is_end/final/end 为 1，或包含 PronAccuracy）
+      const isEnd = msg.is_end === 1 || msg.final === 1 || msg.end === 1;
+      const payload = msg.result || msg.Result || msg;
+
+      if (isEnd || payload.PronAccuracy !== undefined || payload.SuggestedScore !== undefined) {
+        // 统一包装为 { Response: {...} }，与 tencentToAzureFormat 兼容
+        finish(null, { Response: payload });
+      }
+      // 非结束帧（中间帧）：忽略，等待最终结果
+    });
+
+    ws.on('error', (err) => {
+      console.error('[TencentWS] 错误:', err.message);
+      finish(err);
+    });
+
+    ws.on('close', (code, reason) => {
+      if (!done) {
+        finish(new Error(`Tencent SOE WebSocket 意外关闭: code=${code} reason=${reason}`));
+      }
+    });
   });
-
-  const data = await resp.json();
-  console.log('[Tencent] HTTP状态:', resp.status, '响应(前800):', JSON.stringify(data).slice(0, 800));
-
-  if (data.Response && data.Response.Error) {
-    throw new Error(`Tencent SOE: ${data.Response.Error.Code} - ${data.Response.Error.Message}`);
-  }
-  return data;
 }
 
 // ── 腾讯 → Azure 格式适配器 ──────────────────────────────────────
@@ -1023,8 +1050,8 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY)
-    return res.status(500).json({ error: 'TENCENT_SECRET_ID / TENCENT_SECRET_KEY env vars not configured' });
+  if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY)
+    return res.status(500).json({ error: 'TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY env vars not configured' });
 
   try {
     // ── 解析请求体 ──
@@ -1050,7 +1077,7 @@ module.exports = async function handler(req, res) {
     // ── 适配器：腾讯 → Azure 格式 ──
     const azureFormat = tencentToAzureFormat(tencentResp, refText);
 
-    // ── 用 Whisper 作为 STT 来源（替代原 azureFreeStt）──
+    // ── 用 Whisper 作为 STT 来源 ──
     const sttText = whisperText ? [whisperText] : [];
 
     // ── 核心解析（全部业务逻辑在此）──
@@ -1065,7 +1092,7 @@ module.exports = async function handler(req, res) {
     // ── _debug ──
     const tr = tencentResp.Response;
     result._debug = {
-      engine:           'tencent-soe',
+      engine:           'tencent-soe-ws',
       tencentRaw: {
         PronAccuracy:   tr.PronAccuracy,
         PronFluency:    tr.PronFluency,

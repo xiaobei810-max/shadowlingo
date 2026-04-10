@@ -1,12 +1,12 @@
 /**
- * api/ping.js — 诊断端点（Edge TTS + 腾讯 SOE）
+ * api/ping.js — 诊断端点（Edge TTS + 腾讯 SOE WebSocket）
  */
 const WebSocket = require('ws');
 const crypto    = require('crypto');
 
+const TENCENT_APP_ID     = process.env.TENCENT_APP_ID;
 const TENCENT_SECRET_ID  = process.env.TENCENT_SECRET_ID;
 const TENCENT_SECRET_KEY = process.env.TENCENT_SECRET_KEY;
-const TENCENT_REGION     = process.env.TENCENT_REGION || 'ap-guangzhou';
 
 const TRUSTED_CLIENT_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
 const CHROMIUM_FULL_VERSION = '143.0.3650.75';
@@ -55,12 +55,11 @@ function testEdgeTts() {
   });
 }
 
+// ── STS 验证密钥有效性 ─────────────────────────────────────────
 const https = require('https');
-
 function sha256Hex(msg) { return crypto.createHash('sha256').update(msg).digest('hex'); }
 function hmacSha256(key, msg) { return crypto.createHmac('sha256', key).update(msg).digest(); }
 
-// 用 https.request 完全掌控 Host header（fetch 会忽略手动设置的 Host）
 function httpsPost(host, headers, body) {
   return new Promise((resolve, reject) => {
     const buf = Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf8');
@@ -85,7 +84,6 @@ function buildTc3(service, host, action, version, payload, secretId, secretKey) 
   const timestamp = Math.floor(Date.now() / 1000);
   const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
   const ct = 'application/json; charset=utf-8';
-  // SOE 是 2018 年旧 API，只签 content-type;host（与 API Explorer 行为一致）
   const canonicalHeaders = `content-type:${ct}\nhost:${host}\n`;
   const signedHeaders = 'content-type;host';
   const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${sha256Hex(payload)}`;
@@ -97,12 +95,9 @@ function buildTc3(service, host, action, version, payload, secretId, secretKey) 
   const signature = crypto.createHmac('sha256', secretSigning).update(stringToSign).digest('hex');
   const authorization = `TC3-HMAC-SHA256 Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
   return {
-    'Content-Type': ct,
-    'Host': host,
-    'X-TC-Action': action,
-    'X-TC-Version': version,
-    'X-TC-Timestamp': String(timestamp),
-    'Authorization': authorization
+    'Content-Type': ct, 'Host': host,
+    'X-TC-Action': action, 'X-TC-Version': version,
+    'X-TC-Timestamp': String(timestamp), 'Authorization': authorization
   };
 }
 
@@ -113,7 +108,7 @@ async function testTencentKeys() {
     const payload = '{}';
     const headers = {
       ...buildTc3('sts', host, 'GetCallerIdentity', '2018-08-13', payload, TENCENT_SECRET_ID, TENCENT_SECRET_KEY),
-      'X-TC-Region': TENCENT_REGION
+      'X-TC-Region': 'ap-guangzhou'
     };
     const data = await httpsPost(host, headers, payload);
     if (data.Response?.Error) return { ok: false, error: `${data.Response.Error.Code}: ${data.Response.Error.Message}` };
@@ -121,33 +116,65 @@ async function testTencentKeys() {
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
+// ── 腾讯 SOE WebSocket 诊断（发空白音频，只测连接和签名）──────
 async function testTencentSoe() {
-  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) return { ok: false, error: 'keys not set' };
+  if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY)
+    return { ok: false, error: 'TENCENT_APP_ID / keys not set' };
+
   try {
-    // 使用官方 SDK，让 SDK 处理签名细节
-    const tencentcloud = require('tencentcloud-sdk-nodejs-soe');
-    const SoeClient = tencentcloud.soe.v20180724.Client;
-    const client = new SoeClient({
-      credential: { secretId: TENCENT_SECRET_ID, secretKey: TENCENT_SECRET_KEY },
-      region: TENCENT_REGION,
-      profile: { httpProfile: { endpoint: 'soe.tencentcloudapi.com', reqTimeout: 10 } }
-    });
+    const timestamp = Math.floor(Date.now() / 1000);
+    const expired   = timestamp + 3600;
+    const nonce     = Math.floor(Math.random() * 1e8);
+    const voiceId   = crypto.randomUUID().replace(/-/g, '');
+
+    // 最小 WAV（44 字节头 + 3200 字节静音 PCM）
     const pcmLen = 3200;
     const wav = Buffer.alloc(44 + pcmLen, 0);
     wav.write('RIFF',0); wav.writeUInt32LE(36+pcmLen,4); wav.write('WAVE',8); wav.write('fmt ',12);
     wav.writeUInt32LE(16,16); wav.writeUInt16LE(1,20); wav.writeUInt16LE(1,22);
     wav.writeUInt32LE(16000,24); wav.writeUInt32LE(32000,28); wav.writeUInt16LE(2,32); wav.writeUInt16LE(16,34);
     wav.write('data',36); wav.writeUInt32LE(pcmLen,40);
-    const result = await client.TransmitOralProcessWithInit({
-      SeqId: 1, IsEnd: 1, VoiceFileType: 2, VoiceEncodeType: 1,
-      UserVoiceData: wav.toString('base64'),
-      SessionId: crypto.randomUUID(),
-      RefText: '你好', WorkMode: 1, EvalMode: 1, ScoreCoeff: 1.0, ServerType: 1, TextMode: 0
+
+    const params = {
+      eval_mode: '1', expired: String(expired), nonce: String(nonce),
+      ref_text: '你好', score_coeff: '1.0', secretid: TENCENT_SECRET_ID,
+      server_engine_type: '16k_zh', text_mode: '0', timestamp: String(timestamp),
+      voice_format: '2', voice_id: voiceId,
+    };
+    const sortedKeys = Object.keys(params).sort();
+    const queryForSign = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
+    const strToSign = `soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${queryForSign}`;
+    const signature = crypto.createHmac('sha1', TENCENT_SECRET_KEY).update(strToSign).digest('base64');
+    const urlQuery = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
+    const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
+
+    return await new Promise(resolve => {
+      const ws = new WebSocket(url);
+      let done = false;
+      const fin = (result) => { if (!done) { done = true; clearTimeout(timer); try { ws.close(); } catch(_) {} resolve(result); } };
+      const timer = setTimeout(() => fin({ ok: false, error: 'timeout (15s)' }), 15000);
+
+      ws.on('open', () => {
+        ws.send(wav);
+        ws.send(JSON.stringify({ voice_id: voiceId, seq: 0, is_end: 1 }));
+      });
+      ws.on('message', data => {
+        if (done) return;
+        try {
+          const msg = JSON.parse(data.toString());
+          const code = msg.code ?? msg.Code;
+          if (code !== undefined && code !== 0) {
+            fin({ ok: false, error: `code=${code} ${msg.message || msg.Message || ''}` });
+          } else {
+            const r = msg.result || msg.Result || msg;
+            fin({ ok: true, engine: 'tencent-soe-ws', suggestedScore: r.SuggestedScore, code });
+          }
+        } catch(e) { /* ignore non-JSON */ }
+      });
+      ws.on('error', e => fin({ ok: false, error: e.message }));
+      ws.on('close', (code, reason) => fin({ ok: false, error: `closed: ${code} ${reason}` }));
     });
-    return { ok: true, engine: 'tencent-soe-sdk', score: result.SuggestedScore };
-  } catch(e) {
-    return { ok: false, error: e.message || String(e) };
-  }
+  } catch(e) { return { ok: false, error: e.message }; }
 }
 
 module.exports = async function handler(req, res) {
@@ -157,6 +184,6 @@ module.exports = async function handler(req, res) {
   res.status(200).json({
     tts,
     tencentKeys: keys,
-    evaluate: { ...evaluate, region: TENCENT_REGION, keyPresent: !!TENCENT_SECRET_ID }
+    evaluate: { ...evaluate, appIdPresent: !!TENCENT_APP_ID, keyPresent: !!TENCENT_SECRET_ID }
   });
 };
