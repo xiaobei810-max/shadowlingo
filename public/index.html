@@ -3586,7 +3586,11 @@
             chars: s.chars || []
           })
         });
-        if (!resp.ok) throw new Error('服务器错误 ' + resp.status);
+        if (!resp.ok) {
+          var errBody = {};
+          try { errBody = await resp.json(); } catch(_) {}
+          throw new Error((errBody.error || '') + ' [HTTP ' + resp.status + ']');
+        }
         var result = await resp.json();
         if (result.error) throw new Error(result.error);
 
