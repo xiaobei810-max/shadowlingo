@@ -199,16 +199,16 @@ async function tencentSoeAssess(pcmBase64, refText) {
   // ────────────────────────────────────────────────────────────────
   const voiceId1 = crypto.randomUUID().replace(/-/g, '');
   const wavBuf   = pcmToWav(rawPcm);
-  const url1     = buildSoeUrl({ rec_mode: '1', voice_format: '2' }, cleanRef, voiceId1);
+  // rec_mode=1 要求结束标志写在 URL 参数里（is_end=1, seq=0），
+  // 而非额外的 WebSocket 帧——多发任何帧都会触发 code=4015
+  const url1     = buildSoeUrl({ rec_mode: '1', voice_format: '2', is_end: '1', seq: '0' }, cleanRef, voiceId1);
   console.log('[TencentWS] 方案1: rec_mode=1 WAV 一次性, voiceId:', voiceId1, 'WAV:', wavBuf.length, '字节');
 
   try {
     return await runSoeWebSocket(url1, (ws) => {
-      // 1. 发送完整 WAV 二进制帧
+      // 唯一一次发送：完整 WAV 二进制帧
+      // is_end=1 已在 URL 中声明，服务端收到此帧即知传输完毕，立即开始评测
       ws.send(wavBuf);
-      // 2. 空二进制帧作为 EOF 触发器，通知服务端开始评测
-      //    （严禁 Text Frame，否则 code=4010；WAV 模式不发此帧则服务端等待超时）
-      ws.send(Buffer.alloc(0));
     }, 20000);
   } catch (err) {
     // 仅 code=4000（端点不支持 rec_mode=1 而触发速率限制）时才降级
