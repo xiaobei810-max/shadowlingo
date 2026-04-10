@@ -102,7 +102,7 @@ async function tencentSoeAssess(pcmBase64, refText) {
     server_engine_type: '16k_zh',
     text_mode:          '0',       // 普通文本
     timestamp:          String(timestamp),
-    voice_format:       '2',       // WAV
+    voice_format:       '1',       // 原始 PCM（无需 WAV 头，流式发送更简单）
     voice_id:           voiceId,
   };
 
@@ -137,23 +137,24 @@ async function tencentSoeAssess(pcmBase64, refText) {
     );
 
     ws.on('open', async () => {
-      console.log('[TencentWS] 连接已建立，开始流式发送音频');
-      // Tencent SOE 限速：1秒内最多发送3秒音频数据
-      // 策略：把 PCM 按 ≤2秒切片，每片间隔 600ms，确保速率 ≤ 3.3x 实时
-      const pcmData  = wavBuf.slice(44);        // 去掉 44 字节 WAV 头，只保留 PCM
-      const CHUNK_PCM = 16000 * 2 * 2;          // 2秒 × 16kHz × 2字节 = 64000 bytes/帧
-      const DELAY_MS  = 600;                    // 每帧间隔 600ms
-      const totalSeq  = Math.ceil(pcmData.length / CHUNK_PCM);
+      // Tencent SOE 限速：1秒内最多发送3秒音频（即 3× 实时，约 96KB/s）
+      // 策略：原始 PCM（无 WAV 头），3200 字节/帧（0.1秒），每帧间隔 40ms
+      // → 实际速率 3200/0.04 = 80KB/s ≈ 2.5× 实时，安全边际充足
+      const pcmData  = wavBuf.slice(44);   // 去掉 44 字节 WAV 头
+      const CHUNK    = 3200;               // 0.1 秒 @ 16kHz 16-bit mono
+      const DELAY_MS = 40;                 // 每帧间隔 40ms
+      const total    = Math.ceil(pcmData.length / CHUNK);
+      console.log('[TencentWS] 连接已建立，流式发送 PCM: %d 帧 × %d ms，共 %d 字节',
+                  total, DELAY_MS, pcmData.length);
 
-      for (let i = 0; i < totalSeq; i++) {
-        if (done) return;                       // 已超时/出错则停止发送
-        const slice   = pcmData.slice(i * CHUNK_PCM, (i + 1) * CHUNK_PCM);
-        const isLast  = (i === totalSeq - 1);
-        // 每帧套独立 WAV 头（服务端按完整音频帧解析）
-        ws.send(pcmToWav(slice));
-        console.log('[TencentWS] 发送帧 %d/%d，PCM %d 字节%s', i + 1, totalSeq, slice.length, isLast ? '（最后帧）' : '');
+      for (let i = 0; i < total; i++) {
+        if (done) return;
+        const slice  = pcmData.slice(i * CHUNK, (i + 1) * CHUNK);
+        const isLast = (i === total - 1);
+        ws.send(slice);
         if (isLast) {
-          ws.send(JSON.stringify({ voice_id: voiceId, seq: i, is_end: 1 }));
+          ws.send(JSON.stringify({ voice_id: voiceId, seq: total, is_end: 1 }));
+          console.log('[TencentWS] 已发送全部 %d 帧 + is_end', total);
         } else {
           await new Promise(r => setTimeout(r, DELAY_MS));
         }
