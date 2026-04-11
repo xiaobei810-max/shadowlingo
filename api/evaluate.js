@@ -1,19 +1,18 @@
 /**
- * api/evaluate.js — 发音评测（腾讯云智聆 SOE HTTP SDK）
+ * api/evaluate.js — 发音评测（腾讯云智聆 SOE WebSocket）
  *
  * 接口契约与原 Azure 版 100% 一致：
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE TransmitOralProcessWithInit（HTTP SDK）→ 适配器转 Azure 格式
+ *   1. 腾讯 SOE WSS（voice_format=1 raw PCM, rec_mode=1, is_end=1 in URL）
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
  */
 
-const crypto      = require('crypto');
-const tencentcloud = require('tencentcloud-sdk-nodejs-soe');
-const SoeClient   = tencentcloud.soe.v20180724.Client;
+const WebSocket = require('ws');
+const crypto    = require('crypto');
 
 const TENCENT_APP_ID     = process.env.TENCENT_APP_ID;
 const TENCENT_SECRET_ID  = process.env.TENCENT_SECRET_ID;
@@ -42,45 +41,33 @@ function pcmToWav(pcmBuf) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  腾讯云智聆口语评测 — 官方 Node.js SDK（HTTP REST）
-//  接口：TransmitOralProcessWithInit（初始化+传输合一，WorkMode=1 一次性）
-//  账号后付费开通后，HTTP API 稳定可靠，彻底替代 WebSocket 方案
+//  腾讯云智聆口语评测 WebSocket
+//  voice_format=1（raw PCM）+ rec_mode=1 + is_end=1 写入 URL 参数
+//  单帧发送纯 PCM，无任何额外帧，服务端收到即开始评测
 // ══════════════════════════════════════════════════════════════════
 
-// SOE 客户端（懒初始化）
-let _soeClient = null;
-function getSoeClient() {
-  if (_soeClient) return _soeClient;
-  _soeClient = new SoeClient({
-    credential: { secretId: TENCENT_SECRET_ID, secretKey: TENCENT_SECRET_KEY },
-    region: 'ap-guangzhou',
-    profile: { httpProfile: { reqTimeout: 30 } },
-  });
-  return _soeClient;
-}
-
-// ── SOE 响应字段规范化（SDK 返回大驼峰命名）──────────────────────
+// ── SOE 响应字段规范化 ────────────────────────────────────────────
 function normalizeSoeResponse(raw) {
   if (!raw || typeof raw !== 'object') return {};
 
   const r = {
-    PronAccuracy:   raw.PronAccuracy   ?? 0,
-    PronFluency:    raw.PronFluency    ?? 0,
-    PronCompletion: raw.PronCompletion ?? 100,
-    SuggestedScore: raw.SuggestedScore ?? 0,
-    SessionId:      raw.SessionId      ?? '',
+    PronAccuracy:   raw.PronAccuracy   ?? raw.pron_accuracy   ?? 0,
+    PronFluency:    raw.PronFluency    ?? raw.pron_fluency     ?? 0,
+    PronCompletion: raw.PronCompletion ?? raw.pron_completion  ?? 100,
+    SuggestedScore: raw.SuggestedScore ?? raw.suggested_score  ?? 0,
+    SessionId:      raw.SessionId      ?? raw.session_id       ?? '',
   };
 
-  r.Words = (raw.Words || []).map(w => ({
-    Word:          w.Word          ?? '',
-    MemBeginTime:  w.MemBeginTime  ?? 0,
-    MemEndTime:    w.MemEndTime    ?? 0,
-    PronAccuracy:  w.PronAccuracy  ?? 0,
-    PronFluency:   w.PronFluency   ?? 0,
-    MatchTag:      w.MatchTag      ?? 0,
-    PhoneInfos: (w.PhoneInfos || []).map(p => ({
-      Phone:        p.Phone        ?? '',
-      PronAccuracy: p.PronAccuracy ?? 0,
+  r.Words = (raw.Words || raw.words || []).map(w => ({
+    Word:          w.Word          ?? w.word          ?? '',
+    MemBeginTime:  w.MemBeginTime  ?? w.mem_begin_time ?? 0,
+    MemEndTime:    w.MemEndTime    ?? w.mem_end_time   ?? 0,
+    PronAccuracy:  w.PronAccuracy  ?? w.pron_accuracy  ?? 0,
+    PronFluency:   w.PronFluency   ?? w.pron_fluency   ?? 0,
+    MatchTag:      w.MatchTag      ?? w.match_tag      ?? 0,
+    PhoneInfos: (w.PhoneInfos || w.phone_infos || []).map(p => ({
+      Phone:        p.Phone        ?? p.phone         ?? '',
+      PronAccuracy: p.PronAccuracy ?? p.pron_accuracy ?? 0,
     })),
   }));
 
@@ -89,39 +76,114 @@ function normalizeSoeResponse(raw) {
 
 // ── 主评测函数 ───────────────────────────────────────────────────
 async function tencentSoeAssess(pcmBase64, refText) {
-  if (!TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
-    throw new Error('TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
+  if (!TENCENT_APP_ID || !TENCENT_SECRET_ID || !TENCENT_SECRET_KEY) {
+    throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
   }
 
-  const rawPcm    = Buffer.from(pcmBase64, 'base64');
-  const wavBuf    = pcmToWav(rawPcm);
-  const cleanRef  = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
-  const sessionId = crypto.randomUUID().replace(/-/g, '');
-  const durSec    = (rawPcm.length / (16000 * 2)).toFixed(1);
+  // 前端传来的是纯 PCM Base64，直接解码——不包 WAV 头
+  const rawPcm   = Buffer.from(pcmBase64, 'base64');
+  const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+  const durSec   = (rawPcm.length / (16000 * 2)).toFixed(1);
 
-  console.log('[SOE] PCM:', rawPcm.length, '字节 (约', durSec, 's), WAV:', wavBuf.length,
-              '字节, sessionId:', sessionId, 'ref:', cleanRef);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const expired   = timestamp + 86400;
+  const nonce     = Math.floor(Math.random() * 1e8);
+  const voiceId   = crypto.randomUUID().replace(/-/g, '');
 
-  const result = await getSoeClient().TransmitOralProcessWithInit({
-    SeqId:           1,         // 序号（一次性模式固定为 1）
-    IsEnd:           1,         // 1 = 最后一包（一次性模式固定为 1）
-    VoiceFileType:   2,         // 2 = WAV
-    VoiceEncodeType: 1,         // 1 = 默认编码
-    UserVoiceData:   wavBuf.toString('base64'),
-    SessionId:       sessionId,
-    RefText:         cleanRef,
-    WorkMode:        1,         // 1 = 一次性（非流式）
-    EvalMode:        1,         // 1 = 句子模式
-    ScoreCoeff:      1.0,
-    ServerType:      1,         // 1 = 中文
-    TextMode:        0,         // 0 = 普通文本
+  // URL 参数按字母序排列（HMAC-SHA1 签名要求）
+  const params = {
+    eval_mode:          '1',      // 句子模式
+    expired:            String(expired),
+    is_end:             '1',      // 告知服务端这是最后一包，收到即开始评测
+    nonce:              String(nonce),
+    rec_mode:           '1',      // 一次性上传（非流式）
+    ref_text:           cleanRef,
+    score_coeff:        '1.0',
+    secretid:           TENCENT_SECRET_ID,
+    seq:                '0',      // 包序号
+    server_engine_type: '16k_zh',
+    text_mode:          '0',
+    timestamp:          String(timestamp),
+    voice_format:       '1',      // RAW PCM（不是 WAV，无头部）
+    voice_id:           voiceId,
+  };
+
+  const sortedKeys   = Object.keys(params).sort();
+  const queryForSign = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
+  const strToSign    = `soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${queryForSign}`;
+  const signature    = crypto.createHmac('sha1', TENCENT_SECRET_KEY)
+                             .update(strToSign).digest('base64');
+  const urlQuery     = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
+  const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
+
+  console.log('[SOE WSS] voice_format=1 PCM, voiceId:', voiceId,
+              'PCM:', rawPcm.length, '字节 (约', durSec, 's), ref:', cleanRef);
+
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(url);
+    let done     = false;
+    let lastOkMsg = null;
+
+    const finish = (err, data) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { ws.close(); } catch(_) {}
+      err ? reject(err) : resolve(data);
+    };
+
+    const timer = setTimeout(() => finish(new Error('Tencent SOE 超时 (20s)')), 20000);
+
+    ws.on('open', () => {
+      // 唯一一次发送：纯 PCM 二进制帧
+      // is_end=1 已在 URL 中声明，服务端收到此帧即知传输完毕，立即评测
+      console.log('[SOE WSS] 连接建立，发送 PCM %d 字节（仅此一帧）', rawPcm.length);
+      ws.send(rawPcm);
+    });
+
+    ws.on('message', (data) => {
+      if (done) return;
+      let msg;
+      try { msg = JSON.parse(data.toString()); }
+      catch(e) { console.error('[SOE WSS] 非JSON:', data.toString().slice(0, 100)); return; }
+
+      console.log('[SOE WSS] 消息:', JSON.stringify(msg).slice(0, 500));
+
+      const code = msg.code ?? msg.Code;
+      if (code !== undefined && code !== 0) {
+        finish(new Error(`Tencent SOE 错误 code=${code}: ${msg.message || msg.Message || ''}`));
+        return;
+      }
+
+      lastOkMsg = msg;
+      const payload  = msg.result || msg.Result || msg;
+      const isEnd    = msg.is_end === 1 || msg.final === 1 || msg.end === 1;
+      const hasScore = payload.PronAccuracy   !== undefined
+                    || payload.SuggestedScore !== undefined
+                    || payload.pron_accuracy  !== undefined
+                    || payload.suggested_score !== undefined;
+
+      if (isEnd || hasScore) {
+        console.log('[SOE WSS] 收到评测结果');
+        finish(null, { Response: normalizeSoeResponse(payload) });
+      }
+    });
+
+    ws.on('error', err => {
+      console.error('[SOE WSS] 错误:', err.message);
+      finish(err);
+    });
+
+    ws.on('close', (closeCode, reason) => {
+      if (done) return;
+      if (lastOkMsg) {
+        const payload = lastOkMsg.result || lastOkMsg.Result || lastOkMsg;
+        finish(null, { Response: normalizeSoeResponse(payload) });
+      } else {
+        finish(new Error(`SOE 关闭 code=${closeCode} reason=${reason}`));
+      }
+    });
   });
-
-  console.log('[SOE] 返回 PronAccuracy=%s SuggestedScore=%s Words=%d',
-    result.PronAccuracy, result.SuggestedScore, (result.Words || []).length);
-
-  // SDK 直接返回 Response 字段内容，包装成统一格式供适配器使用
-  return { Response: normalizeSoeResponse(result) };
 }
 
 
