@@ -5,7 +5,7 @@
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE WSS（voice_format=2 WAV, rec_mode=1, is_end=1 in URL）
+ *   1. 腾讯 SOE WSS（voice_format=2 WAV，标准流式 URL，JSON 文本帧 is_end=1 收尾）
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
@@ -42,8 +42,10 @@ function pcmToWav(pcmBuf) {
 
 // ══════════════════════════════════════════════════════════════════
 //  腾讯云智聆口语评测 WebSocket
-//  voice_format=2（WAV）+ rec_mode=1 + is_end=1 写入 URL 参数
-//  单帧发送完整 WAV，无任何额外帧，服务端收到即开始评测
+//  与 ping.js 中验证通过的方案完全一致：
+//    · 标准流式 URL（无 rec_mode / is_end / seq）
+//    · voice_format=2（WAV，带 RIFF 头）
+//    · ws.send(wavBuf)  →  ws.send(JSON { voice_id, seq:0, is_end:1 })
 // ══════════════════════════════════════════════════════════════════
 
 // ── SOE 响应字段规范化 ────────────────────────────────────────────
@@ -92,16 +94,14 @@ async function tencentSoeAssess(pcmBase64, refText) {
   const voiceId   = crypto.randomUUID().replace(/-/g, '');
 
   // URL 参数按字母序排列（HMAC-SHA1 签名要求）
+  // 与 ping.js 保持一致：标准流式模式，不写 rec_mode / is_end / seq
   const params = {
     eval_mode:          '1',      // 句子模式
     expired:            String(expired),
-    is_end:             '1',      // 告知服务端这是最后一包，收到即开始评测
     nonce:              String(nonce),
-    rec_mode:           '1',      // 一次性上传（非流式）
     ref_text:           cleanRef,
     score_coeff:        '1.0',
     secretid:           TENCENT_SECRET_ID,
-    seq:                '0',      // 包序号
     server_engine_type: '16k_zh',
     text_mode:          '0',
     timestamp:          String(timestamp),
@@ -136,10 +136,11 @@ async function tencentSoeAssess(pcmBase64, refText) {
     const timer = setTimeout(() => finish(new Error('Tencent SOE 超时 (20s)')), 20000);
 
     ws.on('open', () => {
-      // 唯一一次发送：完整 WAV 二进制帧
-      // is_end=1 已在 URL 中声明，服务端收到此帧即知传输完毕，立即评测
-      console.log('[SOE WSS] 连接建立，发送 WAV %d 字节（仅此一帧）', wavBuf.length);
+      // 第一帧：完整 WAV 音频
+      console.log('[SOE WSS] 连接建立，发送 WAV %d 字节', wavBuf.length);
       ws.send(wavBuf);
+      // 第二帧：JSON 文本帧，告知服务端传输结束（与 ping.js 完全一致）
+      ws.send(JSON.stringify({ voice_id: voiceId, seq: 0, is_end: 1 }));
     });
 
     ws.on('message', (data) => {
