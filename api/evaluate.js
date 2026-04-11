@@ -5,7 +5,7 @@
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE WSS（voice_format=1 PCM，切片流式发送，空二进制帧 EOF 收尾）
+ *   1. 腾讯 SOE WSS（voice_format=2 流式WAV，data_size=0，切片 + JSON is_end 收尾）
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
@@ -40,12 +40,32 @@ function pcmToWav(pcmBuf) {
   return wav;
 }
 
+// ── 流式 WAV 头（data_size=0，声明长度未知）────────────────────
+// 服务端只从 fmt 块读取格式信息（16kHz/16bit/mono），data_size=0 避免预判总时长
+function streamingWavHeader() {
+  const h = Buffer.alloc(44);
+  h.write('RIFF', 0);
+  h.writeUInt32LE(0, 4);             // RIFF size = 0（未知）
+  h.write('WAVE', 8);
+  h.write('fmt ', 12);
+  h.writeUInt32LE(16, 16);
+  h.writeUInt16LE(1, 20);            // PCM
+  h.writeUInt16LE(1, 22);            // mono
+  h.writeUInt32LE(16000, 24);        // 16kHz
+  h.writeUInt32LE(32000, 28);        // byte rate
+  h.writeUInt16LE(2, 32);            // block align
+  h.writeUInt16LE(16, 34);           // 16-bit
+  h.write('data', 36);
+  h.writeUInt32LE(0, 40);            // data size = 0（未知，流式）
+  return h;
+}
+
 // ══════════════════════════════════════════════════════════════════
-//  腾讯云智聆口语评测 WebSocket — 切片流式发送
-//    · 标准流式 URL（无 rec_mode / is_end / seq）
-//    · voice_format=1（raw PCM），无 WAV 头避免总时长判定
-//    · 每 200ms 发送 16000 字节（0.5s），速率 2.5x < 3x 限制
-//    · 空二进制帧 Buffer.alloc(0) 收尾（voice_format=1 不接受文本帧）
+//  腾讯云智聆口语评测 WebSocket — 流式 WAV 切片发送
+//    · voice_format=2（WAV），流式头部 data_size=0 避免预判总时长
+//    · 第一片 = 44字节 WAV 头 + PCM 数据；后续片 = 纯 PCM 数据
+//    · 每 200ms 发送 16000 字节，速率 2.5x < 3x 限制
+//    · JSON 文本帧 { voice_id, seq, is_end:1 } 收尾（ping.js 验证格式）
 // ══════════════════════════════════════════════════════════════════
 
 // ── SOE 响应字段规范化 ────────────────────────────────────────────
@@ -82,8 +102,11 @@ async function tencentSoeAssess(pcmBase64, refText) {
     throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
   }
 
-  // 前端传来纯 PCM Base64（16kHz 16-bit mono），直接切片发送（不包 WAV 头）
+  // 前端传来纯 PCM Base64（16kHz 16-bit mono）
+  // 拼接流式 WAV 头（data_size=0）+ 纯 PCM → 切片发送
   const rawPcm   = Buffer.from(pcmBase64, 'base64');
+  const wavHdr   = streamingWavHeader();
+  const streamBuf = Buffer.concat([wavHdr, rawPcm]);   // 44 + PCM
   const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
   const durSec   = (rawPcm.length / (16000 * 2)).toFixed(1);
 
@@ -103,7 +126,7 @@ async function tencentSoeAssess(pcmBase64, refText) {
     server_engine_type: '16k_zh',
     text_mode:          '0',
     timestamp:          String(timestamp),
-    voice_format:       '1',      // raw PCM 16kHz 16-bit mono
+    voice_format:       '2',      // WAV（流式头 data_size=0）
     voice_id:           voiceId,
   };
 
@@ -115,13 +138,13 @@ async function tencentSoeAssess(pcmBase64, refText) {
   const urlQuery     = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
   const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
 
-  // 切片参数：每片 16000 字节 = 0.5s（16kHz×16bit×mono），间隔 200ms → 2.5x < 3x
+  // 切片参数：每片 16000 字节，间隔 200ms → 速率 2.5x < 3x
   const CHUNK_SIZE = 16000;
   const CHUNK_DELAY = 200;
-  const totalChunks = Math.ceil(rawPcm.length / CHUNK_SIZE);
+  const totalChunks = Math.ceil(streamBuf.length / CHUNK_SIZE);
 
-  console.log('[SOE WSS] voice_format=1 PCM 切片流式, voiceId:', voiceId,
-              'PCM:', rawPcm.length, '字节 (约', durSec, 's),',
+  console.log('[SOE WSS] voice_format=2 流式WAV(data_size=0), voiceId:', voiceId,
+              'stream:', streamBuf.length, '字节 (PCM', rawPcm.length, ', 约', durSec, 's),',
               totalChunks, '片, ref:', cleanRef);
 
   return new Promise((resolve, reject) => {
@@ -148,24 +171,17 @@ async function tencentSoeAssess(pcmBase64, refText) {
         for (let i = 0; i < totalChunks; i++) {
           if (done) return;  // 提前收到错误则停止发送
           const start = i * CHUNK_SIZE;
-          const end   = Math.min(start + CHUNK_SIZE, rawPcm.length);
-          const chunk = rawPcm.slice(start, end);
+          const end   = Math.min(start + CHUNK_SIZE, streamBuf.length);
+          const chunk = streamBuf.slice(start, end);
           ws.send(chunk);
           // 最后一片之后不需要等待，直接发结束帧
           if (i < totalChunks - 1) {
             await new Promise(r => setTimeout(r, CHUNK_DELAY));
           }
         }
-        // 所有 PCM 切片发完，发空二进制帧作为 EOF
-        console.log('[SOE WSS] %d 片发送完毕，发空 Buffer EOF', totalChunks);
-        ws.send(Buffer.alloc(0));
-        // 保险：若 5s 内无响应，再尝试 ws.close() 作为第二种 EOF 信号
-        setTimeout(() => {
-          if (!done && ws.readyState === WebSocket.OPEN) {
-            console.log('[SOE WSS] 空帧 5s 无响应，尝试 ws.close() 作 EOF');
-            ws.close();
-          }
-        }, 5000);
+        // 所有切片发完，发 JSON 结束帧（voice_format=2 支持文本帧，ping.js 验证通过）
+        console.log('[SOE WSS] %d 片发送完毕，发 is_end JSON 帧', totalChunks);
+        ws.send(JSON.stringify({ voice_id: voiceId, seq: totalChunks, is_end: 1 }));
       } catch(e) {
         finish(e);
       }
