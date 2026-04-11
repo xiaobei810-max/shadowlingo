@@ -324,10 +324,11 @@
       background: rgba(34, 197, 94, 0.12);
     }
 
-    /* ── 明轩立绘组件 ── */
+    /* ── 明轩立绘组件（ctx-panel inline 版） ── */
     .char-sprite {
       position: relative;
-      width: 72px; height: 100px;
+      /* 比例 5:7 对应 dressroom 300×420 */
+      width: 60px; height: 84px;
       flex-shrink: 0;
       overflow: visible;
     }
@@ -343,13 +344,29 @@
       user-select: none;
       -webkit-user-drag: none;
     }
-    /* DLP 面板里大一点 */
-    .dlp-speaker-row .char-sprite {
-      width: 88px; height: 120px;
+
+    /* ── 明轩立绘组件（DLP absolute 版） ── */
+    .dlp-block { position: relative; }
+    .dlp-block .char-sprite-abs {
+      position: absolute;
+      right: 8px; top: 0; bottom: 0;
+      width: 90px;          /* 90×126 维持 5:7 */
+      margin: auto 0;
+      height: 126px;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 1;
     }
-    /* ctx-panel 里小一点 */
-    .ctx-header .char-sprite {
-      width: 56px; height: 78px;
+    .dlp-block .char-sprite-abs img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      transform-origin: top left;
+      pointer-events: none;
+      outline: none;
+      user-select: none;
+      -webkit-user-drag: none;
     }
 
     .role-meta {
@@ -2159,11 +2176,11 @@
           <!-- 明轩立绘（小） -->
           <div class="char-sprite" id="ctx-sprite-mingxuan">
             <img src="assets/characters/mingxuan/mingxuan_body.png"
-                 style="transform: translate(-45px,-25px) scale(1.14)">
+                 style="transform: translate(-15%,-6%) scale(1.14)">
             <img src="assets/clothes/mx_clothes_green_jacket.png"
-                 style="transform: translate(-38px,-14px) scale(1.08)">
+                 style="transform: translate(-12.7%,-3.3%) scale(1.08)">
             <img src="assets/characters/mingxuan/mingxuan_head.png"
-                 style="transform: translate(-34px,-9px) scale(1.06)">
+                 style="transform: translate(-11.3%,-2.1%) scale(1.06)">
           </div>
           <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
@@ -2197,11 +2214,11 @@
           <!-- 明轩立绘（小） -->
           <div class="char-sprite" id="ctx-sprite-mingxuan-below">
             <img src="assets/characters/mingxuan/mingxuan_body.png"
-                 style="transform: translate(-45px,-25px) scale(1.14)">
+                 style="transform: translate(-15%,-6%) scale(1.14)">
             <img src="assets/clothes/mx_clothes_green_jacket.png"
-                 style="transform: translate(-38px,-14px) scale(1.08)">
+                 style="transform: translate(-12.7%,-3.3%) scale(1.08)">
             <img src="assets/characters/mingxuan/mingxuan_head.png"
-                 style="transform: translate(-34px,-9px) scale(1.06)">
+                 style="transform: translate(-11.3%,-2.1%) scale(1.06)">
           </div>
           <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
@@ -6299,16 +6316,16 @@
     <div class="dlp-body">
       <!-- 上半部分：赵明轩 -->
       <div class="dlp-block local dimmed" id="dlp-block-local">
+        <!-- 明轩立绘（绝对定位悬浮在右侧） -->
+        <div class="char-sprite-abs">
+          <img src="assets/characters/mingxuan/mingxuan_body.png"
+               style="transform: translate(-15%,-6%) scale(1.14)">
+          <img src="assets/clothes/mx_clothes_green_jacket.png"
+               style="transform: translate(-12.7%,-3.3%) scale(1.08)">
+          <img src="assets/characters/mingxuan/mingxuan_head.png"
+               style="transform: translate(-11.3%,-2.1%) scale(1.06)">
+        </div>
         <div class="dlp-speaker-row">
-          <!-- 明轩立绘：学长绿外套 body→clothes→head 三层 -->
-          <div class="char-sprite" id="dlp-sprite-mingxuan">
-            <img src="assets/characters/mingxuan/mingxuan_body.png"
-                 style="transform: translate(-45px,-25px) scale(1.14)">
-            <img src="assets/clothes/mx_clothes_green_jacket.png"
-                 style="transform: translate(-38px,-14px) scale(1.08)">
-            <img src="assets/characters/mingxuan/mingxuan_head.png"
-                 style="transform: translate(-34px,-9px) scale(1.06)">
-          </div>
           <div>
             <div class="dlp-name">赵明轩 · Zhao Mingxuan</div>
             <div class="dlp-role-tag">Local · 本地说话人</div>
