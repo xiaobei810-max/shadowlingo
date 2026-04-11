@@ -5,7 +5,7 @@
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE WSS（voice_format=1 raw PCM, rec_mode=1, is_end=1 in URL）
+ *   1. 腾讯 SOE WSS（voice_format=2 WAV, rec_mode=1, is_end=1 in URL）
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
@@ -42,8 +42,8 @@ function pcmToWav(pcmBuf) {
 
 // ══════════════════════════════════════════════════════════════════
 //  腾讯云智聆口语评测 WebSocket
-//  voice_format=1（raw PCM）+ rec_mode=1 + is_end=1 写入 URL 参数
-//  单帧发送纯 PCM，无任何额外帧，服务端收到即开始评测
+//  voice_format=2（WAV）+ rec_mode=1 + is_end=1 写入 URL 参数
+//  单帧发送完整 WAV，无任何额外帧，服务端收到即开始评测
 // ══════════════════════════════════════════════════════════════════
 
 // ── SOE 响应字段规范化 ────────────────────────────────────────────
@@ -80,8 +80,9 @@ async function tencentSoeAssess(pcmBase64, refText) {
     throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
   }
 
-  // 前端传来的是纯 PCM Base64，直接解码——不包 WAV 头
+  // 前端传来的是纯 PCM Base64，加 WAV 头后发送（voice_format=2）
   const rawPcm   = Buffer.from(pcmBase64, 'base64');
+  const wavBuf   = pcmToWav(rawPcm);
   const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
   const durSec   = (rawPcm.length / (16000 * 2)).toFixed(1);
 
@@ -104,7 +105,7 @@ async function tencentSoeAssess(pcmBase64, refText) {
     server_engine_type: '16k_zh',
     text_mode:          '0',
     timestamp:          String(timestamp),
-    voice_format:       '1',      // RAW PCM（不是 WAV，无头部）
+    voice_format:       '2',      // WAV（带 RIFF 头）
     voice_id:           voiceId,
   };
 
@@ -116,8 +117,8 @@ async function tencentSoeAssess(pcmBase64, refText) {
   const urlQuery     = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
   const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
 
-  console.log('[SOE WSS] voice_format=1 PCM, voiceId:', voiceId,
-              'PCM:', rawPcm.length, '字节 (约', durSec, 's), ref:', cleanRef);
+  console.log('[SOE WSS] voice_format=2 WAV, voiceId:', voiceId,
+              'PCM:', rawPcm.length, '字节 WAV:', wavBuf.length, '字节 (约', durSec, 's), ref:', cleanRef);
 
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(url);
@@ -135,10 +136,10 @@ async function tencentSoeAssess(pcmBase64, refText) {
     const timer = setTimeout(() => finish(new Error('Tencent SOE 超时 (20s)')), 20000);
 
     ws.on('open', () => {
-      // 唯一一次发送：纯 PCM 二进制帧
+      // 唯一一次发送：完整 WAV 二进制帧
       // is_end=1 已在 URL 中声明，服务端收到此帧即知传输完毕，立即评测
-      console.log('[SOE WSS] 连接建立，发送 PCM %d 字节（仅此一帧）', rawPcm.length);
-      ws.send(rawPcm);
+      console.log('[SOE WSS] 连接建立，发送 WAV %d 字节（仅此一帧）', wavBuf.length);
+      ws.send(wavBuf);
     });
 
     ws.on('message', (data) => {
