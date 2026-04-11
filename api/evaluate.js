@@ -11,8 +11,9 @@
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
  */
 
-const crypto    = require('crypto');
-const { soe }   = require('tencentcloud-sdk-nodejs-soe');
+const crypto      = require('crypto');
+const tencentcloud = require('tencentcloud-sdk-nodejs-soe');
+const SoeClient   = tencentcloud.soe.v20180724.Client;
 
 const TENCENT_APP_ID     = process.env.TENCENT_APP_ID;
 const TENCENT_SECRET_ID  = process.env.TENCENT_SECRET_ID;
@@ -50,7 +51,7 @@ function pcmToWav(pcmBuf) {
 let _soeClient = null;
 function getSoeClient() {
   if (_soeClient) return _soeClient;
-  _soeClient = new soe.v20180903.Client({
+  _soeClient = new SoeClient({
     credential: { secretId: TENCENT_SECRET_ID, secretKey: TENCENT_SECRET_KEY },
     region: 'ap-guangzhou',
     profile: { httpProfile: { reqTimeout: 30 } },
