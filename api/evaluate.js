@@ -5,7 +5,7 @@
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE WSS（voice_format=1 raw PCM，切片流式发送，JSON 文本帧 is_end=1 收尾）
+ *   1. 腾讯 SOE WSS（voice_format=2 WAV，切片流式发送，JSON 文本帧 is_end=1 收尾）
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
@@ -43,9 +43,9 @@ function pcmToWav(pcmBuf) {
 // ══════════════════════════════════════════════════════════════════
 //  腾讯云智聆口语评测 WebSocket — 切片流式发送
 //    · 标准流式 URL（无 rec_mode / is_end / seq）
-//    · voice_format=1（raw PCM，16kHz 16-bit mono）
-//    · 每 200ms 发送 16000 字节（0.5s），速率 2.5x < 3x 限制
-//    · 最后发 JSON { voice_id, seq, is_end:1 } 收尾
+//    · voice_format=2（WAV），第一片自含 44 字节 RIFF 头
+//    · 每 200ms 发送 16000 字节，速率 2.5x < 3x 限制
+//    · JSON 文本帧 { voice_id, seq, is_end:1 } 收尾（ping.js 验证通过）
 // ══════════════════════════════════════════════════════════════════
 
 // ── SOE 响应字段规范化 ────────────────────────────────────────────
@@ -82,8 +82,9 @@ async function tencentSoeAssess(pcmBase64, refText) {
     throw new Error('TENCENT_APP_ID / TENCENT_SECRET_ID / TENCENT_SECRET_KEY not configured');
   }
 
-  // 前端传来的是纯 PCM Base64（16kHz 16-bit mono），直接使用
+  // 前端传来纯 PCM Base64（16kHz 16-bit mono），包上 WAV 头后切片发送
   const rawPcm   = Buffer.from(pcmBase64, 'base64');
+  const wavBuf   = pcmToWav(rawPcm);
   const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
   const durSec   = (rawPcm.length / (16000 * 2)).toFixed(1);
 
@@ -103,7 +104,7 @@ async function tencentSoeAssess(pcmBase64, refText) {
     server_engine_type: '16k_zh',
     text_mode:          '0',
     timestamp:          String(timestamp),
-    voice_format:       '1',      // raw PCM（流式切片）
+    voice_format:       '2',      // WAV（切片流式，第一片含 RIFF 头）
     voice_id:           voiceId,
   };
 
@@ -115,13 +116,13 @@ async function tencentSoeAssess(pcmBase64, refText) {
   const urlQuery     = sortedKeys.map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
   const url = `wss://soe.cloud.tencent.com/soe/api/${TENCENT_APP_ID}?${urlQuery}&signature=${encodeURIComponent(signature)}`;
 
-  // 切片参数：每片 16000 字节 = 0.5s（16kHz×2字节），间隔 200ms → 2.5x 速率 < 3x 限制
+  // 切片参数：每片 16000 字节，间隔 200ms → 速率 2.5x < 3x 限制
   const CHUNK_SIZE = 16000;
   const CHUNK_DELAY = 200;
-  const totalChunks = Math.ceil(rawPcm.length / CHUNK_SIZE);
+  const totalChunks = Math.ceil(wavBuf.length / CHUNK_SIZE);
 
-  console.log('[SOE WSS] voice_format=1 PCM 切片流式, voiceId:', voiceId,
-              'PCM:', rawPcm.length, '字节 (约', durSec, 's),',
+  console.log('[SOE WSS] voice_format=2 WAV 切片流式, voiceId:', voiceId,
+              'WAV:', wavBuf.length, '字节 (约', durSec, 's),',
               totalChunks, '片, ref:', cleanRef);
 
   return new Promise((resolve, reject) => {
@@ -148,8 +149,8 @@ async function tencentSoeAssess(pcmBase64, refText) {
         for (let i = 0; i < totalChunks; i++) {
           if (done) return;  // 提前收到错误则停止发送
           const start = i * CHUNK_SIZE;
-          const end   = Math.min(start + CHUNK_SIZE, rawPcm.length);
-          const chunk = rawPcm.slice(start, end);
+          const end   = Math.min(start + CHUNK_SIZE, wavBuf.length);
+          const chunk = wavBuf.slice(start, end);
           ws.send(chunk);
           // 最后一片之后不需要等待，直接发结束帧
           if (i < totalChunks - 1) {
