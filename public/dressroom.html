@@ -118,26 +118,26 @@
         <button class="clothes-btn active" data-src="assets/clothes/mx_clothes_green_jacket.png" onclick="selectClothes(this)">学长绿外套</button>
       </div>
       <div id="clothes-sliders">
-        <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="-15" id="c-top"   oninput="update()"> <span class="val" id="c-top-v">-15px</span></div>
+        <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="-14" id="c-top"   oninput="update()"> <span class="val" id="c-top-v">-14px</span></div>
         <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="-38" id="c-left"  oninput="update()"> <span class="val" id="c-left-v">-38px</span></div>
-        <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="113" id="c-scale" oninput="update()"> <span class="val" id="c-scale-v">113%</span></div>
+        <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="108" id="c-scale" oninput="update()"> <span class="val" id="c-scale-v">108%</span></div>
       </div>
     </div>
 
     <!-- 身体 -->
     <div class="layer-card">
       <div class="layer-title">🧍 身体 Body <span>mingxuan_body.png</span></div>
-      <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="-10" id="b-top"   oninput="update()"> <span class="val" id="b-top-v">-10px</span></div>
-      <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="-34" id="b-left"  oninput="update()"> <span class="val" id="b-left-v">-34px</span></div>
-      <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="112" id="b-scale" oninput="update()"> <span class="val" id="b-scale-v">112%</span></div>
+      <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="-25" id="b-top"   oninput="update()"> <span class="val" id="b-top-v">-25px</span></div>
+      <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="-45" id="b-left"  oninput="update()"> <span class="val" id="b-left-v">-45px</span></div>
+      <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="114" id="b-scale" oninput="update()"> <span class="val" id="b-scale-v">114%</span></div>
     </div>
 
     <!-- 头部 -->
     <div class="layer-card">
       <div class="layer-title">😊 头部 Head <span>mingxuan_head.png</span></div>
-      <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="37"  id="h-top"   oninput="update()"> <span class="val" id="h-top-v">37px</span></div>
-      <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="45"  id="h-left"  oninput="update()"> <span class="val" id="h-left-v">45px</span></div>
-      <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="87"  id="h-scale" oninput="update()"> <span class="val" id="h-scale-v">87%</span></div>
+      <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="-9"  id="h-top"   oninput="update()"> <span class="val" id="h-top-v">-9px</span></div>
+      <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="-34" id="h-left"  oninput="update()"> <span class="val" id="h-left-v">-34px</span></div>
+      <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="106" id="h-scale" oninput="update()"> <span class="val" id="h-scale-v">106%</span></div>
     </div>
 
     <!-- 复制坐标 -->
@@ -158,11 +158,11 @@
 <script>
 const CLOTHES_LIST = [
   { name: '无 None',    src: '',                                        top: 0,   left: 0,   scale: 100 },
-  { name: '学长绿外套', src: 'assets/clothes/mx_clothes_green_jacket.png', top: -15, left: -38, scale: 113 },
+  { name: '学长绿外套', src: 'assets/clothes/mx_clothes_green_jacket.png', top: -14, left: -38, scale: 108 },
 ];
 
 const PRESETS = {
-  'mx_clothes_green_jacket.png': { body: { top:-10, left:-34, scale:112 }, head: { top:37, left:45, scale:87 }, clothes: { top:-15, left:-38, scale:113 } }
+  'mx_clothes_green_jacket.png': { body: { top:-25, left:-45, scale:114 }, head: { top:-9, left:-34, scale:106 }, clothes: { top:-14, left:-38, scale:108 } }
 };
 
 function g(id) { return document.getElementById(id); }
