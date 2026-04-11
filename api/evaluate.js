@@ -5,7 +5,7 @@
  *   POST { audioBase64, refText }  →  JSON { totalScore, wordResults[], ... }
  *
  * 内部流程：
- *   1. 腾讯 SOE WSS（voice_format=1 PCM，切片流式发送，JSON 文本帧 is_end=1 收尾）
+ *   1. 腾讯 SOE WSS（voice_format=1 PCM，切片流式发送，空二进制帧 EOF 收尾）
  *   2. Gemini 生成期望拼音
  *   3. Whisper 双轨检测（可选）
  *   4. parseAzureResult 执行全部业务逻辑（阈值、弱字、诊断）
@@ -45,7 +45,7 @@ function pcmToWav(pcmBuf) {
 //    · 标准流式 URL（无 rec_mode / is_end / seq）
 //    · voice_format=1（raw PCM），无 WAV 头避免总时长判定
 //    · 每 200ms 发送 16000 字节（0.5s），速率 2.5x < 3x 限制
-//    · JSON 文本帧 { voice_id, seq, is_end:1 } 收尾（ping.js 格式）
+//    · 空二进制帧 Buffer.alloc(0) 收尾（voice_format=1 不接受文本帧）
 // ══════════════════════════════════════════════════════════════════
 
 // ── SOE 响应字段规范化 ────────────────────────────────────────────
@@ -156,9 +156,16 @@ async function tencentSoeAssess(pcmBase64, refText) {
             await new Promise(r => setTimeout(r, CHUNK_DELAY));
           }
         }
-        // 所有 PCM 切片发完，发 JSON 结束帧（ping.js 验证格式）
-        console.log('[SOE WSS] %d 片发送完毕，发 is_end JSON 帧', totalChunks);
-        ws.send(JSON.stringify({ voice_id: voiceId, seq: totalChunks, is_end: 1 }));
+        // 所有 PCM 切片发完，发空二进制帧作为 EOF
+        console.log('[SOE WSS] %d 片发送完毕，发空 Buffer EOF', totalChunks);
+        ws.send(Buffer.alloc(0));
+        // 保险：若 5s 内无响应，再尝试 ws.close() 作为第二种 EOF 信号
+        setTimeout(() => {
+          if (!done && ws.readyState === WebSocket.OPEN) {
+            console.log('[SOE WSS] 空帧 5s 无响应，尝试 ws.close() 作 EOF');
+            ws.close();
+          }
+        }, 5000);
       } catch(e) {
         finish(e);
       }
