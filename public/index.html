@@ -324,6 +324,30 @@
       background: rgba(34, 197, 94, 0.12);
     }
 
+    /* ── 明轩立绘组件 ── */
+    .char-sprite {
+      position: relative;
+      width: 72px; height: 100px;
+      flex-shrink: 0;
+      overflow: visible;
+    }
+    .char-sprite img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      transform-origin: top left;
+      pointer-events: none;
+    }
+    /* DLP 面板里大一点 */
+    .dlp-speaker-row .char-sprite {
+      width: 88px; height: 120px;
+    }
+    /* ctx-panel 里小一点 */
+    .ctx-header .char-sprite {
+      width: 56px; height: 78px;
+    }
+
     .role-meta {
       flex: 1;
       text-align: left;
@@ -2128,6 +2152,15 @@
       <!-- 对方台词面板（上方，无前置台词时隐藏） -->
       <div class="context-panel" id="context-panel" style="display:none">
         <div class="ctx-header">
+          <!-- 明轩立绘（小） -->
+          <div class="char-sprite" id="ctx-sprite-mingxuan">
+            <img src="assets/characters/mingxuan/mingxuan_body.png"
+                 style="transform: translate(-34px,-10px) scale(1.12)">
+            <img src="assets/clothes/mx_clothes_green_jacket.png"
+                 style="transform: translate(-38px,-15px) scale(1.13)">
+            <img src="assets/characters/mingxuan/mingxuan_head.png"
+                 style="transform: translate(45px,37px) scale(0.87)">
+          </div>
           <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
         </div>
@@ -2154,9 +2187,18 @@
         </div>
       </div>
 
-      <!-- 下方配对台词面板（用于卢克开口时显示对方回应） -->
+      <!-- 下方配对台词面板（用于明轩开口时显示对方回应） -->
       <div class="context-panel" id="context-panel-below" style="display:none">
         <div class="ctx-header">
+          <!-- 明轩立绘（小） -->
+          <div class="char-sprite" id="ctx-sprite-mingxuan-below">
+            <img src="assets/characters/mingxuan/mingxuan_body.png"
+                 style="transform: translate(-34px,-10px) scale(1.12)">
+            <img src="assets/clothes/mx_clothes_green_jacket.png"
+                 style="transform: translate(-38px,-15px) scale(1.13)">
+            <img src="assets/characters/mingxuan/mingxuan_head.png"
+                 style="transform: translate(45px,37px) scale(0.87)">
+          </div>
           <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
           <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
         </div>
@@ -6251,9 +6293,18 @@
       <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">跳过，去练习 ▶</button>
     </div>
     <div class="dlp-body">
-      <!-- 上半部分：林悦 -->
+      <!-- 上半部分：赵明轩 -->
       <div class="dlp-block local dimmed" id="dlp-block-local">
         <div class="dlp-speaker-row">
+          <!-- 明轩立绘：学长绿外套 body→clothes→head 三层 -->
+          <div class="char-sprite" id="dlp-sprite-mingxuan">
+            <img src="assets/characters/mingxuan/mingxuan_body.png"
+                 style="transform: translate(-34px,-10px) scale(1.12)">
+            <img src="assets/clothes/mx_clothes_green_jacket.png"
+                 style="transform: translate(-38px,-15px) scale(1.13)">
+            <img src="assets/characters/mingxuan/mingxuan_head.png"
+                 style="transform: translate(45px,37px) scale(0.87)">
+          </div>
           <div>
             <div class="dlp-name">赵明轩 · Zhao Mingxuan</div>
             <div class="dlp-role-tag">Local · 本地说话人</div>

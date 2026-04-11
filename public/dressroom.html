@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>明轩换装舞台 · MingXuan Dressroom</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; min-height: 100vh; }
+
+  h1 { text-align: center; padding: 20px; font-size: 18px; color: #94a3b8; }
+
+  .layout { display: flex; gap: 24px; padding: 0 24px 24px; max-width: 1000px; margin: 0 auto; }
+
+  /* ── 预览区 ── */
+  .preview-wrap {
+    flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .preview-label { font-size: 12px; color: #64748b; }
+  .canvas {
+    position: relative;
+    width: 300px; height: 420px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .canvas img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+
+  /* ── 控制面板 ── */
+  .controls { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+  .layer-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .layer-title {
+    font-size: 13px; font-weight: 700; color: #22c55e;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .layer-title span { font-weight: 400; color: #94a3b8; font-size: 11px; }
+
+  .slider-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  }
+  .slider-row label { width: 60px; font-size: 12px; color: #94a3b8; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; accent-color: #22c55e; }
+  .slider-row .val { width: 52px; text-align: right; font-size: 12px; color: #e2e8f0; font-variant-numeric: tabular-nums; }
+
+  /* ── 衣服选择器 ── */
+  .clothes-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .clothes-btn {
+    padding: 6px 14px; border-radius: 99px; border: 1px solid #334155;
+    background: none; color: #94a3b8; font-size: 12px; cursor: pointer; transition: all 0.2s;
+  }
+  .clothes-btn.active, .clothes-btn:hover { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.08); }
+
+  /* ── 复制坐标 ── */
+  .action-row { display: flex; gap: 10px; margin-top: 4px; }
+  .copy-btn, .reset-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .copy-btn { background: #22c55e; color: #0f172a; }
+  .copy-btn:hover { background: #16a34a; }
+  .reset-btn { background: #334155; color: #e2e8f0; }
+  .reset-btn:hover { background: #475569; }
+
+  .output-box {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 12px; font-size: 11px; font-family: monospace; color: #22c55e;
+    white-space: pre; overflow-x: auto; margin-top: 10px;
+    min-height: 80px;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #22c55e; color: #0f172a; padding: 8px 20px; border-radius: 99px;
+    font-size: 13px; font-weight: 700; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>🎨 明轩换装舞台 · Dressroom</h1>
+
+<div class="layout">
+  <!-- 预览 -->
+  <div class="preview-wrap">
+    <div class="canvas" id="canvas">
+      <img id="img-body"    src="assets/characters/mingxuan/mingxuan_body.png"   alt="body">
+      <img id="img-clothes" src="assets/clothes/mx_clothes_green_jacket.png"    alt="clothes">
+      <img id="img-head"    src="assets/characters/mingxuan/mingxuan_head.png"  alt="head">
+    </div>
+    <div class="preview-label">300 × 420 px 预览</div>
+  </div>
+
+  <!-- 控制面板 -->
+  <div class="controls">
+
+    <!-- 衣服选择 -->
+    <div class="layer-card">
+      <div class="layer-title">👕 衣服 Clothes</div>
+      <div class="clothes-selector" id="clothes-selector">
+        <button class="clothes-btn" data-src="" onclick="selectClothes(this)">无 None</button>
+        <button class="clothes-btn active" data-src="assets/clothes/mx_clothes_green_jacket.png" onclick="selectClothes(this)">学长绿外套</button>
+      </div>
+      <div id="clothes-sliders">
+        <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="-15" id="c-top"   oninput="update()"> <span class="val" id="c-top-v">-15px</span></div>
+        <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="-38" id="c-left"  oninput="update()"> <span class="val" id="c-left-v">-38px</span></div>
+        <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="113" id="c-scale" oninput="update()"> <span class="val" id="c-scale-v">113%</span></div>
+      </div>
+    </div>
+
+    <!-- 身体 -->
+    <div class="layer-card">
+      <div class="layer-title">🧍 身体 Body <span>mingxuan_body.png</span></div>
+      <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="-10" id="b-top"   oninput="update()"> <span class="val" id="b-top-v">-10px</span></div>
+      <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="-34" id="b-left"  oninput="update()"> <span class="val" id="b-left-v">-34px</span></div>
+      <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="112" id="b-scale" oninput="update()"> <span class="val" id="b-scale-v">112%</span></div>
+    </div>
+
+    <!-- 头部 -->
+    <div class="layer-card">
+      <div class="layer-title">😊 头部 Head <span>mingxuan_head.png</span></div>
+      <div class="slider-row"><label>↕ Top</label>  <input type="range" min="-150" max="150" value="37"  id="h-top"   oninput="update()"> <span class="val" id="h-top-v">37px</span></div>
+      <div class="slider-row"><label>↔ Left</label> <input type="range" min="-150" max="150" value="45"  id="h-left"  oninput="update()"> <span class="val" id="h-left-v">45px</span></div>
+      <div class="slider-row"><label>⤡ Scale</label><input type="range" min="50"   max="200" value="87"  id="h-scale" oninput="update()"> <span class="val" id="h-scale-v">87%</span></div>
+    </div>
+
+    <!-- 复制坐标 -->
+    <div class="layer-card">
+      <div class="layer-title">📋 导出坐标</div>
+      <div class="action-row">
+        <button class="copy-btn" onclick="copyCoords()">📋 复制 JS 坐标</button>
+        <button class="reset-btn" onclick="resetToPreset()">↺ 还原绿外套预设</button>
+      </div>
+      <div class="output-box" id="output-box">// 调整滑块后点击复制...</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ 已复制到剪贴板！</div>
+
+<script>
+const CLOTHES_LIST = [
+  { name: '无 None',    src: '',                                        top: 0,   left: 0,   scale: 100 },
+  { name: '学长绿外套', src: 'assets/clothes/mx_clothes_green_jacket.png', top: -15, left: -38, scale: 113 },
+];
+
+const PRESETS = {
+  'mx_clothes_green_jacket.png': { body: { top:-10, left:-34, scale:112 }, head: { top:37, left:45, scale:87 }, clothes: { top:-15, left:-38, scale:113 } }
+};
+
+function g(id) { return document.getElementById(id); }
+
+function update() {
+  const bT = +g('b-top').value, bL = +g('b-left').value, bS = +g('b-scale').value;
+  const hT = +g('h-top').value, hL = +g('h-left').value, hS = +g('h-scale').value;
+  const cT = +g('c-top').value, cL = +g('c-left').value, cS = +g('c-scale').value;
+
+  // Update value labels
+  g('b-top-v').textContent = bT+'px'; g('b-left-v').textContent = bL+'px'; g('b-scale-v').textContent = bS+'%';
+  g('h-top-v').textContent = hT+'px'; g('h-left-v').textContent = hL+'px'; g('h-scale-v').textContent = hS+'%';
+  g('c-top-v').textContent = cT+'px'; g('c-left-v').textContent = cL+'px'; g('c-scale-v').textContent = cS+'%';
+
+  // Apply transforms using percentage-based approach for canvas size 300x420
+  const W = 300, H = 420;
+
+  function applyLayer(imgId, top, left, scale) {
+    const img = g(imgId);
+    const s = scale / 100;
+    img.style.transform = `translate(${left}px, ${top}px) scale(${s})`;
+  }
+
+  applyLayer('img-body',    bT, bL, bS);
+  applyLayer('img-clothes', cT, cL, cS);
+  applyLayer('img-head',    hT, hL, hS);
+
+  // Update output box
+  const clothesSrc = g('img-clothes').src.split('/').pop();
+  g('output-box').textContent = generateCoords();
+}
+
+function generateCoords() {
+  const bT = +g('b-top').value, bL = +g('b-left').value, bS = +g('b-scale').value;
+  const hT = +g('h-top').value, hL = +g('h-left').value, hS = +g('h-scale').value;
+  const cT = +g('c-top').value, cL = +g('c-left').value, cS = +g('c-scale').value;
+  const clothesSrc = g('img-clothes').getAttribute('src') || '';
+  const clothesFile = clothesSrc.split('/').pop();
+
+  return `// 明轩坐标预设 — ${clothesFile || '无衣服'}
+body:    { top: ${bT}px, left: ${bL}px, scale: ${bS}% }
+head:    { top: ${hT}px, left: ${hL}px, scale: ${hS}% }
+clothes: { top: ${cT}px, left: ${cL}px, scale: ${cS}% }
+
+// JS对象（用于index.html集成）
+{
+  body:    { top:${bT}, left:${bL}, scale:${bS} },
+  head:    { top:${hT}, left:${hL}, scale:${hS} },
+  clothes: { top:${cT}, left:${cL}, scale:${cS} }
+}`;
+}
+
+function copyCoords() {
+  navigator.clipboard.writeText(generateCoords()).then(() => {
+    const t = g('toast'); t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  });
+}
+
+function resetToPreset() {
+  const clothesSrc = g('img-clothes').getAttribute('src') || '';
+  const key = clothesSrc.split('/').pop();
+  const p = PRESETS[key] || PRESETS['mx_clothes_green_jacket.png'];
+  g('b-top').value = p.body.top;    g('b-left').value = p.body.left;    g('b-scale').value = p.body.scale;
+  g('h-top').value = p.head.top;    g('h-left').value = p.head.left;    g('h-scale').value = p.head.scale;
+  g('c-top').value = p.clothes.top; g('c-left').value = p.clothes.left; g('c-scale').value = p.clothes.scale;
+  update();
+}
+
+function selectClothes(btn) {
+  document.querySelectorAll('.clothes-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const src = btn.dataset.src;
+  const img = g('img-clothes');
+  if (src) {
+    img.src = src;
+    img.style.display = '';
+    // Load preset for this outfit
+    const key = src.split('/').pop();
+    if (PRESETS[key]) {
+      const p = PRESETS[key];
+      g('c-top').value = p.clothes.top; g('c-left').value = p.clothes.left; g('c-scale').value = p.clothes.scale;
+    }
+  } else {
+    img.style.display = 'none';
+  }
+  update();
+}
+
+// Init
+update();
+</script>
+</body>
+</html>
