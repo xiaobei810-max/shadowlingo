@@ -396,7 +396,7 @@
       background: linear-gradient(135deg, #1a2535 0%, #0d1421 100%);
       border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
       overflow: visible;   /* 立绘可溢出 card 顶部 */
-      max-width: 480px; width: calc(100% - 32px);
+      max-width: 620px; width: calc(100% - 32px);   /* 加宽约 30% */
       box-shadow: 0 48px 96px rgba(0,0,0,0.7), 0 0 0 1px rgba(34,197,94,0.08);
       animation: introSlideUp 0.38s cubic-bezier(0.22,1,0.36,1) forwards;
       position: relative;
@@ -406,34 +406,30 @@
       to   { transform: translateY(0)    scale(1);    opacity: 1; }
     }
 
-    /* 左侧：立绘宿主（无背景，融入卡片） */
+    /* 左侧：立绘宿主 */
     .char-intro-left {
-      width: 200px; flex-shrink: 0;
+      width: 240px; flex-shrink: 0;   /* 左侧加宽，给人物左臂更多空间 */
       position: relative;
-      overflow: visible;     /* 允许立绘向上溢出 */
+      overflow: visible;
       min-height: 300px;
     }
-    /* 立绘容器：与 dressroom 完全一致的 300×420，底部对齐卡片底部，头部自然溢出顶部 */
+    /* 立绘容器：dressroom 原始 300×420，向右偏移避免左臂被切割 */
     .char-intro-sprite {
       position: absolute;
       bottom: 0;
-      left: 50%; transform: translateX(-50%);
-      width: 300px; height: 420px;   /* dressroom 原始尺寸，1:1 还原坐标 */
+      left: 50%; transform: translateX(-38%);  /* 从 -50% 改为 -38%，向右偏移让左臂完整 */
+      width: 300px; height: 420px;
       pointer-events: none;
       z-index: 2;
+      /* 底部羽化：mask 让立绘自然融入背景 */
+      -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
     }
     .char-intro-sprite img {
       position: absolute; top: 0; left: 0;
       width: 100%; height: 100%;
       object-fit: contain; transform-origin: top left;
       pointer-events: none;
-    }
-    /* 底部渐变：消除立绘硬切 */
-    .char-intro-left::after {
-      content: ''; pointer-events: none;
-      position: absolute; bottom: 0; left: 0; right: 0;
-      height: 90px; z-index: 3;
-      background: linear-gradient(to top, #0d1421 0%, transparent 100%);
     }
 
     /* 右侧文字区 */
@@ -6089,7 +6085,7 @@
         desc: '京华大学研究生，性格阳光开朗。<br>来机场接诺拉，是她在中国认识的第一个朋友。',
         greeting: '嗨！欢迎来到中国，我来接你了！',
         greetingRole: 'local',
-        btnText: '认识你真好！继续 →',
+        btnText: '继续 Continue ➔',
         body:    'assets/characters/mingxuan/mingxuan_body.png',
         head:    'assets/characters/mingxuan/mingxuan_head.png',
         clothes: 'assets/clothes/mx_clothes_green_jacket.png',
@@ -6760,7 +6756,7 @@
           </div>
           <span class="char-intro-greeting-text" id="char-intro-greeting-text">嗨！欢迎来到中国，我来接你了！</span>
         </div>
-        <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">认识你真好！继续 →</button>
+        <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">继续 Continue ➔</button>
       </div>
     </div>
   </div>
