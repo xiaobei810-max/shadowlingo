@@ -385,6 +385,7 @@
       position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.88);
       display: flex; align-items: center; justify-content: center;
+      padding-top: 60px;   /* 为头部上溢留出视觉空间 */
       opacity: 0; pointer-events: none;
       transition: opacity 0.35s ease;
     }
@@ -394,8 +395,8 @@
       display: flex; align-items: stretch;
       background: linear-gradient(135deg, #1a2535 0%, #0d1421 100%);
       border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
-      overflow: visible;           /* 允许立绘头部突破上边界 */
-      max-width: 460px; width: calc(100% - 32px);
+      overflow: visible;   /* 立绘可溢出 card 顶部 */
+      max-width: 480px; width: calc(100% - 32px);
       box-shadow: 0 48px 96px rgba(0,0,0,0.7), 0 0 0 1px rgba(34,197,94,0.08);
       animation: introSlideUp 0.38s cubic-bezier(0.22,1,0.36,1) forwards;
       position: relative;
@@ -405,20 +406,21 @@
       to   { transform: translateY(0)    scale(1);    opacity: 1; }
     }
 
-    /* 左侧：立绘区（无独立背景，与 card 融合） */
+    /* 左侧：立绘宿主（无背景，融入卡片） */
     .char-intro-left {
-      width: 160px; flex-shrink: 0;
+      width: 200px; flex-shrink: 0;
       position: relative;
-      border-radius: 24px 0 0 24px;
-      overflow: visible;
+      overflow: visible;     /* 允许立绘向上溢出 */
+      min-height: 300px;
     }
-    /* 立绘容器：绝对定位，底部对齐 card，向上超出 card 顶部 */
+    /* 立绘容器：与 dressroom 完全一致的 300×420，底部对齐卡片底部，头部自然溢出顶部 */
     .char-intro-sprite {
       position: absolute;
       bottom: 0;
       left: 50%; transform: translateX(-50%);
-      width: 180px; height: 260px;   /* 放大，头部突破顶部 */
+      width: 300px; height: 420px;   /* dressroom 原始尺寸，1:1 还原坐标 */
       pointer-events: none;
+      z-index: 2;
     }
     .char-intro-sprite img {
       position: absolute; top: 0; left: 0;
@@ -426,21 +428,19 @@
       object-fit: contain; transform-origin: top left;
       pointer-events: none;
     }
-    /* 底部渐变遮罩：消除硬切 */
+    /* 底部渐变：消除立绘硬切 */
     .char-intro-left::after {
-      content: '';
+      content: ''; pointer-events: none;
       position: absolute; bottom: 0; left: 0; right: 0;
-      height: 80px;
+      height: 90px; z-index: 3;
       background: linear-gradient(to top, #0d1421 0%, transparent 100%);
-      border-radius: 0 0 0 24px;
-      pointer-events: none;
     }
 
-    /* 右侧：文字区 */
+    /* 右侧文字区 */
     .char-intro-right {
       flex: 1; padding: 26px 20px 22px 16px;
       display: flex; flex-direction: column; gap: 8px;
-      min-height: 300px;
+      min-height: 320px;
     }
     .char-intro-badge {
       font-size: 9px; font-weight: 800; letter-spacing: 0.12em;
@@ -452,50 +452,40 @@
       font-size: 30px; font-weight: 900; color: #f1f5f9;
       line-height: 1.05; margin-top: 2px; letter-spacing: 0.04em;
     }
-    .char-intro-name-en {
-      font-size: 13px; color: #64748b; font-weight: 500;
-    }
+    .char-intro-name-en { font-size: 13px; color: #64748b; font-weight: 500; }
     .char-intro-title {
       font-size: 12px; color: #22c55e; font-weight: 700;
-      border-left: 2px solid #22c55e; padding-left: 8px;
-      margin-top: 2px;
+      border-left: 2px solid #22c55e; padding-left: 8px; margin-top: 2px;
     }
     .char-intro-desc {
       font-size: 12px; color: #94a3b8; line-height: 1.75;
-      flex: 1; margin-bottom: 6px;   /* 与问候按钮拉开间距 */
+      flex: 1; margin-bottom: 8px;
     }
     /* 语音播放按钮 */
     .char-intro-greeting {
       display: flex; align-items: center; gap: 10px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px; padding: 10px 14px;
       cursor: pointer; transition: background 0.2s, border-color 0.2s;
       margin-bottom: 10px;
     }
     .char-intro-greeting:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(34,197,94,0.4);
+      background: rgba(255,255,255,0.1); border-color: rgba(34,197,94,0.4);
     }
     .char-intro-play-icon {
       width: 28px; height: 28px; flex-shrink: 0;
       border-radius: 50%; border: 1.5px solid rgba(34,197,94,0.7);
       display: flex; align-items: center; justify-content: center;
-      color: #22c55e; font-size: 10px; padding-left: 2px;  /* 视觉居中 */
       transition: background 0.2s;
     }
-    .char-intro-greeting:hover .char-intro-play-icon {
-      background: rgba(34,197,94,0.15);
-    }
+    .char-intro-greeting:hover .char-intro-play-icon { background: rgba(34,197,94,0.15); }
     .char-intro-greeting-text {
       font-size: 13px; color: #e2e8f0; font-style: italic; line-height: 1.4;
     }
     .char-intro-btn {
-      width: 100%; padding: 12px;
-      background: #22c55e; color: #0f172a;
-      border: none; border-radius: 10px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      transition: background 0.2s;
+      width: 100%; padding: 12px; background: #22c55e; color: #0f172a;
+      border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
     }
     .char-intro-btn:hover { background: #16a34a; }
 
@@ -6103,9 +6093,10 @@
         body:    'assets/characters/mingxuan/mingxuan_body.png',
         head:    'assets/characters/mingxuan/mingxuan_head.png',
         clothes: 'assets/clothes/mx_clothes_green_jacket.png',
-        bodyTf:    'translate(-15%,-6%) scale(1.14)',
-        clothesTf: 'translate(-12.7%,-3.3%) scale(1.08)',
-        headTf:    'translate(-11.3%,-2.1%) scale(1.06)',
+        /* dressroom 300×420 原始像素坐标，1:1 还原 */
+        bodyTf:    'translate(-45px,-25px) scale(1.14)',
+        clothesTf: 'translate(-38px,-14px) scale(1.08)',
+        headTf:    'translate(-34px,-9px) scale(1.06)',
       }
     };
 
