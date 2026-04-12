@@ -381,19 +381,19 @@
     .char-profile-btn:hover { background: rgba(34,197,94,0.35); }
 
     /* ══════════════════════════════════════
-       角色登场弹窗 — 竖版全立绘设计
+       角色登场弹窗 — 竖版全立绘 · 信息分层设计
        ══════════════════════════════════════ */
     #char-intro-overlay {
       position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.92);
       display: flex; align-items: center; justify-content: center;
-      padding-top: 80px;   /* 为头部破框留出空间 */
+      padding-top: 80px;
       opacity: 0; pointer-events: none;
       transition: opacity 0.4s ease;
     }
     #char-intro-overlay.visible { opacity: 1; pointer-events: all; }
 
-    /* 竖版卡片：380px 宽，540px 高 */
+    /* 竖版卡片：380×540 */
     .char-intro-card {
       position: relative;
       width: min(380px, calc(100vw - 32px));
@@ -401,7 +401,7 @@
       background: linear-gradient(180deg, #0e1c2f 0%, #07111e 100%);
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: 28px;
-      overflow: visible;   /* 允许头部破框 */
+      overflow: visible;    /* 头部破框 */
       box-shadow: 0 50px 100px rgba(0,0,0,0.85);
       animation: introSlideUp 0.42s cubic-bezier(0.22,1,0.36,1) forwards;
     }
@@ -410,99 +410,203 @@
       to   { transform: translateY(0)    scale(1);    opacity: 1; }
     }
 
-    /* 绿色光晕（在立绘背后） */
+    /* 绿色径向光晕 */
     .char-intro-glow {
-      position: absolute;
-      top: 38%; left: 50%;
+      position: absolute; top: 36%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 340px; height: 340px;
+      width: 360px; height: 360px;
       background: radial-gradient(circle,
-        rgba(34,197,94,0.22) 0%,
-        rgba(34,197,94,0.07) 45%,
+        rgba(34,197,94,0.25) 0%,
+        rgba(34,197,94,0.08) 45%,
         transparent 70%);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 1;
+      border-radius: 50%; pointer-events: none; z-index: 1;
     }
 
-    /* 立绘容器：破框，头部溢出卡片顶部 ~80px */
+    /* 立绘容器：头部破框 80px */
     .char-intro-sprite {
-      position: absolute;
-      top: -80px;              /* 向上破框 */
-      left: 50%;
-      transform: translateX(-40%);   /* 轻微右偏，保证左臂不被切割 */
+      position: absolute; top: -80px; left: 50%;
+      transform: translateX(-40%);
       width: 300px; height: 420px;
-      pointer-events: none;
-      z-index: 2;
-      /* 底部羽化 */
-      -webkit-mask-image: linear-gradient(to bottom, black 72%, transparent 100%);
-      mask-image:         linear-gradient(to bottom, black 72%, transparent 100%);
+      pointer-events: none; z-index: 2;
+      -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 85%);
+      mask-image:         linear-gradient(to bottom, black 60%, transparent 85%);
     }
     .char-intro-sprite img {
       position: absolute; top: 0; left: 0;
       width: 100%; height: 100%;
-      object-fit: contain; transform-origin: top left;
-      pointer-events: none;
+      object-fit: contain; transform-origin: top left; pointer-events: none;
     }
 
-    /* 毛玻璃信息条（叠在立绘身体前方） */
-    .char-intro-info {
-      position: absolute;
-      bottom: 72px; left: 16px; right: 16px;
-      background: rgba(8, 18, 35, 0.65);
-      backdrop-filter: blur(20px) saturate(160%);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
-      border: 1px solid rgba(255,255,255,0.13);
-      border-radius: 20px;
-      padding: 16px 18px 14px;
-      z-index: 3;
+    /* 底部渐变融合层 */
+    .char-intro-fade {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 280px;
+      background: linear-gradient(to top,
+        #07111e 0%, rgba(7,17,30,0.95) 45%, transparent 100%);
+      pointer-events: none; z-index: 3;
+      border-radius: 0 0 28px 28px;
     }
-    .char-intro-info-top {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 6px;
+
+    /* 信息区（渐变层之上） */
+    .char-intro-info {
+      position: absolute; bottom: 64px; left: 20px; right: 20px;
+      z-index: 4;
+    }
+
+    /* 叙事引语 */
+    .char-intro-narrative {
+      font-size: 10px; font-style: italic;
+      color: rgba(255,255,255,0.32); letter-spacing: 0.07em;
+      margin-bottom: 7px;
+    }
+
+    /* 名字行 */
+    .char-intro-name-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
     }
     .char-intro-name-cn {
-      font-size: 32px; font-weight: 900; color: #f1f5f9;
-      line-height: 1; letter-spacing: 0.05em;
-    }
-    .char-intro-title {
-      font-size: 12px; color: #22c55e; font-weight: 700;
-      margin-top: 5px; letter-spacing: 0.02em;
-    }
-    .char-intro-badge {
-      font-size: 9px; font-weight: 800; letter-spacing: 0.12em;
-      color: rgba(255,255,255,0.35); text-transform: uppercase;
-      margin-top: 2px;
+      font-size: 34px; font-weight: 900; color: #f1f5f9;
+      line-height: 1; letter-spacing: 0.04em;
     }
 
-    /* 浮动播放圆圈 */
-    .char-intro-play-btn {
-      width: 44px; height: 44px; flex-shrink: 0;
-      border-radius: 50%;
-      background: rgba(34,197,94,0.18);
-      border: 1.5px solid rgba(34,197,94,0.65);
+    /* [i] 档案按钮 */
+    .char-intro-info-btn {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.5);
+      font-size: 13px; font-weight: 700; font-style: italic;
+      font-family: Georgia, 'Times New Roman', serif;
+      cursor: pointer; padding: 0;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.18s;
-      padding: 0;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
     }
-    .char-intro-play-btn:hover {
-      background: rgba(34,197,94,0.35);
-      transform: scale(1.1);
+    .char-intro-info-btn:hover {
+      background: rgba(34,197,94,0.15);
+      border-color: rgba(34,197,94,0.5);
+      color: #22c55e;
     }
 
-    /* 底部继续按钮 */
+    /* 胶囊标签 */
+    .char-intro-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .char-intro-pill {
+      padding: 4px 10px; border-radius: 99px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.11);
+      color: rgba(255,255,255,0.6);
+      font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+    }
+
+    /* 语音条 */
+    .char-intro-voice-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(0,0,0,0.38);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 8px 12px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .char-intro-voice-bar:hover { background: rgba(0,0,0,0.55); }
+    .char-intro-play-btn {
+      width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+      background: rgba(34,197,94,0.16);
+      border: 1.5px solid rgba(34,197,94,0.6);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0;
+      transition: background 0.2s, transform 0.18s;
+    }
+    .char-intro-play-btn:hover { background: rgba(34,197,94,0.32); transform: scale(1.1); }
+    .char-intro-voice-text {
+      font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.4; flex: 1;
+    }
+
+    /* 继续按钮（克制，居中，不全宽） */
     .char-intro-btn {
-      position: absolute;
-      bottom: 16px; left: 16px; right: 16px;
-      padding: 13px;
+      position: absolute; bottom: 16px;
+      left: 50%; transform: translateX(-50%);
+      width: 72%; padding: 11px 0;
       background: #22c55e; color: #0f172a;
       border: none; border-radius: 14px;
       font-size: 14px; font-weight: 700;
       cursor: pointer; transition: background 0.2s;
-      z-index: 3;
+      z-index: 4; white-space: nowrap;
     }
     .char-intro-btn:hover { background: #16a34a; }
+
+    /* ── 隐藏档案面板（毛玻璃从底部滑入） ── */
+    .char-profile-panel {
+      position: absolute; inset: 0; border-radius: 28px;
+      background: rgba(4, 11, 22, 0.88);
+      backdrop-filter: blur(28px) saturate(140%);
+      -webkit-backdrop-filter: blur(28px) saturate(140%);
+      z-index: 10; overflow: hidden;
+      display: flex; flex-direction: column;
+      transform: translateY(105%);
+      transition: transform 0.38s cubic-bezier(0.22,1,0.36,1);
+    }
+    .char-profile-panel.open { transform: translateY(0); }
+
+    /* 档案面板内容滚动区 */
+    .char-profile-scroll {
+      flex: 1; overflow-y: auto; padding: 22px 22px 20px;
+    }
+    .char-profile-scroll::-webkit-scrollbar { width: 3px; }
+    .char-profile-scroll::-webkit-scrollbar-track { background: transparent; }
+    .char-profile-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
+
+    .char-profile-top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .char-profile-badge {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.3); text-transform: uppercase;
+    }
+    .char-profile-close-btn {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.55); font-size: 13px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      padding: 0; transition: background 0.2s;
+    }
+    .char-profile-close-btn:hover { background: rgba(255,255,255,0.14); }
+
+    .char-profile-name-big {
+      font-size: 28px; font-weight: 900; color: #f1f5f9;
+      letter-spacing: 0.04em; line-height: 1; margin-bottom: 4px;
+    }
+    .char-profile-subtitle {
+      font-size: 12px; color: #22c55e; font-weight: 700;
+      margin-bottom: 18px; letter-spacing: 0.02em;
+    }
+    .char-profile-divider {
+      height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 16px;
+    }
+    .char-profile-row {
+      display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;
+    }
+    .char-profile-label {
+      font-size: 9px; font-weight: 800; color: rgba(34,197,94,0.75);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      width: 46px; flex-shrink: 0; padding-top: 2px;
+    }
+    .char-profile-val {
+      font-size: 13px; color: rgba(255,255,255,0.72); line-height: 1.6; flex: 1;
+    }
+
+    /* 档案面板底部按钮 */
+    .char-profile-footer {
+      padding: 12px 22px 18px; flex-shrink: 0;
+    }
+    .char-profile-back-btn {
+      width: 100%; padding: 11px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px; color: rgba(255,255,255,0.65);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .char-profile-back-btn:hover { background: rgba(255,255,255,0.12); }
 
     .role-meta {
       flex: 1;
@@ -6100,11 +6204,19 @@
         speakerPattern: '赵明轩',
         nameCn: '赵明轩', nameEn: 'Zhao Mingxuan',
         title: '阳光学长 · Sunny Senior',
-        badge: '✦ New Character · 新角色登场',
-        desc: '京华大学研究生，性格阳光开朗。<br>来机场接诺拉，是她在中国认识的第一个朋友。',
+        badge: '✦ NEW CHARACTER · 新角色登场',
+        narrative: '他在机场等候多时...',
+        pills: ['阳光学长', '京华大学', '热心肠'],
         greeting: '嗨！欢迎来到中国，我来接你了！',
         greetingRole: 'local',
         btnText: '继续 Continue ➔',
+        profileRows: [
+          { label: '全名',   val: '赵明轩 Zhao Mingxuan' },
+          { label: '身份',   val: '京华大学研究生，大四学长' },
+          { label: '性格',   val: '阳光开朗，热情助人，说话直率' },
+          { label: '与Nora', val: '在机场等候接机，是她在中国认识的第一个朋友' },
+          { label: '口头禅', val: '没问题！交给我！' },
+        ],
         body:    'assets/characters/mingxuan/mingxuan_body.png',
         head:    'assets/characters/mingxuan/mingxuan_head.png',
         clothes: 'assets/clothes/mx_clothes_green_jacket.png',
@@ -6141,37 +6253,57 @@
     function charIntroShow(id, isProfile) {
       var c = CHARACTER_DB[id];
       if (!c) return;
-
-      // 填充内容
       var el = function(i) { return document.getElementById(i); };
-      el('char-intro-badge').textContent   = isProfile ? '📋 PROFILE · 角色档案' : (c.badge || '✦ NEW CHARACTER · 新角色登场');
-      el('char-intro-name-cn').textContent = c.nameCn;
-      el('char-intro-title').textContent   = c.title;
-      el('char-intro-btn').textContent     = isProfile ? '关闭 Close ✕' : (c.btnText || '继续 Continue ➔');
-      el('char-intro-btn').onclick         = charIntroClose;
 
-      // 播放按钮：档案模式也保留，可随时试听
-      var playBtn = el('char-intro-play-btn');
-      if (playBtn) playBtn.style.display = '';
+      // ── 主卡片内容填充 ──
+      el('char-intro-narrative').textContent  = c.narrative || '';
+      el('char-intro-name-cn').textContent    = c.nameCn;
+      el('char-intro-voice-text').textContent = c.greeting;
+      el('char-intro-btn').textContent        = isProfile ? '关闭 Close ✕' : (c.btnText || '继续 Continue ➔');
+      el('char-intro-btn').onclick            = charIntroClose;
 
-      // 立绘三层
+      // 胶囊标签
+      var pillsEl = el('char-intro-pills');
+      pillsEl.innerHTML = (c.pills || []).map(function(p) {
+        return '<span class="char-intro-pill">' + p + '</span>';
+      }).join('');
+
+      // ── 档案面板内容填充 ──
+      el('char-profile-name').textContent     = c.nameCn;
+      el('char-profile-subtitle').textContent = c.title;
+      var rowsEl = el('char-profile-rows');
+      rowsEl.innerHTML = (c.profileRows || []).map(function(r) {
+        return '<div class="char-profile-row">' +
+          '<div class="char-profile-label">' + r.label + '</div>' +
+          '<div class="char-profile-val">'   + r.val   + '</div>' +
+          '</div>';
+      }).join('');
+      // 档案面板默认收起
+      el('char-profile-panel').classList.remove('open');
+
+      // ── 立绘三层 ──
       var sprite = el('char-intro-sprite');
       sprite.innerHTML =
         '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + '">' +
         '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + '">' +
         '<img src="' + c.head    + '" style="transform:' + c.headTf    + '">';
 
-      // 存储当前展示的角色ID
-      el('char-intro-overlay').dataset.charId = id;
+      // 存储当前角色 ID
+      el('char-intro-overlay').dataset.charId   = id;
       el('char-intro-overlay').dataset.isProfile = isProfile ? '1' : '0';
 
-      // 显示
+      // 显示弹窗
       el('char-intro-overlay').classList.add('visible');
 
       // 自动播放问候语
       if (!isProfile) {
-        setTimeout(function() { charIntroPlayGreeting(); }, 500);
+        setTimeout(function() { charIntroPlayGreeting(); }, 600);
       }
+    }
+
+    function charIntroToggleProfile() {
+      var panel = document.getElementById('char-profile-panel');
+      if (panel) panel.classList.toggle('open');
     }
 
     function charIntroPlayGreeting() {
@@ -6757,27 +6889,62 @@
   <!-- 角色登场弹窗 / Character Intro Modal -->
   <div id="char-intro-overlay">
     <div class="char-intro-card">
-      <!-- 绿色光晕背景 -->
+
+      <!-- 1. 绿色径向光晕 -->
       <div class="char-intro-glow"></div>
-      <!-- 三层立绘（JS注入，头部破框） -->
+
+      <!-- 2. 三层立绘（JS注入，头部破框） -->
       <div class="char-intro-sprite" id="char-intro-sprite"></div>
-      <!-- 毛玻璃信息条 -->
+
+      <!-- 3. 底部渐变融合层 -->
+      <div class="char-intro-fade"></div>
+
+      <!-- 4. 信息区（渐变层之上） -->
       <div class="char-intro-info">
-        <div class="char-intro-info-top">
-          <div>
-            <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
-            <div class="char-intro-title" id="char-intro-title">阳光学长 · Sunny Senior</div>
-          </div>
-          <button class="char-intro-play-btn" id="char-intro-play-btn" onclick="charIntroPlayGreeting()">
-            <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
-              <path d="M1 1L11 7L1 13V1Z" fill="#22c55e"/>
+        <!-- 叙事引语 -->
+        <div class="char-intro-narrative" id="char-intro-narrative">他在机场等候多时...</div>
+        <!-- 名字 + 档案按钮 -->
+        <div class="char-intro-name-row">
+          <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
+          <button class="char-intro-info-btn" onclick="charIntroToggleProfile()" title="查看档案"><i>i</i></button>
+        </div>
+        <!-- 胶囊标签 -->
+        <div class="char-intro-pills" id="char-intro-pills">
+          <span class="char-intro-pill">阳光学长</span>
+          <span class="char-intro-pill">京华大学</span>
+          <span class="char-intro-pill">热心肠</span>
+        </div>
+        <!-- 语音条 -->
+        <div class="char-intro-voice-bar" id="char-intro-voice-bar" onclick="charIntroPlayGreeting()">
+          <button class="char-intro-play-btn" id="char-intro-play-btn">
+            <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
+              <path d="M1 1L9 6L1 11V1Z" fill="#22c55e"/>
             </svg>
           </button>
+          <span class="char-intro-voice-text" id="char-intro-voice-text">嗨！欢迎来到中国，我来接你了！</span>
         </div>
-        <div class="char-intro-badge" id="char-intro-badge">✦ NEW CHARACTER · 新角色登场</div>
       </div>
-      <!-- 继续按钮 -->
+
+      <!-- 5. 隐藏档案面板（毛玻璃从底部滑入） -->
+      <div class="char-profile-panel" id="char-profile-panel">
+        <div class="char-profile-scroll">
+          <div class="char-profile-top-bar">
+            <div class="char-profile-badge">📋 人物档案 · Character Profile</div>
+            <button class="char-profile-close-btn" onclick="charIntroToggleProfile()">✕</button>
+          </div>
+          <div class="char-profile-name-big" id="char-profile-name">赵明轩</div>
+          <div class="char-profile-subtitle" id="char-profile-subtitle">阳光学长 · Sunny Senior</div>
+          <div class="char-profile-divider"></div>
+          <div id="char-profile-rows"><!-- JS 填充 --></div>
+        </div>
+        <div class="char-profile-footer">
+          <button class="char-profile-back-btn" onclick="charIntroToggleProfile()">← 返回 Back</button>
+        </div>
+      </div>
+
+      <!-- 6. 继续按钮 -->
       <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">继续 Continue ➔</button>
+
     </div>
   </div>
 
