@@ -369,6 +369,101 @@
       -webkit-user-drag: none;
     }
 
+    /* ── 角色档案按钮（DLP名字旁） ── */
+    .char-profile-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4);
+      color: #22c55e; font-size: 10px; font-weight: 700;
+      cursor: pointer; margin-left: 6px; vertical-align: middle;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    .char-profile-btn:hover { background: rgba(34,197,94,0.35); }
+
+    /* ── 角色登场弹窗 ── */
+    #char-intro-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    #char-intro-overlay.visible {
+      opacity: 1; pointer-events: all;
+    }
+    .char-intro-card {
+      display: flex; align-items: stretch;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155; border-radius: 20px;
+      overflow: hidden;
+      max-width: 480px; width: calc(100% - 40px);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+      animation: introSlideUp 0.35s ease forwards;
+    }
+    @keyframes introSlideUp {
+      from { transform: translateY(32px) scale(0.97); opacity: 0; }
+      to   { transform: translateY(0)    scale(1);    opacity: 1; }
+    }
+    .char-intro-left {
+      width: 170px; flex-shrink: 0;
+      background: linear-gradient(180deg, #1a2744 0%, #0d1b35 100%);
+      display: flex; align-items: flex-end; justify-content: center;
+      padding-top: 20px; overflow: visible; position: relative;
+      min-height: 300px;
+    }
+    .char-intro-sprite {
+      position: relative;
+      width: 140px; height: 196px;   /* 5:7 比例 */
+      flex-shrink: 0;
+    }
+    .char-intro-sprite img {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain; transform-origin: top left;
+      pointer-events: none;
+    }
+    .char-intro-right {
+      flex: 1; padding: 28px 22px 24px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .char-intro-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      color: #22c55e; text-transform: uppercase;
+      background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 99px; padding: 3px 10px; width: fit-content;
+    }
+    .char-intro-name-cn {
+      font-size: 28px; font-weight: 800; color: #f1f5f9;
+      line-height: 1.1; margin-top: 4px;
+    }
+    .char-intro-name-en {
+      font-size: 14px; color: #94a3b8; font-weight: 500;
+    }
+    .char-intro-title {
+      font-size: 13px; color: #22c55e; font-weight: 600;
+      border-left: 2px solid #22c55e; padding-left: 8px;
+      margin-top: 2px;
+    }
+    .char-intro-desc {
+      font-size: 12px; color: #94a3b8; line-height: 1.7;
+      flex: 1;
+    }
+    .char-intro-greeting {
+      font-size: 14px; color: #e2e8f0; font-style: italic;
+      background: rgba(255,255,255,0.04); border-radius: 8px;
+      padding: 8px 12px; cursor: pointer; transition: background 0.2s;
+    }
+    .char-intro-greeting:hover { background: rgba(255,255,255,0.08); }
+    .char-intro-greeting::before { content: '🔊 '; font-style: normal; }
+    .char-intro-btn {
+      width: 100%; padding: 12px;
+      background: #22c55e; color: #0f172a;
+      border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: background 0.2s; margin-top: 4px;
+    }
+    .char-intro-btn:hover { background: #16a34a; }
+
     .role-meta {
       flex: 1;
       text-align: left;
@@ -5956,10 +6051,133 @@
     }
 
     // ── Lesson Cover ──────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+    //  角色档案数据库 & 登场弹窗
+    // ══════════════════════════════════════════════════════════════
+    var CHARACTER_DB = {
+      mingxuan: {
+        id: 'mingxuan',
+        speakerPattern: '赵明轩',
+        nameCn: '赵明轩', nameEn: 'Zhao Mingxuan',
+        title: '阳光学长 · Sunny Senior',
+        badge: '✦ New Character · 新角色登场',
+        desc: '大二学生，性格阳光开朗。<br>来机场接诺拉，是她在中国认识的第一个朋友。',
+        greeting: '嗨！欢迎来到中国，我来接你了！',
+        greetingRole: 'local',
+        btnText: '认识你真好！继续 →',
+        body:    'assets/characters/mingxuan/mingxuan_body.png',
+        head:    'assets/characters/mingxuan/mingxuan_head.png',
+        clothes: 'assets/clothes/mx_clothes_green_jacket.png',
+        bodyTf:    'translate(-15%,-6%) scale(1.14)',
+        clothesTf: 'translate(-12.7%,-3.3%) scale(1.08)',
+        headTf:    'translate(-11.3%,-2.1%) scale(1.06)',
+      }
+    };
+
+    // 每节课出场的新角色 ID 列表
+    var LESSON_CHARS = [ ['mingxuan'] /* Lesson 1 */ ];
+
+    var _charIntroQueue = [];
+    var _charIntroCallback = null;
+
+    function charIntroCheck(callback) {
+      var seen = JSON.parse(localStorage.getItem('sl_char_seen') || '[]');
+      var chars = (LESSON_CHARS[lessonIdx] || []);
+      _charIntroQueue = chars.filter(function(id) { return seen.indexOf(id) < 0; });
+      _charIntroCallback = callback;
+      charIntroShowNext();
+    }
+
+    function charIntroShowNext() {
+      if (!_charIntroQueue.length) {
+        if (_charIntroCallback) _charIntroCallback();
+        return;
+      }
+      var id = _charIntroQueue.shift();
+      charIntroShow(id, false); // false = 登场模式（不显示"再次相遇"标签）
+    }
+
+    function charIntroShow(id, isProfile) {
+      var c = CHARACTER_DB[id];
+      if (!c) return;
+
+      // 填充内容
+      var el = function(i) { return document.getElementById(i); };
+      el('char-intro-badge').textContent   = isProfile ? '📋 角色档案 · Character Profile' : (c.badge || '✦ New Character · 新角色登场');
+      el('char-intro-name-cn').textContent = c.nameCn;
+      el('char-intro-name-en').textContent = c.nameEn;
+      el('char-intro-title').textContent   = c.title;
+      el('char-intro-desc').innerHTML      = c.desc;
+      el('char-intro-greeting-text').textContent = c.greeting;
+      el('char-intro-btn').textContent     = isProfile ? '关闭 Close ✕' : (c.btnText || '继续 Continue →');
+      el('char-intro-btn').onclick         = charIntroClose;
+
+      // 立绘三层
+      var sprite = el('char-intro-sprite');
+      sprite.innerHTML =
+        '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + '">' +
+        '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + '">' +
+        '<img src="' + c.head    + '" style="transform:' + c.headTf    + '">';
+
+      // 存储当前展示的角色ID
+      el('char-intro-overlay').dataset.charId = id;
+      el('char-intro-overlay').dataset.isProfile = isProfile ? '1' : '0';
+
+      // 显示
+      el('char-intro-overlay').classList.add('visible');
+
+      // 自动播放问候语
+      if (!isProfile) {
+        setTimeout(function() { charIntroPlayGreeting(); }, 500);
+      }
+    }
+
+    function charIntroPlayGreeting() {
+      var overlay = document.getElementById('char-intro-overlay');
+      var id = overlay.dataset.charId;
+      var c = CHARACTER_DB[id];
+      if (!c) return;
+      fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: c.greeting, role: c.greetingRole || 'local', rate: 1.0 })
+      }).then(function(r) { return r.ok ? r.blob() : null; })
+        .then(function(blob) {
+          if (!blob) return;
+          var url = URL.createObjectURL(blob);
+          var a = new Audio(url);
+          a.play().catch(function(){});
+        }).catch(function(){});
+    }
+
+    function charIntroClose() {
+      var overlay = document.getElementById('char-intro-overlay');
+      var id = overlay.dataset.charId;
+      var isProfile = overlay.dataset.isProfile === '1';
+      overlay.classList.remove('visible');
+
+      if (!isProfile && id) {
+        // 标记已见过
+        var seen = JSON.parse(localStorage.getItem('sl_char_seen') || '[]');
+        if (seen.indexOf(id) < 0) seen.push(id);
+        localStorage.setItem('sl_char_seen', JSON.stringify(seen));
+      }
+
+      // 继续弹窗队列（如有多个新角色）
+      if (!isProfile) {
+        setTimeout(charIntroShowNext, 200);
+      }
+    }
+
+    function showCharProfile(id) {
+      charIntroShow(id, true);
+    }
+    // ══════════════════════════════════════════════════════════════
+
     function startLesson() {
       prewarmMic(); // 提前初始化麦克风，消除第一句录音的冷启动延迟
       document.getElementById('cover-page').classList.remove('show');
-      showFlashcardPage();
+      charIntroCheck(showFlashcardPage);
     }
 
     // ── Vocab Flashcards ──────────────────────────────────────
@@ -6327,7 +6545,9 @@
         </div>
         <div class="dlp-speaker-row">
           <div>
-            <div class="dlp-name">赵明轩 · Zhao Mingxuan</div>
+            <div class="dlp-name">赵明轩 · Zhao Mingxuan
+              <button class="char-profile-btn" onclick="showCharProfile('mingxuan')" title="查看角色档案">i</button>
+            </div>
             <div class="dlp-role-tag">Local · 本地说话人</div>
           </div>
         </div>
@@ -6489,6 +6709,28 @@
     <div class="tip-footer">
       <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ 返回<br><span style="font-size:11px;font-weight:400">Back to Start</span></button>
       <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">下一课 ▶<br><span style="font-size:11px;font-weight:400">Next Lesson</span></button>
+    </div>
+  </div>
+
+  <!-- 角色登场弹窗 / Character Intro Modal -->
+  <div id="char-intro-overlay">
+    <div class="char-intro-card">
+      <div class="char-intro-left">
+        <div class="char-intro-sprite" id="char-intro-sprite">
+          <!-- 三层立绘由 JS 动态注入 -->
+        </div>
+      </div>
+      <div class="char-intro-right">
+        <div class="char-intro-badge" id="char-intro-badge">✦ New Character · 新角色登场</div>
+        <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
+        <div class="char-intro-name-en" id="char-intro-name-en">Zhao Mingxuan</div>
+        <div class="char-intro-title" id="char-intro-title">阳光学长 · Sunny Senior</div>
+        <div class="char-intro-desc" id="char-intro-desc">大二学生，性格阳光开朗。<br>来机场接诺拉，是她在中国认识的第一个朋友。</div>
+        <div class="char-intro-greeting" id="char-intro-greeting" onclick="charIntroPlayGreeting()">
+          <span id="char-intro-greeting-text">嗨！欢迎来到中国，我来接你了！</span>
+        </div>
+        <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">认识你真好！继续 →</button>
+      </div>
     </div>
   </div>
 
