@@ -393,11 +393,11 @@
     }
     #char-intro-overlay.visible { opacity: 1; pointer-events: all; }
 
-    /* 竖版卡片：380×540，入场后绿光一闪暗示可交互 */
+    /* 大卡片：520×600，入场后绿光一闪暗示可交互 */
     .char-intro-card {
       position: relative;
-      width: min(380px, calc(100vw - 32px));
-      height: min(540px, 80vh);
+      width: min(520px, calc(100vw - 24px));
+      height: min(600px, 86vh);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 28px;
       overflow: visible;    /* 头部破框 */
@@ -436,28 +436,28 @@
       filter: blur(12px);
     }
 
-    /* 绿色径向光晕 — 移到卡片下半（信息区），不再干扰立绘 */
+    /* 绿色径向光晕 — 卡片下半信息区，随卡片变宽一起扩大 */
     .char-intro-glow {
       position: absolute; top: 72%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 380px; height: 380px;
+      width: 480px; height: 480px;
       background: radial-gradient(circle,
-        rgba(34,197,94,0.22) 0%,
-        rgba(34,197,94,0.07) 45%,
+        rgba(34,197,94,0.20) 0%,
+        rgba(34,197,94,0.06) 45%,
         transparent 70%);
       border-radius: 50%; pointer-events: none; z-index: 1;
     }
 
-    /* 立绘容器：保持 300×420（dressroom 标准），
-       用 scale(1.4) 放大并居中，保证像素合成比例不变 */
+    /* 立绘容器：300×420（dressroom 标准）+ scale(1.72) 按比例放大
+       translateX(-50%) + transform-origin:top center 精确水平居中 */
     .char-intro-sprite {
       position: absolute; top: -155px; left: 50%;
-      transform: translateX(-50%) scale(1.4);
+      transform: translateX(-50%) scale(1.72);
       transform-origin: top center;
       width: 300px; height: 420px;
       pointer-events: none; z-index: 2;
-      -webkit-mask-image: linear-gradient(to bottom, black 54%, transparent 80%);
-      mask-image:         linear-gradient(to bottom, black 54%, transparent 80%);
+      -webkit-mask-image: linear-gradient(to bottom, black 58%, transparent 84%);
+      mask-image:         linear-gradient(to bottom, black 58%, transparent 84%);
     }
     .char-intro-sprite img {
       position: absolute; top: 0; left: 0;
@@ -465,19 +465,19 @@
       object-fit: contain; transform-origin: top left; pointer-events: none;
     }
 
-    /* 底部渐变融合层 */
+    /* 底部渐变融合层（随卡片加高加深） */
     .char-intro-fade {
       position: absolute; bottom: 0; left: 0; right: 0;
-      height: 290px;
+      height: 330px;
       background: linear-gradient(to top,
-        #06101c 0%, rgba(6,16,28,0.96) 42%, transparent 100%);
+        #06101c 0%, rgba(6,16,28,0.97) 38%, transparent 100%);
       pointer-events: none; z-index: 3;
       border-radius: 0 0 28px 28px;
     }
 
-    /* 信息区（渐变层之上） */
+    /* 信息区（加宽 card 后留更大侧边距） */
     .char-intro-info {
-      position: absolute; bottom: 62px; left: 20px; right: 20px;
+      position: absolute; bottom: 64px; left: 28px; right: 28px;
       z-index: 4;
     }
 
@@ -591,9 +591,9 @@
       transform: scaleX(-1);
     }
 
-    /* 档案面板内容滚动区 */
+    /* 档案面板内容滚动区（宽卡片留更多横向 padding） */
     .char-profile-scroll {
-      flex: 1; overflow-y: auto; padding: 22px 22px 20px;
+      flex: 1; overflow-y: auto; padding: 24px 30px 22px;
       position: relative; z-index: 1;
     }
     .char-profile-scroll::-webkit-scrollbar { width: 3px; }
@@ -627,14 +627,14 @@
       height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 18px;
     }
 
-    /* 图标行（取代文字标签表格） */
+    /* 图标行（宽卡片加大 icon↔文字 间距） */
     .char-profile-row {
-      display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start;
+      display: flex; gap: 18px; margin-bottom: 16px; align-items: flex-start;
     }
     .char-profile-icon {
-      font-size: 16px; flex-shrink: 0;
-      width: 22px; text-align: center; margin-top: 1px;
-      opacity: 0.85;
+      font-size: 18px; flex-shrink: 0;
+      width: 24px; text-align: center; margin-top: 2px;
+      opacity: 0.88;
     }
     .char-profile-val {
       font-size: 15px; color: rgba(255,255,255,0.78); line-height: 1.8; flex: 1;
@@ -652,31 +652,47 @@
       writing-mode: vertical-rl;  /* 纵向排列不挤压横向 */
       display: none;  /* 用 title tooltip 代替，保持整洁 */
     }
-    /* 口头禅引号样式（嵌入行内，不再独占 hero 块） */
+    /* 口头禅大句：block 占满宽度，居中展示 */
     .char-profile-quote {
-      display: inline; font-size: 21px; font-weight: 900; font-style: italic;
-      color: #f1f5f9; line-height: 1.5; letter-spacing: 0.01em;
+      display: block; font-size: 26px; font-weight: 900; font-style: italic;
+      color: #f1f5f9; line-height: 1.4; letter-spacing: 0.01em;
+      text-align: center;
     }
     .char-profile-quote::before {
       content: '\201c';
-      color: #22c55e; font-size: 30px; font-style: normal;
-      line-height: 0.7; vertical-align: -6px; margin-right: 2px;
+      color: #22c55e; font-size: 38px; font-style: normal;
+      line-height: 0.7; vertical-align: -7px; margin-right: 3px;
     }
     .char-profile-quote::after {
       content: '\201d';
-      color: #22c55e; font-size: 30px; font-style: normal;
-      line-height: 0.7; vertical-align: -6px; margin-left: 2px;
+      color: #22c55e; font-size: 38px; font-style: normal;
+      line-height: 0.7; vertical-align: -7px; margin-left: 3px;
     }
-    /* 口头禅行整体加上下内边距，与其他行拉开视觉分量 */
+    /* 口头禅行：纵向铺开，横向占满宽度 */
     .char-profile-row-quote {
-      padding: 6px 0 4px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      margin-top: 4px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      padding: 16px 0 6px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin-top: 6px;
+    }
+    /* 口头禅小标题行（icon + label） */
+    .char-profile-quote-header {
+      display: flex; align-items: center; gap: 9px;
+    }
+    .char-profile-quote-header .char-profile-icon {
+      font-size: 16px; width: auto; margin-top: 0;
+    }
+    .char-profile-quote-label {
+      font-size: 10px; font-weight: 800;
+      color: rgba(34,197,94,0.65);
+      letter-spacing: 0.1em; text-transform: uppercase;
     }
 
     /* 档案面板底部：精简居中的返回按钮 */
     .char-profile-footer {
-      padding: 10px 22px 18px; flex-shrink: 0;
+      padding: 10px 30px 20px; flex-shrink: 0;
       display: flex; justify-content: center;
       position: relative; z-index: 1;
     }
@@ -6359,16 +6375,13 @@
       var rowsEl = el('char-profile-rows');
       rowsEl.innerHTML = (c.profileRows || []).map(function(r) {
         if (r.quote) {
-          // 口头禅：与其他行结构一致（icon-wrap + val），val 内用引号样式
-          // icon-wrap 纵向显示图标 + 小标签
+          // 口头禅：纵向铺开 — 顶部小标题行 + 大引号句居中
           return '<div class="char-profile-row char-profile-row-quote">' +
-            '<div class="char-profile-icon-wrap" title="' + (r.label || '') + '">' +
-              '<div class="char-profile-icon">' + (r.icon || '💬') + '</div>' +
+            '<div class="char-profile-quote-header">' +
+              '<span class="char-profile-icon">' + (r.icon || '💬') + '</span>' +
+              (r.label ? '<span class="char-profile-quote-label">' + r.label + ' &middot; Catchphrase</span>' : '') +
             '</div>' +
-            '<div class="char-profile-val">' +
-              '<span class="char-profile-quote">' + r.val + '</span>' +
-              (r.label ? '<div style="font-size:10px;color:rgba(34,197,94,0.65);font-weight:700;letter-spacing:0.08em;margin-top:3px;">' + r.label + ' / Catchphrase</div>' : '') +
-            '</div>' +
+            '<span class="char-profile-quote">' + r.val + '</span>' +
             '</div>';
         }
         // 普通图标行
