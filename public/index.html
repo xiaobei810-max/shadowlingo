@@ -387,7 +387,7 @@
       position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.92);
       display: flex; align-items: center; justify-content: center;
-      padding-top: 80px;
+      padding-top: 120px;   /* 放大立绘后头部破框更高，需要更多顶部空间 */
       opacity: 0; pointer-events: none;
       transition: opacity 0.4s ease;
     }
@@ -448,14 +448,14 @@
       border-radius: 50%; pointer-events: none; z-index: 1;
     }
 
-    /* 立绘容器：头部破框 80px */
+    /* 立绘容器：+40%放大近景，头部破框 120px */
     .char-intro-sprite {
-      position: absolute; top: -80px; left: 50%;
-      transform: translateX(-40%);
-      width: 300px; height: 420px;
+      position: absolute; top: -120px; left: 50%;
+      transform: translateX(-44%);
+      width: 420px; height: 588px;
       pointer-events: none; z-index: 2;
-      -webkit-mask-image: linear-gradient(to bottom, black 58%, transparent 84%);
-      mask-image:         linear-gradient(to bottom, black 58%, transparent 84%);
+      -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 74%);
+      mask-image:         linear-gradient(to bottom, black 50%, transparent 74%);
     }
     .char-intro-sprite img {
       position: absolute; top: 0; left: 0;
@@ -479,9 +479,9 @@
       z-index: 4;
     }
 
-    /* 叙事旁白（更像剧情字幕） */
+    /* 叙事旁白（+20%，剧情字幕感） */
     .char-intro-narrative {
-      font-size: 12px; font-style: italic;
+      font-size: 14px; font-style: italic;
       color: rgba(255,255,255,0.45); letter-spacing: 0.04em;
       margin-bottom: 10px; line-height: 1.5;
     }
@@ -496,7 +496,7 @@
       display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
     }
     .char-intro-name-cn {
-      font-size: 34px; font-weight: 900; color: #f1f5f9;
+      font-size: 41px; font-weight: 900; color: #f1f5f9;
       line-height: 1; letter-spacing: 0.04em;
     }
 
@@ -516,14 +516,14 @@
       color: #22c55e;
     }
 
-    /* 胶囊标签 */
-    .char-intro-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    /* 胶囊标签 (+20%) */
+    .char-intro-pills { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
     .char-intro-pill {
-      padding: 4px 10px; border-radius: 99px;
+      padding: 5px 12px; border-radius: 99px;
       background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.11);
-      color: rgba(255,255,255,0.6);
-      font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.65);
+      font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
     }
 
     /* 语音条 */
@@ -545,7 +545,7 @@
     }
     .char-intro-play-btn:hover { background: rgba(34,197,94,0.32); transform: scale(1.1); }
     .char-intro-voice-text {
-      font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.4; flex: 1;
+      font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.4; flex: 1;
     }
 
     /* 继续按钮：62% 宽 + 呼吸绿光 */
@@ -579,14 +579,14 @@
     }
     .char-profile-panel.open { transform: translateY(0); }
 
-    /* 角色剪影暗纹（装饰背景） */
+    /* 角色身体剪影暗纹（更大更明显） */
     .char-profile-silhouette {
-      position: absolute; right: -14px; bottom: 55px;
-      width: 190px; height: 266px;
+      position: absolute; right: -20px; bottom: 48px;
+      width: 240px; height: 336px;
       object-fit: contain; object-position: top center;
-      opacity: 0.055; filter: grayscale(1) blur(1.5px);
+      opacity: 0.07; filter: grayscale(1) blur(2px) contrast(0.7);
       pointer-events: none; z-index: 0;
-      transform: scaleX(-1);   /* 镜像，背对正面，更有景深感 */
+      transform: scaleX(-1);
     }
 
     /* 档案面板内容滚动区 */
@@ -598,16 +598,13 @@
     .char-profile-scroll::-webkit-scrollbar-track { background: transparent; }
     .char-profile-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
 
+    /* 顶栏：仅关闭按钮，右对齐 */
     .char-profile-top-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 18px;
-    }
-    .char-profile-badge {
-      font-size: 9px; font-weight: 800; letter-spacing: 0.14em;
-      color: rgba(255,255,255,0.28); text-transform: uppercase;
+      display: flex; align-items: center; justify-content: flex-end;
+      margin-bottom: 14px;
     }
     .char-profile-close-btn {
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 30px; height: 30px; border-radius: 50%;
       background: rgba(255,255,255,0.07);
       border: 1px solid rgba(255,255,255,0.14);
       color: rgba(255,255,255,0.55); font-size: 13px;
@@ -617,49 +614,73 @@
     .char-profile-close-btn:hover { background: rgba(255,255,255,0.14); }
 
     .char-profile-name-big {
-      font-size: 28px; font-weight: 900; color: #f1f5f9;
-      letter-spacing: 0.04em; line-height: 1; margin-bottom: 4px;
+      font-size: 32px; font-weight: 900; color: #f1f5f9;
+      letter-spacing: 0.04em; line-height: 1; margin-bottom: 5px;
     }
     .char-profile-subtitle {
-      font-size: 12px; color: #22c55e; font-weight: 700;
-      margin-bottom: 18px; letter-spacing: 0.02em;
+      font-size: 13px; color: #22c55e; font-weight: 700;
+      margin-bottom: 20px; letter-spacing: 0.02em;
     }
     .char-profile-divider {
-      height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 16px;
+      height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 18px;
     }
+
+    /* 图标行（取代文字标签表格） */
     .char-profile-row {
-      display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;
+      display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start;
     }
-    .char-profile-label {
-      font-size: 9px; font-weight: 800; color: rgba(34,197,94,0.75);
-      letter-spacing: 0.1em; text-transform: uppercase;
-      width: 46px; flex-shrink: 0; padding-top: 2px;
+    .char-profile-icon {
+      font-size: 16px; flex-shrink: 0;
+      width: 22px; text-align: center; margin-top: 1px;
+      opacity: 0.85;
     }
     .char-profile-val {
-      font-size: 13px; color: rgba(255,255,255,0.72); line-height: 1.6; flex: 1;
+      font-size: 15px; color: rgba(255,255,255,0.78); line-height: 1.65; flex: 1;
     }
-    /* 口头禅大引号样式 */
-    .char-profile-quote {
-      display: block; font-size: 17px; font-weight: 800; font-style: italic;
-      color: #f1f5f9; line-height: 1.4; letter-spacing: 0.02em;
-    }
-    .char-profile-quote::before { content: '\201c'; color: #22c55e; font-size: 22px; line-height: 0.8; vertical-align: -3px; margin-right: 2px; }
-    .char-profile-quote::after  { content: '\201d'; color: #22c55e; font-size: 22px; line-height: 0.8; vertical-align: -3px; margin-left:  2px; }
 
-    /* 档案面板底部按钮 */
+    /* 口头禅英雄块（卡片背面绝对视觉中心） */
+    .char-profile-quote-block {
+      margin: 16px 0 8px;
+      padding: 20px 10px 18px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .char-profile-quote {
+      display: block;
+      font-size: 28px; font-weight: 900; font-style: italic;
+      color: #f1f5f9; line-height: 1.35; letter-spacing: 0.01em;
+    }
+    .char-profile-quote::before {
+      content: '\201c';
+      color: #22c55e; font-size: 48px; font-style: normal;
+      line-height: 0.7; vertical-align: -8px; margin-right: 3px;
+    }
+    .char-profile-quote::after {
+      content: '\201d';
+      color: #22c55e; font-size: 48px; font-style: normal;
+      line-height: 0.7; vertical-align: -8px; margin-left: 3px;
+    }
+
+    /* 档案面板底部：精简居中的返回按钮 */
     .char-profile-footer {
-      padding: 12px 22px 18px; flex-shrink: 0;
+      padding: 10px 22px 18px; flex-shrink: 0;
+      display: flex; justify-content: center;
       position: relative; z-index: 1;
     }
     .char-profile-back-btn {
-      width: 100%; padding: 11px;
+      padding: 9px 32px;
       background: rgba(255,255,255,0.07);
       border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px; color: rgba(255,255,255,0.65);
+      border-radius: 99px; color: rgba(255,255,255,0.6);
       font-size: 13px; font-weight: 600; cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, border-color 0.2s;
+      white-space: nowrap;
     }
-    .char-profile-back-btn:hover { background: rgba(255,255,255,0.12); }
+    .char-profile-back-btn:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.22);
+    }
 
     .role-meta {
       flex: 1;
@@ -6264,11 +6285,10 @@
         greetingRole: 'local',
         btnText: '继续 Continue ➔',
         profileRows: [
-          { label: '全名',   val: '赵明轩 Zhao Mingxuan' },
-          { label: '身份',   val: '京华大学研究生，热爱帮助外国留学生' },
-          { label: '性格',   val: '阳光开朗，热情直率，行动力超强' },
-          { label: '与Nora', val: '在机场等候接机，是她来华认识的第一个朋友' },
-          { label: '口头禅', val: '没问题！交给我！', quote: true },
+          { icon: '🎓', val: '京华大学研究生，热爱帮助外国留学生' },
+          { icon: '✦',  val: '阳光开朗，热情直率，行动力超强' },
+          { icon: '🤝', val: '在机场等候接机，是她来华认识的第一个朋友' },
+          { quote: '没问题！交给我！' },
         ],
         body:    'assets/characters/mingxuan/mingxuan_body.png',
         head:    'assets/characters/mingxuan/mingxuan_head.png',
@@ -6326,17 +6346,21 @@
       el('char-profile-subtitle').textContent = c.title;
       var rowsEl = el('char-profile-rows');
       rowsEl.innerHTML = (c.profileRows || []).map(function(r) {
-        var valHtml = r.quote
-          ? '<span class="char-profile-quote">' + r.val + '</span>'
-          : r.val;
+        // 口头禅英雄块：独占一整行，大引号包裹
+        if (r.quote !== undefined) {
+          return '<div class="char-profile-quote-block">' +
+            '<span class="char-profile-quote">' + r.quote + '</span>' +
+            '</div>';
+        }
+        // 图标行：emoji + 正文，无固定宽度文字标签
         return '<div class="char-profile-row">' +
-          '<div class="char-profile-label">' + r.label  + '</div>' +
-          '<div class="char-profile-val">'   + valHtml  + '</div>' +
+          '<div class="char-profile-icon">' + (r.icon || '') + '</div>' +
+          '<div class="char-profile-val">'  + r.val          + '</div>' +
           '</div>';
       }).join('');
-      // 剪影图：用 head 图做低透明度暗纹
+      // 剪影图：用 body 图（躯干轮廓更像剪影）
       var sil = el('char-profile-silhouette');
-      if (sil) sil.src = c.head || '';
+      if (sil) sil.src = c.body || '';
       // 档案面板默认收起
       el('char-profile-panel').classList.remove('open');
 
@@ -6998,7 +7022,6 @@
         <img class="char-profile-silhouette" id="char-profile-silhouette" src="" alt="">
         <div class="char-profile-scroll">
           <div class="char-profile-top-bar">
-            <div class="char-profile-badge">📋 人物档案 · Character Profile</div>
             <button class="char-profile-close-btn" onclick="charIntroToggleProfile()">✕</button>
           </div>
           <div class="char-profile-name-big" id="char-profile-name">赵明轩</div>
