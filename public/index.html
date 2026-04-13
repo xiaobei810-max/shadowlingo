@@ -392,6 +392,7 @@
       transition: opacity 0.4s ease;
     }
     #char-intro-overlay.visible { opacity: 1; pointer-events: all; }
+    #char-intro-overlay:not(.visible) * { pointer-events: none !important; }
 
     /* 大卡片：520×600，入场后绿光一闪暗示可交互 */
     .char-intro-card {
