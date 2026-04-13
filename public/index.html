@@ -387,10 +387,7 @@
       position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.92);
       display: flex; align-items: center; justify-content: center;
-      /* 上下等量 padding：抵消偏移，让卡片垂直居中
-         同时给头部破框预留 100px 可见空间              */
-      padding-top: 100px; padding-bottom: 100px;
-      overflow-y: auto;   /* 极小屏幕时可滚动 */
+      overflow-y: auto;
       opacity: 0; pointer-events: none;
       transition: opacity 0.4s ease;
     }
@@ -439,31 +436,29 @@
       filter: blur(12px);
     }
 
-    /* 绿色径向光晕 — 卡片下半信息区，随卡片变宽一起扩大 */
+    /* 绿色光晕 — 压低到 82%，低于立绘羽化区，消除绿色横线 */
     .char-intro-glow {
-      position: absolute; top: 72%; left: 50%;
+      position: absolute; top: 82%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 480px; height: 480px;
+      width: 460px; height: 460px;
       background: radial-gradient(circle,
-        rgba(34,197,94,0.20) 0%,
-        rgba(34,197,94,0.06) 45%,
+        rgba(34,197,94,0.18) 0%,
+        rgba(34,197,94,0.05) 45%,
         transparent 70%);
       border-radius: 50%; pointer-events: none; z-index: 1;
     }
 
-    /* 立绘容器：300×420（dressroom 标准）+ scale(1.72)
-       人物面部重心在容器 x≈122px 处；用 transform-origin:top left，
-       left = 50% - 122×1.72 ≈ 50%-210px 可让面部严格对准卡片中轴 */
+    /* 立绘：top:0 头部紧贴卡片顶端，消除内部留白
+       mask 在 48% 开始羽化（低于 glow 位置），彻底避免绿线 */
     .char-intro-sprite {
-      position: absolute; top: -100px;
+      position: absolute; top: 0;
       left: calc(50% - 210px);
       transform: scale(1.72);
       transform-origin: top left;
       width: 300px; height: 420px;
       pointer-events: none; z-index: 2;
-      /* 纯 mask 羽化，不使用任何黑色遮罩层 */
-      -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-      mask-image:         linear-gradient(to bottom, black 60%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 48%, transparent 82%);
+      mask-image:         linear-gradient(to bottom, black 48%, transparent 82%);
     }
     .char-intro-sprite img {
       position: absolute; top: 0; left: 0;
@@ -471,10 +466,34 @@
       object-fit: contain; transform-origin: top left; pointer-events: none;
     }
 
+    /* ── clip 容器：让 front/back 面板受 overflow:hidden 约束，
+          不会在卡片外渲染（卡片本身 overflow:visible 给立绘用） ── */
+    .char-intro-clip {
+      position: absolute; inset: 0; border-radius: 28px;
+      overflow: hidden; z-index: 3; pointer-events: none;
+    }
+
+    /* ── 正面（front face） ── */
+    .char-intro-front {
+      position: absolute; inset: 0;
+      opacity: 1; transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .char-intro-front.hidden { opacity: 0; pointer-events: none; }
+
+    /* 正面底部深色渐变：确保文字清晰可读 */
+    .char-intro-front::before {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 360px;
+      background: linear-gradient(to top,
+        #111827 0%, #111827 38%, rgba(17,24,39,0.85) 58%, transparent 100%);
+      pointer-events: none;
+    }
+
     /* 信息区 — 全部内容居中对齐，像电影海报 */
     .char-intro-info {
-      position: absolute; bottom: 64px; left: 28px; right: 28px;
-      z-index: 4; text-align: center;
+      position: absolute; bottom: 68px; left: 28px; right: 28px;
+      z-index: 1; text-align: center; pointer-events: all;
     }
 
     /* 叙事旁白（+20%，与立绘留 24px 间距，消除挤压感） */
@@ -550,7 +569,7 @@
       font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.4; flex: 1;
     }
 
-    /* 继续按钮：62% 宽 + 呼吸绿光 */
+    /* 继续按钮：在 front face 内绝对定位，呼吸绿光 */
     @keyframes btnPulse {
       0%, 100% { box-shadow: 0 0  0px 0px rgba(34,197,94,0.30); }
       50%       { box-shadow: 0 0 14px 5px rgba(34,197,94,0.16); }
@@ -563,23 +582,23 @@
       border: none; border-radius: 14px;
       font-size: 14px; font-weight: 700;
       cursor: pointer; transition: background 0.2s;
-      z-index: 4; white-space: nowrap;
+      z-index: 1; white-space: nowrap; pointer-events: all;
       animation: btnPulse 2.8s ease-in-out 1.6s infinite;
     }
     .char-intro-btn:hover { background: #16a34a; animation: none; box-shadow: none; }
 
-    /* ── 隐藏档案面板（毛玻璃从底部滑入） ── */
+    /* ── 背面档案面板：opacity 切换，绝不用 translateY 避免溢出卡片 ── */
     .char-profile-panel {
-      position: absolute; inset: 0; border-radius: 28px;
-      background: rgba(3, 9, 18, 0.92);
+      position: absolute; inset: 0;
+      background: rgba(3, 9, 18, 0.97);
       backdrop-filter: blur(28px) saturate(140%);
       -webkit-backdrop-filter: blur(28px) saturate(140%);
-      z-index: 10; overflow: hidden;
+      overflow: hidden;
       display: flex; flex-direction: column;
-      transform: translateY(105%);
-      transition: transform 0.38s cubic-bezier(0.22,1,0.36,1);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.28s ease;
     }
-    .char-profile-panel.open { transform: translateY(0); }
+    .char-profile-panel.open { opacity: 1; pointer-events: all; }
 
     /* 角色身体剪影暗纹（更大更明显） */
     .char-profile-silhouette {
@@ -6393,8 +6412,12 @@
       // 剪影图：用 body 图（躯干轮廓更像剪影）
       var sil = el('char-profile-silhouette');
       if (sil) sil.src = c.body || '';
-      // 档案面板默认收起
+      // 每次打开都重置到正面
       el('char-profile-panel').classList.remove('open');
+      var front = el('char-intro-front');
+      if (front) front.classList.remove('hidden');
+      var btn = el('char-intro-corner-btn');
+      if (btn) btn.textContent = 'i';
 
       // ── 立绘三层 ──
       var sprite = el('char-intro-sprite');
@@ -6417,8 +6440,14 @@
     }
 
     function charIntroToggleProfile() {
-      var panel = document.getElementById('char-profile-panel');
-      if (panel) panel.classList.toggle('open');
+      var panel  = document.getElementById('char-profile-panel');
+      var front  = document.getElementById('char-intro-front');
+      var btn    = document.getElementById('char-intro-corner-btn');
+      if (!panel) return;
+      var opening = !panel.classList.contains('open');
+      panel.classList.toggle('open', opening);
+      if (front) front.classList.toggle('hidden', opening);
+      if (btn)   btn.textContent = opening ? '✕' : 'i';
     }
 
     function charIntroPlayGreeting() {
@@ -7011,57 +7040,61 @@
       <!-- 1. 绿色径向光晕 -->
       <div class="char-intro-glow"></div>
 
-      <!-- 右上角幽灵档案入口 -->
-      <button class="char-intro-profile-corner-btn" onclick="charIntroToggleProfile()" title="查看角色档案">i</button>
-
-      <!-- 2. 三层立绘（JS注入，头部破框） -->
+      <!-- 立绘（card 级别，overflow:visible 破框） -->
       <div class="char-intro-sprite" id="char-intro-sprite"></div>
 
-      <!-- 3. 信息区（居中对齐） -->
-      <div class="char-intro-info">
-        <!-- 叙事旁白 -->
-        <div class="char-intro-narrative" id="char-intro-narrative">他在机场等候多时...</div>
-        <!-- 名字（居中） -->
-        <div class="char-intro-name-row">
-          <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
-        </div>
-        <!-- 胶囊标签 -->
-        <div class="char-intro-pills" id="char-intro-pills">
-          <span class="char-intro-pill">京华大学</span>
-          <span class="char-intro-pill">阳光学长</span>
-          <span class="char-intro-pill">热心肠</span>
-        </div>
-        <!-- 语音条 -->
-        <div class="char-intro-voice-bar" id="char-intro-voice-bar" onclick="charIntroPlayGreeting()">
-          <button class="char-intro-play-btn" id="char-intro-play-btn">
-            <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
-              <path d="M1 1L9 6L1 11V1Z" fill="#22c55e"/>
-            </svg>
-          </button>
-          <span class="char-intro-voice-text" id="char-intro-voice-text">嗨！欢迎来到中国，我来接你了！</span>
-        </div>
-      </div>
+      <!-- clip 容器：overflow:hidden 限制前/背面，防止溢出卡片 -->
+      <div class="char-intro-clip">
 
-      <!-- 5. 隐藏档案面板（毛玻璃从底部滑入） -->
-      <div class="char-profile-panel" id="char-profile-panel">
-        <!-- 角色剪影暗纹 -->
-        <img class="char-profile-silhouette" id="char-profile-silhouette" src="" alt="">
-        <div class="char-profile-scroll">
-          <div class="char-profile-top-bar">
-            <button class="char-profile-close-btn" onclick="charIntroToggleProfile()">✕</button>
+        <!-- ★ 正面 ★ -->
+        <div class="char-intro-front" id="char-intro-front">
+          <!-- 底部深色渐变由 ::before 提供，确保文字可读 -->
+          <!-- 信息区（居中） -->
+          <div class="char-intro-info">
+            <div class="char-intro-narrative" id="char-intro-narrative">他在机场等候多时...</div>
+            <div class="char-intro-name-row">
+              <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
+            </div>
+            <div class="char-intro-pills" id="char-intro-pills">
+              <span class="char-intro-pill">京华大学</span>
+              <span class="char-intro-pill">阳光学长</span>
+              <span class="char-intro-pill">热心肠</span>
+            </div>
+            <div class="char-intro-voice-bar" id="char-intro-voice-bar" onclick="charIntroPlayGreeting()">
+              <button class="char-intro-play-btn" id="char-intro-play-btn">
+                <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
+                  <path d="M1 1L9 6L1 11V1Z" fill="#22c55e"/>
+                </svg>
+              </button>
+              <span class="char-intro-voice-text" id="char-intro-voice-text">嗨！欢迎来到中国，我来接你了！</span>
+            </div>
           </div>
-          <div class="char-profile-name-big" id="char-profile-name">赵明轩</div>
-          <div class="char-profile-subtitle" id="char-profile-subtitle">阳光学长 · Sunny Senior</div>
-          <div class="char-profile-divider"></div>
-          <div id="char-profile-rows"><!-- JS 填充 --></div>
+          <!-- 继续按钮 -->
+          <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">继续 Continue ➔</button>
         </div>
-        <div class="char-profile-footer">
-          <button class="char-profile-back-btn" onclick="charIntroToggleProfile()">← 返回 Back</button>
-        </div>
-      </div>
 
-      <!-- 6. 继续按钮（呼吸绿光） -->
-      <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">继续 Continue ➔</button>
+        <!-- ★ 背面档案（默认隐藏，点 i 切换） ★ -->
+        <div class="char-profile-panel" id="char-profile-panel">
+          <img class="char-profile-silhouette" id="char-profile-silhouette" src="" alt="">
+          <div class="char-profile-scroll">
+            <div class="char-profile-top-bar">
+              <button class="char-profile-close-btn" onclick="charIntroToggleProfile()">✕</button>
+            </div>
+            <div class="char-profile-name-big" id="char-profile-name">赵明轩</div>
+            <div class="char-profile-subtitle" id="char-profile-subtitle">阳光学长 · Sunny Senior</div>
+            <div class="char-profile-divider"></div>
+            <div id="char-profile-rows"><!-- JS 填充 --></div>
+          </div>
+          <div class="char-profile-footer">
+            <button class="char-profile-back-btn" onclick="charIntroToggleProfile()">← 返回 Back</button>
+          </div>
+        </div>
+
+      </div><!-- /char-intro-clip -->
+
+      <!-- 右上角幽灵 (i)：卡片级，始终可见，z-index:5 -->
+      <button class="char-intro-profile-corner-btn" id="char-intro-corner-btn"
+              onclick="charIntroToggleProfile()" title="查看角色档案">i</button>
 
     </div>
   </div>
