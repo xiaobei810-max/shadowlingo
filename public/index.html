@@ -387,7 +387,10 @@
       position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.92);
       display: flex; align-items: center; justify-content: center;
-      padding-top: 155px;   /* 匹配立绘头部破框高度 */
+      /* 上下等量 padding：抵消偏移，让卡片垂直居中
+         同时给头部破框预留 100px 可见空间              */
+      padding-top: 100px; padding-bottom: 100px;
+      overflow-y: auto;   /* 极小屏幕时可滚动 */
       opacity: 0; pointer-events: none;
       transition: opacity 0.4s ease;
     }
@@ -448,16 +451,19 @@
       border-radius: 50%; pointer-events: none; z-index: 1;
     }
 
-    /* 立绘容器：300×420（dressroom 标准）+ scale(1.72) 按比例放大
-       translateX(-50%) + transform-origin:top center 精确水平居中 */
+    /* 立绘容器：300×420（dressroom 标准）+ scale(1.72)
+       人物面部重心在容器 x≈122px 处；用 transform-origin:top left，
+       left = 50% - 122×1.72 ≈ 50%-210px 可让面部严格对准卡片中轴 */
     .char-intro-sprite {
-      position: absolute; top: -155px; left: 50%;
-      transform: translateX(-50%) scale(1.72);
-      transform-origin: top center;
+      position: absolute; top: -100px;
+      left: calc(50% - 210px);
+      transform: scale(1.72);
+      transform-origin: top left;
       width: 300px; height: 420px;
       pointer-events: none; z-index: 2;
-      -webkit-mask-image: linear-gradient(to bottom, black 58%, transparent 84%);
-      mask-image:         linear-gradient(to bottom, black 58%, transparent 84%);
+      /* 纯 mask 羽化，不使用任何黑色遮罩层 */
+      -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+      mask-image:         linear-gradient(to bottom, black 60%, transparent 100%);
     }
     .char-intro-sprite img {
       position: absolute; top: 0; left: 0;
@@ -465,20 +471,10 @@
       object-fit: contain; transform-origin: top left; pointer-events: none;
     }
 
-    /* 底部渐变融合层（随卡片加高加深） */
-    .char-intro-fade {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      height: 330px;
-      background: linear-gradient(to top,
-        #06101c 0%, rgba(6,16,28,0.97) 38%, transparent 100%);
-      pointer-events: none; z-index: 3;
-      border-radius: 0 0 28px 28px;
-    }
-
-    /* 信息区（加宽 card 后留更大侧边距） */
+    /* 信息区 — 全部内容居中对齐，像电影海报 */
     .char-intro-info {
       position: absolute; bottom: 64px; left: 28px; right: 28px;
-      z-index: 4;
+      z-index: 4; text-align: center;
     }
 
     /* 叙事旁白（+20%，与立绘留 24px 间距，消除挤压感） */
@@ -493,33 +489,37 @@
       font-style: normal; font-weight: 700;
     }
 
-    /* 名字行 */
+    /* 名字行 — 居中 */
     .char-intro-name-row {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; margin-bottom: 10px;
     }
     .char-intro-name-cn {
       font-size: 41px; font-weight: 900; color: #f1f5f9;
       line-height: 1; letter-spacing: 0.04em;
     }
 
-    /* 📖 书本图标档案按钮 — 默认绿色，明示「可点击」 */
-    .char-intro-info-btn {
-      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-      background: rgba(34,197,94,0.12);
-      border: 1px solid rgba(34,197,94,0.45);
-      color: #22c55e;
+    /* 右上角幽灵 (i) 档案入口 — 极低调，不抢戏 */
+    .char-intro-profile-corner-btn {
+      position: absolute; top: 14px; right: 14px;
+      width: 26px; height: 26px; border-radius: 50%; z-index: 5;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.28);
+      font-size: 13px; font-style: italic;
+      font-family: Georgia, 'Times New Roman', serif;
       cursor: pointer; padding: 0;
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
     }
-    .char-intro-info-btn:hover {
-      background: rgba(34,197,94,0.25);
-      border-color: rgba(34,197,94,0.75);
-      transform: scale(1.1);
+    .char-intro-profile-corner-btn:hover {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.22);
+      color: rgba(255,255,255,0.60);
     }
 
-    /* 胶囊标签 (+20%) */
-    .char-intro-pills { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+    /* 胶囊标签 — 居中排列 */
+    .char-intro-pills { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
     .char-intro-pill {
       padding: 5px 12px; border-radius: 99px;
       background: rgba(255,255,255,0.07);
@@ -7011,25 +7011,19 @@
       <!-- 1. 绿色径向光晕 -->
       <div class="char-intro-glow"></div>
 
+      <!-- 右上角幽灵档案入口 -->
+      <button class="char-intro-profile-corner-btn" onclick="charIntroToggleProfile()" title="查看角色档案">i</button>
+
       <!-- 2. 三层立绘（JS注入，头部破框） -->
       <div class="char-intro-sprite" id="char-intro-sprite"></div>
 
-      <!-- 3. 底部渐变融合层 -->
-      <div class="char-intro-fade"></div>
-
-      <!-- 4. 信息区（渐变层之上） -->
+      <!-- 3. 信息区（居中对齐） -->
       <div class="char-intro-info">
         <!-- 叙事旁白 -->
         <div class="char-intro-narrative" id="char-intro-narrative">他在机场等候多时...</div>
-        <!-- 名字 + 书本档案按钮 -->
+        <!-- 名字（居中） -->
         <div class="char-intro-name-row">
           <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
-          <button class="char-intro-info-btn" onclick="charIntroToggleProfile()" title="查看角色档案">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-          </button>
         </div>
         <!-- 胶囊标签 -->
         <div class="char-intro-pills" id="char-intro-pills">
