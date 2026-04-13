@@ -482,9 +482,9 @@
     /* 中层：占卡片下半部分的渐变遮罩，确保文字在任何立绘上都清晰可读 */
     .char-intro-front::before {
       content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 55%;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
       background: linear-gradient(to top,
-        #0f172a 0%, rgba(15,23,42,0.92) 55%, transparent 100%);
+        #0f172a 0%, rgba(15,23,42,0.60) 55%, transparent 100%);
       pointer-events: none; z-index: 0;
     }
 
@@ -492,7 +492,7 @@
     .char-intro-info {
       position: absolute; inset: 0;
       display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-      padding: 0 28px 20px;
+      padding: 0 28px 20px; gap: 8px;
       z-index: 1; text-align: center; pointer-events: all;
     }
 
@@ -500,7 +500,7 @@
     .char-intro-narrative {
       font-size: 14px; font-style: italic;
       color: rgba(255,255,255,0.45); letter-spacing: 0.04em;
-      margin-bottom: 10px; line-height: 1.5;
+      line-height: 1.5;
     }
     .char-intro-narrative::before {
       content: '— ';
@@ -511,34 +511,41 @@
     /* 名字行 — 居中 */
     .char-intro-name-row {
       display: flex; align-items: center; justify-content: center;
-      gap: 0; margin-bottom: 10px;
+      gap: 0;
     }
     .char-intro-name-cn {
       font-size: 41px; font-weight: 900; color: #f1f5f9;
       line-height: 1; letter-spacing: 0.04em;
     }
 
-    /* 右上角幽灵 (i) 档案入口 — 极低调，不抢戏 */
+    /* 右上角档案入口 — 绿色徽章，呼吸灯诱导点击 */
+    @keyframes cornerBtnPulse {
+      0%, 100% { box-shadow: 0 0  0px 0px rgba(34,197,94,0.00); }
+      50%       { box-shadow: 0 0 10px 3px rgba(34,197,94,0.28); }
+    }
     .char-intro-profile-corner-btn {
-      position: absolute; top: 14px; right: 14px;
-      width: 26px; height: 26px; border-radius: 50%; z-index: 5;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.10);
-      color: rgba(255,255,255,0.28);
-      font-size: 13px; font-style: italic;
+      position: absolute; top: 20px; right: 20px;
+      width: 36px; height: 36px; border-radius: 50%; z-index: 5;
+      background: rgba(3,9,18,0.60);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(34,197,94,0.30);
+      color: #22c55e;
+      font-size: 15px; font-style: italic;
       font-family: Georgia, 'Times New Roman', serif;
       cursor: pointer; padding: 0;
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      transition: transform 0.18s ease, border-color 0.2s, background 0.2s;
+      animation: cornerBtnPulse 2.4s ease-in-out 1.2s infinite;
     }
     .char-intro-profile-corner-btn:hover {
-      background: rgba(255,255,255,0.10);
-      border-color: rgba(255,255,255,0.22);
-      color: rgba(255,255,255,0.60);
+      transform: scale(1.10);
+      background: rgba(3,9,18,0.82);
+      border-color: rgba(34,197,94,0.60);
     }
 
     /* 胶囊标签 — 居中排列 */
-    .char-intro-pills { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+    .char-intro-pills { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
     .char-intro-pill {
       padding: 5px 12px; border-radius: 99px;
       background: rgba(255,255,255,0.07);
@@ -642,12 +649,12 @@
       margin-bottom: 20px; letter-spacing: 0.02em;
     }
     .char-profile-divider {
-      height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 18px;
+      height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 24px;
     }
 
-    /* 图标行（宽卡片加大 icon↔文字 间距） */
+    /* 图标行（宽卡片加大 icon↔文字 间距，增大行间距均匀填充卡片高度） */
     .char-profile-row {
-      display: flex; gap: 18px; margin-bottom: 16px; align-items: flex-start;
+      display: flex; gap: 18px; margin-bottom: 22px; align-items: flex-start;
     }
     .char-profile-icon {
       font-size: 18px; flex-shrink: 0;
@@ -670,11 +677,11 @@
       writing-mode: vertical-rl;  /* 纵向排列不挤压横向 */
       display: none;  /* 用 title tooltip 代替，保持整洁 */
     }
-    /* 口头禅大句：block 占满宽度，居中展示 */
+    /* 口头禅大句：block 占满宽度，左对齐与列表文字齐平 */
     .char-profile-quote {
       display: block; font-size: 26px; font-weight: 900; font-style: italic;
       color: #f1f5f9; line-height: 1.4; letter-spacing: 0.01em;
-      text-align: center;
+      text-align: left; padding-left: 42px;
     }
     .char-profile-quote::before {
       content: '\201c';
@@ -690,10 +697,11 @@
     .char-profile-row-quote {
       flex-direction: column;
       align-items: stretch;
-      gap: 10px;
-      padding: 16px 0 6px;
+      gap: 12px;
+      padding: 20px 0 6px;
       border-top: 1px solid rgba(255,255,255,0.07);
-      margin-top: 6px;
+      margin-top: 4px;
+      margin-bottom: 0;
     }
     /* 口头禅小标题行（icon + label） */
     .char-profile-quote-header {
