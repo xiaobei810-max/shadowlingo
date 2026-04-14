@@ -6357,11 +6357,40 @@
         bodyTf:    'translate(-45px,-25px) scale(1.14)',
         clothesTf: 'translate(-38px,-14px) scale(1.08)',
         headTf:    'translate(-34px,-9px) scale(1.06)',
+      },
+
+      nora: {
+        id: 'nora',
+        speakerPattern: 'Nora',
+        nameCn: '诺拉 Nora', nameEn: 'Nora',
+        title: '玩家镜像 · The Protagonist',
+        badge: '✦ NEW CHARACTER · 新角色登场',
+        narrative: '推着沉重的行李箱，她环顾着陌生的机场...',
+        pills: ['京华留学生', '独立清醒', '行动派'],
+        greeting: '终于落地了。深吸一口气... 好，挑战正式开始！',
+        greetingRole: 'foreign',
+        btnText: '继续 Continue ➔',
+        profileRows: [
+          { icon: '✈️', val: '京华大学留学生，中文水平正在努力进阶中' },
+          { icon: '✨', val: '拒绝被动等待，拥有明确的边界感与破局勇气' },
+          { icon: '🎯', val: '遇到难题绝不内耗，比起抱怨更喜欢主动出击' },
+          { icon: '💭', label: '内心独白', labelEn: 'INNER MONOLOGUE',
+            val: '与其等别人搭话，不如我先开口！', quote: true },
+        ],
+        /* 四层立绘：后发 → 头/身 → 衣服 → 前发（刘海）*/
+        layers: [
+          { src: 'assets/characters/nora/nora_hair.png' },
+          { src: 'assets/characters/nora/nora_head.png' },
+          { src: 'assets/clothes/nora_clothe.png' },
+          { src: 'assets/characters/nora/nora_hair_front.png' },
+        ],
+        /* 剪影用第一个实体图层 */
+        body: 'assets/characters/nora/nora_head.png',
       }
     };
 
-    // 每节课出场的新角色 ID 列表
-    var LESSON_CHARS = [ ['mingxuan'] /* Lesson 1 */ ];
+    // 每节课出场的新角色 ID 列表（Nora 先登场作为玩家角色，再介绍 Mingxuan）
+    var LESSON_CHARS = [ ['nora', 'mingxuan'] /* Lesson 1 */ ];
 
     var _charIntroQueue = [];
     var _charIntroCallback = null;
@@ -6411,7 +6440,7 @@
           return '<div class="char-profile-row char-profile-row-quote">' +
             '<div class="char-profile-quote-header">' +
               '<span class="char-profile-icon">' + (r.icon || '💬') + '</span>' +
-              (r.label ? '<span class="char-profile-quote-label">' + r.label + ' &middot; Catchphrase</span>' : '') +
+              (r.label ? '<span class="char-profile-quote-label">' + r.label + ' &middot; ' + (r.labelEn || 'Catchphrase') + '</span>' : '') +
             '</div>' +
             '<span class="char-profile-quote">' + r.val + '</span>' +
             '</div>';
@@ -6432,12 +6461,19 @@
       var btn = el('char-intro-corner-btn');
       if (btn) btn.textContent = 'i';
 
-      // ── 立绘三层 ──
+      // ── 立绘图层（支持任意层数的 layers 数组，或旧版 body/clothes/head 三层）──
       var sprite = el('char-intro-sprite');
-      sprite.innerHTML =
-        '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + '">' +
-        '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + '">' +
-        '<img src="' + c.head    + '" style="transform:' + c.headTf    + '">';
+      if (c.layers) {
+        sprite.innerHTML = c.layers.map(function(l, i) {
+          return '<img src="' + l.src + '" style="z-index:' + (i * 10) + ';' +
+                 (l.tf ? 'transform:' + l.tf + ';' : '') + '">';
+        }).join('');
+      } else {
+        sprite.innerHTML =
+          '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + '">' +
+          '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + '">' +
+          '<img src="' + c.head    + '" style="transform:' + c.headTf    + '">';
+      }
 
       // 存储当前角色 ID
       el('char-intro-overlay').dataset.charId   = id;
