@@ -492,12 +492,12 @@
     }
     .char-intro-front.hidden { opacity: 0; pointer-events: none; }
 
-    /* 渐变遮罩（z-5）：70% 高度，遮住立绘底部 */
+    /* 渐变遮罩（z-5）：底部35%强压（文字区），往上快速透明（夹克区不遮） */
     .char-intro-front::before {
       content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 70%;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 65%;
       background: linear-gradient(to top,
-        #0f172a 0%, rgba(15,23,42,0.97) 40%, rgba(15,23,42,0.55) 70%, transparent 100%);
+        #0f172a 0%, rgba(15,23,42,0.97) 28%, rgba(15,23,42,0.55) 42%, rgba(15,23,42,0.08) 65%, transparent 100%);
       pointer-events: none; z-index: 5;
     }
 
@@ -6497,10 +6497,10 @@
         // 内层 div 直接相对卡片定位，路径以 /assets/ 开头，z-index 1-4
         sprite.innerHTML =
           '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;z-index:100;overflow:visible !important;">' +
-            '<img src="/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;visibility:visible !important;" />' +
-            '<img src="/characters/nora/nora_head.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:2;visibility:visible !important;" />' +
-            '<img src="/clothes/nora_clothe.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:99 !important;visibility:visible !important;display:block !important;" />' +
-            '<img src="/characters/nora/nora_hair_front.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:100 !important;visibility:visible !important;" />' +
+            '<img src="/characters/nora/nora_hair.png" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:1;" />' +
+            '<img src="/characters/nora/nora_head.png" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:2;" />' +
+            '<img src="/clothes/nora_clothe.png" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:3;" />' +
+            '<img src="/characters/nora/nora_hair_front.png" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:4;" />' +
           '</div>';
       } else {
         sprite.className = 'char-intro-sprite';
