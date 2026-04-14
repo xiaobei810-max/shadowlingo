@@ -6489,17 +6489,16 @@
       // ── 立绘图层（支持任意层数的 layers 数组，或旧版 body/clothes/head 三层）──
       var sprite = el('char-intro-sprite');
       if (c.layers) {
-        // 内联样式强制渲染，完全绕开所有 CSS 类冲突
+        // 完全写死的内联 HTML，路径以 /assets/ 开头，z-index 1-4
         sprite.className = 'char-intro-sprite';
-        sprite.style.cssText =
-          'position:absolute; bottom:10%; left:50%; ' +
-          'transform:translateX(-50%); width:130%; height:95%; ' +
-          'overflow:visible; z-index:2;';
-        sprite.innerHTML = c.layers.map(function(l, i) {
-          return '<img src="' + l.src + '" alt="" ' +
-            'style="position:absolute;top:0;left:0;' +
-            'width:100%;height:100%;object-fit:contain;z-index:' + (i + 1) + ';">';
-        }).join('');
+        sprite.removeAttribute('style');
+        sprite.innerHTML =
+          '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;z-index:10;overflow:visible;pointer-events:none;">' +
+            '<img src="/assets/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;" />' +
+            '<img src="/assets/characters/nora/nora_head.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:2;" />' +
+            '<img src="/assets/clothes/nora_clothes.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:3;" />' +
+            '<img src="/assets/characters/nora/nora_hair_front.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:4;" />' +
+          '</div>';
       } else {
         sprite.className = 'char-intro-sprite';
         sprite.removeAttribute('style');
