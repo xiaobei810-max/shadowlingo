@@ -387,7 +387,7 @@
       position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.92);
       display: flex; align-items: center; justify-content: center;
-      overflow-y: auto;
+      overflow: visible;
       opacity: 0; pointer-events: none;
       transition: opacity 0.4s ease;
     }
@@ -492,21 +492,21 @@
     }
     .char-intro-front.hidden { opacity: 0; pointer-events: none; }
 
-    /* 中层（z-10）：深渊渐变遮罩 — 60% 高度，via 95% 彻底压暗白T恤高光 */
+    /* 渐变遮罩（z-40）：70% 高度，via 55% 往上推 opaque 区域盖住白T恤 */
     .char-intro-front::before {
       content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 60%;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 70%;
       background: linear-gradient(to top,
-        #0f172a 0%, rgba(15,23,42,0.95) 48%, transparent 100%);
-      pointer-events: none; z-index: 10;
+        #0f172a 0%, rgba(15,23,42,0.97) 40%, rgba(15,23,42,0.55) 70%, transparent 100%);
+      pointer-events: none; z-index: 40;
     }
 
-    /* 顶层（z-20）：文字交互层 — 全高 flex 列，内容贴底，如电影海报 */
+    /* 文字交互层（z-50）：全高 flex 列，内容贴底，如电影海报 */
     .char-intro-info {
       position: absolute; inset: 0;
       display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
       padding: 0 28px 20px; gap: 8px;
-      z-index: 20; text-align: center; pointer-events: all;
+      z-index: 50; text-align: center; pointer-events: all;
     }
 
     /* 叙事旁白 */
