@@ -6496,11 +6496,11 @@
           'transform:none;overflow:visible;z-index:2;pointer-events:none;';
         // 内层 div 直接相对卡片定位，路径以 /assets/ 开头，z-index 1-4
         sprite.innerHTML =
-          '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;overflow:visible;pointer-events:none;">' +
-            '<img src="/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;" />' +
-            '<img src="/characters/nora/nora_head.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:2;" />' +
-            '<img src="/clothes/nora_clothe.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:3;" />' +
-            '<img src="/characters/nora/nora_hair_front.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:4;" />' +
+          '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;z-index:100;overflow:visible !important;">' +
+            '<img src="/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;visibility:visible !important;" />' +
+            '<img src="/characters/nora/nora_head.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:2;visibility:visible !important;" />' +
+            '<img src="/clothes/nora_clothe.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:99 !important;visibility:visible !important;display:block !important;" />' +
+            '<img src="/characters/nora/nora_hair_front.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:100 !important;visibility:visible !important;" />' +
           '</div>';
       } else {
         sprite.className = 'char-intro-sprite';
