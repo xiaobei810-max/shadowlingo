@@ -463,6 +463,16 @@
       width: 100%; height: 100%;
       object-fit: contain; transform-origin: top left; pointer-events: none;
     }
+    /* 多层立绘模式（layers 数组）：覆盖单角色的 scale/position 参数 */
+    .char-intro-sprite.layers-mode {
+      left: 0 !important; width: 100% !important; height: 100% !important;
+      transform: none !important;
+    }
+    .char-intro-sprite.layers-mode img {
+      top: 0 !important; left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: auto !important; height: 100% !important;
+    }
 
     /* ── clip 容器：让 front/back 面板受 overflow:hidden 约束，
           不会在卡片外渲染（卡片本身 overflow:visible 给立绘用） ── */
@@ -548,6 +558,17 @@
       transform: scale(1.10);
       background: rgba(3,9,18,0.82);
       border-color: rgba(34,197,94,0.60);
+    }
+    /* 档案打开时显示 ✕，改为低调灰色，不用绿色 */
+    .char-intro-profile-corner-btn.is-close {
+      color: rgba(255,255,255,0.55);
+      border-color: rgba(255,255,255,0.20);
+      background: rgba(255,255,255,0.08);
+      animation: none;
+    }
+    .char-intro-profile-corner-btn.is-close:hover {
+      border-color: rgba(255,255,255,0.38);
+      background: rgba(255,255,255,0.14);
     }
 
     /* 胶囊标签 — 居中排列 */
@@ -683,11 +704,11 @@
       writing-mode: vertical-rl;  /* 纵向排列不挤压横向 */
       display: none;  /* 用 title tooltip 代替，保持整洁 */
     }
-    /* 口头禅大句：block 占满宽度，左对齐与列表文字齐平 */
+    /* 口头禅大句：左对齐与列表文字齐平，字号略收以保证一行显示 */
     .char-profile-quote {
-      display: block; font-size: 26px; font-weight: 900; font-style: italic;
+      display: block; font-size: 22px; font-weight: 900; font-style: italic;
       color: #f1f5f9; line-height: 1.4; letter-spacing: 0.01em;
-      text-align: left; padding-left: 42px;
+      text-align: left; padding-left: 36px; white-space: nowrap;
     }
     .char-profile-quote::before {
       content: '\201c';
@@ -6379,13 +6400,13 @@
         ],
         /* 四层立绘：后发 → 头/身 → 衣服 → 前发（刘海）*/
         layers: [
-          { src: 'assets/characters/nora/nora_hair.png' },
-          { src: 'assets/characters/nora/nora_head.png' },
-          { src: 'assets/clothes/nora_clothe.png' },
-          { src: 'assets/characters/nora/nora_hair_front.png' },
+          { src: '/characters/nora/nora_hair.png' },
+          { src: '/characters/nora/nora_head.png' },
+          { src: '/clothes/nora_clothe.png' },
+          { src: '/characters/nora/nora_hair_front.png' },
         ],
-        /* 剪影用第一个实体图层 */
-        body: 'assets/characters/nora/nora_head.png',
+        /* 剪影用头部图层 */
+        body: '/characters/nora/nora_head.png',
       }
     };
 
@@ -6459,16 +6480,17 @@
       var front = el('char-intro-front');
       if (front) front.classList.remove('hidden');
       var btn = el('char-intro-corner-btn');
-      if (btn) btn.textContent = 'i';
+      if (btn) { btn.textContent = 'i'; btn.classList.remove('is-close'); }
 
       // ── 立绘图层（支持任意层数的 layers 数组，或旧版 body/clothes/head 三层）──
       var sprite = el('char-intro-sprite');
       if (c.layers) {
+        sprite.classList.add('layers-mode');
         sprite.innerHTML = c.layers.map(function(l, i) {
-          return '<img src="' + l.src + '" style="z-index:' + (i * 10) + ';' +
-                 (l.tf ? 'transform:' + l.tf + ';' : '') + '">';
+          return '<img src="' + l.src + '" style="z-index:' + (i * 10) + ';">';
         }).join('');
       } else {
+        sprite.classList.remove('layers-mode');
         sprite.innerHTML =
           '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + '">' +
           '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + '">' +
@@ -6496,7 +6518,10 @@
       var opening = !panel.classList.contains('open');
       panel.classList.toggle('open', opening);
       if (front) front.classList.toggle('hidden', opening);
-      if (btn)   btn.textContent = opening ? '✕' : 'i';
+      if (btn) {
+        btn.textContent = opening ? '✕' : 'i';
+        btn.classList.toggle('is-close', opening);
+      }
     }
 
     function charIntroPlayGreeting() {
