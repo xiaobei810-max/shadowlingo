@@ -479,21 +479,21 @@
     }
     .char-intro-front.hidden { opacity: 0; pointer-events: none; }
 
-    /* 中层：占卡片下半部分的渐变遮罩，确保文字在任何立绘上都清晰可读 */
+    /* 中层（z-10）：深渊渐变遮罩 — 60% 高度，via 95% 彻底压暗白T恤高光 */
     .char-intro-front::before {
       content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 55%;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 60%;
       background: linear-gradient(to top,
-        #0f172a 0%, rgba(15,23,42,0.90) 48%, transparent 100%);
-      pointer-events: none; z-index: 0;
+        #0f172a 0%, rgba(15,23,42,0.95) 48%, transparent 100%);
+      pointer-events: none; z-index: 10;
     }
 
-    /* 顶层：文字交互层 — 全高 flex 列，内容贴底，如电影海报 */
+    /* 顶层（z-20）：文字交互层 — 全高 flex 列，内容贴底，如电影海报 */
     .char-intro-info {
       position: absolute; inset: 0;
       display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
       padding: 0 28px 20px; gap: 8px;
-      z-index: 1; text-align: center; pointer-events: all;
+      z-index: 20; text-align: center; pointer-events: all;
     }
 
     /* 叙事旁白 */
@@ -501,6 +501,7 @@
       font-size: 14px; font-style: italic;
       color: rgba(255,255,255,0.45); letter-spacing: 0.04em;
       line-height: 1.5;
+      text-shadow: 0 2px 8px rgba(0,0,0,1), 0 0 16px rgba(0,0,0,0.90);
     }
     .char-intro-narrative::before {
       content: '— ';
@@ -516,7 +517,11 @@
     .char-intro-name-cn {
       font-size: 41px; font-weight: 900; color: #f1f5f9;
       line-height: 1; letter-spacing: 0.04em;
-      text-shadow: 0 4px 12px rgba(0,0,0,0.90), 0 2px 4px rgba(0,0,0,0.80);
+      text-shadow:
+        0 0 20px rgba(0,0,0,1),
+        0 5px 5px  rgba(0,0,0,1),
+        0 2px 10px rgba(0,0,0,0.80),
+        0 0 40px   rgba(0,0,0,0.90);
     }
 
     /* 右上角档案入口 — 绿色徽章，呼吸灯诱导点击 */
