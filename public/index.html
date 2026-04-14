@@ -679,9 +679,9 @@
       height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 24px;
     }
 
-    /* 图标行（宽卡片加大 icon↔文字 间距，增大行间距均匀填充卡片高度） */
+    /* 图标行 */
     .char-profile-row {
-      display: flex; gap: 18px; margin-bottom: 22px; align-items: flex-start;
+      display: flex; gap: 18px; margin-bottom: 14px; align-items: flex-start;
     }
     .char-profile-icon {
       font-size: 18px; flex-shrink: 0;
@@ -720,14 +720,14 @@
       color: #22c55e; font-size: 38px; font-style: normal;
       line-height: 0.7; vertical-align: -7px; margin-left: 3px;
     }
-    /* 口头禅行：纵向铺开，横向占满宽度 */
+    /* 口头禅行：紧跟列表，间距与其他行一致 */
     .char-profile-row-quote {
       flex-direction: column;
       align-items: stretch;
-      gap: 12px;
-      padding: 20px 0 6px;
+      gap: 10px;
+      padding: 12px 0 6px;
       border-top: 1px solid rgba(255,255,255,0.07);
-      margin-top: 4px;
+      margin-top: 8px;
       margin-bottom: 0;
     }
     /* 口头禅小标题行（icon + label） */
@@ -6389,7 +6389,7 @@
         narrative: '推着沉重的行李箱，她环顾着陌生的机场...',
         pills: ['京华留学生', '独立清醒', '行动派'],
         greeting: '终于落地了。深吸一口气... 好，挑战正式开始！',
-        greetingRole: 'foreign',
+        greetingRole: 'learner',
         btnText: '继续 Continue ➔',
         profileRows: [
           { icon: '✈️', val: '京华大学留学生，中文水平正在努力进阶中' },
@@ -6400,13 +6400,13 @@
         ],
         /* 四层立绘：后发 → 头/身 → 衣服 → 前发（刘海）*/
         layers: [
-          { src: '/characters/nora/nora_hair.png' },
-          { src: '/characters/nora/nora_head.png' },
-          { src: '/clothes/nora_clothe.png' },
-          { src: '/characters/nora/nora_hair_front.png' },
+          { src: 'assets/characters/nora/nora_hair.png' },
+          { src: 'assets/characters/nora/nora_head.png' },
+          { src: 'assets/clothes/nora_clothe.png' },
+          { src: 'assets/characters/nora/nora_hair_front.png' },
         ],
         /* 剪影用头部图层 */
-        body: '/characters/nora/nora_head.png',
+        body: 'assets/characters/nora/nora_head.png',
       }
     };
 
