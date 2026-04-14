@@ -482,9 +482,9 @@
     /* 中层：占卡片下半部分的渐变遮罩，确保文字在任何立绘上都清晰可读 */
     .char-intro-front::before {
       content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 55%;
       background: linear-gradient(to top,
-        #0f172a 0%, rgba(15,23,42,0.60) 55%, transparent 100%);
+        #0f172a 0%, rgba(15,23,42,0.90) 48%, transparent 100%);
       pointer-events: none; z-index: 0;
     }
 
@@ -494,18 +494,6 @@
       display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
       padding: 0 28px 20px; gap: 8px;
       z-index: 1; text-align: center; pointer-events: all;
-    }
-
-    /* 毛玻璃铭牌：旁白 + 名字 + 标签的底板，与白T恤彻底隔离 */
-    .char-intro-nameplate {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-      width: 100%; padding: 16px 24px;
-      background: rgba(15,23,42,0.60);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 16px;
-      margin-bottom: 8px;  /* 与语音条间距 = gap(8) + margin(8) = 16px */
     }
 
     /* 叙事旁白 */
@@ -528,6 +516,7 @@
     .char-intro-name-cn {
       font-size: 41px; font-weight: 900; color: #f1f5f9;
       line-height: 1; letter-spacing: 0.04em;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.90), 0 2px 4px rgba(0,0,0,0.80);
     }
 
     /* 右上角档案入口 — 绿色徽章，呼吸灯诱导点击 */
@@ -7069,17 +7058,14 @@
         <div class="char-intro-front" id="char-intro-front">
           <!-- 顶层：全高 flex 列，所有内容贴底排列 -->
           <div class="char-intro-info">
-            <!-- 毛玻璃铭牌：隔离白字与白T恤 -->
-            <div class="char-intro-nameplate">
-              <div class="char-intro-narrative" id="char-intro-narrative">他在机场等候多时...</div>
-              <div class="char-intro-name-row">
-                <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
-              </div>
-              <div class="char-intro-pills" id="char-intro-pills">
-                <span class="char-intro-pill">京华大学</span>
-                <span class="char-intro-pill">阳光学长</span>
-                <span class="char-intro-pill">热心肠</span>
-              </div>
+            <div class="char-intro-narrative" id="char-intro-narrative">他在机场等候多时...</div>
+            <div class="char-intro-name-row">
+              <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
+            </div>
+            <div class="char-intro-pills" id="char-intro-pills">
+              <span class="char-intro-pill">京华大学</span>
+              <span class="char-intro-pill">阳光学长</span>
+              <span class="char-intro-pill">热心肠</span>
             </div>
             <div class="char-intro-voice-bar" id="char-intro-voice-bar" onclick="charIntroPlayGreeting()">
               <button class="char-intro-play-btn" id="char-intro-play-btn">
