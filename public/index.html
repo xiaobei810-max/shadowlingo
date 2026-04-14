@@ -6489,11 +6489,14 @@
       // ── 立绘图层（支持任意层数的 layers 数组，或旧版 body/clothes/head 三层）──
       var sprite = el('char-intro-sprite');
       if (c.layers) {
-        // 完全写死的内联 HTML，路径以 /assets/ 开头，z-index 1-4
-        sprite.className = 'char-intro-sprite';
-        sprite.removeAttribute('style');
+        // 外层容器：覆盖 CSS 类的所有定位/缩放，变成全卡片透明底座
+        sprite.className = '';
+        sprite.style.cssText =
+          'position:absolute;top:0;left:0;width:100%;height:100%;' +
+          'transform:none;overflow:visible;z-index:2;pointer-events:none;';
+        // 内层 div 直接相对卡片定位，路径以 /assets/ 开头，z-index 1-4
         sprite.innerHTML =
-          '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;z-index:10;overflow:visible;pointer-events:none;">' +
+          '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;overflow:visible;pointer-events:none;">' +
             '<img src="/assets/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;" />' +
             '<img src="/assets/characters/nora/nora_head.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:2;" />' +
             '<img src="/assets/clothes/nora_clothes.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:3;" />' +
