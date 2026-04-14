@@ -6487,12 +6487,14 @@
       // ── 立绘图层（支持任意层数的 layers 数组，或旧版 body/clothes/head 三层）──
       var sprite = el('char-intro-sprite');
       if (c.layers) {
-        sprite.classList.add('layers-mode');
+        // Tailwind-only 模式：完全覆写 class，绕开 CSS layers-mode 规则
+        sprite.className = 'absolute left-1/2 -translate-x-1/2 w-[130%] h-[95%] bottom-[12%] pointer-events-none flex justify-center items-end';
+        var zClasses = ['z-0','z-10','z-20','z-30','z-40'];
         sprite.innerHTML = c.layers.map(function(l, i) {
-          return '<img src="' + l.src + '" style="z-index:' + (i * 10) + ';">';
+          return '<img src="' + l.src + '" class="absolute object-contain h-full ' + (zClasses[i] || 'z-40') + '" alt="">';
         }).join('');
       } else {
-        sprite.classList.remove('layers-mode');
+        sprite.className = 'char-intro-sprite';
         sprite.innerHTML =
           '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + '">' +
           '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + '">' +
