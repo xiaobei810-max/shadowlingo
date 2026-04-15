@@ -6502,7 +6502,7 @@
         // 内层：纯净叠加，不含任何位移，所有图层基准完全一致
         // 四张图画布完全相同，直接叠加；用 scale + transform-origin 整体等比放大
         var _BASE = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;' +
-                    'filter:brightness(1.05) contrast(1.1) drop-shadow(0 0 1px rgba(0,0,0,1));';
+                    'filter:contrast(1.05) brightness(0.95);';
         sprite.innerHTML =
           '<div style="position:absolute;bottom:0;left:0;width:100%;height:100%;' +
                       'transform:scale(1.18);transform-origin:bottom center;' +
@@ -6513,7 +6513,7 @@
             '<img src="/assets/characters/nora/nora_hair.png"        style="' + _BASE + 'z-index:4;" />' +
           '</div>';
       } else {
-        var _MXF = 'filter:brightness(1.05) contrast(1.1) drop-shadow(0 0 1px rgba(0,0,0,1));';
+        var _MXF = 'filter:contrast(1.05) brightness(0.95);';
         sprite.className = 'char-intro-sprite';
         sprite.removeAttribute('style');
         sprite.innerHTML =
