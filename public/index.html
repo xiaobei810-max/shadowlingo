@@ -637,17 +637,7 @@
     }
     .char-profile-panel.open { opacity: 1; pointer-events: all; }
 
-    /* 角色身体剪影暗纹 */
-    .char-profile-silhouette {
-      position: absolute; right: -30px; bottom: 0px;
-      width: 320px; height: 450px;
-      object-fit: contain; object-position: bottom center;
-      opacity: 0.12; filter: grayscale(1) blur(1.5px) contrast(0.65);
-      pointer-events: none; z-index: 0;
-      transform: scaleX(-1);
-    }
-
-    /* 档案面板内容滚动区（宽卡片留更多横向 padding；顶部多留空间给角落关闭按钮） */
+/* 档案面板内容滚动区（宽卡片留更多横向 padding；顶部多留空间给角落关闭按钮） */
     .char-profile-scroll {
       flex: 1; overflow-y: auto; padding: 48px 30px 22px;
       position: relative; z-index: 1;
@@ -6494,8 +6484,6 @@
           '</div>';
       }).join('');
       // 剪影图：用 body 图（躯干轮廓更像剪影）
-      var sil = el('char-profile-silhouette');
-      if (sil) sil.src = c.body || '';
       // 每次打开都重置到正面
       el('char-profile-panel').classList.remove('open');
       var front = el('char-intro-front');
@@ -7274,7 +7262,6 @@
 
         <!-- ★ 背面档案（默认隐藏，点 i 切换） ★ -->
         <div class="char-profile-panel" id="char-profile-panel">
-          <img class="char-profile-silhouette" id="char-profile-silhouette" src="" alt="">
           <div class="char-profile-scroll">
             <div class="char-profile-name-big" id="char-profile-name">赵明轩</div>
             <div class="char-profile-subtitle" id="char-profile-subtitle">阳光学长 · Sunny Senior</div>
