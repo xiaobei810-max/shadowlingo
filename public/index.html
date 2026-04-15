@@ -248,20 +248,31 @@
       position: relative;
     }
 
-    /* ── Unified circular avatar for shadowing & overview panels ── */
-    .panel-avatar {
-      width: 48px;
-      height: 48px;
+    /* ── Chat-bubble card layout (shared by shadowing + overview) ── */
+    .card-layout {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .card-avatar-col { flex-shrink: 0; width: 64px; }
+    .card-content-col { flex: 1; min-width: 0; }
+
+    /* ── Unified circular avatar ── */
+    .panel-avatar, .dlp-avatar {
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
       object-fit: cover;
-      object-position: top center;
-      border: 2px solid rgba(255,255,255,0.1);
+      object-position: center 10%;
+      background: #1e293b;
+      border: 2px solid #334155;
+      display: block;
       flex-shrink: 0;
       transition: border-color 0.25s, box-shadow 0.25s;
     }
     .panel-avatar.glow {
       border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(34,197,94,0.25), 0 0 12px rgba(34,197,94,0.35);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.4), 0 0 18px rgba(34,197,94,0.35);
     }
     /* Active / inactive card states on shadowing page */
     .context-panel.ctx-active { opacity: 1; }
@@ -2181,21 +2192,17 @@
     .dlp-skip:hover { border-color: var(--green); color: var(--green); }
     .dlp-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .dlp-block {
-      flex: 1; display: flex; flex-direction: column; padding: 16px 20px;
+      flex: 1; display: flex; flex-direction: column; padding: 16px 18px;
       transition: opacity 0.3s, background 0.3s; min-height: 0;
     }
     .dlp-block.local { border-bottom: 1px solid var(--border); background: rgba(17,24,39,0.6); }
     .dlp-block.learner { background: rgba(10,15,26,0.8); }
     .dlp-block.dimmed { opacity: 0.45; }
     .dlp-block.speaking { opacity: 1; }
-    .dlp-speaker-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-shrink: 0; }
-    .dlp-avatar {
-      width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top center;
-      border: 2px solid rgba(255,255,255,0.1); transition: border-color 0.3s, box-shadow 0.3s; flex-shrink: 0;
-    }
+    .dlp-speaker-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
     .dlp-block.speaking .dlp-avatar {
       border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(34,197,94,0.25), 0 0 12px rgba(34,197,94,0.4);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.4), 0 0 18px rgba(34,197,94,0.4);
       animation: avatarPulse 0.8s ease-in-out infinite alternate;
     }
     @keyframes avatarPulse {
@@ -2313,7 +2320,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
     .ctx-speaker {
       font-size: 13px;
@@ -2593,49 +2601,62 @@
     <div class="stage">
       <!-- 对方台词面板（上方，无前置台词时隐藏） -->
       <div class="context-panel ctx-inactive" id="context-panel" style="display:none">
-        <div class="ctx-header">
-          <img class="panel-avatar" id="ctx-avatar-mx"
-               src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
-          <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
-          <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
+        <div class="card-layout">
+          <div class="card-avatar-col">
+            <img class="panel-avatar" id="ctx-avatar-mx"
+                 src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+          </div>
+          <div class="card-content-col">
+            <div class="ctx-header">
+              <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
+              <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
+            </div>
+            <div class="ctx-zh" id="ctx-zh"></div>
+            <div class="ctx-en" id="ctx-en"></div>
+          </div>
         </div>
-        <div class="ctx-zh" id="ctx-zh"></div>
-        <div class="ctx-en" id="ctx-en"></div>
       </div>
 
       <!-- 诺拉练习面板 -->
       <div class="sentence-box sb-active" id="sentence-box">
-        <div class="learner-panel-hdr">
-          <div style="display:flex;align-items:center;gap:10px;">
+        <div class="card-layout">
+          <div class="card-avatar-col">
             <img class="panel-avatar glow" id="panel-avatar-nora"
                  src="/assets/characters/nora/nora_head.png" alt="Nora">
-            <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">诺拉 · Nora</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="mascot-ring" id="ring"></div>
+          <div class="card-content-col">
+            <div class="learner-panel-hdr">
+              <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">诺拉 · Nora</span>
+              <div class="mascot-ring" id="ring"></div>
+            </div>
+            <div class="kara-wrap" id="kara"></div>
+            <div class="kara-bar">
+              <div class="kara-bar-fill" id="bar-fill"></div>
+            </div>
+            <div class="info-box">
+              <div class="pinyin" id="pinyin"></div>
+              <div class="en" id="en"></div>
+            </div>
           </div>
-        </div>
-        <!-- 卡拉OK字幕 -->
-        <div class="kara-wrap" id="kara"></div>
-        <div class="kara-bar">
-          <div class="kara-bar-fill" id="bar-fill"></div>
-        </div>
-        <div class="info-box">
-          <div class="pinyin" id="pinyin"></div>
-          <div class="en" id="en"></div>
         </div>
       </div>
 
       <!-- 下方配对台词面板（用于明轩开口时显示对方回应） -->
       <div class="context-panel ctx-inactive" id="context-panel-below" style="display:none">
-        <div class="ctx-header">
-          <img class="panel-avatar" id="ctx-avatar-mx-below"
-               src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
-          <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
-          <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
+        <div class="card-layout">
+          <div class="card-avatar-col">
+            <img class="panel-avatar" id="ctx-avatar-mx-below"
+                 src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+          </div>
+          <div class="card-content-col">
+            <div class="ctx-header">
+              <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
+              <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
+            </div>
+            <div class="ctx-zh" id="ctx-zh-below"></div>
+            <div class="ctx-en" id="ctx-en-below"></div>
+          </div>
         </div>
-        <div class="ctx-zh" id="ctx-zh-below"></div>
-        <div class="ctx-en" id="ctx-en-below"></div>
       </div>
     </div>
 
@@ -7103,38 +7124,50 @@
     <div class="dlp-body">
       <!-- 上半部分：赵明轩 -->
       <div class="dlp-block local dimmed" id="dlp-block-local">
-        <div class="dlp-speaker-row">
-          <img class="dlp-avatar" src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
-          <div>
-            <div class="dlp-name">赵明轩 · Zhao Mingxuan
-              <button class="char-profile-btn" onclick="showCharProfile('mingxuan')" title="查看角色档案">i</button>
+        <div class="card-layout">
+          <div class="card-avatar-col">
+            <img class="dlp-avatar" src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+          </div>
+          <div class="card-content-col">
+            <div class="dlp-speaker-row">
+              <div>
+                <div class="dlp-name">赵明轩 · Zhao Mingxuan
+                  <button class="char-profile-btn" onclick="showCharProfile('mingxuan')" title="查看角色档案">i</button>
+                </div>
+                <div class="dlp-role-tag">Local · 本地说话人</div>
+              </div>
             </div>
-            <div class="dlp-role-tag">Local · 本地说话人</div>
+            <div class="dlp-content">
+              <div class="dlp-kara" id="dlp-kara-local"></div>
+              <div class="dlp-bar">
+                <div class="dlp-bar-fill" id="dlp-bar-local"></div>
+              </div>
+              <div class="dlp-en" id="dlp-en-local"></div>
+            </div>
           </div>
-        </div>
-        <div class="dlp-content">
-          <div class="dlp-kara" id="dlp-kara-local"></div>
-          <div class="dlp-bar">
-            <div class="dlp-bar-fill" id="dlp-bar-local"></div>
-          </div>
-          <div class="dlp-en" id="dlp-en-local"></div>
         </div>
       </div>
       <!-- 下半部分：Nora -->
       <div class="dlp-block learner dimmed" id="dlp-block-learner">
-        <div class="dlp-speaker-row">
-          <img class="dlp-avatar" src="/assets/characters/nora/nora_head.png" alt="Nora">
-          <div>
-            <div class="dlp-name">诺拉 · Nora</div>
-            <div class="dlp-role-tag">You · 学员</div>
+        <div class="card-layout">
+          <div class="card-avatar-col">
+            <img class="dlp-avatar" src="/assets/characters/nora/nora_head.png" alt="Nora">
           </div>
-        </div>
-        <div class="dlp-content">
-          <div class="dlp-kara" id="dlp-kara-learner"></div>
-          <div class="dlp-bar">
-            <div class="dlp-bar-fill" id="dlp-bar-learner"></div>
+          <div class="card-content-col">
+            <div class="dlp-speaker-row">
+              <div>
+                <div class="dlp-name">诺拉 · Nora</div>
+                <div class="dlp-role-tag">You · 学员</div>
+              </div>
+            </div>
+            <div class="dlp-content">
+              <div class="dlp-kara" id="dlp-kara-learner"></div>
+              <div class="dlp-bar">
+                <div class="dlp-bar-fill" id="dlp-bar-learner"></div>
+              </div>
+              <div class="dlp-en" id="dlp-en-learner"></div>
+            </div>
           </div>
-          <div class="dlp-en" id="dlp-en-learner"></div>
         </div>
       </div>
     </div>
