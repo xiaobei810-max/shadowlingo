@@ -6494,18 +6494,21 @@
       // ── 立绘图层（支持任意层数的 layers 数组，或旧版 body/clothes/head 三层）──
       var sprite = el('char-intro-sprite');
       if (c.layers) {
-        // 外层容器：覆盖 CSS 类的所有定位/缩放，变成全卡片透明底座
+        // 外层：全卡片透明底座，清除所有 CSS 类偏移
         sprite.className = '';
         sprite.style.cssText =
           'position:absolute;top:0;left:0;width:100%;height:100%;' +
           'transform:none;overflow:visible;z-index:2;pointer-events:none;';
-        // 内层 div 直接相对卡片定位，路径以 /assets/ 开头，z-index 1-4
+        // 内层：纯净叠加，不含任何位移，所有图层基准完全一致
+        var _IR = 'image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
+        var _BASE = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;' + _IR;
+        var _SHADOW = 'filter:drop-shadow(0 0 1px rgba(0,0,0,0.5));';
         sprite.innerHTML =
-          '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;z-index:10;overflow:visible !important;pointer-events:none;">' +
-            '<img src="/characters/nora/nora_hair_front.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));" />' +
-            '<img src="/clothes/nora_clothe.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:2;" />' +
-            '<img src="/characters/nora/nora_head.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:3;" />' +
-            '<img src="/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:4;filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));" />' +
+          '<div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">' +
+            '<img src="/characters/nora/nora_hair_front.png" style="' + _BASE + 'z-index:1;' + _SHADOW + '" />' +
+            '<img src="/clothes/nora_clothe.png"             style="' + _BASE + 'z-index:2;" />' +
+            '<img src="/characters/nora/nora_head.png"       style="' + _BASE + 'z-index:3;" />' +
+            '<img src="/characters/nora/nora_hair.png"       style="' + _BASE + 'z-index:4;' + _SHADOW + '" />' +
           '</div>';
       } else {
         sprite.className = 'char-intro-sprite';
