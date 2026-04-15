@@ -6433,9 +6433,8 @@
     var _charIntroCallback = null;
 
     function charIntroCheck(callback) {
-      var seen = JSON.parse(localStorage.getItem('sl_char_seen_v2') || '[]');
-      var chars = (LESSON_CHARS[lessonIdx] || []);
-      _charIntroQueue = chars.filter(function(id) { return seen.indexOf(id) < 0; });
+      // 每次进入课程都展示本课所有角色介绍（不做已读过滤）
+      _charIntroQueue = (LESSON_CHARS[lessonIdx] || []).slice();
       _charIntroCallback = callback;
       charIntroShowNext();
     }
@@ -6646,12 +6645,7 @@
       var isProfile = overlay.dataset.isProfile === '1';
       overlay.classList.remove('visible');
 
-      if (!isProfile && id) {
-        // 标记已见过
-        var seen = JSON.parse(localStorage.getItem('sl_char_seen_v2') || '[]');
-        if (seen.indexOf(id) < 0) seen.push(id);
-        localStorage.setItem('sl_char_seen_v2', JSON.stringify(seen));
-      }
+      // 不再记录已读状态，每次进入都重新展示
 
       // 继续弹窗队列（如有多个新角色）
       if (!isProfile) {
