@@ -490,7 +490,8 @@
       opacity: 1; transition: opacity 0.25s ease;
       pointer-events: none;
     }
-    .char-intro-front.hidden { opacity: 0; pointer-events: none; }
+    /* 正面隐藏时立即消失（不过渡），避免背面打开时的幽灵残影 */
+    .char-intro-front.hidden { opacity: 0; pointer-events: none; transition: none; }
 
     /* 渐变遮罩（z-5）：底部35%强压（文字区），往上快速透明（夹克区不遮） */
     .char-intro-front::before {
@@ -744,7 +745,18 @@
       font-size: 10px; font-weight: 800;
       color: rgba(34,197,94,0.65);
       letter-spacing: 0.1em; text-transform: uppercase;
+      flex: 1;
     }
+    /* 金句播放按钮 */
+    .char-profile-quote-play {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.30);
+      color: #22c55e; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.2s;
+    }
+    .char-profile-quote-play:hover { background: rgba(34,197,94,0.22); }
 
     /* 档案面板底部：精简居中的返回按钮 */
     .char-profile-footer {
@@ -6461,11 +6473,17 @@
       var rowsEl = el('char-profile-rows');
       rowsEl.innerHTML = (c.profileRows || []).map(function(r) {
         if (r.quote) {
-          // 口头禅：纵向铺开 — 顶部小标题行 + 大引号句居中
+          // 口头禅：纵向铺开 — 顶部小标题行 + 大引号句 + 播放按钮
+          var escapedVal = r.val.replace(/'/g, "\\'");
+          var role = c.greetingRole || 'local';
+          var rate = c.greetingRate || 1.0;
           return '<div class="char-profile-row char-profile-row-quote">' +
             '<div class="char-profile-quote-header">' +
               '<span class="char-profile-icon">' + (r.icon || '💬') + '</span>' +
               (r.label ? '<span class="char-profile-quote-label">' + r.label + ' &middot; ' + (r.labelEn || 'Catchphrase') + '</span>' : '') +
+              '<button class="char-profile-quote-play" onclick="charProfilePlayQuote(\'' + escapedVal + '\',\'' + role + '\',' + rate + ')" title="播放">' +
+                '<svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#22c55e"/></svg>' +
+              '</button>' +
             '</div>' +
             '<span class="char-profile-quote">' + r.val + '</span>' +
             '</div>';
@@ -6497,10 +6515,10 @@
         // 内层 div 直接相对卡片定位，路径以 /assets/ 开头，z-index 1-4
         sprite.innerHTML =
           '<div style="position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:135%;height:100%;z-index:10;overflow:visible !important;pointer-events:none;">' +
-            '<img src="/characters/nora/nora_hair_front.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;" />' +
+            '<img src="/characters/nora/nora_hair_front.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:1;filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));" />' +
             '<img src="/clothes/nora_clothe.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:2;" />' +
             '<img src="/characters/nora/nora_head.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:3;" />' +
-            '<img src="/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:4;" />' +
+            '<img src="/characters/nora/nora_hair.png" style="position:absolute;width:100%;height:100%;object-fit:contain;z-index:4;filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));" />' +
           '</div>';
       } else {
         sprite.className = 'char-intro-sprite';
@@ -6522,6 +6540,38 @@
       if (!isProfile) {
         setTimeout(function() { charIntroPlayGreeting(); }, 600);
       }
+    }
+
+    function charProfilePlayQuote(text, role, rate) {
+      // 复用全局单例音频，与正面语音条共享停止逻辑
+      if (window._charIntroAudio && !window._charIntroAudio.paused) {
+        window._charIntroAudio.pause();
+        window._charIntroAudio.currentTime = 0;
+        window._charIntroAudio = null;
+        _setPlayBtnIcon(false);
+        return;
+      }
+      if (window._charIntroAudio) {
+        window._charIntroAudio.pause();
+        window._charIntroAudio.currentTime = 0;
+        window._charIntroAudio = null;
+      }
+      fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text, role: role || 'local', rate: rate || 1.0 })
+      }).then(function(r) { return r.ok ? r.blob() : null; })
+        .then(function(blob) {
+          if (!blob) return;
+          var url = URL.createObjectURL(blob);
+          var audio = new Audio(url);
+          window._charIntroAudio = audio;
+          audio.onended = function() {
+            window._charIntroAudio = null;
+            URL.revokeObjectURL(url);
+          };
+          audio.play().catch(function(){});
+        }).catch(function(){});
     }
 
     function charIntroToggleProfile() {
