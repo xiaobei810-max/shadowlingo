@@ -6376,9 +6376,9 @@
           { icon: '🤝', val: '在机场等候接机，是诺拉来华认识的第一个朋友' },
           { icon: '💬', label: '口头禅', val: '没问题！交给我！', quote: true },
         ],
-        body:    'assets/characters/mingxuan/mingxuan_body.png',
-        head:    'assets/characters/mingxuan/mingxuan_head.png',
-        clothes: 'assets/clothes/mx_clothes_green_jacket.png',
+        body:    '/assets/characters/mingxuan/mingxuan_body.png',
+        head:    '/assets/characters/mingxuan/mingxuan_head.png',
+        clothes: '/assets/clothes/mx_clothes_green_jacket.png',
         /* dressroom 300×420 原始像素坐标，1:1 还原 */
         bodyTf:    'translate(-45px,-25px) scale(1.14)',
         clothesTf: 'translate(-38px,-14px) scale(1.08)',
@@ -6502,23 +6502,24 @@
         // 内层：纯净叠加，不含任何位移，所有图层基准完全一致
         // 四张图画布完全相同，直接叠加；用 scale + transform-origin 整体等比放大
         var _BASE = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;' +
-                    'filter:contrast(1.05) brightness(0.95);';
+                    'filter:brightness(1.05) contrast(1.1) drop-shadow(0 0 1px rgba(0,0,0,1));';
         sprite.innerHTML =
           '<div style="position:absolute;bottom:0;left:0;width:100%;height:100%;' +
                       'transform:scale(1.18);transform-origin:bottom center;' +
                       'overflow:visible !important;pointer-events:none;">' +
-            '<img src="/characters/nora/nora_hair_front.png" style="' + _BASE + 'z-index:1;" />' +
-            '<img src="/clothes/nora_clothe.png"             style="' + _BASE + 'z-index:2;" />' +
-            '<img src="/characters/nora/nora_head.png"       style="' + _BASE + 'z-index:3;" />' +
-            '<img src="/characters/nora/nora_hair.png"       style="' + _BASE + 'z-index:4;" />' +
+            '<img src="/assets/characters/nora/nora_hair_front.png" style="' + _BASE + 'z-index:1;" />' +
+            '<img src="/assets/clothes/nora_clothes.png"             style="' + _BASE + 'z-index:2;" />' +
+            '<img src="/assets/characters/nora/nora_head.png"        style="' + _BASE + 'z-index:3;" />' +
+            '<img src="/assets/characters/nora/nora_hair.png"        style="' + _BASE + 'z-index:4;" />' +
           '</div>';
       } else {
+        var _MXF = 'filter:brightness(1.05) contrast(1.1) drop-shadow(0 0 1px rgba(0,0,0,1));';
         sprite.className = 'char-intro-sprite';
         sprite.removeAttribute('style');
         sprite.innerHTML =
-          '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + '">' +
-          '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + '">' +
-          '<img src="' + c.head    + '" style="transform:' + c.headTf    + '">';
+          '<img src="' + c.body    + '" style="transform:' + c.bodyTf    + ';' + _MXF + '">' +
+          '<img src="' + c.clothes + '" style="transform:' + c.clothesTf + ';' + _MXF + '">' +
+          '<img src="' + c.head    + '" style="transform:' + c.headTf    + ';' + _MXF + '">';
       }
 
       // 存储当前角色 ID
