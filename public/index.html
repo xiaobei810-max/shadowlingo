@@ -248,6 +248,43 @@
       position: relative;
     }
 
+    /* ── Stage hero portrait (shadowing page upper 40%) ── */
+    .stage-hero {
+      position: relative;
+      margin: -14px -14px 12px;
+      width: calc(100% + 28px);
+      height: 240px;
+      overflow: hidden;
+      border-radius: 14px 14px 0 0;
+      background: #0d1320;
+    }
+    .stage-hero-sprite-wrap {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) scale(1.18);
+      transform-origin: top center;
+      width: 300px;
+      height: 420px;
+      overflow: visible;
+    }
+    .stage-hero-sprite-wrap img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      filter: contrast(1.05) brightness(0.95);
+    }
+    .stage-hero-gradient {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 65%;
+      background: linear-gradient(to bottom, transparent, #111827 90%);
+      pointer-events: none;
+      z-index: 5;
+    }
+
     .mascot-wrap {
       width: 40px;
       height: 40px;
@@ -2569,6 +2606,12 @@
     <div class="audio-error" id="audio-error">⚠️ 音频加载失败，请检查网络后刷新重试</div>
 
     <div class="stage">
+      <!-- 角色半身立绘（上部英雄区） -->
+      <div class="stage-hero" id="stage-hero">
+        <div class="stage-hero-sprite-wrap" id="stage-hero-sprite-wrap"></div>
+        <div class="stage-hero-gradient"></div>
+      </div>
+
       <!-- 对方台词面板（上方，无前置台词时隐藏） -->
       <div class="context-panel" id="context-panel" style="display:none">
         <div class="ctx-header">
@@ -4227,6 +4270,19 @@
       return base.replace('v', 'ü');
     }
 
+    // ── Stage hero: render current speaker's portrait (Nora 4-layer) ──
+    function updateStageHero(s) {
+      var wrap = document.getElementById('stage-hero-sprite-wrap');
+      if (!wrap) return;
+      var _B = 'position:absolute;top:0;left:0;width:100%;height:100%;' +
+               'object-fit:contain;filter:contrast(1.05) brightness(0.95);';
+      wrap.innerHTML =
+        '<img src="/assets/characters/nora/nora_hair_front.png" style="' + _B + 'z-index:1;" />' +
+        '<img src="/assets/clothes/nora_clothes.png"             style="' + _B + 'z-index:2;" />' +
+        '<img src="/assets/characters/nora/nora_head.png"        style="' + _B + 'z-index:3;" />' +
+        '<img src="/assets/characters/nora/nora_hair.png"        style="' + _B + 'z-index:4;" />';
+    }
+
     // 判断字符是否为标点（不应作为独立 flex 项，应附在前一字符后）
     function isPunct(c) {
       return /[，。！？、：；（）【】""''「」…—～,.!?;:()\s]/.test(c);
@@ -4446,6 +4502,8 @@
       // 动态更新练习面板的角色名（支持多课不同主角）
       var lpName = document.getElementById('learner-panel-name');
       if (lpName) lpName.textContent = s.speaker || (lesson.learnerName || '诺拉 · Nora');
+      // 更新上部角色立绘英雄区
+      updateStageHero(s);
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
