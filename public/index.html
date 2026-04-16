@@ -257,20 +257,27 @@
     .card-avatar-col { flex-shrink: 0; width: 64px; }
     .card-content-col { flex: 1; min-width: 0; }
 
-    /* ── Unified circular avatar ── */
-    .panel-avatar, .dlp-avatar {
+    /* ── Unified circular avatar wrapper — overflow:hidden clips the zoomed img ── */
+    .avatar-wrap {
       width: 64px;
       height: 64px;
       border-radius: 50%;
-      object-fit: cover;
-      object-position: center 10%;
+      overflow: hidden;
       background: #1e293b;
       border: 2px solid #334155;
-      display: block;
       flex-shrink: 0;
       transition: border-color 0.25s, box-shadow 0.25s;
     }
-    .panel-avatar.glow {
+    .avatar-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      /* Zoom in hard on the face — scale(3) from 25%-from-top clips away transparent padding */
+      transform: scale(3);
+      transform-origin: 50% 22%;
+    }
+    .avatar-wrap.glow {
       border-color: var(--green);
       box-shadow: 0 0 0 4px rgba(34,197,94,0.4), 0 0 18px rgba(34,197,94,0.35);
     }
@@ -2200,7 +2207,7 @@
     .dlp-block.dimmed { opacity: 0.45; }
     .dlp-block.speaking { opacity: 1; }
     .dlp-speaker-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
-    .dlp-block.speaking .dlp-avatar {
+    .dlp-block.speaking .avatar-wrap {
       border-color: var(--green);
       box-shadow: 0 0 0 4px rgba(34,197,94,0.4), 0 0 18px rgba(34,197,94,0.4);
       animation: avatarPulse 0.8s ease-in-out infinite alternate;
@@ -2272,14 +2279,13 @@
     }
     .plp-panel-top { }
     .plp-panel-bottom { }
-    .plp-panel.dimmed { opacity: 0.92; }
+    .plp-panel.dimmed { opacity: 0.45; }
     .plp-panel.active  { opacity: 1; }
     .plp-speaker-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-shrink: 0; }
-    .plp-avatar {
-      width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
-      border: 2px solid var(--border); transition: border-color 0.3s, box-shadow 0.3s;
+    .plp-panel.active .avatar-wrap {
+      border-color: var(--green);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.4), 0 0 18px rgba(34,197,94,0.35);
     }
-    .plp-panel.active .plp-avatar { border-color: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.4); }
     .plp-name     { font-size: 17px; font-weight: 700; color: var(--green); }
     .plp-role-tag { font-size: 12px; color: #94a3b8; margin-top: 3px; }
     .plp-content  { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 0; }
@@ -2603,8 +2609,9 @@
       <div class="context-panel ctx-inactive" id="context-panel" style="display:none">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <img class="panel-avatar" id="ctx-avatar-mx"
-                 src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+            <div class="avatar-wrap" id="ctx-avatar-mx">
+              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+            </div>
           </div>
           <div class="card-content-col">
             <div class="ctx-header">
@@ -2621,8 +2628,9 @@
       <div class="sentence-box sb-active" id="sentence-box">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <img class="panel-avatar glow" id="panel-avatar-nora"
-                 src="/assets/characters/nora/nora_head.png" alt="Nora">
+            <div class="avatar-wrap glow" id="panel-avatar-nora">
+              <img src="/assets/characters/nora/nora_head.png" alt="Nora">
+            </div>
           </div>
           <div class="card-content-col">
             <div class="learner-panel-hdr">
@@ -2645,8 +2653,9 @@
       <div class="context-panel ctx-inactive" id="context-panel-below" style="display:none">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <img class="panel-avatar" id="ctx-avatar-mx-below"
-                 src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+            <div class="avatar-wrap" id="ctx-avatar-mx-below">
+              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+            </div>
           </div>
           <div class="card-content-col">
             <div class="ctx-header">
@@ -7076,30 +7085,48 @@
     <div class="plp-cards-wrap">
     <!-- 上半部分：Nora（先说话） -->
     <div class="plp-panel plp-panel-top dimmed" id="plp-panel-top">
-      <div class="plp-speaker-row">
-        <div>
-          <div class="plp-name">诺拉 · Nora</div>
-          <div class="plp-role-tag">You · 你（学员 Learner）</div>
+      <div class="card-layout">
+        <div class="card-avatar-col">
+          <div class="avatar-wrap">
+            <img src="/assets/characters/nora/nora_head.png" alt="Nora">
+          </div>
         </div>
-      </div>
-      <div class="plp-content">
-        <div class="plp-kara dlp-kara" id="plp-kara-top"></div>
-        <div class="plp-bar"><div class="plp-bar-fill" id="plp-bar-top"></div></div>
-        <div class="plp-en" id="plp-en-top"></div>
+        <div class="card-content-col">
+          <div class="plp-speaker-row">
+            <div>
+              <div class="plp-name">诺拉 · Nora</div>
+              <div class="plp-role-tag">You · 你（学员 Learner）</div>
+            </div>
+          </div>
+          <div class="plp-content">
+            <div class="plp-kara dlp-kara" id="plp-kara-top"></div>
+            <div class="plp-bar"><div class="plp-bar-fill" id="plp-bar-top"></div></div>
+            <div class="plp-en" id="plp-en-top"></div>
+          </div>
+        </div>
       </div>
     </div>
     <!-- 下半部分：赵明轩 -->
     <div class="plp-panel plp-panel-bottom dimmed" id="plp-panel-bottom">
-      <div class="plp-speaker-row">
-        <div>
-          <div class="plp-name">赵明轩 · Zhao Mingxuan</div>
-          <div class="plp-role-tag">Local · 本地说话人 Native Speaker</div>
+      <div class="card-layout">
+        <div class="card-avatar-col">
+          <div class="avatar-wrap">
+            <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+          </div>
         </div>
-      </div>
-      <div class="plp-content">
-        <div class="plp-kara dlp-kara" id="plp-kara-bottom"></div>
-        <div class="plp-bar"><div class="plp-bar-fill" id="plp-bar-bottom"></div></div>
-        <div class="plp-en" id="plp-en-bottom"></div>
+        <div class="card-content-col">
+          <div class="plp-speaker-row">
+            <div>
+              <div class="plp-name">赵明轩 · Zhao Mingxuan</div>
+              <div class="plp-role-tag">Local · 本地说话人 Native Speaker</div>
+            </div>
+          </div>
+          <div class="plp-content">
+            <div class="plp-kara dlp-kara" id="plp-kara-bottom"></div>
+            <div class="plp-bar"><div class="plp-bar-fill" id="plp-bar-bottom"></div></div>
+            <div class="plp-en" id="plp-en-bottom"></div>
+          </div>
+        </div>
       </div>
     </div>
     </div><!-- /.plp-cards-wrap -->
@@ -7126,7 +7153,9 @@
       <div class="dlp-block local dimmed" id="dlp-block-local">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <img class="dlp-avatar" src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+            <div class="avatar-wrap">
+              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+            </div>
           </div>
           <div class="card-content-col">
             <div class="dlp-speaker-row">
@@ -7151,7 +7180,9 @@
       <div class="dlp-block learner dimmed" id="dlp-block-learner">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <img class="dlp-avatar" src="/assets/characters/nora/nora_head.png" alt="Nora">
+            <div class="avatar-wrap">
+              <img src="/assets/characters/nora/nora_head.png" alt="Nora">
+            </div>
           </div>
           <div class="card-content-col">
             <div class="dlp-speaker-row">
