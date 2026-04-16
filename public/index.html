@@ -273,18 +273,7 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      /* Default fallback zoom */
-      transform: scale(2.5);
-      transform-origin: 50% 22%;
-    }
-    /* Per-character face crop */
-    .avatar-wrap.nora img {
-      transform: scale(1.6) translateY(12%);
-      transform-origin: center top;
-    }
-    .avatar-wrap.mx img {
-      transform: scale(2.5) translateY(5%);
-      transform-origin: center top;
+      /* Per-character zoom applied via inline style on each <img> */
     }
     .avatar-wrap.glow {
       border-color: var(--green);
@@ -2619,7 +2608,8 @@
         <div class="card-layout">
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx">
-              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
+                   style="transform:scale(3.2);transform-origin:center 20%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -2638,7 +2628,8 @@
         <div class="card-layout">
           <div class="card-avatar-col">
             <div class="avatar-wrap nora glow" id="panel-avatar-nora">
-              <img src="/assets/characters/nora/nora_head.png" alt="Nora">
+              <img src="/assets/characters/nora/nora_head.png" alt="Nora"
+                   style="transform:scale(2.2);transform-origin:center 25%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -2663,7 +2654,8 @@
         <div class="card-layout">
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx-below">
-              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
+                   style="transform:scale(3.2);transform-origin:center 20%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -2768,11 +2760,11 @@
         titleZh: "第一课：机场相遇", titleEn: "Lesson 1: Encounter at the Airport",
         audio: "https://raw.githubusercontent.com/xiaobei810-max/shadowlingo-videos2/main/%E6%96%B0%E5%BD%95%E9%9F%B3%209.m4a",
         sentences: [
+          /* Page 1 */
           {
             zh: "你好，请问去市区怎么走？",
             pinyin: "Nǐ hǎo, qǐng wèn qù shì qū zěn me zǒu?",
             en: "Hello, excuse me, how do I get to the city center?",
-            context: null,
             contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
             role: "learner",
             start: 0, end: 4,
@@ -2785,12 +2777,12 @@
               { c: "怎", p: "zen3" }, { c: "么", p: "me5" }, { c: "走", p: "zou3" }
             ]
           },
+          /* Page 2 */
           {
             zh: "谢谢。大巴到京华大学吗？",
             pinyin: "Xiè xie. Dà bā dào Jīng huá dà xué ma?",
             en: "Thank you. Does the bus go to Jinghua University?",
-            context: { speaker: "赵明轩 · Zhao Mingxuan", zh: "往前走，右拐坐大巴。", pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.", en: "Walk straight ahead, turn right to take the bus." },
-            contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
+            contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "你是去京华大学的留学生？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng?", en: "Are you an international student going to Jinghua University?" },
             role: "learner",
             start: 0, end: 0,
             praise: "🌟 追问很自然！Natural follow-up!",
@@ -2802,11 +2794,11 @@
               { c: "吗", p: "ma5" }
             ]
           },
+          /* Page 3 */
           {
             zh: "对，我是诺拉。",
             pinyin: "Duì, wǒ shì Nuò lā.",
             en: "Yes, I'm Nora.",
-            context: { speaker: "赵明轩 · Zhao Mingxuan", zh: "你是去京华大学的留学生吗？", pinyin: "Nǐ shì qù Jīng huá dà xué de liú xué shēng ma?", en: "Are you an international student going to Jinghua University?" },
             contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
             role: "learner",
             start: 0, end: 0,
@@ -2817,11 +2809,11 @@
               { c: "诺", p: "nuo4" }, { c: "拉", p: "la1" }
             ]
           },
+          /* Page 4 */
           {
             zh: "真的吗？太感谢了。",
             pinyin: "Zhēn de ma? Tài gǎn xiè le.",
             en: "Really? Thank you so much.",
-            context: { speaker: "赵明轩 · Zhao Mingxuan", zh: "太好了！我是来接你的。", pinyin: "Tài hǎo le! Wǒ shì lái jiē nǐ de.", en: "Great! I'm here to pick you up." },
             contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "我叫明轩。行李给我吧。", pinyin: "Wǒ jiào Míng xuān. Xíng li gěi wǒ ba.", en: "I'm Mingxuan. Give me your luggage." },
             role: "learner",
             start: 0, end: 0,
@@ -4486,31 +4478,14 @@
       buildKara(s.zh, s.chars);
       resetKara();
 
-      // First/last sentence use contextBelow (response pair); middle sentences use context-above (prompt)
-      var isFirstSentence = (idx === 0);
-      var isLastSentence  = (idx === total - 1);
-
-      // Context panel above — shown for any non-first sentence that has context
+      // Layout: every page = Nora sentence (above) + Mingxuan response (below)
+      // Context-above panel is permanently hidden; contextBelow shown for every sentence.
       var ctxPanel = document.getElementById('context-panel');
-      if (ctxPanel) {
-        if (s.context && !isFirstSentence) {
-          ctxPanel.style.display = 'block';
-          var ctxSpeaker = document.getElementById('ctx-speaker');
-          var ctxZh = document.getElementById('ctx-zh');
-          var ctxEn = document.getElementById('ctx-en');
-          var ctxBtn = document.getElementById('ctx-play-btn');
-          if (ctxSpeaker) ctxSpeaker.textContent = s.context.speaker;
-          buildCtxKara(ctxZh, s.context.zh, s.context.pinyin);
-          if (ctxEn) ctxEn.textContent = s.context.en;
-          if (ctxBtn) { ctxBtn.textContent = '▶ 播放 Play'; ctxBtn.classList.remove('playing'); }
-        } else {
-          ctxPanel.style.display = 'none';
-        }
-      }
-      // Context panel below — shown for first & last sentence (pairs learner line with Mingxuan's response)
+      if (ctxPanel) ctxPanel.style.display = 'none';
+
       var ctxBelowPanel = document.getElementById('context-panel-below');
       if (ctxBelowPanel) {
-        if ((isFirstSentence || isLastSentence) && s.contextBelow) {
+        if (s.contextBelow) {
           ctxBelowPanel.style.display = 'block';
           var cbSpeaker = document.getElementById('ctx-speaker-below');
           var cbZh      = document.getElementById('ctx-zh-below');
@@ -7097,7 +7072,8 @@
       <div class="card-layout">
         <div class="card-avatar-col">
           <div class="avatar-wrap nora">
-            <img src="/assets/characters/nora/nora_head.png" alt="Nora">
+            <img src="/assets/characters/nora/nora_head.png" alt="Nora"
+                 style="transform:scale(2.2);transform-origin:center 25%;">
           </div>
         </div>
         <div class="card-content-col">
@@ -7120,7 +7096,8 @@
       <div class="card-layout">
         <div class="card-avatar-col">
           <div class="avatar-wrap mx">
-            <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+            <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
+                 style="transform:scale(3.2);transform-origin:center 20%;">
           </div>
         </div>
         <div class="card-content-col">
@@ -7163,7 +7140,8 @@
         <div class="card-layout">
           <div class="card-avatar-col">
             <div class="avatar-wrap mx">
-              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
+              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
+                   style="transform:scale(3.2);transform-origin:center 20%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -7190,7 +7168,8 @@
         <div class="card-layout">
           <div class="card-avatar-col">
             <div class="avatar-wrap nora">
-              <img src="/assets/characters/nora/nora_head.png" alt="Nora">
+              <img src="/assets/characters/nora/nora_head.png" alt="Nora"
+                   style="transform:scale(2.2);transform-origin:center 25%;">
             </div>
           </div>
           <div class="card-content-col">
