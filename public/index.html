@@ -2513,20 +2513,20 @@
     .fc-footer {
       display: flex; gap: 10px;
     }
-    .fc-skip-btn {
-      padding: 14px 20px; background: transparent; border: 1.5px solid var(--border);
-      border-radius: 14px; color: #64748b; font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: all 0.2s; white-space: nowrap;
-    }
-    .fc-skip-btn:hover { border-color: var(--green); color: var(--green); }
     .fc-prev-btn {
-      padding: 14px 18px; background: transparent; border: 1.5px solid var(--border);
+      flex: 1; padding: 14px 0; background: transparent; border: 1.5px solid var(--border);
       border-radius: 14px; color: #64748b; font-size: 14px; font-weight: 600;
       cursor: pointer; transition: all 0.2s; white-space: nowrap;
     }
     .fc-prev-btn:hover { border-color: var(--green); color: var(--green); }
+    .fc-skip-btn {
+      flex: 1; padding: 14px 0; background: transparent; border: 1.5px solid var(--border);
+      border-radius: 14px; color: #64748b; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .fc-skip-btn:hover { border-color: var(--green); color: var(--green); }
     .fc-next-btn {
-      flex: 1; padding: 16px; background: var(--green); border: none;
+      flex: 1; padding: 14px 0; background: var(--green); border: none;
       border-radius: 14px; color: #000; font-size: 16px; font-weight: 700;
       cursor: pointer; transition: background 0.2s;
     }
@@ -2755,7 +2755,7 @@
         <div class="score-grade" id="score-grade"></div>
         <div class="praise-block" id="praise-block"></div>
         <!-- 本课获得回声币 -->
-        <div class="completion-coin-row" id="completion-coin-row" style="display:none">
+        <div class="completion-coin-row" id="completion-coin-row" style="display:none;cursor:pointer;" onclick="toggleWallet(event)">
         <div class="coin-float-wrap" id="completion-coin-float">
           <div class="echo-coin echo-coin-lg" id="completion-coin-icon">
             <svg width="28" height="24" viewBox="0 0 28 24" class="ec-svg">
@@ -3145,7 +3145,17 @@
       ov.className = 'aha-overlay';
       ov.innerHTML =
         '<div class="aha-card">' +
-          '<div class="aha-title">First Echo Coin!</div>' +
+          '<div class="aha-title" style="display:flex;align-items:center;justify-content:center;gap:10px;">' +
+            '<div class="echo-coin echo-coin-sm" style="width:28px;height:28px;flex-shrink:0;">' +
+              '<svg width="16" height="14" viewBox="0 0 28 24" class="ec-svg">' +
+                '<rect class="ec-bar" x="0" y="8" width="5" height="8" rx="2.5"/>' +
+                '<rect class="ec-bar" x="7.5" y="1" width="5" height="22" rx="2.5"/>' +
+                '<rect class="ec-bar" x="15" y="4" width="5" height="16" rx="2.5"/>' +
+                '<rect class="ec-bar" x="22.5" y="8" width="5" height="8" rx="2.5"/>' +
+              '</svg>' +
+            '</div>' +
+            'First Echo Coin!' +
+          '</div>' +
           '<div class="aha-rows">' +
             '<div class="aha-row">' +
               '<span class="aha-icon">🎁</span>' +
@@ -4681,15 +4691,20 @@
     function prewarmMic() {
       if (micStream && micStream.active) return; // already warm
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function(s) {
-          micStream = s;
-          console.log('[Mic] Pre-warmed ✓');
-        })
-        .catch(function(e) {
-          // Permission denied or unavailable — startRecording() will handle it later
-          console.log('[Mic] Pre-warm skipped:', e.name);
-        });
+      // 仅在用户已授权时预热，避免课程开始时弹出系统权限请求弹窗
+      function _doWarm() {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function(s) { micStream = s; console.log('[Mic] Pre-warmed ✓'); })
+          .catch(function(e) { console.log('[Mic] Pre-warm skipped:', e.name); });
+      }
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'microphone' }).then(function(result) {
+          if (result.state === 'granted') _doWarm();
+          // 'prompt' 或 'denied'：不预热，等到用户点录音时再请求
+        }).catch(_doWarm); // Permissions API 不支持时降级
+      } else {
+        _doWarm(); // 旧版浏览器降级
+      }
     }
     // ─────────────────────────────────────────────────────────
 
@@ -6457,6 +6472,7 @@
       // 先显示目标页，再隐藏当前页，避免底层跟读页闪现
       var lesson = LESSONS[lessonIdx];
       if (lesson.vocab && lesson.vocab.length) {
+        fcIdx = lesson.vocab.length - 1; // 回到最后一张生词卡
         document.getElementById('flashcard-page').classList.add('show');
         fcShowCard();
       }
