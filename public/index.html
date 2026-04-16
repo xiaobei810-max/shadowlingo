@@ -2610,7 +2610,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:44% 25%;transform:scale(3.5);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
             </div>
           </div>
           <div class="card-content-col">
@@ -2630,7 +2630,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap nora glow" id="panel-avatar-nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:50% 30%;transform:scale(2.2);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:50% 22%;transform:scale(2.2);">
             </div>
           </div>
           <div class="card-content-col">
@@ -2656,7 +2656,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx-below">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:44% 25%;transform:scale(3.5);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
             </div>
           </div>
           <div class="card-content-col">
@@ -6404,14 +6404,14 @@
       _needsGesture = false; _gestureCallback = null;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       stopAudio();
-      var page = document.getElementById('pre-listen-page');
-      if (page) page.classList.remove('show');
-      // Show flashcard page at the last card viewed
+      // 先显示目标页，再隐藏当前页，避免底层跟读页闪现
       var lesson = LESSONS[lessonIdx];
       if (lesson.vocab && lesson.vocab.length) {
         document.getElementById('flashcard-page').classList.add('show');
         fcShowCard();
       }
+      var page = document.getElementById('pre-listen-page');
+      if (page) page.classList.remove('show');
     }
 
     function plpNext() {
@@ -6830,8 +6830,8 @@
     }
 
     function fcDone() {
+      showPreListenPage(); // 先显示目标页，再隐藏当前页，避免底层跟读页闪现
       document.getElementById('flashcard-page').classList.remove('show');
-      showPreListenPage();
     }
 
     // ── Flashcard speak ───────────────────────────────────────
@@ -7074,7 +7074,7 @@
         <div class="card-avatar-col">
           <div class="avatar-wrap nora">
             <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                 style="width:100%;height:100%;object-fit:cover;transform-origin:50% 30%;transform:scale(2.2);">
+                 style="width:100%;height:100%;object-fit:cover;transform-origin:50% 22%;transform:scale(2.2);">
           </div>
         </div>
         <div class="card-content-col">
@@ -7098,7 +7098,7 @@
         <div class="card-avatar-col">
           <div class="avatar-wrap mx">
             <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                 style="width:100%;height:100%;object-fit:cover;transform-origin:44% 25%;transform:scale(3.5);">
+                 style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
           </div>
         </div>
         <div class="card-content-col">
@@ -7142,7 +7142,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:44% 25%;transform:scale(3.5);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
             </div>
           </div>
           <div class="card-content-col">
@@ -7170,7 +7170,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:50% 30%;transform:scale(2.2);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:50% 22%;transform:scale(2.2);">
             </div>
           </div>
           <div class="card-content-col">
