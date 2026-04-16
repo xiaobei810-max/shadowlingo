@@ -273,9 +273,18 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      /* Zoom in hard on the face — scale(3) from 25%-from-top clips away transparent padding */
-      transform: scale(3);
+      /* Default fallback zoom */
+      transform: scale(2.5);
       transform-origin: 50% 22%;
+    }
+    /* Per-character face crop */
+    .avatar-wrap.nora img {
+      transform: scale(1.6) translateY(12%);
+      transform-origin: center top;
+    }
+    .avatar-wrap.mx img {
+      transform: scale(2.5) translateY(5%);
+      transform-origin: center top;
     }
     .avatar-wrap.glow {
       border-color: var(--green);
@@ -2609,7 +2618,7 @@
       <div class="context-panel ctx-inactive" id="context-panel" style="display:none">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <div class="avatar-wrap" id="ctx-avatar-mx">
+            <div class="avatar-wrap mx" id="ctx-avatar-mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
             </div>
           </div>
@@ -2628,7 +2637,7 @@
       <div class="sentence-box sb-active" id="sentence-box">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <div class="avatar-wrap glow" id="panel-avatar-nora">
+            <div class="avatar-wrap nora glow" id="panel-avatar-nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora">
             </div>
           </div>
@@ -2653,7 +2662,7 @@
       <div class="context-panel ctx-inactive" id="context-panel-below" style="display:none">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <div class="avatar-wrap" id="ctx-avatar-mx-below">
+            <div class="avatar-wrap mx" id="ctx-avatar-mx-below">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
             </div>
           </div>
@@ -4481,10 +4490,10 @@
       var isFirstSentence = (idx === 0);
       var isLastSentence  = (idx === total - 1);
 
-      // Context panel above — shown for middle sentences (idx 1 … total-2) only
+      // Context panel above — shown for any non-first sentence that has context
       var ctxPanel = document.getElementById('context-panel');
       if (ctxPanel) {
-        if (s.context && !isFirstSentence && !isLastSentence) {
+        if (s.context && !isFirstSentence) {
           ctxPanel.style.display = 'block';
           var ctxSpeaker = document.getElementById('ctx-speaker');
           var ctxZh = document.getElementById('ctx-zh');
@@ -6480,7 +6489,7 @@
         badge: '✦ NEW CHARACTER · 新角色登场',
         narrative: '推着沉重的行李箱，她环顾着陌生的机场...',
         pills: ['京华留学生', '独立清醒', '行动派'],
-        greeting: '终于到了，该怎么到京华大学呢？好了，先找个人问路吧！',
+        greeting: '终于到了，该怎么去京华大学呢？',
         greetingRole: 'learner',
         greetingRate: 1.1,
         btnText: '继续 Continue ➔',
@@ -7087,7 +7096,7 @@
     <div class="plp-panel plp-panel-top dimmed" id="plp-panel-top">
       <div class="card-layout">
         <div class="card-avatar-col">
-          <div class="avatar-wrap">
+          <div class="avatar-wrap nora">
             <img src="/assets/characters/nora/nora_head.png" alt="Nora">
           </div>
         </div>
@@ -7110,7 +7119,7 @@
     <div class="plp-panel plp-panel-bottom dimmed" id="plp-panel-bottom">
       <div class="card-layout">
         <div class="card-avatar-col">
-          <div class="avatar-wrap">
+          <div class="avatar-wrap mx">
             <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
           </div>
         </div>
@@ -7153,7 +7162,7 @@
       <div class="dlp-block local dimmed" id="dlp-block-local">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <div class="avatar-wrap">
+            <div class="avatar-wrap mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩">
             </div>
           </div>
@@ -7180,7 +7189,7 @@
       <div class="dlp-block learner dimmed" id="dlp-block-learner">
         <div class="card-layout">
           <div class="card-avatar-col">
-            <div class="avatar-wrap">
+            <div class="avatar-wrap nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora">
             </div>
           </div>
