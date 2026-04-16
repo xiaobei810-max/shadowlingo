@@ -268,12 +268,11 @@
       flex-shrink: 0;
       transition: border-color 0.25s, box-shadow 0.25s;
     }
-    .avatar-wrap img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      /* Per-character zoom applied via inline style on each <img> */
+    .avatar-wrap > img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      display: block !important;
     }
     .avatar-wrap.glow {
       border-color: var(--green);
@@ -2609,7 +2608,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;object-position:center 10%;transform:scale(4.8);">
+                   style="object-fit:cover;transform:scale(3.5);transform-origin:49% 32%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -2629,7 +2628,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap nora glow" id="panel-avatar-nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                   style="width:100%;height:100%;object-fit:cover;object-position:center 15%;transform:scale(2.2);">
+                   style="object-fit:cover;transform:scale(2.5);transform-origin:52% 32%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -2655,7 +2654,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx-below">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;object-position:center 10%;transform:scale(4.8);">
+                   style="object-fit:cover;transform:scale(3.5);transform-origin:49% 32%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -7073,7 +7072,7 @@
         <div class="card-avatar-col">
           <div class="avatar-wrap nora">
             <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                 style="width:100%;height:100%;object-fit:cover;object-position:center 15%;transform:scale(2.2);">
+                 style="object-fit:cover;transform:scale(2.5);transform-origin:52% 32%;">
           </div>
         </div>
         <div class="card-content-col">
@@ -7097,7 +7096,7 @@
         <div class="card-avatar-col">
           <div class="avatar-wrap mx">
             <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                 style="width:100%;height:100%;object-fit:cover;object-position:center 10%;transform:scale(4.8);">
+                 style="object-fit:cover;transform:scale(3.5);transform-origin:49% 32%;">
           </div>
         </div>
         <div class="card-content-col">
@@ -7141,7 +7140,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;object-position:center 10%;transform:scale(4.8);">
+                   style="object-fit:cover;transform:scale(3.5);transform-origin:49% 32%;">
             </div>
           </div>
           <div class="card-content-col">
@@ -7169,7 +7168,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                   style="width:100%;height:100%;object-fit:cover;object-position:center 15%;transform:scale(2.2);">
+                   style="object-fit:cover;transform:scale(2.5);transform-origin:52% 32%;">
             </div>
           </div>
           <div class="card-content-col">
