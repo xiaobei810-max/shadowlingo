@@ -2610,7 +2610,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
             </div>
           </div>
           <div class="card-content-col">
@@ -2630,7 +2630,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap nora glow" id="panel-avatar-nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:50% 22%;transform:scale(2.2);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">
             </div>
           </div>
           <div class="card-content-col">
@@ -2656,7 +2656,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx-below">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
             </div>
           </div>
           <div class="card-content-col">
@@ -6749,7 +6749,11 @@
 
       // 继续弹窗队列（如有多个新角色）
       if (!isProfile) {
-        setTimeout(charIntroShowNext, 200);
+        if (_charIntroQueue.length) {
+          setTimeout(charIntroShowNext, 200); // 角色间保留过渡延迟
+        } else {
+          charIntroShowNext(); // 最后一个角色：立刻显示下一页，避免背景闪现
+        }
       }
     }
 
@@ -6760,8 +6764,17 @@
 
     function startLesson() {
       prewarmMic(); // 提前初始化麦克风，消除第一句录音的冷启动延迟
-      document.getElementById('cover-page').classList.remove('show');
+      // 先让 charIntro 瞬间不透明，再移除 cover，避免底层跟读页闪现
+      var _ciOverlay = document.getElementById('char-intro-overlay');
+      if (_ciOverlay) _ciOverlay.style.transition = 'none';
       charIntroCheck(showFlashcardPage);
+      document.getElementById('cover-page').classList.remove('show');
+      // 两帧后恢复 transition，确保关闭时仍有淡出动画
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          if (_ciOverlay) _ciOverlay.style.transition = '';
+        });
+      });
     }
 
     // ── Vocab Flashcards ──────────────────────────────────────
@@ -7074,7 +7087,7 @@
         <div class="card-avatar-col">
           <div class="avatar-wrap nora">
             <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                 style="width:100%;height:100%;object-fit:cover;transform-origin:50% 22%;transform:scale(2.2);">
+                 style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">
           </div>
         </div>
         <div class="card-content-col">
@@ -7098,7 +7111,7 @@
         <div class="card-avatar-col">
           <div class="avatar-wrap mx">
             <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                 style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
+                 style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
           </div>
         </div>
         <div class="card-content-col">
@@ -7142,7 +7155,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap mx">
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:47% 25%;transform:scale(3.5);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
             </div>
           </div>
           <div class="card-content-col">
@@ -7170,7 +7183,7 @@
           <div class="card-avatar-col">
             <div class="avatar-wrap nora">
               <img src="/assets/characters/nora/nora_head.png" alt="Nora"
-                   style="width:100%;height:100%;object-fit:cover;transform-origin:50% 22%;transform:scale(2.2);">
+                   style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">
             </div>
           </div>
           <div class="card-content-col">
