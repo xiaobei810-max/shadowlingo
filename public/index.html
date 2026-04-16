@@ -1270,9 +1270,9 @@
       display: flex; gap: 10px; flex-shrink: 0;
     }
     .tip-btn {
-      flex: 1; padding: 15px 8px; border-radius: 14px;
+      flex: 1; padding: 16px 12px; border-radius: 14px;
       font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-      line-height: 1.3; text-align: center;
+      line-height: 1; text-align: center; white-space: nowrap;
     }
     .tip-btn-back {
       background: transparent; border: 1.5px solid var(--border); color: var(--text);
@@ -3223,7 +3223,7 @@
         // 分数不足60，提示重练
         setTimeout(function() {
           retryEl.innerHTML = '发音准确率不足，暂未获得回声币' +
-            '<button class="eval-coin-retry-btn" onclick="doRecord()">🔄 再练一次</button>';
+            '<button class="eval-coin-retry-btn" onclick="doRecord()">🔄 再练一次 Retry</button>';
           retryEl.style.display = 'block';
         }, delay || 400);
       }
@@ -4839,7 +4839,7 @@
       document.getElementById("eval-nav").style.display = "none";
       document.getElementById("eval-prev").disabled = false;
       var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
-      document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "下一页 Next ▶";
+      document.getElementById("eval-next").textContent = isLast ? "完成 Finish 🎉" : "下一页 Next ▶";
       document.getElementById("eval-page").classList.add("show");
       document.getElementById("eval-page").scrollTop = 0;
       startEvalLoadingAnim();
@@ -5831,13 +5831,13 @@
       dlpPaused = true;
       stopAudio();
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-      dlpUpdatePlayButton('▶ 继续');
+      dlpUpdatePlayButton('▶ 继续 Resume');
     }
 
     function dlpResume() {
       if (!dlpPlaying || !dlpPaused || !dlpSeq) return;
       dlpPaused = false;
-      dlpUpdatePlayButton('⏸ 暂停');
+      dlpUpdatePlayButton('⏸ 暂停 Pause');
       dlpPlayOne(dlpCurrentIndex);
     }
 
@@ -5856,7 +5856,7 @@
         if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
         dlpPlaying = false;
         dlpPaused = false;
-        dlpUpdatePlayButton('▶ 再听一遍');
+        dlpUpdatePlayButton('▶ 再听一遍 Again');
         return;
       }
       dlpCurrentIndex = idx;
@@ -5906,7 +5906,7 @@
       dlpCurrentIndex = 0;
       dlpPlaying = true;
       dlpPaused = false;
-      dlpUpdatePlayButton('⏸ 暂停');
+      dlpUpdatePlayButton('⏸ 暂停 Pause');
 
       dlpPlayOne(0);
     }
@@ -7181,7 +7181,7 @@
         <div class="fc-en" id="fc-en">Excuse me / Sorry to bother you</div>
       </div>
       <div class="fc-footer">
-        <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ 上一个</button>
+        <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ 上一个 Prev</button>
         <button class="fc-skip-btn" onclick="fcSkipAll()">跳过 Skip</button>
         <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">下一个 Next →</button>
       </div>
@@ -7278,7 +7278,7 @@
         <div class="dlp-title">完整对话 · 先听一遍</div>
         <div class="dlp-subtitle">上：赵明轩 Zhao Mingxuan · 下：诺拉 Nora —— 每句带拼音和英文</div>
       </div>
-      <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">跳过，去练习 ▶</button>
+      <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">跳过 Skip ▶</button>
     </div>
     <div class="dlp-body">
       <!-- 上半部分：赵明轩 -->
@@ -7337,8 +7337,8 @@
       </div>
     </div>
     <div class="dlp-footer">
-      <button class="dlp-play-btn" id="dlp-play-btn" onclick="dlpPlayPauseClick()">▶ 听完整对话</button>
-      <button class="dlp-next-btn" id="dlp-next-btn" onclick="dlpSkip()">下一页 · 去练习 ▶</button>
+      <button class="dlp-play-btn" id="dlp-play-btn" onclick="dlpPlayPauseClick()">▶ 听完整对话 Listen</button>
+      <button class="dlp-next-btn" id="dlp-next-btn" onclick="dlpSkip()">去练习 Practice ▶</button>
     </div>
   </div>
   <!-- 评价页面 -->
@@ -7467,8 +7467,8 @@
       <div id="tip-inner-content"></div>
     </div>
     <div class="tip-footer">
-      <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ 返回<br><span style="font-size:11px;font-weight:400">Back to Start</span></button>
-      <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">下一课 ▶<br><span style="font-size:11px;font-weight:400">Next Lesson</span></button>
+      <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ 返回 Back to Start</button>
+      <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">下一课 Next Lesson ▶</button>
     </div>
   </div>
 
