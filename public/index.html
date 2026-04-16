@@ -660,6 +660,23 @@
     }
     .char-intro-btn:hover { background: #16a34a; animation: none; box-shadow: none; }
 
+    /* ── Char intro: two-button row (Prev + Continue) ── */
+    .char-intro-btn-row {
+      display: flex; gap: 8px;
+      width: 100%; margin-top: 12px; flex-shrink: 0; pointer-events: all;
+    }
+    .char-intro-btn-row .char-intro-btn {
+      width: auto; flex: 1; margin-top: 0;
+    }
+    .char-intro-btn-prev {
+      flex: 0 0 auto; padding: 11px 14px;
+      background: transparent; border: 1.5px solid rgba(34,197,94,0.45);
+      color: #22c55e; font-size: 14px; font-weight: 700;
+      border-radius: 16px; cursor: pointer; white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .char-intro-btn-prev:hover { background: rgba(34,197,94,0.12); }
+
     /* ── 背面档案面板：opacity 切换，绝不用 translateY 避免溢出卡片 ── */
     .char-profile-panel {
       position: absolute; inset: 0;
@@ -839,6 +856,7 @@
       align-items: flex-end;
       gap: 4px 3px;
       word-break: keep-all;
+      text-wrap: balance;
     }
 
     /* Punctuation fix: group wraps kchar + trailing punct as one flex item */
@@ -2356,6 +2374,8 @@
       display: flex;
       flex-wrap: wrap;
       gap: 4px 3px;
+      word-break: keep-all;
+      text-wrap: balance;
     }
     .ctx-kchar {
       display: inline-flex;
@@ -2499,6 +2519,12 @@
       cursor: pointer; transition: all 0.2s; white-space: nowrap;
     }
     .fc-skip-btn:hover { border-color: var(--green); color: var(--green); }
+    .fc-prev-btn {
+      padding: 14px 18px; background: transparent; border: 1.5px solid var(--border);
+      border-radius: 14px; color: #64748b; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .fc-prev-btn:hover { border-color: var(--green); color: var(--green); }
     .fc-next-btn {
       flex: 1; padding: 16px; background: var(--green); border: none;
       border-radius: 14px; color: #000; font-size: 16px; font-weight: 700;
@@ -2747,6 +2773,7 @@
       </div>
       </div><!-- /.score-summary-card -->
       <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 Native Insider Tip →</button>
+      <button class="btn-restart" onclick="reviewLesson()" style="background:#1e293b;color:#94a3b8;border:1.5px solid #334155;margin-top:6px;">↺ 重新复习 Review</button>
     </div>
   </div>
 
@@ -5427,9 +5454,23 @@
           "<div style='font-size:15px;font-weight:600;margin-bottom:8px;color:#94a3b8;'>💡 点击麦克风录音，才能获得分数</div>" +
           "<div style='font-size:13px;color:#64748b;'>Try recording each sentence to see your score!</div>";
       } else {
+        var praiseMsg, praiseSub, praiseColor;
+        if (overall >= 90) {
+          praiseMsg   = "✨ 发音纯正！几乎像个本地人！";
+          praiseSub   = "Almost like a local!";
+          praiseColor = "#22c55e";
+        } else if (overall >= 60) {
+          praiseMsg   = "👍 表现不错！继续保持！";
+          praiseSub   = "Good job, keep it up!";
+          praiseColor = "#facc15";
+        } else {
+          praiseMsg   = "💪 再接再厉！多练几遍找找语感！";
+          praiseSub   = "Keep practicing — you'll get there!";
+          praiseColor = "#64748b";
+        }
         document.getElementById("praise-block").innerHTML =
-          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>✨ 发音纯正！几乎像个本地人！</div>" +
-          "<div style='font-size:13px;color:#94a3b8;'>Almost like a local!</div>";
+          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;color:" + praiseColor + ";'>" + praiseMsg + "</div>" +
+          "<div style='font-size:13px;color:#94a3b8;'>" + praiseSub + "</div>";
       }
 
       // 本课回声币汇总（始终显示，0币也展示）
@@ -5537,6 +5578,15 @@
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
       updateUI();
+    }
+
+    function reviewLesson() {
+      document.getElementById("overlay").classList.remove("show");
+      stopFireworks();
+      idx = 0;
+      sessionScores = []; _sessionCoinsEarned = 0;
+      // 从生词卡片页重新开始（跳过角色介绍）
+      showFlashcardPage();
     }
 
     // ── Fireworks ─────────────────────────────────────────────
@@ -6505,11 +6555,13 @@
     var LESSON_CHARS = [ ['nora', 'mingxuan'] /* Lesson 1 */ ];
 
     var _charIntroQueue = [];
+    var _charIntroHistory = [];
     var _charIntroCallback = null;
 
     function charIntroCheck(callback) {
       // 每次进入课程都展示本课所有角色介绍（不做已读过滤）
       _charIntroQueue = (LESSON_CHARS[lessonIdx] || []).slice();
+      _charIntroHistory = [];
       _charIntroCallback = callback;
       charIntroShowNext();
     }
@@ -6520,7 +6572,20 @@
         return;
       }
       var id = _charIntroQueue.shift();
+      _charIntroHistory.push(id); // 记录已展示的角色
       charIntroShow(id, false); // false = 登场模式（不显示"再次相遇"标签）
+    }
+
+    function charIntroPrev() {
+      if (_charIntroHistory.length <= 1) return; // 第一个角色，无法返回
+      // 停止当前音频
+      if (window._charIntroAudio) { window._charIntroAudio.pause(); window._charIntroAudio = null; }
+      window._charIntroAudioSrc = null;
+      _setPlayBtnIcon(false);
+      var currentId = _charIntroHistory.pop();       // 移除当前角色（恢复到队列前端）
+      _charIntroQueue.unshift(currentId);
+      var prevId = _charIntroHistory[_charIntroHistory.length - 1]; // 历史栈顶即上一个
+      charIntroShow(prevId, false);
     }
 
     function charIntroShow(id, isProfile) {
@@ -6534,6 +6599,9 @@
       el('char-intro-voice-text').textContent = c.greeting;
       el('char-intro-btn').textContent        = isProfile ? '关闭 Close ✕' : (c.btnText || '继续 Continue ➔');
       el('char-intro-btn').onclick            = charIntroClose;
+      // 根据历史显示/隐藏"上一位"按钮（第一个角色时隐藏）
+      var prevBtn = el('char-intro-btn-prev');
+      if (prevBtn) prevBtn.style.display = (!isProfile && _charIntroHistory.length > 1) ? '' : 'none';
 
       // 胶囊标签
       var pillsEl = el('char-intro-pills');
@@ -6840,6 +6908,18 @@
         .then(function(blob) { if (blob) _ttsCache[cacheKey] = URL.createObjectURL(blob); })
         .catch(function() {});
       }
+      // 自动播放生词音频（延迟 300ms 等卡片渲染完成）
+      (function(capturedIdx) {
+        setTimeout(function() {
+          if (fcIdx !== capturedIdx) return; // 卡片已切换，取消播放
+          var vAuto = LESSONS[lessonIdx].vocab[capturedIdx];
+          if (!vAuto) return;
+          var btn = document.getElementById('fc-speak-btn');
+          var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } };
+          if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 播放中…'; }
+          speakAzure(vAuto.zh, 'local', 1.0, restore, null);
+        }, 300);
+      })(fcIdx);
       // auto-advance
       if (fcTimer) clearTimeout(fcTimer);
       fcTimer = setTimeout(fcNext, FC_DURATION);
@@ -6856,6 +6936,21 @@
     function fcSkipAll() {
       if (fcTimer) { clearTimeout(fcTimer); fcTimer = null; }
       fcDone();
+    }
+
+    function fcPrev() {
+      if (fcTimer) { clearTimeout(fcTimer); fcTimer = null; }
+      if (fcIdx > 0) {
+        fcIdx--;
+        fcShowCard();
+      } else {
+        // 第一张卡片：返回最后一个角色介绍页
+        var lastCharId = _charIntroHistory[_charIntroHistory.length - 1];
+        if (lastCharId) {
+          charIntroShow(lastCharId, false);
+          document.getElementById('flashcard-page').classList.remove('show');
+        }
+      }
     }
 
     function fcDone() {
@@ -7066,6 +7161,7 @@
         <div class="fc-en" id="fc-en">Excuse me / Sorry to bother you</div>
       </div>
       <div class="fc-footer">
+        <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ 上一个</button>
         <button class="fc-skip-btn" onclick="fcSkipAll()">跳过 Skip</button>
         <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">下一个 Next →</button>
       </div>
@@ -7394,7 +7490,10 @@
               <span class="char-intro-voice-text" id="char-intro-voice-text">嗨！欢迎来到中国，我来接你了！</span>
             </div>
             <!-- 继续按钮在 flex 流内，紧跟语音条 -->
-            <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">继续 Continue ➔</button>
+            <div class="char-intro-btn-row">
+              <button class="char-intro-btn char-intro-btn-prev" id="char-intro-btn-prev" onclick="charIntroPrev()" style="display:none">◀ 上一位 Prev</button>
+              <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">继续 Continue ➔</button>
+            </div>
           </div>
         </div>
 
