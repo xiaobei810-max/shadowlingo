@@ -6488,6 +6488,19 @@
       }
     };
 
+    // 预加载所有角色立绘，避免首次展示时图层逐层加载
+    (function() {
+      [
+        '/assets/characters/nora/nora_hair_front.png',
+        '/assets/clothes/nora_clothes.png',
+        '/assets/characters/nora/nora_head.png',
+        '/assets/characters/nora/nora_hair.png',
+        '/assets/characters/mingxuan/mingxuan_body.png',
+        '/assets/characters/mingxuan/mingxuan_head.png',
+        '/assets/clothes/mx_clothes_green_jacket.png',
+      ].forEach(function(src) { var img = new Image(); img.src = src; });
+    })();
+
     // 每节课出场的新角色 ID 列表（Nora 先登场作为玩家角色，再介绍 Mingxuan）
     var LESSON_CHARS = [ ['nora', 'mingxuan'] /* Lesson 1 */ ];
 
@@ -6737,7 +6750,6 @@
       var overlay = document.getElementById('char-intro-overlay');
       var id = overlay.dataset.charId;
       var isProfile = overlay.dataset.isProfile === '1';
-      overlay.classList.remove('visible');
 
       // 关闭时停止并清理所有音频
       if (window._charIntroAudio) {
@@ -6747,13 +6759,17 @@
       window._charIntroAudioSrc = null;
       _setPlayBtnIcon(false);
 
-      // 继续弹窗队列（如有多个新角色）
       if (!isProfile) {
         if (_charIntroQueue.length) {
-          setTimeout(charIntroShowNext, 200); // 角色间保留过渡延迟
+          // 还有角色要介绍：overlay 保持全屏可见，直接切换内容，完全避免背景闪现
+          charIntroShowNext();
         } else {
-          charIntroShowNext(); // 最后一个角色：立刻显示下一页，避免背景闪现
+          // 最后一个角色：淡出 overlay，同时立刻显示下一页（flashcard/pre-listen 在底下顶上来）
+          overlay.classList.remove('visible');
+          charIntroShowNext();
         }
+      } else {
+        overlay.classList.remove('visible');
       }
     }
 
