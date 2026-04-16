@@ -5597,6 +5597,7 @@
 
     function reviewLesson() {
       document.getElementById("overlay").classList.remove("show");
+      document.getElementById("tip-page").classList.remove("show"); // 必须隐藏，否则 z:500 的 tip-page 会在 overlay 撤走后漏出来
       stopFireworks();
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
@@ -6486,6 +6487,9 @@
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       stopAudio();
       prewarmMic(); // 保底预热：确保进入跟读前麦克风已就绪
+      // 确保 tip-page 不遮挡跟读页（重新复习流程中可能残留）
+      var tipEl = document.getElementById('tip-page');
+      if (tipEl) tipEl.classList.remove('show');
       idx = 0; // always start shadow reading from sentence 1
       updateUI();
       var page = document.getElementById('pre-listen-page');
