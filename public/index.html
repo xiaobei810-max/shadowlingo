@@ -2692,8 +2692,8 @@
     }
     /* 锁定卡片文字：可读但克制（用户需要知道接下来学什么） */
     .chs-card.chs-locked .chs-chapter-zh,
-    .chs-card.chs-locked .chs-chapter-en { opacity: 0.68; }
-    .chs-card.chs-locked .chs-chapter-tag { opacity: 0.50; }
+    .chs-card.chs-locked .chs-chapter-en { opacity: 0.82; }
+    .chs-card.chs-locked .chs-chapter-tag { opacity: 0.62; }
 
     /* ✦ 真·毛玻璃锁定遮罩 ✦
        底图保留彩色 + backdrop-filter 模糊 = 透出斑斓色彩；
@@ -2745,7 +2745,7 @@
       line-height: 1.8;
     }
     .chs-scene-en {
-      font-size: 0.74rem; color: rgba(148,163,184,0.52);
+      font-size: 0.68rem; color: rgba(148,163,184,0.38);
       line-height: 1.6; font-style: italic; margin-top: 5px;
     }
 
@@ -2761,13 +2761,13 @@
       transition: all 0.32s ease;
     }
     .chs-dot.active {
-      background: var(--green); width: 20px; border-radius: 3px;
+      background: rgba(255,255,255,0.88); width: 20px; border-radius: 3px;
     }
 
     /* Action button */
     .chs-actions {
       flex-shrink: 0; width: 100%; max-width: 340px;
-      padding: 0 20px 48px;
+      padding: 16px 20px 48px;   /* 上方留白增加呼吸感 */
       position: relative; z-index: 1;
     }
     /* Ghost button — cinematic */
@@ -8125,7 +8125,7 @@
       var btn = document.getElementById('chs-start-btn');
       if (!btn) return;
       if (isLessonUnlocked(chsActiveIdx)) {
-        btn.textContent = '开始这一章 · Start Chapter →';
+        btn.textContent = '开始 · Start →';
         btn.className   = 'chs-start-btn';
         btn.disabled    = false;
       } else {
@@ -8222,7 +8222,7 @@
     <div class="chs-dots" id="chs-dots"></div>
     <div class="chs-actions">
       <button class="chs-start-btn" id="chs-start-btn" onclick="chsStartCurrentLesson()">
-        开始这一章 · Start Chapter →
+        开始 · Start →
       </button>
     </div>
   </div>
