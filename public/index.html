@@ -1297,23 +1297,37 @@
       filter: blur(20px) brightness(0.52);
       transform: scale(1.08); /* 防模糊白边 */
     }
-    #prologue-text {
+    /* 双语文本容器 */
+    #prologue-texts {
       position: relative; z-index: 1;
-      /* 通过 vw 单位自适应缩放，绝对不换行 */
-      font-size: min(1.9rem, 5vw);
-      font-weight: 700; color: #fff;
-      text-align: center; line-height: 1.9;
-      white-space: nowrap;          /* 禁止折行 */
-      letter-spacing: 2px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 32px rgba(0,0,0,0.85);
-      padding: 0 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      padding: 0 24px; text-align: center;
     }
-    /* 超小屏额外兜底 */
+    /* 中文主标题 — 衬线体，电影字幕感 */
+    #prologue-text-zh {
+      font-family: "Noto Serif SC", "SimSun", "STSong", serif;
+      font-size: clamp(1.3rem, 4.8vw, 1.55rem);
+      font-weight: 700; color: #fff;
+      white-space: nowrap;
+      letter-spacing: 3px; line-height: 1.5;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 32px rgba(0,0,0,0.85);
+    }
+    /* 英文副标题 — 无衬线，稍暗 */
+    #prologue-text-en {
+      font-size: clamp(0.82rem, 2.8vw, 1rem);
+      font-weight: 400; color: rgba(226,232,240,0.82);
+      white-space: nowrap;
+      letter-spacing: 0.04em; line-height: 1.5;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    /* 超小屏兜底 */
     @media (max-width: 380px) {
-      #prologue-text { font-size: 16px; letter-spacing: 1.2px; }
+      #prologue-text-zh { font-size: 1.1rem; letter-spacing: 2px; }
+      #prologue-text-en { font-size: 0.78rem; white-space: normal; }
     }
     @media (max-width: 320px) {
-      #prologue-text { font-size: 14px; letter-spacing: 0.8px; }
+      #prologue-text-zh { font-size: 0.95rem; letter-spacing: 1.5px; }
+      #prologue-text-en { font-size: 0.72rem; }
     }
     /* 每个打字机字符的浮现动画 */
     @keyframes charFadeIn {
@@ -1426,9 +1440,15 @@
       letter-spacing: 0.02em; transition: color 0.2s;
     }
     .btn-review-link:hover { color: #94a3b8; }
+    /* 低分时的置灰"锁定"伪按钮 */
     #ending-locked-hint {
-      margin-top: 10px; font-size: 12px;
-      color: #475569; text-align: center; display: none;
+      display: none; width: 100%;
+      padding: 14px; text-align: center;
+      background: rgba(15, 23, 42, 0.55);
+      color: #64748b; font-size: 15px; font-weight: 600;
+      border: 1px solid rgba(71, 85, 105, 0.45);
+      border-radius: 14px; letter-spacing: 0.02em;
+      cursor: not-allowed; user-select: none;
     }
     #ending-locked-hint.show { display: block; }
 
@@ -2879,7 +2899,10 @@
   <!-- ── 开场悬念 Prologue CG Page ── -->
   <div id="prologue-page">
     <div id="prologue-bg"></div>
-    <div id="prologue-text"></div>
+    <div id="prologue-texts">
+      <div id="prologue-text-zh"></div>
+      <div id="prologue-text-en"></div>
+    </div>
     <div id="prologue-start-hint">🖱️ 点击屏幕开始 · Click to start</div>
     <div id="prologue-tap-hint">✦ 点击屏幕继续 · Tap to continue ✦</div>
   </div>
@@ -2931,12 +2954,12 @@
         </div>
       </div>
       </div><!-- /.score-summary-card -->
-      <!-- 主操作按钮行 -->
+      <!-- 主操作按钮区（纵向堆叠） -->
       <div class="completion-primary-btns">
         <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 · Native Insider Tip →</button>
-        <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ 欣赏高清 CG</button>
+        <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ 欣赏高清原图 · View HD CG</button>
+        <div id="ending-locked-hint">🔒 达到 80 分解锁原图 · Score 80 to Unlock CG</div>
       </div>
-      <div id="ending-locked-hint">🔒 达到 80 分即可解锁高清原图</div>
       <a class="btn-review-link" onclick="reviewLesson()">↺ 重新复习 · Review</a>
     </div>
     <!-- 纯净看图模式返回提示（绝对定位在 overlay 内部） -->
@@ -7066,16 +7089,18 @@
     }
 
     function showPrologue(callback) {
-      var page       = document.getElementById('prologue-page');
+      var page      = document.getElementById('prologue-page');
       if (!page) { callback(); return; }
-      var textEl     = document.getElementById('prologue-text');
-      var hintEl     = document.getElementById('prologue-tap-hint');
-      var startHint  = document.getElementById('prologue-start-hint');
+      var textZhEl  = document.getElementById('prologue-text-zh');
+      var textEnEl  = document.getElementById('prologue-text-en');
+      var hintEl    = document.getElementById('prologue-tap-hint');
+      var startHint = document.getElementById('prologue-start-hint');
 
       // ── 重置状态（支持多次播放） ──
       page.style.opacity = '';
       page.style.transition = '';
-      if (textEl) textEl.innerHTML = '';
+      if (textZhEl) textZhEl.innerHTML = '';
+      if (textEnEl) textEnEl.innerHTML = '';
       if (hintEl) {
         hintEl.style.opacity = '0';
         hintEl.style.transition = '';
@@ -7104,29 +7129,35 @@
         }, 700);
       }
 
-      // ── 第一次点击：隐藏开始提示，同步启动配音 + 打字机 ──
+      // 打字机结束后显示呼吸继续提示，并等待第二次点击
+      function onAllTyped() {
+        if (hintEl) {
+          hintEl.style.transition = 'opacity 1.2s ease';
+          hintEl.style.opacity = '0.28';
+          setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
+        }
+        page.addEventListener('click', dismiss);
+      }
+
+      // ── 第一次点击：隐藏开始提示，同步启动配音 + 双语打字机 ──
       function onFirstClick() {
         page.removeEventListener('click', onFirstClick);
         if (startHint) startHint.classList.remove('show');
 
-        // 用户交互后 play() 不会被浏览器拦截
-        _audio.play().catch(function() { /* 音频文件不存在时静默跳过 */ });
+        // 在用户手势内调用 play()，浏览器 Autoplay 策略不会拦截
+        _audio.play().catch(function(e) {
+          console.error('音频播放失败:', e);
+        });
 
-        var PROLOGUE_TEXT = '机场，不仅是终点，更是初见……';
-        if (textEl) {
-          prologueTypewriter(PROLOGUE_TEXT, textEl, 130, function() {
-            // 打字机结束 → 呼吸提示淡入，再监听第二次点击
-            if (hintEl) {
-              hintEl.style.transition = 'opacity 1.2s ease';
-              hintEl.style.opacity = '0.28';
-              setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
-            }
-            page.addEventListener('click', dismiss);
-          });
-        } else {
-          // 没有文本容器时直接等待第二次点击
-          page.addEventListener('click', dismiss);
-        }
+        var ZH_TEXT = '机场，不仅是终点，更是初见……';
+        var EN_TEXT = 'Not just a destination — a first encounter…';
+
+        // 先打中文（120ms/字），结束后短暂停顿再打英文（40ms/字）
+        prologueTypewriter(ZH_TEXT, textZhEl, 120, function() {
+          setTimeout(function() {
+            prologueTypewriter(EN_TEXT, textEnEl, 38, onAllTyped);
+          }, 280);
+        });
       }
 
       page.addEventListener('click', onFirstClick);
