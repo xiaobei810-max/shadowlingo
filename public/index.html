@@ -2585,6 +2585,183 @@
       color: var(--green);
     }
 
+    /* ══════════════════════════════════════════════════════════
+       ── 章节选择 Chapter Select · Cover Flow Carousel ──────── */
+    #chapter-select-page {
+      display: none; position: fixed; inset: 0; z-index: 800;
+      background: var(--bg);
+      flex-direction: column; align-items: center;
+      overflow: hidden;
+    }
+    #chapter-select-page.show { display: flex; }
+
+    /* Header */
+    .chs-header {
+      flex-shrink: 0; padding: 48px 24px 10px;
+      text-align: center; width: 100%;
+    }
+    .chs-header-eyebrow {
+      font-size: 11px; font-weight: 500;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.22em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .chs-header-title {
+      font-family: "Noto Serif SC","SimSun",serif;
+      font-size: 1.45rem; font-weight: 700;
+      color: var(--text); letter-spacing: 2px;
+    }
+
+    /* Track / Carousel */
+    .chs-track-wrap {
+      flex: 1; display: flex; align-items: center;
+      width: 100%; overflow: hidden; min-height: 0;
+      position: relative;
+    }
+    .chs-track {
+      display: flex; gap: 20px;
+      will-change: transform; padding: 24px 0; align-items: center;
+      transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .chs-track.no-anim { transition: none; }
+
+    /* Card */
+    .chs-card {
+      flex-shrink: 0; width: 260px; height: 340px;
+      border-radius: 18px; position: relative;
+      overflow: hidden; cursor: pointer;
+      transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94),
+                  opacity 0.42s ease, box-shadow 0.42s ease;
+      transform: scale(0.86); opacity: 0.5;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+    }
+    .chs-card.chs-active {
+      transform: scale(1.0); opacity: 1;
+      box-shadow: 0 14px 52px rgba(0,0,0,0.65),
+                  0 0 0 1.5px rgba(34,197,94,0.3);
+    }
+    .chs-card-bg {
+      position: absolute; inset: 0;
+      background: #1a2540 center/cover no-repeat;
+    }
+    /* Locked: desaturate */
+    .chs-card.chs-locked .chs-card-bg {
+      filter: grayscale(1) brightness(0.4);
+      transform: scale(1.06); /* prevent blur-edge white fringe */
+    }
+    /* Bottom gradient */
+    .chs-card-grad {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(to top,
+        rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.25) 52%, transparent 72%);
+    }
+    /* Card text */
+    .chs-card-info {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0 16px 18px; z-index: 3;
+    }
+    .chs-chapter-tag {
+      font-size: 9px; color: rgba(255,255,255,0.45);
+      letter-spacing: 0.22em; text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .chs-chapter-zh {
+      font-family: "Noto Serif SC","SimSun",serif;
+      font-size: 1.1rem; font-weight: 700; color: #fff;
+      letter-spacing: 1.5px; line-height: 1.3;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+    }
+    .chs-chapter-en {
+      font-size: 0.7rem; color: rgba(226,232,240,0.58);
+      margin-top: 3px; letter-spacing: 0.04em;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .chs-card.chs-locked .chs-chapter-zh,
+    .chs-card.chs-locked .chs-chapter-en { opacity: 0.35; }
+
+    /* ✦ 毛玻璃锁定遮罩 ✦ */
+    .chs-lock-overlay {
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      background: rgba(6,10,22,0.28);
+      backdrop-filter: blur(14px) saturate(0.5);
+      -webkit-backdrop-filter: blur(14px) saturate(0.5);
+    }
+    .chs-lock-svg {
+      width: 30px; height: 30px;
+      color: rgba(255,255,255,0.6); stroke: currentColor;
+    }
+    .chs-lock-label {
+      font-size: 9px; color: rgba(255,255,255,0.38);
+      letter-spacing: 0.22em; text-transform: uppercase;
+    }
+
+    /* Completed badge */
+    .chs-done-badge {
+      position: absolute; top: 12px; right: 12px; z-index: 3;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--green); color: #000;
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Scene description */
+    .chs-scene-wrap {
+      flex-shrink: 0; padding: 0 28px;
+      height: 52px; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .chs-scene-text {
+      font-size: 0.79rem; color: rgba(226,232,240,0.42);
+      text-align: center; line-height: 1.75; max-width: 340px;
+      transition: opacity 0.25s ease;
+    }
+
+    /* Dots */
+    .chs-dots {
+      flex-shrink: 0; display: flex; gap: 8px;
+      align-items: center; padding: 4px 0 12px;
+    }
+    .chs-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      transition: all 0.32s ease;
+    }
+    .chs-dot.active {
+      background: var(--green); width: 20px; border-radius: 3px;
+    }
+
+    /* Action button */
+    .chs-actions {
+      flex-shrink: 0; width: 100%; max-width: 340px;
+      padding: 0 20px 48px;
+    }
+    .chs-start-btn {
+      width: 100%; padding: 15px 20px;
+      border-radius: 14px; border: none;
+      background: var(--green); color: #000;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.02em;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .chs-start-btn:active:not(:disabled) { transform: scale(0.97); }
+    .chs-start-btn.chs-locked-state {
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.28); cursor: default;
+      font-size: 0.83rem;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* Cover page back button */
+    .cover-back-btn {
+      align-self: flex-start; background: none; border: none;
+      color: rgba(255,255,255,0.38); font-size: 12px;
+      cursor: pointer; padding: 0; letter-spacing: 0.06em;
+      transition: color 0.2s; margin-top: -8px;
+    }
+    .cover-back-btn:hover { color: rgba(255,255,255,0.78); }
+
     /* ── 课程封面 Lesson Cover ───────────────────────────────── */
     #cover-page {
       display: none; position: fixed; inset: 0; z-index: 700;
@@ -5859,6 +6036,7 @@
         if (cgBg) cgBg.classList.remove('show');
       }
 
+      markLessonCompleted(lessonIdx); // 解锁下一课
       document.getElementById("overlay").classList.add("show");
       if (!noPractice) launchFireworks();
     }
@@ -6050,14 +6228,11 @@
       document.getElementById("overlay").classList.remove("show");
       _resetEndingCg();
       stopFireworks();
-      if (lessonIdx < LESSONS.length - 1) {
-        lessonIdx++;
-      } else {
-        lessonIdx = 0;
-      }
+      var nextIdx = lessonIdx < LESSONS.length - 1 ? lessonIdx + 1 : 0;
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
-      showCoverPage();
+      // 回到章节选择，active 在下一章（已因本课完成而解锁）
+      showChapterSelectPage(nextIdx);
     }
 
     function restartLesson() {
@@ -7738,32 +7913,260 @@
       if (btn) btn.classList.toggle('off', !enOn);
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // ── 章节选择 Chapter Select (Cover Flow Carousel) ────────────
+    // ══════════════════════════════════════════════════════════════
+
+    var chsActiveIdx = 0;
+    var CHS_CARD_W   = 260;
+    var CHS_GAP      = 20;
+    var _chsTouchX   = 0;
+    var _chsSwiping  = false;
+
+    function isLessonCompleted(idx) {
+      try { return !!localStorage.getItem('sl_completed_' + idx); } catch(e) { return false; }
+    }
+    function isLessonUnlocked(idx) {
+      if (idx === 0) return true;
+      return isLessonCompleted(idx - 1);
+    }
+    function markLessonCompleted(idx) {
+      try { localStorage.setItem('sl_completed_' + idx, '1'); } catch(e) {}
+    }
+
+    function showChapterSelectPage(selectIdx) {
+      if (typeof selectIdx === 'number') chsActiveIdx = Math.max(0, Math.min(selectIdx, LESSONS.length - 1));
+      var page = document.getElementById('chapter-select-page');
+      if (!page) return;
+      chsRenderCards();
+      chsUpdateTrack(false);   // no animation on first show
+      chsUpdateDots();
+      chsUpdateStartBtn();
+      chsUpdateScene();
+      page.classList.add('show');
+    }
+
+    function hideChapterSelectPage(onDone) {
+      var page = document.getElementById('chapter-select-page');
+      if (!page) { if (onDone) onDone(); return; }
+      // Fade out over 300ms
+      page.style.transition = 'opacity 0.3s ease';
+      page.style.opacity    = '0';
+      setTimeout(function() {
+        page.classList.remove('show');
+        page.style.transition = '';
+        page.style.opacity    = '';
+        if (onDone) onDone();
+      }, 300);
+    }
+
+    function chsRenderCards() {
+      var track = document.getElementById('chs-track');
+      if (!track) return;
+      track.innerHTML = '';
+      LESSONS.forEach(function(lesson, i) {
+        var unlocked  = isLessonUnlocked(i);
+        var completed = isLessonCompleted(i);
+        var numZh     = ['一','二','三','四','五','六','七','八','九','十'][i] || (i + 1);
+        var titleZh   = (lesson.titleZh || '').replace(/^第.+课[：:]\s*/, '');
+        var titleEn   = (lesson.titleEn || '').replace(/^Lesson \d+[:\s]+/i, '');
+
+        var card = document.createElement('div');
+        card.className = 'chs-card' +
+          (i === chsActiveIdx ? ' chs-active' : '') +
+          (!unlocked ? ' chs-locked' : '');
+        card.dataset.chsIdx = i;
+
+        // BG
+        var bg = document.createElement('div');
+        bg.className = 'chs-card-bg';
+        if (lesson.cgImage) bg.style.backgroundImage = "url('" + lesson.cgImage + "')";
+        card.appendChild(bg);
+
+        // Gradient
+        var grad = document.createElement('div');
+        grad.className = 'chs-card-grad';
+        card.appendChild(grad);
+
+        // ✦ 毛玻璃锁定遮罩
+        if (!unlocked) {
+          var lockOv = document.createElement('div');
+          lockOv.className = 'chs-lock-overlay';
+          lockOv.innerHTML =
+            '<svg class="chs-lock-svg" viewBox="0 0 24 24" fill="none"' +
+            ' stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="3" y="11" width="18" height="11" rx="2"></rect>' +
+            '<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>' +
+            '</svg>' +
+            '<div class="chs-lock-label">LOCKED</div>';
+          card.appendChild(lockOv);
+        }
+
+        // Completed badge
+        if (completed) {
+          var badge = document.createElement('div');
+          badge.className = 'chs-done-badge';
+          badge.textContent = '✓';
+          card.appendChild(badge);
+        }
+
+        // Info
+        var info = document.createElement('div');
+        info.className = 'chs-card-info';
+        info.innerHTML =
+          '<div class="chs-chapter-tag">CHAPTER ' + (i + 1) + ' · 第' + numZh + '章</div>' +
+          '<div class="chs-chapter-zh">' + titleZh + '</div>' +
+          '<div class="chs-chapter-en">' + titleEn + '</div>';
+        card.appendChild(info);
+
+        card.addEventListener('click', function() {
+          var ci = parseInt(this.dataset.chsIdx);
+          if (ci !== chsActiveIdx) {
+            chsSetActive(ci);
+          } else if (isLessonUnlocked(ci)) {
+            chsStartCurrentLesson();
+          }
+        });
+        track.appendChild(card);
+      });
+      chsInitTouch();
+    }
+
+    function chsSetActive(idx) {
+      if (idx < 0 || idx >= LESSONS.length) return;
+      chsActiveIdx = idx;
+      var cards = document.querySelectorAll('#chs-track .chs-card');
+      cards.forEach(function(c, i) { c.classList.toggle('chs-active', i === chsActiveIdx); });
+      chsUpdateTrack(true);
+      chsUpdateDots();
+      chsUpdateStartBtn();
+      chsUpdateScene();
+    }
+
+    function chsUpdateTrack(animate) {
+      var track = document.getElementById('chs-track');
+      var wrap  = document.getElementById('chs-track-wrap');
+      if (!track || !wrap) return;
+      if (!animate) track.classList.add('no-anim');
+      var vw     = wrap.offsetWidth || 375;
+      var offset = (vw / 2) - (CHS_CARD_W / 2) - chsActiveIdx * (CHS_CARD_W + CHS_GAP);
+      track.style.transform = 'translateX(' + Math.round(offset) + 'px)';
+      if (!animate) {
+        void track.offsetHeight; // force reflow
+        track.classList.remove('no-anim');
+      }
+    }
+
+    function chsUpdateDots() {
+      var dots = document.getElementById('chs-dots');
+      if (!dots) return;
+      dots.innerHTML = '';
+      LESSONS.forEach(function(_, i) {
+        var d = document.createElement('div');
+        d.className = 'chs-dot' + (i === chsActiveIdx ? ' active' : '');
+        dots.appendChild(d);
+      });
+    }
+
+    function chsUpdateStartBtn() {
+      var btn = document.getElementById('chs-start-btn');
+      if (!btn) return;
+      if (isLessonUnlocked(chsActiveIdx)) {
+        btn.textContent = '开始这一章 · Start Chapter →';
+        btn.className   = 'chs-start-btn';
+        btn.disabled    = false;
+      } else {
+        btn.textContent = '🔒 完成上一章后解锁 · Complete previous chapter';
+        btn.className   = 'chs-start-btn chs-locked-state';
+        btn.disabled    = true;
+      }
+    }
+
+    function chsUpdateScene() {
+      var el = document.getElementById('chs-scene-text');
+      if (!el) return;
+      var lesson = LESSONS[chsActiveIdx];
+      var txt = lesson && lesson.coverScene
+        ? lesson.coverScene.zh.replace(/<[^>]+>/g, '') : '';
+      el.style.opacity = '0';
+      setTimeout(function() { el.textContent = txt; el.style.opacity = '1'; }, 180);
+    }
+
+    function chsStartCurrentLesson() {
+      if (!isLessonUnlocked(chsActiveIdx)) return;
+      lessonIdx = chsActiveIdx;
+      idx = 0;
+      sessionScores = []; _sessionCoinsEarned = 0;
+      // Fade out chapter select, then show cover page
+      hideChapterSelectPage(function() { showCoverPage(); });
+    }
+
+    function chsInitTouch() {
+      var wrap = document.getElementById('chs-track-wrap');
+      if (!wrap || wrap._chsTouch) return;
+      wrap._chsTouch = true;
+      wrap.addEventListener('touchstart', function(e) {
+        _chsTouchX  = e.touches[0].clientX;
+        _chsSwiping = true;
+      }, {passive: true});
+      wrap.addEventListener('touchend', function(e) {
+        if (!_chsSwiping) return; _chsSwiping = false;
+        var dx = e.changedTouches[0].clientX - _chsTouchX;
+        if (Math.abs(dx) > 38) {
+          if (dx < 0) chsSetActive(chsActiveIdx + 1);
+          else        chsSetActive(chsActiveIdx - 1);
+        }
+      }, {passive: true});
+    }
+
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
       // ── 加载静态音频映射表 ────────────────────────────────────
       _loadAudioMap();
-      // ── 一次性全局重置（v12：新增第二课 + 流程重构，从第一课重新开始）──
-      if (!localStorage.getItem('echo_reset_v12')) {
+      // ── 一次性全局重置（v13：新增章节选择界面，清除旧进度重新开始）──
+      if (!localStorage.getItem('echo_reset_v13')) {
         try {
           localStorage.removeItem('echo_coins');
           localStorage.removeItem('echo_coin_aha_seen');
-          localStorage.removeItem('sl_state'); // 清除进度，回到第一课
+          localStorage.removeItem('sl_state');
           Object.keys(localStorage).forEach(function(k) {
-            if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k)) localStorage.removeItem(k);
+            if (/^echo_earn_/.test(k) || /^\d{8}_L/.test(k) ||
+                /^sl_completed_/.test(k)) localStorage.removeItem(k);
           });
-          localStorage.setItem('echo_reset_v12', '1');
+          localStorage.setItem('echo_reset_v13', '1');
         } catch(e) {}
       }
       // ────────────────────────────────────────────────────────
       loadState();
       refreshCoinDisplay();   // 初始化时显示余额
-      // showCoverPage() 统一处理：更新封面文案、updateUI、initDialogMode、setupAudio
-      // 无论从哪课恢复，封面内容都与实际 lessonIdx 保持一致
-      showCoverPage();
+      // 章节选择页作为入口，active 在已保存的 lessonIdx 上
+      showChapterSelectPage(lessonIdx);
     });
   </script>
+  <!-- 章节选择 Chapter Select / Cover Flow Carousel -->
+  <div id="chapter-select-page" class="show">
+    <div class="chs-header">
+      <div class="chs-header-eyebrow">EchoChinese · 轻松学中文</div>
+      <div class="chs-header-title">选择章节 · Choose Your Chapter</div>
+    </div>
+    <div class="chs-track-wrap" id="chs-track-wrap">
+      <div class="chs-track" id="chs-track">
+        <!-- Cards rendered by JS -->
+      </div>
+    </div>
+    <div class="chs-scene-wrap">
+      <div class="chs-scene-text" id="chs-scene-text"></div>
+    </div>
+    <div class="chs-dots" id="chs-dots"></div>
+    <div class="chs-actions">
+      <button class="chs-start-btn" id="chs-start-btn" onclick="chsStartCurrentLesson()">
+        开始这一章 · Start Chapter →
+      </button>
+    </div>
+  </div>
+
   <!-- 课程封面 Lesson Cover -->
-  <div id="cover-page" class="show">
+  <div id="cover-page">
     <div class="page-top-bar">
       <div class="pth-inner">
         <div class="logo">
@@ -7780,6 +8183,7 @@
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:0%"></div></div>
     </div>
     <div class="cover-inner">
+      <button class="cover-back-btn" onclick="showChapterSelectPage(lessonIdx)">← 章节 · Chapters</button>
       <div class="cover-lesson-num" id="cover-lesson-num">第一课 · Lesson 1</div>
       <div class="cover-title-zh" id="cover-title-zh">机场相遇</div>
       <div class="cover-title-en" id="cover-title-en">Encounter at the Airport</div>
