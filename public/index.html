@@ -1283,6 +1283,94 @@
     }
     .tip-btn-next:hover { background: #16a34a; }
 
+    /* ══════════════════════════════════════════════════════════
+       ── 开场悬念 Prologue CG ───────────────────────────────── */
+    #prologue-page {
+      position: fixed; inset: 0; z-index: 800;
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; cursor: pointer; user-select: none;
+    }
+    #prologue-page.show { display: flex; }
+    #prologue-bg {
+      position: absolute; inset: 0;
+      background: url('/assets/cg/lesson1_airport.png') center/cover no-repeat;
+      filter: blur(20px) brightness(0.52);
+      transform: scale(1.08); /* 防模糊白边 */
+    }
+    #prologue-text {
+      position: relative; z-index: 1;
+      font-size: clamp(17px, 4.5vw, 26px); font-weight: 700;
+      color: #fff; text-align: center; line-height: 1.7;
+      letter-spacing: 0.06em;
+      text-shadow: 0 0 40px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.7);
+      padding: 0 36px; max-width: 480px;
+      opacity: 0;
+      animation: prologueFloat 1.8s cubic-bezier(0.25,0.46,0.45,0.94) 0.6s forwards;
+    }
+    #prologue-tap-hint {
+      position: relative; z-index: 1;
+      font-size: 12px; color: rgba(255,255,255,0.38);
+      margin-top: 40px; letter-spacing: 0.1em;
+      opacity: 0;
+      animation: prologueFloat 1s ease 2.8s forwards;
+    }
+    @keyframes prologueFloat {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       ── 结尾 CG 奖励 Ending Reward ────────────────────────── */
+    #ending-cg-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background: url('/assets/cg/lesson1_airport.png') center/cover no-repeat;
+      filter: blur(20px) brightness(0.42);
+      transform: scale(1.05);
+      transition: filter 2s cubic-bezier(0.4,0,0.2,1),
+                  transform 2s cubic-bezier(0.4,0,0.2,1);
+      display: none;
+    }
+    #ending-cg-bg.show  { display: block; }
+    #ending-cg-bg.reveal {
+      filter: blur(0px) brightness(0.82);
+      transform: scale(1);
+    }
+    .overlay.cg-active { background: transparent !important; }
+    .overlay.cg-active .completion-card {
+      background: rgba(10,18,34,0.75) !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    #ending-unlock-row {
+      margin-top: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      opacity: 0; transition: opacity 0.9s ease;
+      pointer-events: none;
+    }
+    #ending-unlock-row.show { opacity: 1; pointer-events: auto; }
+    .ending-unlock-text {
+      font-size: 14px; font-weight: 700; color: #22c55e;
+      text-align: center; letter-spacing: 0.03em;
+    }
+    .ending-download-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 22px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #0a1222; font-size: 13px; font-weight: 700;
+      border-radius: 20px; text-decoration: none;
+      box-shadow: 0 4px 16px rgba(34,197,94,0.45);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .ending-download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(34,197,94,0.55);
+    }
+    #ending-locked-hint {
+      margin-top: 10px; font-size: 12px;
+      color: #475569; text-align: center; display: none;
+    }
+    #ending-locked-hint.show { display: block; }
+
     /* ── 得分完成页（全屏，与其他页面统一布局） ────────────── */
     .overlay {
       display: none;
@@ -2727,9 +2815,18 @@
     </div>
   </div>
 
+  <!-- ── 开场悬念 Prologue CG Page ── -->
+  <div id="prologue-page">
+    <div id="prologue-bg"></div>
+    <div id="prologue-text">机场，不仅是终点，更是初见……</div>
+    <div id="prologue-tap-hint">✦ 点击屏幕继续 · Tap to continue ✦</div>
+  </div>
+
   <div class="overlay" id="overlay">
     <!-- Fireworks canvas sits at z-index:1 inside overlay's stacking context;
          .completion-card at z-index:2 always paints above the particles -->
+    <!-- 结尾 CG 背景（z:0，在 canvas 和 card 下面） -->
+    <div id="ending-cg-bg"></div>
     <canvas id="fw-canvas"></canvas>
     <div class="page-top-bar">
       <div class="pth-inner">
@@ -2774,6 +2871,12 @@
       </div><!-- /.score-summary-card -->
       <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 Native Insider Tip →</button>
       <button class="btn-restart" onclick="reviewLesson()" style="background:#1e293b;color:#94a3b8;border:1.5px solid #334155;margin-top:6px;">↺ 重新复习 Review</button>
+      <!-- 结尾 CG 解锁奖励 -->
+      <div id="ending-unlock-row">
+        <div class="ending-unlock-text">🔓 回忆已解锁：机场初遇</div>
+        <a class="ending-download-btn" href="/assets/cg/lesson1_airport.png" download="EchoChinese-L1-机场初遇.jpg">⬇ 下载高清原图 · Download CG</a>
+      </div>
+      <div id="ending-locked-hint">🔒 达到 80 分即可解锁高清原图</div>
     </div>
   </div>
 
@@ -5518,6 +5621,36 @@
         coinRow.style.display = 'none';
       }
 
+      // ── 结尾 CG 奖励 ─────────────────────────────────────────
+      var cgBg       = document.getElementById('ending-cg-bg');
+      var unlockRow  = document.getElementById('ending-unlock-row');
+      var lockedHint = document.getElementById('ending-locked-hint');
+      var ovEl       = document.getElementById('overlay');
+      // 先全部重置（防重复触发）
+      if (cgBg)       { cgBg.classList.remove('reveal'); }
+      if (unlockRow)  { unlockRow.classList.remove('show'); }
+      if (lockedHint) { lockedHint.classList.remove('show'); }
+      if (ovEl)       { ovEl.classList.remove('cg-active'); }
+
+      if (!noPractice) {
+        if (cgBg)  cgBg.classList.add('show');
+        if (ovEl)  ovEl.classList.add('cg-active');
+        if (overall >= 80) {
+          // 高分：2s 后模糊变清晰，再 0.4s 后显示解锁文字 + 下载按钮
+          setTimeout(function() {
+            if (cgBg) cgBg.classList.add('reveal');
+            setTimeout(function() {
+              if (unlockRow) unlockRow.classList.add('show');
+            }, 2400);
+          }, 900);
+        } else {
+          // 低分：图片保持模糊，显示解锁提示
+          if (lockedHint) lockedHint.classList.add('show');
+        }
+      } else {
+        if (cgBg) cgBg.classList.remove('show');
+      }
+
       document.getElementById("overlay").classList.add("show");
       if (!noPractice) launchFireworks();
     }
@@ -5563,6 +5696,7 @@
     function tipReturn() {
       document.getElementById("tip-page").classList.remove("show");
       document.getElementById("overlay").classList.remove("show");
+      _resetEndingCg();
       stopFireworks();
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
@@ -5572,6 +5706,7 @@
     function tipNextLesson() {
       document.getElementById("tip-page").classList.remove("show");
       document.getElementById("overlay").classList.remove("show");
+      _resetEndingCg();
       stopFireworks();
       if (lessonIdx < LESSONS.length - 1) {
         lessonIdx++;
@@ -5589,15 +5724,28 @@
 
     function restartLesson() {
       document.getElementById("overlay").classList.remove("show");
+      _resetEndingCg();
       stopFireworks();
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
       updateUI();
     }
 
+    function _resetEndingCg() {
+      var cgBg = document.getElementById('ending-cg-bg');
+      if (cgBg) cgBg.classList.remove('show', 'reveal');
+      var ovEl = document.getElementById('overlay');
+      if (ovEl) ovEl.classList.remove('cg-active');
+      var unlockRow = document.getElementById('ending-unlock-row');
+      if (unlockRow) unlockRow.classList.remove('show');
+      var lockedHint = document.getElementById('ending-locked-hint');
+      if (lockedHint) lockedHint.classList.remove('show');
+    }
+
     function reviewLesson() {
       document.getElementById("overlay").classList.remove("show");
       document.getElementById("tip-page").classList.remove("show"); // 必须隐藏，否则 z:500 的 tip-page 会在 overlay 撤走后漏出来
+      _resetEndingCg();
       stopFireworks();
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
@@ -6834,6 +6982,38 @@
         }).catch(function() { _setPlayBtnIcon(false); });
     }
 
+    // ── 开场悬念 Prologue ─────────────────────────────────────
+    function showPrologue(callback) {
+      var page = document.getElementById('prologue-page');
+      if (!page) { callback(); return; }
+      // 重置文字动画（支持多次播放）
+      var textEl = document.getElementById('prologue-text');
+      var hintEl = document.getElementById('prologue-tap-hint');
+      [textEl, hintEl].forEach(function(el) {
+        if (!el) return;
+        el.style.animation = 'none';
+        void el.offsetWidth; // reflow
+        el.style.animation = '';
+      });
+      page.style.opacity = '';
+      page.style.transition = '';
+      page.classList.add('show');
+      function dismiss() {
+        page.removeEventListener('click', dismiss);
+        // 先在 prologue 遮罩下切换底层内容（无闪烁）
+        callback();
+        // 再淡出 prologue，露出已就绪的下一个角色
+        page.style.transition = 'opacity 0.7s ease';
+        page.style.opacity = '0';
+        setTimeout(function() {
+          page.classList.remove('show');
+          page.style.opacity = '';
+          page.style.transition = '';
+        }, 700);
+      }
+      page.addEventListener('click', dismiss);
+    }
+
     function charIntroClose() {
       var overlay = document.getElementById('char-intro-overlay');
       var id = overlay.dataset.charId;
@@ -6849,8 +7029,13 @@
 
       if (!isProfile) {
         if (_charIntroQueue.length) {
-          // 还有角色要介绍：overlay 保持全屏可见，直接切换内容，完全避免背景闪现
-          charIntroShowNext();
+          // 诺拉→明轩之间插入开场悬念 CG 页
+          if (id === 'nora' && _charIntroQueue[0] === 'mingxuan') {
+            showPrologue(function() { charIntroShowNext(); });
+          } else {
+            // 其他角色：overlay 保持全屏可见，直接切换内容，完全避免背景闪现
+            charIntroShowNext();
+          }
         } else {
           // 最后一个角色：淡出 overlay，同时立刻显示下一页（flashcard/pre-listen 在底下顶上来）
           overlay.classList.remove('visible');
