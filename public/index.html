@@ -1312,18 +1312,18 @@
       letter-spacing: 3px; line-height: 1.5;
       text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 32px rgba(0,0,0,0.85);
     }
-    /* 英文副标题 — 无衬线，稍暗 */
+    /* 英文副标题 — 无衬线，稍暗，允许换行（句子较长） */
     #prologue-text-en {
       font-size: clamp(0.82rem, 2.8vw, 1rem);
       font-weight: 400; color: rgba(226,232,240,0.82);
-      white-space: nowrap;
-      letter-spacing: 0.04em; line-height: 1.5;
+      white-space: normal; max-width: 36em;
+      letter-spacing: 0.04em; line-height: 1.6;
       text-shadow: 0 2px 8px rgba(0,0,0,0.8);
     }
     /* 超小屏兜底 */
     @media (max-width: 380px) {
       #prologue-text-zh { font-size: 1.1rem; letter-spacing: 2px; }
-      #prologue-text-en { font-size: 0.78rem; white-space: normal; }
+      #prologue-text-en { font-size: 0.78rem; }
     }
     @media (max-width: 320px) {
       #prologue-text-zh { font-size: 0.95rem; letter-spacing: 1.5px; }
@@ -7145,14 +7145,15 @@
         if (startHint) startHint.classList.remove('show');
 
         // 在用户手势内调用 play()，浏览器 Autoplay 策略不会拦截
+        // 若本地文件不存在，catch 会捕获错误并打印，不影响打字机动画
         _audio.play().catch(function(e) {
-          console.error('音频播放失败:', e);
+          console.warn('[Prologue] 音频播放失败（文件是否已放入 /assets/audio/lesson1_prologue.mp3？）:', e.message);
         });
 
         var ZH_TEXT = '机场，不仅是终点，更是初见……';
-        var EN_TEXT = 'Not just a destination — a first encounter…';
+        var EN_TEXT = 'The airport is not just a destination, but a first encounter...';
 
-        // 先打中文（120ms/字），结束后短暂停顿再打英文（40ms/字）
+        // 先打中文（120ms/字），结束后短暂停顿再打英文（38ms/字）
         prologueTypewriter(ZH_TEXT, textZhEl, 120, function() {
           setTimeout(function() {
             prologueTypewriter(EN_TEXT, textEnEl, 38, onAllTyped);
