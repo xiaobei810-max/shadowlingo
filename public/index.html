@@ -7111,14 +7111,24 @@
 
       var _audio = new Audio('/assets/audio/lesson1_prologue.mp3');
       _audio.volume = 0.85;
+      var _utter = null;   // TTS 备用
       var _dismissed = false;
+
+      // ── 停止所有音频（MP3 + TTS 两路都停） ──
+      function _stopAudio() {
+        try { _audio.pause(); _audio.currentTime = 0; } catch(e) {}
+        if (_utter && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          _utter = null;
+        }
+      }
 
       // ── 第二次点击：关闭 prologue，进入角色介绍 ──
       function dismiss() {
         if (_dismissed) return;
         _dismissed = true;
         page.removeEventListener('click', dismiss);
-        try { _audio.pause(); } catch(e) {}
+        _stopAudio();
         callback();
         page.style.transition = 'opacity 0.7s ease';
         page.style.opacity = '0';
@@ -7139,19 +7149,26 @@
         page.addEventListener('click', dismiss);
       }
 
+      var ZH_TEXT = '机场，不仅是终点，更是初见……';
+      var EN_TEXT = 'The airport is not just a destination, but a first encounter...';
+
       // ── 第一次点击：隐藏开始提示，同步启动配音 + 双语打字机 ──
       function onFirstClick() {
         page.removeEventListener('click', onFirstClick);
         if (startHint) startHint.classList.remove('show');
 
-        // 在用户手势内调用 play()，浏览器 Autoplay 策略不会拦截
-        // 若本地文件不存在，catch 会捕获错误并打印，不影响打字机动画
-        _audio.play().catch(function(e) {
-          console.warn('[Prologue] 音频播放失败（文件是否已放入 /assets/audio/lesson1_prologue.mp3？）:', e.message);
+        // 优先播放 MP3；文件不存在时自动降级到浏览器内置 TTS 朗读中文旁白
+        _audio.play().catch(function() {
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            _utter = new SpeechSynthesisUtterance(ZH_TEXT);
+            _utter.lang  = 'zh-CN';
+            _utter.rate  = 0.82;
+            _utter.pitch = 1.0;
+            _utter.volume = 0.9;
+            window.speechSynthesis.speak(_utter);
+          }
         });
-
-        var ZH_TEXT = '机场，不仅是终点，更是初见……';
-        var EN_TEXT = 'The airport is not just a destination, but a first encounter...';
 
         // 先打中文（120ms/字），结束后短暂停顿再打英文（38ms/字）
         prologueTypewriter(ZH_TEXT, textZhEl, 120, function() {
