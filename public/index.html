@@ -1320,6 +1320,19 @@
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    /* ── 等待点击的开始提示 ── */
+    #prologue-start-hint {
+      position: relative; z-index: 1;
+      font-size: 13px; color: rgba(255,255,255,0.6);
+      margin-top: 52px; letter-spacing: 0.13em;
+      display: none; /* JS 控制：show 时 display:block */
+      text-align: center;
+    }
+    #prologue-start-hint.show {
+      display: block;
+      animation: breatheHint 1.8s ease-in-out infinite;
+    }
+    /* ── 打字机完成后的继续提示 ── */
     #prologue-tap-hint {
       position: relative; z-index: 1;
       font-size: 12px; color: rgba(255,255,255,0.5);
@@ -1381,29 +1394,33 @@
     }
     #cg-view-hint.show { display: block; animation: breatheHint 2.4s ease-in-out infinite; }
     /* 完成页主按钮行（并排） */
+    /* 完成页操作区（纵向堆叠） */
     .completion-primary-btns {
-      display: flex; gap: 10px; width: 100%; margin-top: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      width: 100%; margin-top: 16px;
     }
     .completion-primary-btns .btn-restart {
-      flex: 1; margin-top: 0;
+      margin-top: 0; /* 覆盖 btn-restart 自身的 margin-top:16px */
     }
-    /* CG 欣赏按钮（金色光辉，默认隐藏） */
+    /* CG 欣赏按钮 — 幽灵/玻璃态，默认隐藏 */
     .btn-cg-view {
-      display: none; align-items: center; justify-content: center; gap: 6px;
-      padding: 0 18px; cursor: pointer;
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: #0a0f1a; font-size: 13px; font-weight: 800;
-      border: none; border-radius: 12px; white-space: nowrap;
-      box-shadow: 0 0 14px rgba(245,158,11,0.55), 0 4px 12px rgba(0,0,0,0.3);
-      transition: transform 0.2s, box-shadow 0.2s;
+      display: none; align-items: center; justify-content: center; gap: 7px;
+      width: 100%; padding: 14px; cursor: pointer;
+      background: rgba(255,255,255,0.07);
+      color: #fff; font-size: 15px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.28); border-radius: 14px;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(4px);
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
     }
     .btn-cg-view:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 22px rgba(245,158,11,0.75), 0 6px 16px rgba(0,0,0,0.3);
+      background: rgba(255,255,255,0.14);
+      border-color: rgba(255,255,255,0.45);
+      transform: translateY(-1px);
     }
     /* 重新复习文字链接 */
     .btn-review-link {
-      display: block; margin-top: 14px; text-align: center;
+      display: block; margin-top: 6px; text-align: center;
       color: #64748b; font-size: 13px; text-decoration: underline;
       cursor: pointer; background: none; border: none;
       letter-spacing: 0.02em; transition: color 0.2s;
@@ -2862,7 +2879,8 @@
   <!-- ── 开场悬念 Prologue CG Page ── -->
   <div id="prologue-page">
     <div id="prologue-bg"></div>
-    <div id="prologue-text">机场，不仅是终点，更是初见……</div>
+    <div id="prologue-text"></div>
+    <div id="prologue-start-hint">🖱️ 点击屏幕开始 · Click to start</div>
     <div id="prologue-tap-hint">✦ 点击屏幕继续 · Tap to continue ✦</div>
   </div>
 
@@ -7048,10 +7066,11 @@
     }
 
     function showPrologue(callback) {
-      var page   = document.getElementById('prologue-page');
+      var page       = document.getElementById('prologue-page');
       if (!page) { callback(); return; }
-      var textEl = document.getElementById('prologue-text');
-      var hintEl = document.getElementById('prologue-tap-hint');
+      var textEl     = document.getElementById('prologue-text');
+      var hintEl     = document.getElementById('prologue-tap-hint');
+      var startHint  = document.getElementById('prologue-start-hint');
 
       // ── 重置状态（支持多次播放） ──
       page.style.opacity = '';
@@ -7062,35 +7081,19 @@
         hintEl.style.transition = '';
         hintEl.classList.remove('breathing');
       }
+      if (startHint) startHint.classList.add('show');
       page.classList.add('show');
 
-      // ── 配音 + 打字机同步启动（600ms 后） ──
       var _audio = new Audio('/assets/audio/lesson1_prologue.mp3');
       _audio.volume = 0.85;
-
-      var PROLOGUE_TEXT = '机场，不仅是终点，更是初见……';
-      setTimeout(function() {
-        _audio.play().catch(function() { /* 文件不存在时静默 */ });
-        if (textEl) {
-          prologueTypewriter(PROLOGUE_TEXT, textEl, 130, function() {
-            // 打字机结束 → 呼吸提示淡入
-            if (hintEl) {
-              hintEl.style.transition = 'opacity 1.2s ease';
-              hintEl.style.opacity = '0.28';
-              setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
-            }
-          });
-        }
-      }, 600);
-
-      // ── 点击任意位置关闭（随时可跳过） ──
       var _dismissed = false;
+
+      // ── 第二次点击：关闭 prologue，进入角色介绍 ──
       function dismiss() {
         if (_dismissed) return;
         _dismissed = true;
         page.removeEventListener('click', dismiss);
         try { _audio.pause(); } catch(e) {}
-        // 先在遮罩下切换底层内容（无闪烁），再淡出 prologue
         callback();
         page.style.transition = 'opacity 0.7s ease';
         page.style.opacity = '0';
@@ -7100,7 +7103,33 @@
           page.style.transition = '';
         }, 700);
       }
-      page.addEventListener('click', dismiss);
+
+      // ── 第一次点击：隐藏开始提示，同步启动配音 + 打字机 ──
+      function onFirstClick() {
+        page.removeEventListener('click', onFirstClick);
+        if (startHint) startHint.classList.remove('show');
+
+        // 用户交互后 play() 不会被浏览器拦截
+        _audio.play().catch(function() { /* 音频文件不存在时静默跳过 */ });
+
+        var PROLOGUE_TEXT = '机场，不仅是终点，更是初见……';
+        if (textEl) {
+          prologueTypewriter(PROLOGUE_TEXT, textEl, 130, function() {
+            // 打字机结束 → 呼吸提示淡入，再监听第二次点击
+            if (hintEl) {
+              hintEl.style.transition = 'opacity 1.2s ease';
+              hintEl.style.opacity = '0.28';
+              setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
+            }
+            page.addEventListener('click', dismiss);
+          });
+        } else {
+          // 没有文本容器时直接等待第二次点击
+          page.addEventListener('click', dismiss);
+        }
+      }
+
+      page.addEventListener('click', onFirstClick);
     }
 
     // ── CG 纯净看图模式 ───────────────────────────────────────
