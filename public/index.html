@@ -1286,7 +1286,7 @@
     /* ══════════════════════════════════════════════════════════
        ── 开场悬念 Prologue CG ───────────────────────────────── */
     #prologue-page {
-      position: fixed; inset: 0; z-index: 800;
+      position: fixed; inset: 0; z-index: 10000; /* 必须高于 char-intro-overlay 的 9999 */
       display: none; align-items: center; justify-content: center;
       flex-direction: column; cursor: pointer; user-select: none;
     }
