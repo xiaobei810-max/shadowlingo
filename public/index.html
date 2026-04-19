@@ -2589,9 +2589,18 @@
        ── 章节选择 Chapter Select · Cover Flow Carousel ──────── */
     #chapter-select-page {
       display: none; position: fixed; inset: 0; z-index: 800;
-      background: var(--bg);
+      background: #07090f;          /* dark fallback behind chs-bg */
       flex-direction: column; align-items: center;
       overflow: hidden;
+    }
+
+    /* ── Cinematic full-page blurred CG background ── */
+    #chs-bg {
+      position: absolute; inset: -12%; z-index: 0;
+      background: #07090f center/cover no-repeat;
+      filter: blur(38px) brightness(0.28) saturate(1.3);
+      transition: background-image 0.55s ease;
+      pointer-events: none;
     }
     #chapter-select-page.show { display: flex; }
 
@@ -2599,6 +2608,7 @@
     .chs-header {
       flex-shrink: 0; padding: 48px 24px 10px;
       text-align: center; width: 100%;
+      position: relative; z-index: 1;
     }
     .chs-header-eyebrow {
       font-size: 11px; font-weight: 500;
@@ -2616,7 +2626,7 @@
     .chs-track-wrap {
       flex: 1; display: flex; align-items: center;
       width: 100%; overflow: hidden; min-height: 0;
-      position: relative;
+      position: relative; z-index: 1;
     }
     .chs-track {
       display: flex; gap: 20px;
@@ -2643,11 +2653,19 @@
     .chs-card-bg {
       position: absolute; inset: 0;
       background: #1a2540 center/cover no-repeat;
+      /* anti-spoiler blur on all cards */
+      filter: blur(7px) brightness(0.82);
+      transform: scale(1.08);             /* prevent blur white-edge */
     }
-    /* Locked: keep color — blur+glass overlay does the "frosted" work */
+    /* Active card: slightly less blurred so you can see the scene */
+    .chs-card.chs-active .chs-card-bg {
+      filter: blur(4px) brightness(0.90);
+      transform: scale(1.06);
+    }
+    /* Locked: keep color — backdrop-filter on the overlay does frosted glass */
     .chs-card.chs-locked .chs-card-bg {
-      filter: brightness(0.8);            /* 保留色彩，只略微压暗 */
-      transform: scale(1.06);             /* 防模糊白边 */
+      filter: blur(7px) brightness(0.80);
+      transform: scale(1.08);
     }
     /* Bottom gradient */
     .chs-card-grad {
@@ -2706,31 +2724,40 @@
       text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
 
-    /* Completed badge */
-    .chs-done-badge {
-      position: absolute; top: 12px; right: 12px; z-index: 3;
-      width: 22px; height: 22px; border-radius: 50%;
-      background: var(--green); color: #000;
-      font-size: 12px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
+    /* Minimal "已完成 · Completed" tag — replaces green badge */
+    .chs-done-tag {
+      position: absolute; top: 10px; left: 12px; z-index: 3;
+      font-size: 8.5px; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.52);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.75);
     }
 
-    /* Scene description */
+    /* Scene description — bilingual, cinematic */
     .chs-scene-wrap {
-      flex-shrink: 0; padding: 0 28px;
-      height: 52px; display: flex;
+      flex-shrink: 0; padding: 10px 32px 6px;
+      min-height: 72px; display: flex;
       align-items: center; justify-content: center;
+      position: relative; z-index: 1;
     }
     .chs-scene-text {
-      font-size: 0.79rem; color: rgba(203,213,225,0.70); /* 更易读 */
-      text-align: center; line-height: 1.75; max-width: 300px; /* 收窄换行 */
+      text-align: center; max-width: 310px;
       transition: opacity 0.25s ease;
+    }
+    .chs-scene-zh {
+      font-size: 0.83rem; color: rgba(226,232,240,0.84);
+      line-height: 1.8;
+    }
+    .chs-scene-en {
+      font-size: 0.74rem; color: rgba(148,163,184,0.52);
+      line-height: 1.6; font-style: italic; margin-top: 5px;
     }
 
     /* Dots */
     .chs-dots {
       flex-shrink: 0; display: flex; gap: 8px;
       align-items: center; padding: 4px 0 12px;
+      position: relative; z-index: 1;
     }
     .chs-dot {
       width: 6px; height: 6px; border-radius: 50%;
@@ -2745,21 +2772,28 @@
     .chs-actions {
       flex-shrink: 0; width: 100%; max-width: 340px;
       padding: 0 20px 48px;
+      position: relative; z-index: 1;
     }
+    /* Ghost button — cinematic */
     .chs-start-btn {
       width: 100%; padding: 15px 20px;
-      border-radius: 14px; border: none;
-      background: var(--green); color: #000;
-      font-size: 1rem; font-weight: 700;
-      cursor: pointer; letter-spacing: 0.02em;
-      transition: opacity 0.2s, transform 0.15s;
+      border-radius: 14px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.38);
+      color: rgba(255,255,255,0.92);
+      font-size: 1rem; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.10em;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s;
+    }
+    .chs-start-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.09);
+      border-color: rgba(255,255,255,0.60);
     }
     .chs-start-btn:active:not(:disabled) { transform: scale(0.97); }
     .chs-start-btn.chs-locked-state {
-      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
       color: rgba(255,255,255,0.28); cursor: default;
-      font-size: 0.83rem;
-      border: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.83rem; letter-spacing: 0.04em;
     }
 
     /* Cover page back button */
@@ -7952,7 +7986,16 @@
       chsUpdateDots();
       chsUpdateStartBtn();
       chsUpdateScene();
+      chsUpdateBg();
       page.classList.add('show');
+    }
+
+    function chsUpdateBg() {
+      var bg = document.getElementById('chs-bg');
+      if (!bg) return;
+      var lesson = LESSONS[chsActiveIdx];
+      var img = lesson && lesson.cgImage ? lesson.cgImage : '';
+      bg.style.backgroundImage = img ? "url('" + img + "')" : 'none';
     }
 
     function hideChapterSelectPage(onDone) {
@@ -8011,12 +8054,12 @@
           card.appendChild(lockOv);
         }
 
-        // Completed badge
+        // Minimal "completed" tag — no green badge
         if (completed) {
-          var badge = document.createElement('div');
-          badge.className = 'chs-done-badge';
-          badge.textContent = '✓';
-          card.appendChild(badge);
+          var tag = document.createElement('div');
+          tag.className = 'chs-done-tag';
+          tag.textContent = '已完成 · Completed';
+          card.appendChild(tag);
         }
 
         // Info
@@ -8050,6 +8093,7 @@
       chsUpdateDots();
       chsUpdateStartBtn();
       chsUpdateScene();
+      chsUpdateBg();
     }
 
     function chsUpdateTrack(animate) {
@@ -8094,11 +8138,18 @@
     function chsUpdateScene() {
       var el = document.getElementById('chs-scene-text');
       if (!el) return;
-      var lesson = LESSONS[chsActiveIdx];
-      var txt = lesson && lesson.coverScene
+      var lesson  = LESSONS[chsActiveIdx];
+      var zh = lesson && lesson.coverScene
         ? lesson.coverScene.zh.replace(/<[^>]+>/g, '') : '';
+      var en = lesson && lesson.coverScene && lesson.coverScene.en
+        ? lesson.coverScene.en : '';
       el.style.opacity = '0';
-      setTimeout(function() { el.textContent = txt; el.style.opacity = '1'; }, 180);
+      setTimeout(function() {
+        el.innerHTML =
+          '<div class="chs-scene-zh">' + zh + '</div>' +
+          (en ? '<div class="chs-scene-en">' + en + '</div>' : '');
+        el.style.opacity = '1';
+      }, 180);
     }
 
     function chsStartCurrentLesson() {
@@ -8154,6 +8205,8 @@
   </script>
   <!-- 章节选择 Chapter Select / Cover Flow Carousel -->
   <div id="chapter-select-page" class="show">
+    <!-- Cinematic full-bleed background — updated by chsUpdateBg() -->
+    <div id="chs-bg"></div>
     <div class="chs-header">
       <div class="chs-header-eyebrow">EchoChinese · 轻松学中文</div>
       <div class="chs-header-title">选择章节 · Choose Your Chapter</div>
