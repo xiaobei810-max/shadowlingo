@@ -3536,12 +3536,15 @@
 
     function setupAudio(src) {
       if (audio) { audio.pause(); audio.removeEventListener("timeupdate", onTimeUpdate); audio.src = ""; }
-      audio = new Audio(src);
+      audio = new Audio(src || '');
       audio.preload = "auto";
       audio.addEventListener("error", function () {
-        document.getElementById("audio-error").classList.add("show");
-        setStatus("⚠️ 音频加载失败");
-        busy = false;
+        // 仅当真正提供了 src 时才显示加载失败提示（空 src 时静默忽略）
+        if (src) {
+          document.getElementById("audio-error").classList.add("show");
+          setStatus("⚠️ 音频加载失败");
+          busy = false;
+        }
       });
       audio.addEventListener("canplaythrough", function () {
         document.getElementById("audio-error").classList.remove("show");
@@ -5928,8 +5931,11 @@
         if (senEl) senEl.textContent = lesson.coverScene.en;
       }
 
+      // 预载跟读页内容（确保封面下方的练习页已就绪，切换时不闪旧内容）
+      updateUI();
       // 重新初始化对话模式（加载新课的台词元数据）
       initDialogMode();
+      // 重新初始化 audio（空字符串时静默忽略 error，保证 audio 对象始终非 null）
       setupAudio(lesson.audio || '');
       saveState();
 
@@ -5937,7 +5943,8 @@
     }
 
     // ── 无新角色时的 CG 全屏过场 ─────────────────────────────────
-    function showLessonCg(cgUrl, callback) {
+    // onShown（可选）：CG 淡入完成后立即回调，用于隐藏封面避免闪烁
+    function showLessonCg(cgUrl, callback, onShown) {
       var lesson = LESSONS[lessonIdx];
       var lessonNum = lessonIdx + 1;
       var titleZh = (lesson.titleZh || '').replace(/^第.+课[：:]\s*/, '');
@@ -5977,9 +5984,12 @@
 
       document.body.appendChild(page);
 
-      // 淡入
+      // 淡入（transition:opacity 0.5s）；淡入完成后通知调用方隐藏封面
       requestAnimationFrame(function() {
-        requestAnimationFrame(function() { page.style.opacity = '1'; });
+        requestAnimationFrame(function() {
+          page.style.opacity = '1';
+          if (onShown) setTimeout(onShown, 500); // 与 transition 时长一致
+        });
       });
 
       // 提示淡入 + 呼吸动画
@@ -7456,10 +7466,10 @@
       prewarmMic();
       var lesson     = LESSONS[lessonIdx];
       var newChars   = lesson.newChars || [];
-      document.getElementById('cover-page').classList.remove('show');
 
       if (newChars.length > 0) {
-        // 有新角色 → 角色介绍（第一课：诺拉 → 序章 CG → 明轩）
+        // 有新角色 → 先隐藏封面，再进角色介绍
+        document.getElementById('cover-page').classList.remove('show');
         var _ciOverlay = document.getElementById('char-intro-overlay');
         if (_ciOverlay) _ciOverlay.style.transition = 'none';
         charIntroCheck(showFlashcardPage);
@@ -7469,10 +7479,13 @@
           });
         });
       } else if (lesson.cgImage) {
-        // 无新角色，有 CG → 全屏 CG 过场后进入生词卡
-        showLessonCg(lesson.cgImage, showFlashcardPage);
+        // 无新角色，有 CG → 先在封面上层淡入 CG，CG 完全不透明后再隐藏封面，避免底层闪烁
+        showLessonCg(lesson.cgImage, showFlashcardPage, function() {
+          document.getElementById('cover-page').classList.remove('show');
+        });
       } else {
         // 无新角色、无 CG → 直接进入生词卡
+        document.getElementById('cover-page').classList.remove('show');
         showFlashcardPage();
       }
     }
@@ -7712,12 +7725,10 @@
       }
       // ────────────────────────────────────────────────────────
       loadState();
-      setupAudio(LESSONS[lessonIdx].audio);
-      updateUI();
-      initDialogMode();
       refreshCoinDisplay();   // 初始化时显示余额
-      // Cover page is already shown (has class="show" in HTML)
-      // Pre-listen page stays hidden until user completes flashcards
+      // showCoverPage() 统一处理：更新封面文案、updateUI、initDialogMode、setupAudio
+      // 无论从哪课恢复，封面内容都与实际 lessonIdx 保持一致
+      showCoverPage();
     });
   </script>
   <!-- 课程封面 Lesson Cover -->
