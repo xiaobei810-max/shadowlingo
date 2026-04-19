@@ -1299,24 +1299,31 @@
     }
     #prologue-text {
       position: relative; z-index: 1;
-      font-size: clamp(17px, 4.5vw, 26px); font-weight: 700;
-      color: #fff; text-align: center; line-height: 1.7;
-      letter-spacing: 0.06em;
-      text-shadow: 0 0 40px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.7);
+      font-size: clamp(1.5rem, 4.5vw, 2rem); font-weight: 700;
+      color: #fff; text-align: center; line-height: 1.9;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 32px rgba(0,0,0,0.85);
       padding: 0 36px; max-width: 480px;
-      opacity: 0;
-      animation: prologueFloat 1.8s cubic-bezier(0.25,0.46,0.45,0.94) 0.6s forwards;
+      /* opacity 由 JS 逐字打字机控制，不用 CSS animation */
+    }
+    /* 每个打字机字符的浮现动画 */
+    @keyframes charFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     #prologue-tap-hint {
       position: relative; z-index: 1;
-      font-size: 12px; color: rgba(255,255,255,0.38);
-      margin-top: 40px; letter-spacing: 0.1em;
-      opacity: 0;
-      animation: prologueFloat 1s ease 2.8s forwards;
+      font-size: 12px; color: rgba(255,255,255,0.5);
+      margin-top: 44px; letter-spacing: 0.12em;
+      opacity: 0; /* 由 JS 在打字机完成后控制 */
     }
-    @keyframes prologueFloat {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
+    /* 呼吸灯：由 JS 添加 .breathing 触发 */
+    @keyframes breatheHint {
+      0%, 100% { opacity: 0.28; }
+      50%       { opacity: 0.80; }
+    }
+    #prologue-tap-hint.breathing {
+      animation: breatheHint 2.4s ease-in-out infinite;
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -1336,10 +1343,47 @@
       transform: scale(1);
     }
     .overlay.cg-active { background: transparent !important; }
+    /* 玻璃拟态结算卡片 */
     .overlay.cg-active .completion-card {
-      background: rgba(10,18,34,0.75) !important;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(30, 41, 59, 0.70) !important;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.5s ease;
+    }
+    .overlay.cg-active .page-top-bar {
+      background: rgba(15,23,42,0.55) !important;
+      backdrop-filter: blur(8px);
+      transition: opacity 0.5s ease;
+    }
+    /* CG 纯净看图模式 */
+    .overlay.cg-viewing .completion-card,
+    .overlay.cg-viewing .page-top-bar {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .overlay.cg-viewing #fw-canvas { opacity: 0 !important; }
+    /* 看图模式返回提示 */
+    #cg-view-hint {
+      position: absolute; bottom: 44px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 1010; font-size: 12px; color: rgba(255,255,255,0.5);
+      letter-spacing: 0.12em; text-align: center; white-space: nowrap;
+      pointer-events: none; display: none;
+    }
+    #cg-view-hint.show { display: block; animation: breatheHint 2.4s ease-in-out infinite; }
+    /* 查看 CG 按钮 */
+    .ending-view-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 22px; cursor: pointer;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #0a1222; font-size: 13px; font-weight: 700;
+      border: none; border-radius: 20px;
+      box-shadow: 0 4px 16px rgba(34,197,94,0.45);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .ending-view-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(34,197,94,0.55);
     }
     #ending-unlock-row {
       margin-top: 16px;
@@ -2874,10 +2918,12 @@
       <!-- 结尾 CG 解锁奖励 -->
       <div id="ending-unlock-row">
         <div class="ending-unlock-text">🔓 回忆已解锁：机场初遇</div>
-        <a class="ending-download-btn" href="/assets/cg/lesson1_airport.png" download="EchoChinese-L1-机场初遇.jpg">⬇ 下载高清原图 · Download CG</a>
+        <button class="ending-view-btn" onclick="viewCG(event)">🔍 查看回忆原图 · View CG</button>
       </div>
       <div id="ending-locked-hint">🔒 达到 80 分即可解锁高清原图</div>
     </div>
+    <!-- 纯净看图模式返回提示（绝对定位在 overlay 内部） -->
+    <div id="cg-view-hint">✦ 点击屏幕任意位置返回 · Tap to return ✦</div>
   </div>
 
   <!-- 声学层平翘舌检测（纯本地 FFT，无需 API） -->
@@ -6983,26 +7029,69 @@
     }
 
     // ── 开场悬念 Prologue ─────────────────────────────────────
+
+    // 逐字打字机：每隔 charDelayMs 淡入一个字符，完成后回调 onComplete
+    function prologueTypewriter(text, container, charDelayMs, onComplete) {
+      container.innerHTML = '';
+      var chars = Array.from(text); // 正确处理中文/emoji
+      chars.forEach(function(ch, i) {
+        var span = document.createElement('span');
+        span.textContent = ch;
+        span.style.cssText =
+          'display:inline;opacity:0;' +
+          'animation:charFadeIn 0.35s ease ' + (i * charDelayMs / 1000).toFixed(3) + 's forwards;';
+        container.appendChild(span);
+      });
+      var totalMs = chars.length * charDelayMs + 380;
+      setTimeout(onComplete, totalMs);
+    }
+
     function showPrologue(callback) {
-      var page = document.getElementById('prologue-page');
+      var page   = document.getElementById('prologue-page');
       if (!page) { callback(); return; }
-      // 重置文字动画（支持多次播放）
       var textEl = document.getElementById('prologue-text');
       var hintEl = document.getElementById('prologue-tap-hint');
-      [textEl, hintEl].forEach(function(el) {
-        if (!el) return;
-        el.style.animation = 'none';
-        void el.offsetWidth; // reflow
-        el.style.animation = '';
-      });
+
+      // ── 重置状态（支持多次播放） ──
       page.style.opacity = '';
       page.style.transition = '';
+      if (textEl) textEl.innerHTML = '';
+      if (hintEl) {
+        hintEl.style.opacity = '0';
+        hintEl.style.transition = '';
+        hintEl.classList.remove('breathing');
+      }
       page.classList.add('show');
+
+      // ── 配音（文件存在时播放，否则静默跳过） ──
+      var _audio = new Audio('/assets/audio/lesson1_prologue.mp3');
+      _audio.volume = 0.85;
+      _audio.play().catch(function() { /* 文件不存在时静默 */ });
+
+      // ── 打字机开场（600ms 后启动） ──
+      var PROLOGUE_TEXT = '机场，不仅是终点，更是初见……';
+      setTimeout(function() {
+        if (textEl) {
+          prologueTypewriter(PROLOGUE_TEXT, textEl, 130, function() {
+            // 打字机结束 → 呼吸提示淡入
+            if (hintEl) {
+              hintEl.style.transition = 'opacity 1.2s ease';
+              hintEl.style.opacity = '0.28';
+              setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
+            }
+          });
+        }
+      }, 600);
+
+      // ── 点击任意位置关闭（随时可跳过） ──
+      var _dismissed = false;
       function dismiss() {
+        if (_dismissed) return;
+        _dismissed = true;
         page.removeEventListener('click', dismiss);
-        // 先在 prologue 遮罩下切换底层内容（无闪烁）
+        try { _audio.pause(); } catch(e) {}
+        // 先在遮罩下切换底层内容（无闪烁），再淡出 prologue
         callback();
-        // 再淡出 prologue，露出已就绪的下一个角色
         page.style.transition = 'opacity 0.7s ease';
         page.style.opacity = '0';
         setTimeout(function() {
@@ -7012,6 +7101,25 @@
         }, 700);
       }
       page.addEventListener('click', dismiss);
+    }
+
+    // ── CG 纯净看图模式 ───────────────────────────────────────
+    function viewCG(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      var ov   = document.getElementById('overlay');
+      var hint = document.getElementById('cg-view-hint');
+      if (!ov) return;
+      ov.classList.add('cg-viewing');
+      if (hint) hint.classList.add('show');
+      // 短暂延迟后才监听点击，防止当前点击立刻退出
+      setTimeout(function() {
+        function exitView() {
+          ov.classList.remove('cg-viewing');
+          if (hint) hint.classList.remove('show');
+          ov.removeEventListener('click', exitView);
+        }
+        ov.addEventListener('click', exitView);
+      }, 80);
     }
 
     function charIntroClose() {
