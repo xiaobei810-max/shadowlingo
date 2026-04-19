@@ -1299,12 +1299,21 @@
     }
     #prologue-text {
       position: relative; z-index: 1;
-      font-size: clamp(1.5rem, 4.5vw, 2rem); font-weight: 700;
-      color: #fff; text-align: center; line-height: 1.9;
+      /* 通过 vw 单位自适应缩放，绝对不换行 */
+      font-size: min(1.9rem, 5vw);
+      font-weight: 700; color: #fff;
+      text-align: center; line-height: 1.9;
+      white-space: nowrap;          /* 禁止折行 */
       letter-spacing: 2px;
       text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 32px rgba(0,0,0,0.85);
-      padding: 0 36px; max-width: 480px;
-      /* opacity 由 JS 逐字打字机控制，不用 CSS animation */
+      padding: 0 16px;
+    }
+    /* 超小屏额外兜底 */
+    @media (max-width: 380px) {
+      #prologue-text { font-size: 16px; letter-spacing: 1.2px; }
+    }
+    @media (max-width: 320px) {
+      #prologue-text { font-size: 14px; letter-spacing: 0.8px; }
     }
     /* 每个打字机字符的浮现动画 */
     @keyframes charFadeIn {
@@ -1371,44 +1380,35 @@
       pointer-events: none; display: none;
     }
     #cg-view-hint.show { display: block; animation: breatheHint 2.4s ease-in-out infinite; }
-    /* 查看 CG 按钮 */
-    .ending-view-btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 10px 22px; cursor: pointer;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: #0a1222; font-size: 13px; font-weight: 700;
-      border: none; border-radius: 20px;
-      box-shadow: 0 4px 16px rgba(34,197,94,0.45);
+    /* 完成页主按钮行（并排） */
+    .completion-primary-btns {
+      display: flex; gap: 10px; width: 100%; margin-top: 16px;
+    }
+    .completion-primary-btns .btn-restart {
+      flex: 1; margin-top: 0;
+    }
+    /* CG 欣赏按钮（金色光辉，默认隐藏） */
+    .btn-cg-view {
+      display: none; align-items: center; justify-content: center; gap: 6px;
+      padding: 0 18px; cursor: pointer;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #0a0f1a; font-size: 13px; font-weight: 800;
+      border: none; border-radius: 12px; white-space: nowrap;
+      box-shadow: 0 0 14px rgba(245,158,11,0.55), 0 4px 12px rgba(0,0,0,0.3);
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .ending-view-btn:hover {
+    .btn-cg-view:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 22px rgba(34,197,94,0.55);
+      box-shadow: 0 0 22px rgba(245,158,11,0.75), 0 6px 16px rgba(0,0,0,0.3);
     }
-    #ending-unlock-row {
-      margin-top: 16px;
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-      opacity: 0; transition: opacity 0.9s ease;
-      pointer-events: none;
+    /* 重新复习文字链接 */
+    .btn-review-link {
+      display: block; margin-top: 14px; text-align: center;
+      color: #64748b; font-size: 13px; text-decoration: underline;
+      cursor: pointer; background: none; border: none;
+      letter-spacing: 0.02em; transition: color 0.2s;
     }
-    #ending-unlock-row.show { opacity: 1; pointer-events: auto; }
-    .ending-unlock-text {
-      font-size: 14px; font-weight: 700; color: #22c55e;
-      text-align: center; letter-spacing: 0.03em;
-    }
-    .ending-download-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 22px;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: #0a1222; font-size: 13px; font-weight: 700;
-      border-radius: 20px; text-decoration: none;
-      box-shadow: 0 4px 16px rgba(34,197,94,0.45);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .ending-download-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 22px rgba(34,197,94,0.55);
-    }
+    .btn-review-link:hover { color: #94a3b8; }
     #ending-locked-hint {
       margin-top: 10px; font-size: 12px;
       color: #475569; text-align: center; display: none;
@@ -2913,14 +2913,13 @@
         </div>
       </div>
       </div><!-- /.score-summary-card -->
-      <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 Native Insider Tip →</button>
-      <button class="btn-restart" onclick="reviewLesson()" style="background:#1e293b;color:#94a3b8;border:1.5px solid #334155;margin-top:6px;">↺ 重新复习 Review</button>
-      <!-- 结尾 CG 解锁奖励 -->
-      <div id="ending-unlock-row">
-        <div class="ending-unlock-text">🔓 回忆已解锁：机场初遇</div>
-        <button class="ending-view-btn" onclick="viewCG(event)">🔍 查看回忆原图 · View CG</button>
+      <!-- 主操作按钮行 -->
+      <div class="completion-primary-btns">
+        <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 · Native Insider Tip →</button>
+        <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ 欣赏高清 CG</button>
       </div>
       <div id="ending-locked-hint">🔒 达到 80 分即可解锁高清原图</div>
+      <a class="btn-review-link" onclick="reviewLesson()">↺ 重新复习 · Review</a>
     </div>
     <!-- 纯净看图模式返回提示（绝对定位在 overlay 内部） -->
     <div id="cg-view-hint">✦ 点击屏幕任意位置返回 · Tap to return ✦</div>
@@ -5668,25 +5667,25 @@
       }
 
       // ── 结尾 CG 奖励 ─────────────────────────────────────────
-      var cgBg       = document.getElementById('ending-cg-bg');
-      var unlockRow  = document.getElementById('ending-unlock-row');
+      var cgBg      = document.getElementById('ending-cg-bg');
+      var btnCgView = document.getElementById('btn-cg-view');
       var lockedHint = document.getElementById('ending-locked-hint');
       var ovEl       = document.getElementById('overlay');
       // 先全部重置（防重复触发）
-      if (cgBg)       { cgBg.classList.remove('reveal'); }
-      if (unlockRow)  { unlockRow.classList.remove('show'); }
-      if (lockedHint) { lockedHint.classList.remove('show'); }
-      if (ovEl)       { ovEl.classList.remove('cg-active'); }
+      if (cgBg)      { cgBg.classList.remove('reveal'); }
+      if (btnCgView) { btnCgView.style.display = 'none'; }
+      if (lockedHint){ lockedHint.classList.remove('show'); }
+      if (ovEl)      { ovEl.classList.remove('cg-active'); }
 
       if (!noPractice) {
         if (cgBg)  cgBg.classList.add('show');
         if (ovEl)  ovEl.classList.add('cg-active');
         if (overall >= 80) {
-          // 高分：2s 后模糊变清晰，再 0.4s 后显示解锁文字 + 下载按钮
+          // 高分：0.9s 后模糊变清晰，再 2.4s 后显示 CG 按钮
           setTimeout(function() {
             if (cgBg) cgBg.classList.add('reveal');
             setTimeout(function() {
-              if (unlockRow) unlockRow.classList.add('show');
+              if (btnCgView) { btnCgView.style.display = 'flex'; }
             }, 2400);
           }, 900);
         } else {
@@ -5781,11 +5780,13 @@
       var cgBg = document.getElementById('ending-cg-bg');
       if (cgBg) cgBg.classList.remove('show', 'reveal');
       var ovEl = document.getElementById('overlay');
-      if (ovEl) ovEl.classList.remove('cg-active');
-      var unlockRow = document.getElementById('ending-unlock-row');
-      if (unlockRow) unlockRow.classList.remove('show');
+      if (ovEl) ovEl.classList.remove('cg-active', 'cg-viewing');
+      var btnCgView = document.getElementById('btn-cg-view');
+      if (btnCgView) btnCgView.style.display = 'none';
       var lockedHint = document.getElementById('ending-locked-hint');
       if (lockedHint) lockedHint.classList.remove('show');
+      var cgHint = document.getElementById('cg-view-hint');
+      if (cgHint) cgHint.classList.remove('show');
     }
 
     function reviewLesson() {
@@ -7063,14 +7064,13 @@
       }
       page.classList.add('show');
 
-      // ── 配音（文件存在时播放，否则静默跳过） ──
+      // ── 配音 + 打字机同步启动（600ms 后） ──
       var _audio = new Audio('/assets/audio/lesson1_prologue.mp3');
       _audio.volume = 0.85;
-      _audio.play().catch(function() { /* 文件不存在时静默 */ });
 
-      // ── 打字机开场（600ms 后启动） ──
       var PROLOGUE_TEXT = '机场，不仅是终点，更是初见……';
       setTimeout(function() {
+        _audio.play().catch(function() { /* 文件不存在时静默 */ });
         if (textEl) {
           prologueTypewriter(PROLOGUE_TEXT, textEl, 130, function() {
             // 打字机结束 → 呼吸提示淡入
