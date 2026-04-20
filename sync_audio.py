@@ -46,6 +46,11 @@ SCRIPT = [
     {"lesson": "02", "line": "06", "role": "Mingxuan", "text": "二十块。不用急。"},
     {"lesson": "02", "line": "07", "role": "Nora",     "text": "机场离学校远吗？"},
     {"lesson": "02", "line": "08", "role": "Mingxuan", "text": "有点远，要一个小时。"},
+    # 第二课 生词（line key 以 "v" 开头，区别于对话行）
+    {"lesson": "02", "line": "v1", "role": "Mingxuan", "text": "票"},
+    {"lesson": "02", "line": "v2", "role": "Mingxuan", "text": "扫码"},
+    {"lesson": "02", "line": "v3", "role": "Mingxuan", "text": "现金"},
+    {"lesson": "02", "line": "v4", "role": "Mingxuan", "text": "远"},
     # 第三课
     {"lesson": "03", "line": "01", "role": "Mingxuan", "text": "我们到了。先去报到。"},
     {"lesson": "03", "line": "02", "role": "Nora",     "text": "好。需要什么东西？"},
@@ -150,7 +155,9 @@ def main():
         map_key   = f"lesson{lesson}"
         if map_key not in audio_map:
             audio_map[map_key] = {}
-        audio_map[map_key][str(int(line))] = url_path   # key: "1", "2", ...
+        # 对话行: "01"→"1"；生词行: "v1"→"v1"（保持原样）
+        map_line_key = line if line.startswith("v") else str(int(line))
+        audio_map[map_key][map_line_key] = url_path
 
         # 跳过已存在的文件
         if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:
