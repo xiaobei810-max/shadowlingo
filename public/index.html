@@ -908,22 +908,24 @@
     }
 
     /* ── Tone sandhi markers ─────────────────────────────────── */
+    /* Dot indicator: tiny dot below the pinyin, colour-blends with theme */
     .krt.sandhi-rt {
-      color: #f97316;      /* orange-500 — signals sandhi */
       position: relative;
+      /* No colour change — pinyin stays white/default */
     }
     .krt.sandhi-rt::after {
       content: '';
       position: absolute;
-      left: 0; right: 0; bottom: -1px;
-      border-bottom: 1.5px dashed #f97316;
+      left: 50%; bottom: -4px;
+      transform: translateX(-50%);
+      width: 3px; height: 3px;
+      border-radius: 50%;
+      background: rgba(74, 222, 128, 0.75); /* green-400/75 — theme colour */
       pointer-events: none;
     }
-    /* Keep the orange through karaoke states */
-    .kchar.active .krt.sandhi-rt,
-    .kchar.done   .krt.sandhi-rt {
-      color: #fb923c;
-    }
+    /* Dot stays visible through karaoke states */
+    .kchar.active .krt.sandhi-rt::after { background: rgba(96, 165, 250, 0.85); } /* blue-400 when active */
+    .kchar.done   .krt.sandhi-rt::after { background: rgba(74, 222, 128, 0.55); }
     .kchar.sandhi-active {
       cursor: pointer;
     }
@@ -933,17 +935,17 @@
       position: fixed;
       z-index: 9990;
       background: rgba(15, 23, 42, 0.96);
-      border: 1px solid #f97316;
-      border-radius: 10px;
-      padding: 8px 14px;
-      font-size: 13px;
-      color: #f1f5f9;
+      border: 1px solid rgba(74, 222, 128, 0.5);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #e2e8f0;
       pointer-events: none;
-      max-width: 220px;
+      max-width: 200px;
       white-space: normal;
       text-align: center;
       line-height: 1.5;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.55);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       transform: translateY(-110%);
     }
     #sandhi-tip.show { display: block; }
@@ -4961,11 +4963,21 @@
         if (sInfo && sInfo.sandhiTone) {
           rt.classList.add('sandhi-rt');
           kchar.classList.add('sandhi-active');
-          var tZh = SANDHI_TONE_ZH[sInfo.sandhiTone] || ('第' + sInfo.sandhiTone + '声');
-          var tEn = SANDHI_TONE_EN[sInfo.sandhiTone] || ('tone ' + sInfo.sandhiTone);
-          var tipText = c + ' 变调 · 实读' + tZh + '\ntone sandhi: sounds like ' + tEn;
+          // Build a natural rule label, e.g. "3声+3声连读，变2声"
+          var fromT = sInfo.tone, toT = sInfo.sandhiTone;
+          var ruleZh, ruleEn;
+          if (fromT === 3 && toT === 2) {
+            ruleZh = '3声+3声连读，变2声'; ruleEn = '3rd+3rd tone → say tone 2';
+          } else if (c === '不') {
+            ruleZh = '不 在4声前变2声（bú）'; ruleEn = '不 before tone 4 → bú (tone 2)';
+          } else if (c === '一') {
+            ruleZh = '一 在' + fromT + '声前变' + toT + '声'; ruleEn = '一 + tone ' + fromT + ' → tone ' + toT;
+          } else {
+            ruleZh = c + ' 变调：实读第' + toT + '声'; ruleEn = 'tone sandhi → tone ' + toT;
+          }
+          var tipText = ruleZh + '\n' + ruleEn;
           kchar.setAttribute('data-sandhi', tipText);
-          kchar.title = tipText.replace('\n', ' · ');
+          kchar.title = ruleZh + ' · ' + ruleEn;
         }
 
         kchar.appendChild(rt);
