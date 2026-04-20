@@ -1,8 +1,56 @@
 {
-  "_readme": "由 sync_audio.py 自动生成。运行脚本后此文件会被覆盖。格式: { lessonXX: { lineNum: url } }",
-  "lesson01": {},
-  "lesson02": {},
-  "lesson03": {},
-  "lesson04": {},
-  "lesson05": {}
+  "lesson01": {
+    "1": "/audio/lesson01/L01_01_Nora.mp3",
+    "2": "/audio/lesson01/L01_02_Mingxuan.mp3",
+    "3": "/audio/lesson01/L01_03_Nora.mp3",
+    "4": "/audio/lesson01/L01_04_Mingxuan.mp3",
+    "5": "/audio/lesson01/L01_05_Nora.mp3",
+    "6": "/audio/lesson01/L01_06_Mingxuan.mp3",
+    "7": "/audio/lesson01/L01_07_Nora.mp3",
+    "8": "/audio/lesson01/L01_08_Mingxuan.mp3"
+  },
+  "lesson02": {
+    "1": "/audio/lesson02/L02_01_Nora.mp3",
+    "2": "/audio/lesson02/L02_02_Mingxuan.mp3",
+    "3": "/audio/lesson02/L02_03_Nora.mp3",
+    "4": "/audio/lesson02/L02_04_Mingxuan.mp3",
+    "5": "/audio/lesson02/L02_05_Nora.mp3",
+    "6": "/audio/lesson02/L02_06_Mingxuan.mp3",
+    "7": "/audio/lesson02/L02_07_Nora.mp3",
+    "8": "/audio/lesson02/L02_08_Mingxuan.mp3",
+    "v1": "/audio/lesson02/L02_v1_Mingxuan.mp3",
+    "v2": "/audio/lesson02/L02_v2_Mingxuan.mp3",
+    "v3": "/audio/lesson02/L02_v3_Mingxuan.mp3",
+    "v4": "/audio/lesson02/L02_v4_Mingxuan.mp3"
+  },
+  "lesson03": {
+    "1": "/audio/lesson03/L03_01_Mingxuan.mp3",
+    "2": "/audio/lesson03/L03_02_Nora.mp3",
+    "3": "/audio/lesson03/L03_03_Mingxuan.mp3",
+    "4": "/audio/lesson03/L03_04_Nora.mp3",
+    "5": "/audio/lesson03/L03_05_Staff.mp3",
+    "6": "/audio/lesson03/L03_06_Nora.mp3",
+    "7": "/audio/lesson03/L03_07_Staff.mp3",
+    "8": "/audio/lesson03/L03_08_Mingxuan.mp3"
+  },
+  "lesson04": {
+    "1": "/audio/lesson04/L04_01_Nora.mp3",
+    "2": "/audio/lesson04/L04_02_Mingxuan.mp3",
+    "3": "/audio/lesson04/L04_03_Nora.mp3",
+    "4": "/audio/lesson04/L04_04_Mingxuan.mp3",
+    "5": "/audio/lesson04/L04_05_Nora.mp3",
+    "6": "/audio/lesson04/L04_06_Mingxuan.mp3",
+    "7": "/audio/lesson04/L04_07_Nora.mp3",
+    "8": "/audio/lesson04/L04_08_Mingxuan.mp3"
+  },
+  "lesson05": {
+    "1": "/audio/lesson05/L05_01_Qiqi.mp3",
+    "2": "/audio/lesson05/L05_02_Nora.mp3",
+    "3": "/audio/lesson05/L05_03_Qiqi.mp3",
+    "4": "/audio/lesson05/L05_04_Mingxuan.mp3",
+    "5": "/audio/lesson05/L05_05_Nora.mp3",
+    "6": "/audio/lesson05/L05_06_Mingxuan.mp3",
+    "7": "/audio/lesson05/L05_07_Qiqi.mp3",
+    "8": "/audio/lesson05/L05_08_Nora.mp3"
+  }
 }

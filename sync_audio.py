@@ -47,7 +47,7 @@ SCRIPT = [
     {"lesson": "02", "line": "07", "role": "Nora",     "text": "机场离学校远吗？"},
     {"lesson": "02", "line": "08", "role": "Mingxuan", "text": "有点远，要一个小时。"},
     # 第二课 生词（line key 以 "v" 开头，区别于对话行）
-    {"lesson": "02", "line": "v1", "role": "Mingxuan", "text": "票"},
+    {"lesson": "02", "line": "v1", "role": "Mingxuan", "text": "买票"},
     {"lesson": "02", "line": "v2", "role": "Mingxuan", "text": "扫码"},
     {"lesson": "02", "line": "v3", "role": "Mingxuan", "text": "现金"},
     {"lesson": "02", "line": "v4", "role": "Mingxuan", "text": "远"},

@@ -907,6 +907,47 @@
       color: #60a5fa;
     }
 
+    /* ── Tone sandhi markers ─────────────────────────────────── */
+    .krt.sandhi-rt {
+      color: #f97316;      /* orange-500 — signals sandhi */
+      position: relative;
+    }
+    .krt.sandhi-rt::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -1px;
+      border-bottom: 1.5px dashed #f97316;
+      pointer-events: none;
+    }
+    /* Keep the orange through karaoke states */
+    .kchar.active .krt.sandhi-rt,
+    .kchar.done   .krt.sandhi-rt {
+      color: #fb923c;
+    }
+    .kchar.sandhi-active {
+      cursor: pointer;
+    }
+    /* Sandhi tooltip popup */
+    #sandhi-tip {
+      display: none;
+      position: fixed;
+      z-index: 9990;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid #f97316;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: #f1f5f9;
+      pointer-events: none;
+      max-width: 220px;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.5;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.55);
+      transform: translateY(-110%);
+    }
+    #sandhi-tip.show { display: block; }
+
     /* Punctuation inherits karaoke color from its preceding character */
     .kchar.active + .kpunct { color: var(--text); }
     .kchar.done   + .kpunct { color: var(--green); }
@@ -3363,7 +3404,7 @@
           }
         ],
         vocab: [
-          { zh: '票',   py: 'piào',     en: 'Ticket',        role: 'local' },
+          { zh: '买票', py: 'mǎi piào',  en: 'Buy a ticket',  role: 'local' },
           { zh: '扫码', py: 'sǎo mǎ',   en: 'Scan QR code',  role: 'local' },
           { zh: '现金', py: 'xiàn jīn', en: 'Cash',          role: 'local' },
           { zh: '远',   py: 'yuǎn',     en: 'Far',           role: 'local' },
@@ -4883,6 +4924,17 @@
       var pyQ = {}, pyI = {};
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
 
+      // ── Tone sandhi annotations ───────────────────────────────
+      var sandhiArr = computeSandhiTones(chars || []);
+      var sandhiByChar = {};
+      sandhiArr.forEach(function (item) {
+        if (!sandhiByChar[item.c]) sandhiByChar[item.c] = [];
+        sandhiByChar[item.c].push(item);
+      });
+      var sandhiI = {};
+      var SANDHI_TONE_ZH = ['', '第1声', '第2声（á）', '第3声', '第4声（à）', '轻声'];
+      var SANDHI_TONE_EN = ['', 'tone 1', 'tone 2', 'tone 3', 'tone 4', 'neutral'];
+
       var lastGroup = null;
       Array.from(text).forEach(function (c) {
         // 标点作为 kpunct 附在前一个 kchar-group 内，不新建 flex 项
@@ -4901,6 +4953,21 @@
         var py = pyQ[c] ? (pyQ[c][idx] || '') : '';
         pyI[c] = idx + 1;
         rt.textContent = toToneMark(py);
+
+        // ── Sandhi marker ──────────────────────────────────────
+        var sIdx = sandhiI[c] || 0;
+        sandhiI[c] = sIdx + 1;
+        var sInfo = sandhiByChar[c] && sandhiByChar[c][sIdx];
+        if (sInfo && sInfo.sandhiTone) {
+          rt.classList.add('sandhi-rt');
+          kchar.classList.add('sandhi-active');
+          var tZh = SANDHI_TONE_ZH[sInfo.sandhiTone] || ('第' + sInfo.sandhiTone + '声');
+          var tEn = SANDHI_TONE_EN[sInfo.sandhiTone] || ('tone ' + sInfo.sandhiTone);
+          var tipText = c + ' 变调 · 实读' + tZh + '\ntone sandhi: sounds like ' + tEn;
+          kchar.setAttribute('data-sandhi', tipText);
+          kchar.title = tipText.replace('\n', ' · ');
+        }
+
         kchar.appendChild(rt);
         kchar.appendChild(document.createTextNode(c));
         var group = document.createElement("span");
@@ -4910,6 +4977,27 @@
         lastGroup = group;
       });
     }
+
+    // ── Sandhi tooltip (click/tap delegation on #kara) ───────────
+    (function () {
+      var _tipTimer = null;
+      document.addEventListener('click', function (e) {
+        var kc = e.target.closest && e.target.closest('.kchar[data-sandhi]');
+        if (!kc) return;
+        var tip = document.getElementById('sandhi-tip');
+        if (!tip) return;
+        var lines = (kc.getAttribute('data-sandhi') || '').split('\n');
+        tip.innerHTML = lines.map(function (l) { return '<span>' + l + '</span>'; }).join('<br>');
+        // Position above the character
+        var rect = kc.getBoundingClientRect();
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - 240, rect.left + rect.width / 2 - 110)) + 'px';
+        tip.style.top  = (rect.top - 4) + 'px';
+        tip.classList.add('show');
+        if (_tipTimer) clearTimeout(_tipTimer);
+        _tipTimer = setTimeout(function () { tip.classList.remove('show'); }, 2400);
+        e.stopPropagation();
+      });
+    })();
 
     function startKaraSync(segStart, segEnd, timings) {
       karaStart = segStart;
@@ -5204,9 +5292,26 @@
 
     function _startCountdown(warmupMs) {
       _cancelCountdown();
-      // warmupMs = 0  for warm stream (sentences 2+): recorder is ready immediately.
-      // warmupMs = 600 for first getUserMedia call: hardware needs ~600 ms to init.
-      // No visible countdown; blob silence at start = warmupMs (imperceptible at 0).
+      // warmupMs = 0    → warm stream (sentences 2+): arm immediately, no overlay.
+      // warmupMs > 0    → cold start: show visual overlay so user knows when to speak.
+      if (warmupMs > 0) {
+        var rcd    = document.getElementById('rec-countdown');
+        var rcdNum = document.getElementById('rcd-number');
+        if (rcd && rcdNum) {
+          var totalSec = Math.ceil(warmupMs / 1000);
+          rcdNum.textContent = totalSec;
+          rcd.classList.add('show');
+          // Tick down each second (e.g. 2000 ms → shows "2" then "1")
+          if (warmupMs > 1000) {
+            var ticksLeft = totalSec - 1;
+            var tickInterval = setInterval(function () {
+              ticksLeft--;
+              if (rcdNum) rcdNum.textContent = ticksLeft > 0 ? ticksLeft : '▶';
+              if (ticksLeft <= 0) clearInterval(tickInterval);
+            }, 1000);
+          }
+        }
+      }
       _countdownTimer = setTimeout(function () {
         _countdownTimer = null;
         _armRecording();
@@ -5229,8 +5334,9 @@
       }
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'microphone' }).then(function(result) {
-          if (result.state === 'granted') _doWarm();
-          // 'prompt' 或 'denied'：不预热，等到用户点录音时再请求
+          if (result.state === 'granted' || result.state === 'prompt') _doWarm();
+          // 'prompt'：在课程开始的用户手势链中触发权限请求，确保进入跟读时麦克风已就绪
+          // 'denied'：跳过，startRecording 时给出麦克风被拒提示
         }).catch(_doWarm); // Permissions API 不支持时降级
       } else {
         _doWarm(); // 旧版浏览器降级
@@ -5259,7 +5365,7 @@
         _go(micStream, 0);          // stream already warm → start immediately
       } else {
         navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (s) { _go(s, 600); }) // first getUserMedia: hardware needs ~600ms
+          .then(function (s) { _go(s, 2000); }) // cold start: 2 s countdown overlay; overlay shows "2→1"
           .catch(function () {
             setStatus('⚠️ 麦克风权限被拒绝');
             busy = false; phase = 'idle';
@@ -8670,6 +8776,9 @@
     <div class="rcd-number" id="rcd-number">2</div>
     <div class="rcd-label">准备好了开始说 / Get ready to speak</div>
   </div>
+
+  <!-- Tone sandhi tooltip (shown on kara char tap) -->
+  <div id="sandhi-tip"></div>
 
 </body>
 
