@@ -907,47 +907,40 @@
       color: #60a5fa;
     }
 
-    /* ── Tone sandhi markers — glassmorphism pill ───────────── */
-    @keyframes sandhi-pill-breath {
-      0%, 100% {
-        background: rgba(16, 185, 129, 0.13);   /* emerald-500/13 */
-        border-color: rgba(16, 185, 129, 0.25);
-      }
-      50% {
-        background: rgba(16, 185, 129, 0.28);   /* emerald-500/28 */
-        border-color: rgba(16, 185, 129, 0.55);
-      }
+    /* ── Tone sandhi: pronunciation tie / slur arc ──────────── */
+
+    /* Wrapper that groups the sandhi syllable + its trigger */
+    .sandhi-pair {
+      position: relative;
+      display: inline-flex;
+      flex-direction: row;
+      align-items: flex-end;
+      gap: 3px;          /* match .kara-wrap column gap */
+      cursor: pointer;
     }
-    .krt.sandhi-rt {
-      /* Pill shape */
-      display: inline-block;
-      padding: 1px 5px 1px;
-      border-radius: 4px;
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      background: rgba(16, 185, 129, 0.13);
-      /* Text: pure white, no glow */
-      color: #ffffff !important;
-      text-shadow: none;
-      /* Breathing background */
-      animation: sandhi-pill-breath 2.4s ease-in-out infinite;
-      /* Contain layout */
-      line-height: 1.3;
+
+    /* The slur arc drawn just below the pinyin line */
+    .sandhi-pair::after {
+      content: '';
+      position: absolute;
+      /* .krt is 11px font × 1.4 line-height ≈ 15 px tall; arc sits right below it */
+      top: 15px;
+      left: 6px;
+      right: 6px;
+      height: 5px;
+      border: 1px solid rgba(16, 185, 129, 0.50);
+      border-top: none;
+      border-bottom-left-radius:  50%;
+      border-bottom-right-radius: 50%;
+      pointer-events: none;
+      transition: border-color 0.2s;
     }
-    /* Karaoke active: pill background shifts to blue-tinted to match active colour */
-    .kchar.active .krt.sandhi-rt {
-      animation: none;
-      background: rgba(96, 165, 250, 0.18);   /* blue-400/18 */
-      border-color: rgba(96, 165, 250, 0.45);
-      color: #ffffff !important;
+
+    /* Brighten arc on hover / tap-hold */
+    .sandhi-pair:hover::after,
+    .sandhi-pair:active::after {
+      border-color: rgba(16, 185, 129, 0.90);
     }
-    /* Karaoke done: pill shifts to green to reinforce completion */
-    .kchar.done .krt.sandhi-rt {
-      animation: none;
-      background: rgba(74, 222, 128, 0.18);   /* green-400/18 */
-      border-color: rgba(74, 222, 128, 0.45);
-      color: #ffffff !important;
-    }
-    .kchar.sandhi-active { cursor: pointer; }
 
     /* Sandhi tooltip */
     #sandhi-tip {
@@ -955,7 +948,7 @@
       position: fixed;
       z-index: 9990;
       background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(16, 185, 129, 0.5);
+      border: 1px solid rgba(16, 185, 129, 0.50);
       border-radius: 8px;
       padding: 6px 13px;
       font-size: 12px;
@@ -4950,7 +4943,8 @@
       var pyQ = {}, pyI = {};
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
 
-      // ── Tone sandhi annotations ───────────────────────────────
+      // ── Sandhi: build lookup, then two-pass DOM construction ────
+
       var sandhiArr = computeSandhiTones(chars || []);
       var sandhiByChar = {};
       sandhiArr.forEach(function (item) {
@@ -4958,17 +4952,29 @@
         sandhiByChar[item.c].push(item);
       });
       var sandhiI = {};
-      var SANDHI_TONE_ZH = ['', '第1声', '第2声（á）', '第3声', '第4声（à）', '轻声'];
-      var SANDHI_TONE_EN = ['', 'tone 1', 'tone 2', 'tone 3', 'tone 4', 'neutral'];
 
-      var lastGroup = null;
+      function _sandhiTip(c, sInfo) {
+        var toT = sInfo.sandhiTone;
+        if (c === '不') return '"不" 在4声前变2声（bú）\n不 before tone 4 → bú (tone 2)';
+        if (c === '一') {
+          var desc = toT === 2 ? '第4声前' : '第1/2/3声前';
+          var mk   = toT === 2 ? 'yí（2声）' : 'yì（4声）';
+          return '"一" 在' + desc + '变' + mk + '\n' +
+                 (toT === 2 ? '一 + tone 4 → yí (tone 2)' : '一 + tone 1/2/3 → yì (tone 4)');
+        }
+        return '3声+3声连读，变2声\n3rd+3rd tone → say tone 2';
+      }
+
+      // Pass 1: build .kchar-group elements, collect with sandhi metadata
+      var groups = []; // { el: .kchar-group, isSandhi: bool, tip: str }
+
       Array.from(text).forEach(function (c) {
-        // 标点作为 kpunct 附在前一个 kchar-group 内，不新建 flex 项
-        if (isPunct(c) && lastGroup) {
+        // Punctuation: append to previous group, no new flex item
+        if (isPunct(c) && groups.length > 0) {
           var punct = document.createElement("span");
           punct.className = "kpunct";
           punct.textContent = c;
-          lastGroup.appendChild(punct);
+          groups[groups.length - 1].el.appendChild(punct);
           return;
         }
         var kchar = document.createElement("span");
@@ -4976,55 +4982,53 @@
         var rt = document.createElement("span");
         rt.className = "krt";
         var idx = pyI[c] || 0;
-        var py = pyQ[c] ? (pyQ[c][idx] || '') : '';
+        var py  = pyQ[c] ? (pyQ[c][idx] || '') : '';
         pyI[c] = idx + 1;
         rt.textContent = toToneMark(py);
 
-        // ── Sandhi marker ──────────────────────────────────────
         var sIdx = sandhiI[c] || 0;
         sandhiI[c] = sIdx + 1;
         var sInfo = sandhiByChar[c] && sandhiByChar[c][sIdx];
-        // Only mark when the spoken tone actually differs from the written tone
-        if (sInfo && sInfo.sandhiTone && sInfo.sandhiTone !== sInfo.tone) {
-          rt.classList.add('sandhi-rt');
-          kchar.classList.add('sandhi-active');
-          // Natural-language rule label
-          var toT = sInfo.sandhiTone;
-          var ruleZh, ruleEn;
-          if (c === '不') {
-            ruleZh = '"不" 在4声前变2声（bú）';
-            ruleEn = '不 before tone 4 → bú (tone 2)';
-          } else if (c === '一') {
-            // infer following tone from which direction 一 shifted
-            var prevToneDesc = toT === 2 ? '第4声前' : '第1/2/3声前';
-            var toMark = toT === 2 ? 'yí（2声）' : 'yì（4声）';
-            ruleZh = '"一" 在' + prevToneDesc + '变' + toMark;
-            ruleEn = toT === 2 ? '一 + tone 4 → yí (tone 2)' : '一 + tone 1/2/3 → yì (tone 4)';
-          } else {
-            // 3rd-tone sandhi (most common case)
-            ruleZh = '3声+3声连读，变2声';
-            ruleEn = '3rd+3rd tone → say tone 2';
-          }
-          var tipText = ruleZh + '\n' + ruleEn;
-          kchar.setAttribute('data-sandhi', tipText);
-          kchar.title = ruleZh + ' · ' + ruleEn;
-        }
+        var isSandhi = !!(sInfo && sInfo.sandhiTone && sInfo.sandhiTone !== sInfo.tone);
+        var tip = isSandhi ? _sandhiTip(c, sInfo) : '';
+        if (isSandhi) kchar.title = tip.replace('\n', ' · '); // native tooltip on hover
 
         kchar.appendChild(rt);
         kchar.appendChild(document.createTextNode(c));
         var group = document.createElement("span");
         group.className = "kchar-group";
         group.appendChild(kchar);
-        wrap.appendChild(group);
-        lastGroup = group;
+        groups.push({ el: group, isSandhi: isSandhi, tip: tip });
       });
+
+      // Pass 2: append groups, wrapping sandhi+next in .sandhi-pair for the arc
+      var gi = 0;
+      while (gi < groups.length) {
+        var g = groups[gi];
+        if (g.isSandhi && gi + 1 < groups.length) {
+          var pair = document.createElement("span");
+          pair.className = "sandhi-pair";
+          pair.setAttribute("data-sandhi", g.tip);
+          pair.title = g.tip.replace('\n', ' · ');
+          pair.appendChild(g.el);
+          pair.appendChild(groups[gi + 1].el);
+          wrap.appendChild(pair);
+          gi += 2;
+        } else {
+          wrap.appendChild(g.el);
+          gi++;
+        }
+      }
     }
 
-    // ── Sandhi tooltip (click/tap delegation on #kara) ───────────
+    // ── Sandhi tooltip (click/tap — matches .sandhi-pair) ───────────
     (function () {
       var _tipTimer = null;
       document.addEventListener('click', function (e) {
-        var kc = e.target.closest && e.target.closest('.kchar[data-sandhi]');
+        var kc = e.target.closest && (
+          e.target.closest('.sandhi-pair[data-sandhi]') ||
+          e.target.closest('.kchar[data-sandhi]')
+        );
         if (!kc) return;
         var tip = document.getElementById('sandhi-tip');
         if (!tip) return;
