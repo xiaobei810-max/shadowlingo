@@ -7980,12 +7980,13 @@
       var page = document.getElementById('chapter-select-page');
       if (!page) return;
       chsRenderCards();
-      chsUpdateTrack(false);   // no animation on first show
       chsUpdateDots();
       chsUpdateStartBtn();
       chsUpdateScene();
       chsUpdateBg();
+      // Show the page FIRST so offsetWidth is non-zero, then position the track
       page.classList.add('show');
+      chsUpdateTrack(false);   // no animation on first show
     }
 
     function chsUpdateBg() {
@@ -8101,7 +8102,7 @@
       var wrap  = document.getElementById('chs-track-wrap');
       if (!track || !wrap) return;
       if (!animate) track.classList.add('no-anim');
-      var vw     = wrap.offsetWidth || 375;
+      var vw     = wrap.offsetWidth || window.innerWidth || 375;
       var offset = (vw / 2) - (CHS_CARD_W / 2) - chsActiveIdx * (CHS_CARD_W + CHS_GAP);
       track.style.transform = 'translateX(' + Math.round(offset) + 'px)';
       if (!animate) {
