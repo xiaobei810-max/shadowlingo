@@ -915,31 +915,32 @@
       display: inline-flex;
       flex-direction: row;
       align-items: flex-end;
-      gap: 3px;              /* match .kara-wrap column gap */
-      padding-top: 9px;      /* headroom for the arc above the pinyin */
+      gap: 3px;       /* match .kara-wrap column gap */
       cursor: pointer;
     }
 
-    /* Tie arc — dome shape sitting above the two pinyin syllables */
+    /* ‿  Curved slur arc — sits just below the pinyin of the two syllables.
+       Trick: a wide-flat ellipse with only border-bottom visible gives a
+       perfect smooth curve with no straight segments.                       */
     .sandhi-pair::after {
       content: '';
       position: absolute;
-      top: 2px;              /* inside the padding-top zone, above the .krt text */
-      left: 22%;
-      right: 22%;
-      height: 6px;
-      border: 1px solid rgba(16, 185, 129, 0.55);
-      border-bottom: none;   /* open downward = dome / ⌢ shape */
-      border-top-left-radius:  50%;
-      border-top-right-radius: 50%;
+      top: 15px;            /* .krt is 11px × 1.4 lh ≈ 15 px — arc starts here */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26px;          /* span roughly the gap between the two syllables  */
+      height: 8px;          /* controls curve depth                             */
+      border: 1.5px solid transparent;
+      border-bottom-color: rgba(16, 185, 129, 0.60);
+      border-radius: 50%;   /* ellipse — only bottom edge is visible → ‿ shape  */
       pointer-events: none;
-      transition: border-color 0.2s;
+      transition: border-bottom-color 0.18s;
     }
 
     /* Brighten on hover / tap */
     .sandhi-pair:hover::after,
     .sandhi-pair:active::after {
-      border-color: rgba(16, 185, 129, 0.90);
+      border-bottom-color: rgba(16, 185, 129, 0.95);
     }
 
     /* Sandhi tooltip */
