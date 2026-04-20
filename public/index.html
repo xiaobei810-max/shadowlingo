@@ -929,9 +929,10 @@
       content: '';
       position: absolute;
       bottom: -10px;        /* below the 汉字, inside the row-gap space        */
-      left: 0;              /* starts at left edge of first char               */
-      width: calc(200% + 4px); /* first char + gap + second char              */
-      height: 8px;          /* controls curve depth                            */
+      left: 50%;            /* starts at centre of first char                  */
+      transform: translateX(10%); /* nudge right to hang between the two chars */
+      width: 1.2em;         /* short — just bridges the gap, not both chars    */
+      height: 0.4em;        /* taller ratio → visibly curved ‿ shape           */
       border: 1.5px solid transparent;
       border-bottom-color: rgba(16, 185, 129, 0.60);
       border-radius: 50%;   /* ellipse — only bottom visible → ‿ smile shape   */
