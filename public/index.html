@@ -2599,7 +2599,7 @@
       position: absolute; inset: -12%; z-index: 0;
       background: #07090f center/cover no-repeat;
       filter: blur(38px) brightness(0.28) saturate(1.3);
-      transition: background-image 0.55s ease;
+      transition: opacity 0.45s ease;  /* bg-image can't animate; use opacity fade */
       pointer-events: none;
     }
     #chapter-select-page.show { display: flex; }
@@ -2720,13 +2720,16 @@
       text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
 
-    /* Minimal "已完成 · Completed" tag — replaces green badge */
+    /* Minimal "已完成 · Completed" pill tag — dark frosted background for readability */
     .chs-done-tag {
       position: absolute; top: 10px; left: 12px; z-index: 3;
-      font-size: 8.5px; letter-spacing: 0.14em;
+      font-size: 8px; letter-spacing: 0.13em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.52);
-      text-shadow: 0 1px 4px rgba(0,0,0,0.75);
+      color: rgba(255,255,255,0.88);
+      background: rgba(0,0,0,0.48);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      padding: 3px 8px; border-radius: 99px;
     }
 
     /* Scene description — bilingual, cinematic */
@@ -2737,16 +2740,18 @@
       position: relative; z-index: 1;
     }
     .chs-scene-text {
-      text-align: center; max-width: 310px;
+      text-align: center; max-width: 520px;  /* wider to avoid orphan words */
+      text-wrap: balance;                    /* even line breaks */
       transition: opacity 0.25s ease;
     }
     .chs-scene-zh {
       font-size: 0.83rem; color: rgba(226,232,240,0.84);
-      line-height: 1.8;
+      line-height: 1.8; text-wrap: balance;
     }
     .chs-scene-en {
       font-size: 0.68rem; color: rgba(148,163,184,0.38);
       line-height: 1.6; font-style: italic; margin-top: 5px;
+      text-wrap: balance;
     }
 
     /* Dots */
@@ -3358,10 +3363,10 @@
           }
         ],
         vocab: [
-          { zh: '票',   py: 'piào',     en: 'Ticket' },
-          { zh: '扫码', py: 'sǎo mǎ',   en: 'Scan QR code' },
-          { zh: '现金', py: 'xiàn jīn', en: 'Cash' },
-          { zh: '远',   py: 'yuǎn',     en: 'Far' },
+          { zh: '票',   py: 'piào',     en: 'Ticket',        role: 'local' },
+          { zh: '扫码', py: 'sǎo mǎ',   en: 'Scan QR code',  role: 'local' },
+          { zh: '现金', py: 'xiàn jīn', en: 'Cash',          role: 'local' },
+          { zh: '远',   py: 'yuǎn',     en: 'Far',           role: 'local' },
         ],
         insiderTip: {
           textbook: { zh: '没关系。', en: "It doesn't matter." },
@@ -7775,10 +7780,11 @@
         });
       });
       // Preload TTS so "朗读" plays instantly on click
-      var cacheKey = 'local:1.00:' + v.zh;
+      var vocabRole = v.role || 'local';
+      var cacheKey = vocabRole + ':1.00:' + v.zh;
       if (!_ttsCache[cacheKey]) {
         fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: v.zh, role: 'local', rate: 1.0 }) })
+          body: JSON.stringify({ text: v.zh, role: vocabRole, rate: 1.0 }) })
         .then(function(r) { return r.ok ? r.blob() : null; })
         .then(function(blob) { if (blob) _ttsCache[cacheKey] = URL.createObjectURL(blob); })
         .catch(function() {});
@@ -7792,7 +7798,7 @@
           var btn = document.getElementById('fc-speak-btn');
           var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } };
           if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 播放中…'; }
-          speakAzure(vAuto.zh, 'local', 1.0, restore, null);
+          speakAzure(vAuto.zh, vAuto.role || 'local', 1.0, restore, null);
         }, 300);
       })(fcIdx);
       // auto-advance
@@ -7842,7 +7848,7 @@
       var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } };
       if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 播放中…'; }
       // If cached, speakAzure plays instantly; otherwise fetches
-      speakAzure(v.zh, 'local', 1.0, restore, null);
+      speakAzure(v.zh, v.role || 'local', 1.0, restore, null);
     }
 
     // ── Tip page speak ────────────────────────────────────────
@@ -7994,7 +8000,14 @@
       if (!bg) return;
       var lesson = LESSONS[chsActiveIdx];
       var img = lesson && lesson.cgImage ? lesson.cgImage : '';
-      bg.style.backgroundImage = img ? "url('" + img + "')" : 'none';
+      var newBg = img ? "url('" + img + "')" : 'none';
+      if (bg.style.backgroundImage === newBg) return; // already correct
+      // CSS can't transition background-image → fade via opacity instead
+      bg.style.opacity = '0';
+      setTimeout(function() {
+        bg.style.backgroundImage = newBg;
+        bg.style.opacity = '1';
+      }, 230);
     }
 
     function hideChapterSelectPage(onDone) {
@@ -8102,7 +8115,7 @@
       var wrap  = document.getElementById('chs-track-wrap');
       if (!track || !wrap) return;
       if (!animate) track.classList.add('no-anim');
-      var vw     = wrap.offsetWidth || window.innerWidth || 375;
+      var vw     = window.innerWidth || wrap.offsetWidth || 375; // innerWidth always reliable
       var offset = (vw / 2) - (CHS_CARD_W / 2) - chsActiveIdx * (CHS_CARD_W + CHS_GAP);
       track.style.transform = 'translateX(' + Math.round(offset) + 'px)';
       if (!animate) {
