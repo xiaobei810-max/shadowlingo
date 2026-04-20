@@ -907,44 +907,40 @@
       color: #60a5fa;
     }
 
-    /* ── Tone sandhi markers ─────────────────────────────────── */
-    /* Dot indicator: tiny dot below the pinyin, colour-blends with theme */
+    /* ── Tone sandhi markers — breathing glow ───────────────── */
+    @keyframes pinyin-breath {
+      0%, 100% { text-shadow: 0 0 4px rgba(34, 211, 238, 0.25); }   /* cyan-400, dim  */
+         50%   { text-shadow: 0 0 9px rgba(34, 211, 238, 0.75),
+                              0 0 2px rgba(167, 139, 250, 0.35); }   /* cyan + hint of violet */
+    }
     .krt.sandhi-rt {
-      position: relative;
-      /* No colour change — pinyin stays white/default */
+      /* colour stays as-is (white / blue-400 / etc.) — only glow changes */
+      animation: pinyin-breath 2.4s ease-in-out infinite;
     }
-    .krt.sandhi-rt::after {
-      content: '';
-      position: absolute;
-      left: 50%; bottom: -4px;
-      transform: translateX(-50%);
-      width: 3px; height: 3px;
-      border-radius: 50%;
-      background: rgba(74, 222, 128, 0.75); /* green-400/75 — theme colour */
-      pointer-events: none;
+    /* Pause breathing when the karaoke highlight takes over */
+    .kchar.active .krt.sandhi-rt,
+    .kchar.done   .krt.sandhi-rt {
+      animation: none;
+      text-shadow: 0 0 6px rgba(34, 211, 238, 0.5);  /* static soft glow */
     }
-    /* Dot stays visible through karaoke states */
-    .kchar.active .krt.sandhi-rt::after { background: rgba(96, 165, 250, 0.85); } /* blue-400 when active */
-    .kchar.done   .krt.sandhi-rt::after { background: rgba(74, 222, 128, 0.55); }
-    .kchar.sandhi-active {
-      cursor: pointer;
-    }
-    /* Sandhi tooltip popup */
+    .kchar.sandhi-active { cursor: pointer; }
+
+    /* Sandhi tooltip */
     #sandhi-tip {
       display: none;
       position: fixed;
       z-index: 9990;
-      background: rgba(15, 23, 42, 0.96);
-      border: 1px solid rgba(74, 222, 128, 0.5);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(34, 211, 238, 0.45);
       border-radius: 8px;
-      padding: 6px 12px;
+      padding: 6px 13px;
       font-size: 12px;
       color: #e2e8f0;
       pointer-events: none;
       max-width: 200px;
       white-space: normal;
       text-align: center;
-      line-height: 1.5;
+      line-height: 1.55;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       transform: translateY(-110%);
     }
@@ -4960,20 +4956,26 @@
         var sIdx = sandhiI[c] || 0;
         sandhiI[c] = sIdx + 1;
         var sInfo = sandhiByChar[c] && sandhiByChar[c][sIdx];
-        if (sInfo && sInfo.sandhiTone) {
+        // Only mark when the spoken tone actually differs from the written tone
+        if (sInfo && sInfo.sandhiTone && sInfo.sandhiTone !== sInfo.tone) {
           rt.classList.add('sandhi-rt');
           kchar.classList.add('sandhi-active');
-          // Build a natural rule label, e.g. "3声+3声连读，变2声"
-          var fromT = sInfo.tone, toT = sInfo.sandhiTone;
+          // Natural-language rule label
+          var toT = sInfo.sandhiTone;
           var ruleZh, ruleEn;
-          if (fromT === 3 && toT === 2) {
-            ruleZh = '3声+3声连读，变2声'; ruleEn = '3rd+3rd tone → say tone 2';
-          } else if (c === '不') {
-            ruleZh = '不 在4声前变2声（bú）'; ruleEn = '不 before tone 4 → bú (tone 2)';
+          if (c === '不') {
+            ruleZh = '"不" 在4声前变2声（bú）';
+            ruleEn = '不 before tone 4 → bú (tone 2)';
           } else if (c === '一') {
-            ruleZh = '一 在' + fromT + '声前变' + toT + '声'; ruleEn = '一 + tone ' + fromT + ' → tone ' + toT;
+            // infer following tone from which direction 一 shifted
+            var prevToneDesc = toT === 2 ? '第4声前' : '第1/2/3声前';
+            var toMark = toT === 2 ? 'yí（2声）' : 'yì（4声）';
+            ruleZh = '"一" 在' + prevToneDesc + '变' + toMark;
+            ruleEn = toT === 2 ? '一 + tone 4 → yí (tone 2)' : '一 + tone 1/2/3 → yì (tone 4)';
           } else {
-            ruleZh = c + ' 变调：实读第' + toT + '声'; ruleEn = 'tone sandhi → tone ' + toT;
+            // 3rd-tone sandhi (most common case)
+            ruleZh = '3声+3声连读，变2声';
+            ruleEn = '3rd+3rd tone → say tone 2';
           }
           var tipText = ruleZh + '\n' + ruleEn;
           kchar.setAttribute('data-sandhi', tipText);
