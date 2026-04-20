@@ -919,27 +919,29 @@
       cursor: pointer;
     }
 
-    /* ‿  Curved slur arc — sits just below the pinyin of the two syllables.
-       Trick: a wide-flat ellipse with only border-bottom visible gives a
-       perfect smooth curve with no straight segments.                       */
-    .sandhi-pair::after {
+    /* ‿  Curved slur arc anchored to the FIRST syllable (.sandhi-first) so
+       that punctuation after the second syllable cannot shift the centre
+       rightward.  width calc(200% + 4px) = both chars + inter-char gap.    */
+    .sandhi-first {
+      position: relative;   /* arc positions relative to this element only    */
+    }
+    .sandhi-first::after {
       content: '';
       position: absolute;
-      bottom: -10px;        /* below the 汉字, in the row-gap space             */
-      left: 50%;
-      transform: translateX(-50%);
-      width: 28px;          /* spans the gap between the two syllables          */
-      height: 8px;          /* controls curve depth                             */
+      bottom: -10px;        /* below the 汉字, inside the row-gap space        */
+      left: 0;              /* starts at left edge of first char               */
+      width: calc(200% + 4px); /* first char + gap + second char              */
+      height: 8px;          /* controls curve depth                            */
       border: 1.5px solid transparent;
       border-bottom-color: rgba(16, 185, 129, 0.60);
-      border-radius: 50%;   /* ellipse — only bottom visible → ‿ smile shape    */
+      border-radius: 50%;   /* ellipse — only bottom visible → ‿ smile shape   */
       pointer-events: none;
       transition: border-bottom-color 0.18s;
     }
 
-    /* Brighten on hover / tap */
-    .sandhi-pair:hover::after,
-    .sandhi-pair:active::after {
+    /* Brighten on hover / tap (target .sandhi-first child from .sandhi-pair) */
+    .sandhi-pair:hover .sandhi-first::after,
+    .sandhi-pair:active .sandhi-first::after {
       border-bottom-color: rgba(16, 185, 129, 0.95);
     }
 
@@ -2461,7 +2463,7 @@
     .dlp-name { font-size: 14px; font-weight: 700; color: var(--text); }
     .dlp-role-tag { font-size: 11px; color: #94a3b8; margin-top: 2px; }
     .dlp-content { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-height: 0; }
-    .dlp-kara { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: flex-end; line-height: 1; }
+    .dlp-kara { display: flex; flex-wrap: wrap; gap: 16px 4px; align-items: flex-end; line-height: 1; }
     .dlp-kchar { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.12s; color: #e2e8f0; }
     .dlp-kchar .dlp-py {
       font-size: 10px; font-weight: 400; line-height: 1.4; color: #94a3b8;
@@ -2531,7 +2533,7 @@
     .plp-name     { font-size: 17px; font-weight: 700; color: var(--green); }
     .plp-role-tag { font-size: 12px; color: #94a3b8; margin-top: 3px; }
     .plp-content  { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 0; }
-    .plp-kara     { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: flex-end; min-height: 60px; }
+    .plp-kara     { display: flex; flex-wrap: wrap; gap: 16px 4px; align-items: flex-end; min-height: 60px; }
     /* 预听页卡拉OK字体比普通页大 */
     #pre-listen-page .dlp-kchar .dlp-hz { font-size: 24px; }
     #pre-listen-page .dlp-kchar .dlp-py { font-size: 11px; }
@@ -4938,6 +4940,19 @@
       return /[，。！？、：；（）【】""''「」…—～,.!?;:()\s]/.test(c);
     }
 
+    // ── Sandhi tooltip text (shared by buildKara + dlpBuildKara) ────────
+    function _sandhiTip(c, sInfo) {
+      var toT = sInfo.sandhiTone;
+      if (c === '不') return '"不" 在4声前变2声（bú）\n不 before tone 4 → bú (tone 2)';
+      if (c === '一') {
+        var desc = toT === 2 ? '第4声前' : '第1/2/3声前';
+        var mk   = toT === 2 ? 'yí（2声）' : 'yì（4声）';
+        return '"一" 在' + desc + '变' + mk + '\n' +
+               (toT === 2 ? '一 + tone 4 → yí (tone 2)' : '一 + tone 1/2/3 → yì (tone 4)');
+      }
+      return '3声+3声连读，变2声\n3rd+3rd tone → say tone 2';
+    }
+
     function buildKara(text, chars) {
       var wrap = document.getElementById("kara");
       wrap.innerHTML = "";
@@ -4953,18 +4968,6 @@
         sandhiByChar[item.c].push(item);
       });
       var sandhiI = {};
-
-      function _sandhiTip(c, sInfo) {
-        var toT = sInfo.sandhiTone;
-        if (c === '不') return '"不" 在4声前变2声（bú）\n不 before tone 4 → bú (tone 2)';
-        if (c === '一') {
-          var desc = toT === 2 ? '第4声前' : '第1/2/3声前';
-          var mk   = toT === 2 ? 'yí（2声）' : 'yì（4声）';
-          return '"一" 在' + desc + '变' + mk + '\n' +
-                 (toT === 2 ? '一 + tone 4 → yí (tone 2)' : '一 + tone 1/2/3 → yì (tone 4)');
-        }
-        return '3声+3声连读，变2声\n3rd+3rd tone → say tone 2';
-      }
 
       // Pass 1: build .kchar-group elements, collect with sandhi metadata
       var groups = []; // { el: .kchar-group, isSandhi: bool, tip: str }
@@ -5011,6 +5014,7 @@
           pair.className = "sandhi-pair";
           pair.setAttribute("data-sandhi", g.tip);
           pair.title = g.tip.replace('\n', ' · ');
+          g.el.classList.add("sandhi-first"); // arc anchors to first char group
           pair.appendChild(g.el);
           pair.appendChild(groups[gi + 1].el);
           wrap.appendChild(pair);
@@ -6573,20 +6577,59 @@
     }
 
     // ── 对话聆听页专用函数 ─────────────────────────────
+
+    // Extract tone number (1–4) from a Unicode-marked pinyin syllable.
+    // Returns 0 for neutral / no tone mark.
+    function _unicodeTone(py) {
+      var lookup = {
+        'ā':1,'á':2,'ǎ':3,'à':4,
+        'ē':1,'é':2,'ě':3,'è':4,
+        'ī':1,'í':2,'ǐ':3,'ì':4,
+        'ō':1,'ó':2,'ǒ':3,'ò':4,
+        'ū':1,'ú':2,'ǔ':3,'ù':4,
+        'ǖ':1,'ǘ':2,'ǚ':3,'ǜ':4
+      };
+      for (var i = 0; i < py.length; i++) {
+        var t = lookup[py[i]];
+        if (t !== undefined) return t;
+      }
+      return 0; // neutral / no mark
+    }
+
     function dlpBuildKara(containerId, text, pinyinStr) {
       var wrap = document.getElementById(containerId);
       if (!wrap) return;
       wrap.innerHTML = '';
       var rawSyls = (pinyinStr || '').trim().split(/\s+/).filter(function (s) { return s.length > 0; });
       rawSyls = rawSyls.filter(function (s) { return /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/.test(s); });
-      var rIdx = 0;
-      var lastGroup = null;
+
+      // ── Build chars array for sandhi detection (numeric tone notation) ──
+      var chars4s = [];
+      var ri2 = 0;
       Array.from(text).forEach(function (c) {
-        if (isPunct(c) && lastGroup) {
+        if (/[\u4e00-\u9fff]/.test(c)) {
+          var rawPy2 = (rawSyls[ri2] || '').replace(/[,，。！？.!?]$/, '');
+          chars4s.push({ c: c, p: 'x' + _unicodeTone(rawPy2) }); // e.g. 'x3'
+          ri2++;
+        }
+      });
+      var dlpSandhiArr = computeSandhiTones(chars4s);
+      var dlpSandhiByChar = {};
+      dlpSandhiArr.forEach(function (item) {
+        if (!dlpSandhiByChar[item.c]) dlpSandhiByChar[item.c] = [];
+        dlpSandhiByChar[item.c].push(item);
+      });
+      var dlpSandhiI = {};
+
+      // ── Pass 1: build .kchar-group elements with sandhi metadata ────────
+      var rIdx = 0;
+      var groups = [];
+      Array.from(text).forEach(function (c) {
+        if (isPunct(c) && groups.length > 0) {
           var punct = document.createElement('span');
           punct.className = 'kpunct';
           punct.textContent = c;
-          lastGroup.appendChild(punct);
+          groups[groups.length - 1].el.appendChild(punct);
           return;
         }
         var span = document.createElement('span');
@@ -6596,19 +6639,45 @@
         var hzSpan = document.createElement('span');
         hzSpan.className = 'dlp-hz';
         hzSpan.textContent = c;
+        var isSandhi = false;
+        var tip = '';
         if (/[\u4e00-\u9fff]/.test(c)) {
           var rawPy = (rawSyls[rIdx] || '').replace(/[,，。！？.!?]$/, '');
           pySpan.textContent = rawPy;
           rIdx++;
+          var sIdx2 = dlpSandhiI[c] || 0;
+          dlpSandhiI[c] = sIdx2 + 1;
+          var sInfo2 = dlpSandhiByChar[c] && dlpSandhiByChar[c][sIdx2];
+          isSandhi = !!(sInfo2 && sInfo2.sandhiTone && sInfo2.sandhiTone !== sInfo2.tone);
+          if (isSandhi) tip = _sandhiTip(c, sInfo2);
         }
         span.appendChild(pySpan);
         span.appendChild(hzSpan);
         var group = document.createElement('span');
         group.className = 'kchar-group';
         group.appendChild(span);
-        wrap.appendChild(group);
-        lastGroup = group;
+        groups.push({ el: group, isSandhi: isSandhi, tip: tip });
       });
+
+      // ── Pass 2: wrap sandhi pairs with .sandhi-pair + .sandhi-first arc ──
+      var gi = 0;
+      while (gi < groups.length) {
+        var g = groups[gi];
+        if (g.isSandhi && gi + 1 < groups.length) {
+          var pair = document.createElement('span');
+          pair.className = 'sandhi-pair';
+          pair.setAttribute('data-sandhi', g.tip);
+          pair.title = g.tip.replace('\n', ' · ');
+          g.el.classList.add('sandhi-first');
+          pair.appendChild(g.el);
+          pair.appendChild(groups[gi + 1].el);
+          wrap.appendChild(pair);
+          gi += 2;
+        } else {
+          wrap.appendChild(g.el);
+          gi++;
+        }
+      }
     }
 
     var dlpKaraTimerId = null;
