@@ -915,28 +915,28 @@
       display: inline-flex;
       flex-direction: row;
       align-items: flex-end;
-      gap: 3px;          /* match .kara-wrap column gap */
+      gap: 3px;              /* match .kara-wrap column gap */
+      padding-top: 9px;      /* headroom for the arc above the pinyin */
       cursor: pointer;
     }
 
-    /* The slur arc drawn just below the pinyin line */
+    /* Tie arc — dome shape sitting above the two pinyin syllables */
     .sandhi-pair::after {
       content: '';
       position: absolute;
-      /* .krt is 11px font × 1.4 line-height ≈ 15 px tall; arc sits right below it */
-      top: 15px;
-      left: 6px;
-      right: 6px;
-      height: 5px;
-      border: 1px solid rgba(16, 185, 129, 0.50);
-      border-top: none;
-      border-bottom-left-radius:  50%;
-      border-bottom-right-radius: 50%;
+      top: 2px;              /* inside the padding-top zone, above the .krt text */
+      left: 22%;
+      right: 22%;
+      height: 6px;
+      border: 1px solid rgba(16, 185, 129, 0.55);
+      border-bottom: none;   /* open downward = dome / ⌢ shape */
+      border-top-left-radius:  50%;
+      border-top-right-radius: 50%;
       pointer-events: none;
       transition: border-color 0.2s;
     }
 
-    /* Brighten arc on hover / tap-hold */
+    /* Brighten on hover / tap */
     .sandhi-pair:hover::after,
     .sandhi-pair:active::after {
       border-color: rgba(16, 185, 129, 0.90);
