@@ -854,7 +854,7 @@
       flex-wrap: wrap;
       justify-content: flex-start;
       align-items: flex-end;
-      gap: 4px 3px;
+      gap: 22px 3px;   /* row-gap 22px: space below each row for sandhi arc */
       word-break: keep-all;
       text-wrap: balance;
     }
@@ -925,14 +925,14 @@
     .sandhi-pair::after {
       content: '';
       position: absolute;
-      top: 15px;            /* .krt is 11px × 1.4 lh ≈ 15 px — arc starts here */
+      bottom: -10px;        /* below the 汉字, in the row-gap space             */
       left: 50%;
       transform: translateX(-50%);
-      width: 26px;          /* span roughly the gap between the two syllables  */
+      width: 28px;          /* spans the gap between the two syllables          */
       height: 8px;          /* controls curve depth                             */
       border: 1.5px solid transparent;
       border-bottom-color: rgba(16, 185, 129, 0.60);
-      border-radius: 50%;   /* ellipse — only bottom edge is visible → ‿ shape  */
+      border-radius: 50%;   /* ellipse — only bottom visible → ‿ smile shape    */
       pointer-events: none;
       transition: border-bottom-color 0.18s;
     }
@@ -960,7 +960,7 @@
       text-align: center;
       line-height: 1.55;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      transform: translateY(-110%);
+      /* appears below the tapped pair, not above */
     }
     #sandhi-tip.show { display: block; }
 
@@ -5035,10 +5035,10 @@
         if (!tip) return;
         var lines = (kc.getAttribute('data-sandhi') || '').split('\n');
         tip.innerHTML = lines.map(function (l) { return '<span>' + l + '</span>'; }).join('<br>');
-        // Position above the character
+        // Position below the sandhi arc (never obscures the pinyin or characters)
         var rect = kc.getBoundingClientRect();
-        tip.style.left = Math.max(8, Math.min(window.innerWidth - 240, rect.left + rect.width / 2 - 110)) + 'px';
-        tip.style.top  = (rect.top - 4) + 'px';
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - 220, rect.left + rect.width / 2 - 100)) + 'px';
+        tip.style.top  = (rect.bottom + 14) + 'px';
         tip.classList.add('show');
         if (_tipTimer) clearTimeout(_tipTimer);
         _tipTimer = setTimeout(function () { tip.classList.remove('show'); }, 2400);
