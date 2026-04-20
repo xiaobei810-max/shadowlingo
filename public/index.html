@@ -932,7 +932,7 @@
       left: 50%;            /* starts at centre of first char                  */
       transform: translateX(10%); /* nudge right to hang between the two chars */
       width: 1.2em;         /* short — just bridges the gap, not both chars    */
-      height: 0.4em;        /* taller ratio → visibly curved ‿ shape           */
+      height: 0.8em;        /* taller ratio → visibly curved ‿ shape           */
       border: 1.5px solid transparent;
       border-bottom-color: rgba(16, 185, 129, 0.60);
       border-radius: 50%;   /* ellipse — only bottom visible → ‿ smile shape   */
@@ -6929,6 +6929,17 @@
           var sAu = new Audio(staticUrl);
           _currentAudio = sAu;
           var _sMeta = false;
+          // Guard: onerror and play().catch can both fire for the same failure;
+          // also prevents fallback TTS from starting while sAu is already playing
+          // (race that caused echo on lessons with static audio files).
+          var _sAuFallback = false;
+          function _staticFallback() {
+            if (_sAuFallback) return;
+            _sAuFallback = true;
+            sAu.pause();  // silence any buffered audio before TTS starts
+            if (_currentAudio === sAu) _currentAudio = null;
+            _doAzureFetch();
+          }
           sAu.onloadedmetadata = function () {
             _sMeta = true;
             if (isFinite(sAu.duration) && onplay) onplay(sAu.duration);
@@ -6938,19 +6949,15 @@
             if (_currentAudio === sAu) _currentAudio = null;
             if (onend) onend();
           };
-          sAu.onerror = function () {
-            // File missing / not yet uploaded — silently fall through to TTS
-            if (_currentAudio === sAu) _currentAudio = null;
-            _doAzureFetch();
-          };
+          sAu.onerror = function () { _staticFallback(); };
           sAu.play().catch(function (err) {
-            if (_currentAudio === sAu) _currentAudio = null;
             if (err && err.name === 'NotAllowedError') {
+              if (_currentAudio === sAu) _currentAudio = null;
               _needsGesture = true;
               _gestureCallback = function () { _needsGesture = false; speakAzure(text, role, rate, onend, onplay); };
               plpSetPauseBtn('play');
             } else {
-              _doAzureFetch();
+              _staticFallback();
             }
           });
           return;
@@ -7251,10 +7258,11 @@
       plpRenderPair(0);
 
       // 预加载前3句TTS，消除首次点击播放的2-3秒延迟
-      // 在页面显示后立即发起请求，用户有时间看到界面时音频已缓存完毕
+      // 跳过已有静态文件的句子（第1-2课），避免TTS缓存与静态音频同时播放产生回声
       var preloadCount = Math.min(3, plpSeq.length);
       for (var _pi = 0; _pi < preloadCount; _pi++) {
         (function(item) {
+          if (getStaticAudioUrl(item.zh)) return; // 有本地静态音频，无需预取TTS
           var role = item.role === 'learner' ? 'learner' : 'local';
           var key  = role + ':1.00:' + item.zh;
           if (_ttsCache[key]) return; // 已缓存，跳过
