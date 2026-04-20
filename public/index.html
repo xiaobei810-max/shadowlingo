@@ -909,19 +909,25 @@
 
     /* ── Tone sandhi markers — breathing glow ───────────────── */
     @keyframes pinyin-breath {
-      0%, 100% { text-shadow: 0 0 4px rgba(34, 211, 238, 0.25); }   /* cyan-400, dim  */
-         50%   { text-shadow: 0 0 9px rgba(34, 211, 238, 0.75),
-                              0 0 2px rgba(167, 139, 250, 0.35); }   /* cyan + hint of violet */
+      0%, 100% { color: #cbd5e1;                                       /* slate-300, a touch brighter than default */
+                 text-shadow: 0 0 5px rgba(34, 211, 238, 0.15); }     /* dim cyan halo */
+         50%   { color: #e2e8f0;                                       /* slate-100, near-white at peak */
+                 text-shadow: 0 0 10px rgba(34, 211, 238, 0.85),
+                              0 0 18px rgba(34, 211, 238, 0.35); }    /* bright cyan bloom */
     }
     .krt.sandhi-rt {
-      /* colour stays as-is (white / blue-400 / etc.) — only glow changes */
-      animation: pinyin-breath 2.4s ease-in-out infinite;
+      animation: pinyin-breath 2.2s ease-in-out infinite;
     }
-    /* Pause breathing when the karaoke highlight takes over */
-    .kchar.active .krt.sandhi-rt,
-    .kchar.done   .krt.sandhi-rt {
+    /* While karaoke active/done: freeze at lit state, let karaoke colour win */
+    .kchar.active .krt.sandhi-rt {
       animation: none;
-      text-shadow: 0 0 6px rgba(34, 211, 238, 0.5);  /* static soft glow */
+      color: #7dd3fc;          /* sky-300 — keeps it bright but matches active blue */
+      text-shadow: 0 0 8px rgba(34, 211, 238, 0.7);
+    }
+    .kchar.done .krt.sandhi-rt {
+      animation: none;
+      color: #86efac;          /* green-300 — matches done state */
+      text-shadow: 0 0 6px rgba(34, 211, 238, 0.4);
     }
     .kchar.sandhi-active { cursor: pointer; }
 
@@ -3798,8 +3804,14 @@
     // ── Audio setup ───────────────────────────────────────────
     let audio = null;
 
+    function _clearAudioError() {
+      var el = document.getElementById("audio-error");
+      if (el) el.classList.remove("show");
+    }
+
     function setupAudio(src) {
       if (audio) { audio.pause(); audio.removeEventListener("timeupdate", onTimeUpdate); audio.src = ""; }
+      _clearAudioError(); // always dismiss a previous error when setting up new audio
       audio = new Audio(src || '');
       audio.preload = "auto";
       audio.addEventListener("error", function () {
@@ -3810,9 +3822,7 @@
           busy = false;
         }
       });
-      audio.addEventListener("canplaythrough", function () {
-        document.getElementById("audio-error").classList.remove("show");
-      });
+      audio.addEventListener("canplaythrough", _clearAudioError);
       audio.addEventListener("timeupdate", onTimeUpdate);
     }
 
@@ -5128,6 +5138,7 @@
     function el(id) { return document.getElementById(id); }
 
     function updateUI() {
+      _clearAudioError(); // dismiss stale banner when navigating sentences
       closeWallet();
       clearTimers();
       if (audio) { audio.pause(); audio.playbackRate = 1; }
@@ -7323,6 +7334,7 @@
       _needsGesture = false; _gestureCallback = null;
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       stopAudio();
+      _clearAudioError(); // dismiss stale banner entering practice
       prewarmMic(); // 保底预热：确保进入跟读前麦克风已就绪
       // 确保 tip-page 不遮挡跟读页（重新复习流程中可能残留）
       var tipEl = document.getElementById('tip-page');
