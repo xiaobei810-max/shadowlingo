@@ -3668,14 +3668,14 @@
         title: "新生报到",
         scene: "明轩带 Nora 来到留学生办公室，Nora 递上护照，开启了她的留学生活。",
         dialogue: [
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "我们到了。先去报到。",           pinyin: "Wǒ men dào le. Xiān qù bào dào.",             en: "We're here. Let's go register first." },
-          { speaker: "Nora",                   role: "learner", zh: "好。需要什么东西？",             pinyin: "Hǎo. Xū yào shén me dōng xi?",                en: "Okay. What do we need?" },
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "你的护照和照片。",                   pinyin: "Nǐ de hù zhào hé zhào piàn.",                   en: "Your passport and photos." },
-          { speaker: "Nora",                   role: "learner", zh: "我已经准备好了，都在这儿。",         pinyin: "Wǒ yǐ jīng zhǔn bèi hǎo le, dōu zài zhèr.",    en: "I'm all set, everything's right here." },
-          { speaker: "工作人员 · Staff",        role: "local",   zh: "诺拉是吗？这是你的房卡。",     pinyin: "Nuò lā shì ma? Zhè shì nǐ de fáng kǎ.",      en: "Nora, right? This is your room card." },
-          { speaker: "Nora",                   role: "learner", zh: "谢谢。我的宿舍在哪儿？",        pinyin: "Xiè xie. Wǒ de sù shè zài nǎr?",             en: "Thank you. Where is my dorm?" },
-          { speaker: "工作人员 · Staff",        role: "local",   zh: "三号楼，四零二。",             pinyin: "Sān hào lóu, sì líng èr.",                    en: "Building 3, room 402." },
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "我知道在哪，送你过去吧。",     pinyin: "Wǒ zhī dào zài nǎ, sòng nǐ guò qù ba.",      en: "I know where it is, let me walk you over." }
+          { speaker: "mingxuan", name: "赵明轩 · Zhao Mingxuan", text: "我们到了。先去报到。",         pinyin: "Wǒ men dào le. Xiān qù bào dào.",           en: "We're here. Let's go register first." },
+          { speaker: "nora",     name: "诺拉 · Nora",             text: "好。需要什么东西？",           pinyin: "Hǎo. Xū yào shén me dōng xi?",              en: "Okay. What do we need?" },
+          { speaker: "mingxuan", name: "赵明轩 · Zhao Mingxuan", text: "你的护照和照片。",             pinyin: "Nǐ de hù zhào hé zhào piàn.",               en: "Your passport and photos." },
+          { speaker: "nora",     name: "诺拉 · Nora",             text: "我已经准备好了，都在这儿。",  pinyin: "Wǒ yǐ jīng zhǔn bèi hǎo le, dōu zài zhèr.", en: "I'm all set, everything's right here." },
+          { speaker: "staff",    name: "工作人员 · Staff",         text: "诺拉是吗？这是房卡。",        pinyin: "Nuò lā shì ma? Zhè shì fáng kǎ.",           en: "Nora, right? This is your room card." },
+          { speaker: "nora",     name: "诺拉 · Nora",             text: "谢谢。我的宿舍在哪儿？",      pinyin: "Xiè xie. Wǒ de sù shè zài nǎr?",           en: "Thank you. Where is my dorm?" },
+          { speaker: "staff",    name: "工作人员 · Staff",         text: "三号楼，四零二。",            pinyin: "Sān hào lóu, sì líng èr.",                  en: "Building 3, room 402." },
+          { speaker: "mingxuan", name: "赵明轩 · Zhao Mingxuan", text: "我知道在哪，带你过去吧。",    pinyin: "Wǒ zhī dào zài nǎ, dài nǐ guò qù ba.",     en: "I know where it is, let me walk you over." }
         ],
         correct: [
           { zh: "给",   pinyin: "Gěi",    tag: "口语 (Real Street)",
@@ -6275,13 +6275,12 @@
       window.speechSynthesis && stopAudio();
       speak(false);
       busy = false; phase = "idle";
-      if (idx > 0) {
-        idx--;
-        updateUI();
-      } else {
-        // 第1句时，返回预听页面
-        showPreListenPage();
+      if (dialogMode && dialogStep === 2) {
+        if (dialogRoundIdx > 0) { dialogRoundIdx--; renderDialogYourTurn(); }
+        else { showPreListenPage(); }
+        return;
       }
+      if (idx > 0) { idx--; updateUI(); } else { showPreListenPage(); }
     }
 
     function doNext() {
@@ -6291,11 +6290,13 @@
       window.speechSynthesis && stopAudio();
       speak(false);
       busy = false; phase = "idle";
-      var lesson = LESSONS[lessonIdx];
-      if (idx >= lesson.sentences.length - 1) {
-        showTipPage();
+      if (dialogMode && dialogStep === 2) {
+        if (dialogRoundIdx >= dialogRounds.length - 1) { enterDialogStep3(); }
+        else { dialogRoundIdx++; renderDialogYourTurn(); }
         return;
       }
+      var lesson = LESSONS[lessonIdx];
+      if (idx >= lesson.sentences.length - 1) { showTipPage(); return; }
       idx++;
       updateUI();
     }
@@ -6755,8 +6756,8 @@
       var lesson   = LESSONS[lessonIdx];
       // Pair consecutive lines: [0,1], [2,3], [4,5], [6,7] — exactly 2 bubbles per round
       for (var i = 0; i + 1 < dialogue.length; i += 2) {
-        var dA = dialogue[i];       // "上一句" shown in context-above
-        var dB = dialogue[i + 1];   // 当前句 shown in sentence-box (shadowing target)
+        var dA = _normD(dialogue[i]);       // context-above
+        var dB = _normD(dialogue[i + 1]);   // sentence-box (shadowing target)
         var evalSentence = null;
         if (lesson && lesson.sentences) {
           for (var j = 0; j < lesson.sentences.length; j++) {
@@ -7576,30 +7577,41 @@
 
     // 根据说话人数据返回头像 / 姓名配置
     function _isStaffSpeaker(s) {
-      return !!(s && (s.indexOf('Staff') !== -1 || s.indexOf('工作') !== -1));
+      return !!(s && (s === 'staff' || s.indexOf('Staff') !== -1 || s.indexOf('工作') !== -1));
     }
     function _speakerRole(speaker) {
       return _isStaffSpeaker(speaker) ? 'linyue' : 'local';
     }
+    // Normalise a dialogue entry to always expose .zh .role .displayName
+    // regardless of whether it uses old schema (zh/role/speaker) or new (text/speaker-id/name)
+    function _normD(d) {
+      if (!d) return d;
+      var zh   = d.text  !== undefined ? d.text  : d.zh;
+      var name = d.name  !== undefined ? d.name  : d.speaker;
+      var role = d.role  !== undefined ? d.role
+               : (d.speaker === 'nora' ? 'learner' : 'local');
+      return { zh: zh, pinyin: d.pinyin, en: d.en, role: role, speaker: name, _sid: d.speaker };
+    }
 
     function _plpSpeakerMeta(d) {
       if (!d) return null;
-      if (d.role === 'learner') {
+      var nd = _normD(d);
+      if (nd.role === 'learner') {
         return {
           img:      '/assets/characters/nora/nora_head.png',
           alt:      'Nora', cls: 'nora',
           imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);',
-          name:     '诺拉 · Nora',
+          name:     nd.speaker || '诺拉 · Nora',
           tag:      'You · 你（学员 Learner）',
           isStaff:  false
         };
       }
-      var isStaff = _isStaffSpeaker(d.speaker);
+      var isStaff = _isStaffSpeaker(d._sid || d.speaker);
       return {
         img:      '/assets/characters/mingxuan/mingxuan_head.png',
         alt:      isStaff ? '工作人员' : '明轩', cls: 'mx',
         imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);',
-        name:     d.speaker || '赵明轩 · Zhao Mingxuan',
+        name:     nd.speaker || '赵明轩 · Zhao Mingxuan',
         tag:      'Local · 本地说话人 Native Speaker',
         isStaff:  isStaff
       };
@@ -7653,14 +7665,14 @@
       // 更新头像 & 姓名
       _plpUpdatePanel('top', dA);
       _plpUpdatePanel('bot', dB || null);
-      // 渲染卡拉OK内容
+      // 渲染卡拉OK内容（兼容新旧 schema：text / zh）
       if (dA) {
-        dlpBuildKara('plp-kara-top', dA.zh, dA.pinyin);
+        dlpBuildKara('plp-kara-top', dA.text || dA.zh, dA.pinyin);
         var enTop = document.getElementById('plp-en-top');
         if (enTop) enTop.textContent = dA.en || '';
       }
       if (dB) {
-        dlpBuildKara('plp-kara-bottom', dB.zh, dB.pinyin);
+        dlpBuildKara('plp-kara-bottom', dB.text || dB.zh, dB.pinyin);
         var enBot = document.getElementById('plp-en-bottom');
         if (enBot) enBot.textContent = dB.en || '';
       } else {
@@ -7693,25 +7705,27 @@
       // 每对的第一句：同时刷新上下两个面板（含头像更新）
       if (isTop) { plpRenderPair(idx); }
       plpSetActive(isTop ? 'top' : 'bottom');
-      var plpRole = d.role === 'learner' ? 'learner' : _speakerRole(d.speaker);
+      var plpRole = (d.role === 'learner' || d.speaker === 'nora') ? 'learner' : _speakerRole(d.name || d.speaker);
       // Pre-fetch next sentence while current plays (skip when static audio exists)
       var plpNextD = plpSeq[idx + 1];
-      if (plpNextD && !getStaticAudioUrl(plpNextD.zh)) {
-        var plpNextRole = plpNextD.role === 'learner' ? 'learner' : _speakerRole(plpNextD.speaker);
-        var plpNextKey = plpNextRole + ':1.00:' + plpNextD.zh;
+      var _plpNextZh = plpNextD ? (plpNextD.text || plpNextD.zh) : null;
+      if (plpNextD && !getStaticAudioUrl(_plpNextZh)) {
+        var plpNextRole = (plpNextD.role === 'learner' || plpNextD.speaker === 'nora') ? 'learner' : _speakerRole(plpNextD.name || plpNextD.speaker);
+        var plpNextKey = plpNextRole + ':1.00:' + _plpNextZh;
         if (!_ttsCache[plpNextKey]) {
           fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: plpNextD.zh, role: plpNextRole, rate: 1.0 }) })
+            body: JSON.stringify({ text: _plpNextZh, role: plpNextRole, rate: 1.0 }) })
           .then(function (r) { return r.ok ? r.blob() : null; })
           .then(function (blob) { if (blob) _ttsCache[plpNextKey] = URL.createObjectURL(blob); })
           .catch(function () {});
         }
       }
-      speakAzure(d.zh, plpRole, 1.0,
+      var _dZh = d.text || d.zh || '';
+      speakAzure(_dZh, plpRole, 1.0,
         function () { if (plpPlaying && !plpPaused) plpPlayOne(idx + 1); },
         function (actualDur) {
-          var dur = actualDur || Math.max(1.5, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
-          dlpRunKara(karaId, barId, dur * 1000, computeCharTimingsForDuration(d.zh, d.pinyin, dur));
+          var dur = actualDur || Math.max(1.5, _dZh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+          dlpRunKara(karaId, barId, dur * 1000, computeCharTimingsForDuration(_dZh, d.pinyin, dur));
         }
       );
     }
