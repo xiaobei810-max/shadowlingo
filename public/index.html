@@ -1317,16 +1317,31 @@
     }
     .tip-py { font-size: 13px; color: #94a3b8; margin-top: 4px; }
     .tip-en-sm { font-size: 13px; color: #6b7280; font-style: italic; margin-top: 4px; }
-    .tip-note {
-      background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2);
-      border-radius: 14px; padding: 20px;
-      font-size: 15px; color: #cbd5e1; line-height: 1.85;
+    /* ── Tip notes: two-card magazine layout ─────────────────── */
+    .tip-cards { display: flex; flex-direction: column; gap: 12px; }
+    .tip-card {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 16px 18px;
+      background: rgba(255,255,255,0.025);
     }
-    .tip-note-en {
-      margin-top: 14px; padding-top: 14px;
-      border-top: 1px solid rgba(34,197,94,0.15);
-      font-size: 13px; color: #6b7280; line-height: 1.75; font-style: italic;
+    .tip-card-head {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 11px;
     }
+    .tip-card-icon { font-size: 14px; line-height: 1; }
+    .tip-card-lzh {
+      font-size: 11px; font-weight: 700; color: var(--green); letter-spacing: 0.4px;
+    }
+    .tip-card-len { font-size: 10px; color: #64748b; }
+    .tip-card-zh {
+      font-size: 14px; color: #cbd5e1; line-height: 1.88; margin-bottom: 10px;
+    }
+    .tip-card-en {
+      font-size: 12px; color: rgba(148,163,184,0.70);
+      line-height: 1.72; font-style: italic;
+      padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    /* keyword highlight — bold white, works in both zh and en */
+    .tip-hl { font-weight: 700; color: #ffffff; font-style: normal; }
     .tip-footer {
       padding: 16px 20px; border-top: 1px solid var(--border);
       display: flex; gap: 10px; flex-shrink: 0;
@@ -3351,8 +3366,14 @@
         insiderTip: {
           textbook: { zh: '向右转。', en: 'Please turn right.' },
           street:   { zh: '往右拐。', pinyin: 'Wǎng yòu guǎi.' },
-          noteZh: '在中国问路，记住这个最常见的方向动词："往右拐"。口语中人们极少使用书面语的"转 (zhuǎn)"，而是用更干脆的"拐 (guǎi)"。听到"拐"，跟着转弯就对了。另外，明轩最后说的"行李给我吧"，虽然听起来很直接，但在中国文化中是展现热情和照顾的极其地道的表达，绝不是没礼貌。',
-          noteEn: 'When asking for directions in China, remember the directional phrase: "往右拐 (turn right)". In spoken Chinese, people rarely use the formal "转 (zhuǎn)" for turning; instead, they use the snappier "拐 (guǎi)". Also, Mingxuan\'s last sentence "Give me your luggage" might sound direct in English, but in Chinese culture, it\'s a very natural and warm way to show hospitality and care.'
+          langTip: {
+            zh: '在中国问路，记住这个最常见的方向动词：<b class="tip-hl">往右拐</b>。口语中人们极少使用书面语的"<b class="tip-hl">转 (zhuǎn)</b>"，而是用更干脆的"<b class="tip-hl">拐 (guǎi)</b>"。听到"拐"，跟着转弯就对了。',
+            en: 'When asking for directions, remember the key phrase <b class="tip-hl">往右拐</b> (turn right). In spoken Chinese, people rarely use the formal <b class="tip-hl">转 (zhuǎn)</b>; they prefer the snappier, more casual <b class="tip-hl">拐 (guǎi)</b>.'
+          },
+          cultureTip: {
+            zh: '明轩最后说的"<b class="tip-hl">行李给我吧</b>"，虽然听起来很直接，但在中国文化中是展现热情和照顾的极其地道的表达，绝不是没礼貌。主动帮人拿行李，是一种无声的体贴。',
+            en: 'Mingxuan\'s "<b class="tip-hl">行李给我吧</b>" (give me your luggage) might sound blunt in English, but in Chinese culture it\'s a natural, warm way to show care. Offering to carry someone\'s bags is a silent act of hospitality — never rude.'
+          }
         }
       }
       ,
@@ -3443,8 +3464,14 @@
         insiderTip: {
           textbook: { zh: '没关系。', en: "It doesn't matter." },
           street:   { zh: '没事。', pinyin: 'Méi shì.' },
-          noteZh: '当你遇到小麻烦，或者别人向你道歉、道谢时，中国年轻人最常说的不是教科书里的"没关系"或"不用谢"，而是极其简短、随意的"没事（Méi shì）"。另外，"扫码（scan code）"是现代中国生存的必备词汇，无论是买车票还是买水，几乎所有支付都在手机上完成。',
-          noteEn: 'When you encounter a minor issue, or when someone apologizes or thanks you, young Chinese people rarely use the textbook phrase 没关系 (Méi guān xi). Instead, they use the very brief and casual 没事 (Méi shì). Also, 扫码 (scan code) is a must-know survival word in modern China — almost all payments are done via smartphones, from bus tickets to bottles of water.'
+          langTip: {
+            zh: '当别人道歉或道谢时，中国年轻人最常说的不是教科书里的"<b class="tip-hl">没关系 (Méi guān xi)</b>"，而是更随意的"<b class="tip-hl">没事 (Méi shì)</b>"——简短、轻巧，表示"没什么大不了"。',
+            en: 'When someone apologizes or thanks you, young Chinese rarely use the textbook phrase <b class="tip-hl">没关系 (Méi guān xi)</b>. Instead, they say <b class="tip-hl">没事 (Méi shì)</b> — brief, casual, meaning "it\'s nothing, no big deal."'
+          },
+          cultureTip: {
+            zh: '"<b class="tip-hl">扫码 (sǎo mǎ)</b>"是现代中国生存的必备词。无论买车票、买水还是进场馆，几乎所有支付和验证都通过手机完成。没有<b class="tip-hl">微信</b>或<b class="tip-hl">支付宝</b>，在中国寸步难行。',
+            en: '<b class="tip-hl">扫码 (sǎo mǎ)</b> — "scan the QR code" — is a survival word in China. From bus tickets to bottled water, nearly all payments go through your phone. Without <b class="tip-hl">WeChat Pay</b> or <b class="tip-hl">Alipay</b>, daily life gets complicated fast.'
+          }
         }
       }
     ];
@@ -6260,12 +6287,11 @@
 
     function showTipPage() {
       teardownMic(); // leaving practice page — release mic
-      // 渲染本课地道指南内容
       var lesson = LESSONS[lessonIdx];
       var tip = lesson.insiderTip;
       var inner = document.getElementById("tip-inner-content");
       if (inner && tip) {
-        inner.innerHTML =
+        var compareHtml =
           "<div class='tip-compare'>" +
             "<div class='tip-compare-row'>" +
               "<div class='tip-tag'>📖 书面语 · Textbook</div>" +
@@ -6279,13 +6305,38 @@
               (tip.street.pinyin ? "<div class='tip-py'>" + tip.street.pinyin + "</div>" : "") +
               "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.street.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
             "</div>" +
-          "</div>" +
-          "<div class='tip-note'>" +
-            tip.noteZh +
-            "<div class='tip-note-en'>" + tip.noteEn + "</div>" +
           "</div>";
+
+        var cardsHtml = "<div class='tip-cards'>";
+        if (tip.langTip) {
+          cardsHtml +=
+            "<div class='tip-card'>" +
+              "<div class='tip-card-head'>" +
+                "<span class='tip-card-icon'>💡</span>" +
+                "<span class='tip-card-lzh'>口语习惯</span>" +
+                "<span class='tip-card-len'>Speaking Tip</span>" +
+              "</div>" +
+              "<div class='tip-card-zh'>" + tip.langTip.zh + "</div>" +
+              "<div class='tip-card-en'>" + tip.langTip.en + "</div>" +
+            "</div>";
+        }
+        if (tip.cultureTip) {
+          cardsHtml +=
+            "<div class='tip-card'>" +
+              "<div class='tip-card-head'>" +
+                "<span class='tip-card-icon'>🤝</span>" +
+                "<span class='tip-card-lzh'>文化密码</span>" +
+                "<span class='tip-card-len'>Culture Note</span>" +
+              "</div>" +
+              "<div class='tip-card-zh'>" + tip.cultureTip.zh + "</div>" +
+              "<div class='tip-card-en'>" + tip.cultureTip.en + "</div>" +
+            "</div>";
+        }
+        cardsHtml += "</div>";
+
+        inner.innerHTML = compareHtml + cardsHtml;
       } else if (inner) {
-        inner.innerHTML = "<div class='tip-note' style='color:#64748b;'>本课暂无地道指南</div>";
+        inner.innerHTML = "<div style='color:#64748b;padding:16px;'>本课暂无地道指南</div>";
       }
       document.getElementById("tip-page").classList.add("show");
       showCompletion(); // 叠加得分弹窗
