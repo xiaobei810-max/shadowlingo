@@ -3112,7 +3112,7 @@
         <div class="card-layout">
           <div class="card-avatar-col">
             <div class="avatar-wrap mx" id="ctx-avatar-mx">
-              <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
+              <img id="ctx-avatar-img" src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
                    style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
             </div>
           </div>
@@ -3508,16 +3508,16 @@
           },
           /* Page 2 */
           {
-            zh: "我都准备好了，都在这儿。",
-            pinyin: "Wǒ dōu zhǔn bèi hǎo le, dōu zài zhèr.",
-            en: "I've got everything ready, it's all here.",
+            zh: "我已经准备好了，都在这儿。",
+            pinyin: "Wǒ yǐ jīng zhǔn bèi hǎo le, dōu zài zhèr.",
+            en: "I'm all set, everything's right here.",
             contextBelow: { speaker: "工作人员 · Staff", zh: "诺拉是吗？这是你的房卡。", pinyin: "Nuò lā shì ma? Zhè shì nǐ de fáng kǎ.", en: "Nora, right? This is your room card." },
             role: "learner",
             start: 0, end: 0,
             praise: "👍 表达完整！Well said!",
-            hint: "【准备好了】means 'all ready/prepared' · 【都在这儿】= 'it's all right here' — great for any official hand-off",
+            hint: "【已经准备好了】means 'already all set' — shows you're prepared · 【都在这儿】= 'it's all right here'",
             chars: [
-              { c: "我", p: "wo3" }, { c: "都", p: "dou1" },
+              { c: "我", p: "wo3" }, { c: "已", p: "yi3" }, { c: "经", p: "jing1" },
               { c: "准", p: "zhun3" }, { c: "备", p: "bei4" },
               { c: "好", p: "hao3" }, { c: "了", p: "le5" },
               { c: "都", p: "dou1" }, { c: "在", p: "zai4" },
@@ -3529,7 +3529,7 @@
             zh: "谢谢。我的宿舍在哪儿？",
             pinyin: "Xiè xie. Wǒ de sù shè zài nǎr?",
             en: "Thank you. Where is my dorm?",
-            contextBelow: { speaker: "工作人员 · Staff", zh: "三号楼，四零二。", pinyin: "Sān hào lóu, sì líng èr.", en: "Building 3, room 402." },
+            contextBelow: { speaker: "赵明轩 · Zhao Mingxuan", zh: "我知道在哪，送你过去吧。", pinyin: "Wǒ zhī dào zài nǎ, sòng nǐ guò qù ba.", en: "I know where it is, let me walk you over." },
             role: "learner",
             start: 0, end: 0,
             praise: "🏠 问得超实用！Great question!",
@@ -3549,15 +3549,15 @@
           { zh: '房卡', py: 'fáng kǎ', en: 'Room card',           role: 'local' },
         ],
         insiderTip: {
-          textbook: { zh: '请把这个给我。', en: 'Please give this to me.' },
-          street:   { zh: '给。', pinyin: 'Gěi.' },
+          textbook: { zh: '我去送你到宿舍。', en: "I'll go and take you to the dormitory." },
+          street:   { zh: '送你过去吧。', pinyin: 'Sòng nǐ guò qù ba.' },
           langTip: {
-            zh: '在日常递东西时，中国人很少说书面上的"<b class="tip-hl">给你 (gěi nǐ)</b>"，而是极其自然地只说一个字："<b class="tip-hl">给 (Gěi)</b>"。简短、利落，配上递东西的动作，完全不失礼貌。',
-            en: 'When handing something over, Chinese people rarely say the textbook phrase <b class="tip-hl">给你 (gěi nǐ)</b>. A single word — <b class="tip-hl">给 (Gěi)</b> — paired with the gesture says it all. Brief, natural, and perfectly polite.'
+            zh: '"<b class="tip-hl">吧</b>"是中文里最温柔的一个字。明轩说的"送你过去<b class="tip-hl">吧</b>"，比直接说"我送你去"多了一份商量的语气，像在说"要不我来帮你吧"，既热情又不显突兀。记住：句尾加"吧"，话就软了半截。',
+            en: '"<b class="tip-hl">吧</b>" is Chinese\'s gentlest word. Mingxuan\'s "<b class="tip-hl">送你过去吧</b>" sounds like a warm offer rather than a statement — closer to "how about I walk you over?" Add 吧 at the end, and any sentence becomes a suggestion, not a command.'
           },
           cultureTip: {
-            zh: '读房号和电话号码时，中国人习惯一个数字一个数字分开念。比如 402 读作"<b class="tip-hl">四-零-二 (sì líng èr)</b>"，而不是"四百零二"。记住这一点，无论是报门牌号还是快递单号都不会出错。',
-            en: 'Chinese people read room numbers and phone numbers digit by digit. So 402 is <b class="tip-hl">四-零-二 (sì líng èr)</b>, not "four hundred and two." The same rule applies to phone numbers and delivery codes.'
+            zh: '读房号和电话号码时，中国人习惯一个数字一个数字分开念。比如 402 读作"<b class="tip-hl">四-零-二 (sì líng èr)</b>"，而不是"四百零二"。记住这一点，无论是报门牌号、快递单号还是手机号都不会出错。',
+            en: 'Chinese people read room numbers and phone numbers digit by digit. So 402 is <b class="tip-hl">四-零-二 (sì líng èr)</b>, not "four hundred and two." The same rule applies to phone numbers, delivery codes, and ID numbers.'
           }
         }
       }
@@ -3654,8 +3654,8 @@
         dialogue: [
           { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "我们到了。先去报到。",           pinyin: "Wǒ men dào le. Xiān qù bào dào.",             en: "We're here. Let's go register first." },
           { speaker: "Nora",                   role: "learner", zh: "好。需要什么东西？",             pinyin: "Hǎo. Xū yào shén me dōng xi?",                en: "Okay. What do we need?" },
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "你的护照和照片。",               pinyin: "Nǐ de hù zhào hé zhào piàn.",                 en: "Your passport and photos." },
-          { speaker: "Nora",                   role: "learner", zh: "我都准备好了，都在这儿。",       pinyin: "Wǒ dōu zhǔn bèi hǎo le, dōu zài zhèr.",      en: "I've got everything ready, it's all here." },
+          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "你的护照和照片。",                   pinyin: "Nǐ de hù zhào hé zhào piàn.",                   en: "Your passport and photos." },
+          { speaker: "Nora",                   role: "learner", zh: "我已经准备好了，都在这儿。",         pinyin: "Wǒ yǐ jīng zhǔn bèi hǎo le, dōu zài zhèr.",    en: "I'm all set, everything's right here." },
           { speaker: "工作人员 · Staff",        role: "local",   zh: "诺拉是吗？这是你的房卡。",     pinyin: "Nuò lā shì ma? Zhè shì nǐ de fáng kǎ.",      en: "Nora, right? This is your room card." },
           { speaker: "Nora",                   role: "learner", zh: "谢谢。我的宿舍在哪儿？",        pinyin: "Xiè xie. Wǒ de sù shè zài nǎr?",             en: "Thank you. Where is my dorm?" },
           { speaker: "工作人员 · Staff",        role: "local",   zh: "三号楼，四零二。",             pinyin: "Sān hào lóu, sì líng èr.",                    en: "Building 3, room 402." },
@@ -6531,29 +6531,30 @@
         'display:flex;flex-direction:column;align-items:center;gap:14px;' +
         'padding:0 24px;text-align:center;';
 
+      var zhEl = null, enEl = null;
       if (textZh) {
-        var zhEl = document.createElement('div');
+        zhEl = document.createElement('div');
         zhEl.style.cssText =
           'font-family:"Noto Serif SC","SimSun","STSong",serif;' +
           'font-size:clamp(1.3rem,4.8vw,1.55rem);font-weight:700;color:#fff;' +
-          'letter-spacing:3px;line-height:1.5;' +
+          'letter-spacing:3px;line-height:1.5;min-height:1.5em;' +
           'text-shadow:0 2px 8px rgba(0,0,0,0.8),0 0 32px rgba(0,0,0,0.85);';
-        zhEl.textContent = textZh;
+        zhEl.textContent = '';   // 打字机从空开始
         texts.appendChild(zhEl);
       }
       if (textEn) {
-        var enEl = document.createElement('div');
+        enEl = document.createElement('div');
         enEl.style.cssText =
           'font-size:clamp(0.82rem,2.8vw,1rem);font-weight:400;' +
           'color:rgba(226,232,240,0.82);white-space:normal;max-width:36em;' +
-          'letter-spacing:0.04em;line-height:1.6;' +
+          'letter-spacing:0.04em;line-height:1.6;min-height:1.4em;' +
           'text-shadow:0 2px 8px rgba(0,0,0,0.8);';
-        enEl.textContent = textEn;
+        enEl.textContent = '';   // 打字机从空开始
         texts.appendChild(enEl);
       }
       page.appendChild(texts);
 
-      // 点击继续提示
+      // 点击继续提示（初始透明）
       var hintId = 'lcg-hint-' + Date.now();
       var hint = document.createElement('div');
       hint.id = hintId;
@@ -6567,22 +6568,42 @@
 
       document.body.appendChild(page);
 
-      // 淡入（transition:opacity 0.5s）；淡入完成后通知调用方隐藏封面
+      // 淡入后启动打字机 + TTS
       requestAnimationFrame(function() {
         requestAnimationFrame(function() {
           page.style.opacity = '1';
-          if (onShown) setTimeout(onShown, 500); // 与 transition 时长一致
+          if (onShown) setTimeout(onShown, 500);
+
+          // ── 打字机 + 语音 ──────────────────────────────────────
+          setTimeout(function() {
+            // TTS 播放金句（不等打字机，同步启动）
+            if (textZh) speakTTS(textZh, 'local', null);
+
+            // 中文：每字 110ms
+            var zhChars = textZh ? Array.from(textZh) : [];
+            zhChars.forEach(function(ch, i) {
+              setTimeout(function() { if (zhEl) zhEl.textContent += ch; }, i * 110);
+            });
+
+            // 英文：中文打完 + 500ms 缓冲后，每字 45ms
+            var zhDone = zhChars.length * 110 + 500;
+            var enChars = textEn ? Array.from(textEn) : [];
+            enChars.forEach(function(ch, i) {
+              setTimeout(function() { if (enEl) enEl.textContent += ch; }, zhDone + i * 45);
+            });
+
+            // 全部打完后显示「点击继续」呼吸提示
+            var allDone = zhDone + enChars.length * 45 + 300;
+            setTimeout(function() {
+              var hintEl = document.getElementById(hintId);
+              if (hintEl) {
+                hintEl.style.color = 'rgba(255,255,255,0.5)';
+                hintEl.style.animation = 'breatheHint 2.4s ease-in-out infinite';
+              }
+            }, allDone);
+          }, 600); // 等页面淡入完成
         });
       });
-
-      // 提示淡入 + 呼吸动画
-      setTimeout(function() {
-        var hintEl = document.getElementById(hintId);
-        if (hintEl) {
-          hintEl.style.color = 'rgba(255,255,255,0.5)';
-          hintEl.style.animation = 'breatheHint 2.4s ease-in-out infinite';
-        }
-      }, 800);
 
       // 点击关闭
       var _clicked = false;
@@ -7323,29 +7344,70 @@
       renderDialogYourTurn();
     }
 
-    // 渲染当前轮的 local & learner 台词
+    // 渲染当前轮的 local & learner 台词（含上下文面板）
     function renderDialogYourTurn() {
       if (!dialogRounds.length) return;
       var round = dialogRounds[dialogRoundIdx];
       if (!round) return;
-      if (el("role-text-local")) el("role-text-local").textContent = round.local ? round.local.zh : '';
-      if (el("role-text-learner")) el("role-text-learner").textContent = round.learner ? round.learner.zh : '';
-      if (el("pinyin")) el("pinyin").textContent = round.learner ? round.learner.pinyin : '';
-      if (el("en")) el("en").textContent = round.learner ? round.learner.en : '';
 
-      // 上方 local 自动 TTS 一遍
-      if (round.local && round.local.zh) {
-        speakTTS(round.local.zh, 'local', function () { });
+      // ── 上方：前置本地台词（context-panel）──────────────────
+      var ctxPanel = document.getElementById('context-panel');
+      if (ctxPanel) {
+        if (round.local) {
+          var ctxSpeaker = document.getElementById('ctx-speaker');
+          var ctxZhEl    = document.getElementById('ctx-zh');
+          var ctxEnEl    = document.getElementById('ctx-en');
+          var ctxImg     = document.getElementById('ctx-avatar-img');
+          if (ctxSpeaker) ctxSpeaker.textContent = round.local.speaker || '赵明轩 · Zhao Mingxuan';
+          if (ctxImg) {
+            var isStaffLocal = round.local.speaker && (round.local.speaker.indexOf('Staff') !== -1 || round.local.speaker.indexOf('工作') !== -1);
+            ctxImg.src = '/assets/characters/mingxuan/mingxuan_head.png';
+            ctxImg.alt = isStaffLocal ? '工作人员' : '明轩';
+          }
+          if (ctxZhEl) { ctxZhEl.innerHTML = ''; buildCtxKara(ctxZhEl, round.local.zh, round.local.pinyin); }
+          if (ctxEnEl) ctxEnEl.textContent = round.local.en || '';
+          ctxPanel.style.display = 'block';
+
+          // 自动朗读前置台词
+          speakTTS(round.local.zh, 'local', function() {});
+        } else {
+          ctxPanel.style.display = 'none';
+        }
       }
 
-      // 卡拉 OK 高亮 learner 句子
-      buildKara(round.learner.zh, null);
+      // ── 中间：学员台词（sentence-box）───────────────────────
+      if (el("pinyin")) el("pinyin").textContent = round.learner ? round.learner.pinyin : '';
+      if (el("en"))     el("en").textContent     = round.learner ? round.learner.en     : '';
+      buildKara(round.learner.zh, round.evalSentence && round.evalSentence.chars ? round.evalSentence.chars : null);
       var estSeconds = Math.max(2, round.learner.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
       var timings = computeCharTimingsForDuration(round.learner.zh, round.learner.pinyin, estSeconds);
       runKaraWithTimer(estSeconds * 1000, timings);
 
-      // 绑定当前轮评测用的句子（带 chars/praise/hint）
+      // ── 下方：后置本地台词（context-panel-below）────────────
+      var ctxBelowPanel = document.getElementById('context-panel-below');
+      if (ctxBelowPanel) {
+        var es = round.evalSentence;
+        if (es && es.contextBelow) {
+          ctxBelowPanel.style.display = 'block';
+          var cbSpeaker = document.getElementById('ctx-speaker-below');
+          var cbZh      = document.getElementById('ctx-zh-below');
+          var cbEn      = document.getElementById('ctx-en-below');
+          var cbBtn     = document.getElementById('ctx-play-btn-below');
+          if (cbSpeaker) cbSpeaker.textContent = es.contextBelow.speaker;
+          buildCtxKara(cbZh, es.contextBelow.zh, es.contextBelow.pinyin);
+          if (cbEn) cbEn.textContent = es.contextBelow.en;
+          if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
+        } else {
+          ctxBelowPanel.style.display = 'none';
+        }
+      }
+
+      // ── 绑定当前轮评测用的句子（带 chars/praise/hint）──────
       currentSentenceForEval = round.evalSentence;
+
+      // ── 辅助文字（role-text 元素，若页面上存在）───────────
+      if (el("role-text-local"))   el("role-text-local").textContent   = round.local   ? round.local.zh   : '';
+      if (el("role-text-learner")) el("role-text-learner").textContent = round.learner ? round.learner.zh : '';
     }
 
     // Your Turn 下方麦克风点击
@@ -7587,7 +7649,7 @@
       // 每对的第一句：同时刷新上下两个面板（含头像更新）
       if (isTop) { plpRenderPair(idx); }
       plpSetActive(isTop ? 'top' : 'bottom');
-      var plpRole = isLearner ? 'learner' : 'local';
+      var plpRole = d.role === 'learner' ? 'learner' : 'local';
       // Pre-fetch next sentence while current plays (skip when static audio exists)
       var plpNextD = plpSeq[idx + 1];
       if (plpNextD && !getStaticAudioUrl(plpNextD.zh)) {
