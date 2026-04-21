@@ -268,6 +268,17 @@
       flex-shrink: 0;
       transition: border-color 0.25s, box-shadow 0.25s;
     }
+    /* Staff / NPC silhouette badge — shown instead of avatar-wrap for non-named speakers */
+    .npc-badge {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: #334155;
+      border: 1px solid #475569;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .npc-badge svg { width: 28px; height: 28px; margin-top: 6px; }
+
     .avatar-wrap > img {
       width: 100% !important;
       height: 100% !important;
@@ -3115,6 +3126,11 @@
               <img id="ctx-avatar-img" src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
                    style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
             </div>
+            <div class="npc-badge" id="ctx-avatar-badge" style="display:none">
+              <svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.70)" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
           </div>
           <div class="card-content-col">
             <div class="ctx-header">
@@ -3481,8 +3497,8 @@
         newChars: [],
         cgImage:   '/assets/cg/lesson3_office.png',
         cardImage: '/assets/cg/lesson3_office_card.jpg',
-        cgText:  '接过小小的房卡，在这个陌生的校园里，我终于有了属于自己的角落。',
-        cgTextEn: 'Taking the small room card in hand, I finally have a corner of my own on this unfamiliar campus.',
+        cgText:  '在这个陌生的校园里，我有了属于自己的角落。',
+        cgTextEn: 'In this unfamiliar campus, I have a corner of my own.',
         coverScene: {
           zh: '明轩带 Nora 来到留学生办公室，<br>Nora 递上护照，开启了她的留学生活。',
           en: 'Mingxuan takes Nora to the international student office. Nora hands over her passport and begins her life as a student abroad.'
@@ -6583,7 +6599,7 @@
           // ── 打字机 + 语音 ──────────────────────────────────────
           setTimeout(function() {
             // TTS 播放金句（不等打字机，同步启动）
-            if (textZh) speakTTS(textZh, 'local', null);
+            if (textZh) speakTTS(textZh, 'learner', null);
 
             // 中文：每字 110ms
             var zhChars = textZh ? Array.from(textZh) : [];
@@ -6735,27 +6751,23 @@
     function buildDialogRounds() {
       dialogRounds = [];
       if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
-      var lastLocal = null;
       var dialogue = dialogLessonMeta.dialogue;
-      for (var i = 0; i < dialogue.length; i++) {
-        var d = dialogue[i];
-        if (d.role === 'local') {
-          lastLocal = d;
-        } else if (d.role === 'learner') {
-          // 在 shadow 课的 LESSONS 里寻找同句，拿到 chars/praise/hint
-          var evalSentence = null;
-          var lesson = LESSONS[lessonIdx];
-          if (lesson && lesson.sentences) {
-            for (var j = 0; j < lesson.sentences.length; j++) {
-              if (lesson.sentences[j].zh === d.zh) { evalSentence = lesson.sentences[j]; break; }
-            }
+      var lesson   = LESSONS[lessonIdx];
+      // Pair consecutive lines: [0,1], [2,3], [4,5], [6,7] — exactly 2 bubbles per round
+      for (var i = 0; i + 1 < dialogue.length; i += 2) {
+        var dA = dialogue[i];       // "上一句" shown in context-above
+        var dB = dialogue[i + 1];   // 当前句 shown in sentence-box (shadowing target)
+        var evalSentence = null;
+        if (lesson && lesson.sentences) {
+          for (var j = 0; j < lesson.sentences.length; j++) {
+            if (lesson.sentences[j].zh === dB.zh) { evalSentence = lesson.sentences[j]; break; }
           }
-          dialogRounds.push({
-            local: lastLocal,
-            learner: d,
-            evalSentence: evalSentence || { zh: d.zh, pinyin: d.pinyin, en: d.en, chars: [] }
-          });
         }
+        dialogRounds.push({
+          local:        dA,
+          learner:      dB,
+          evalSentence: evalSentence || { zh: dB.zh, pinyin: dB.pinyin, en: dB.en, chars: [] }
+        });
       }
       dialogRoundIdx = 0;
     }
@@ -7363,12 +7375,18 @@
           var ctxSpeaker = document.getElementById('ctx-speaker');
           var ctxZhEl    = document.getElementById('ctx-zh');
           var ctxEnEl    = document.getElementById('ctx-en');
+          var ctxWrap    = document.getElementById('ctx-avatar-mx');
           var ctxImg     = document.getElementById('ctx-avatar-img');
+          var ctxBadge   = document.getElementById('ctx-avatar-badge');
+          var isStaffLocal = _isStaffSpeaker(round.local.speaker);
           if (ctxSpeaker) ctxSpeaker.textContent = round.local.speaker || '赵明轩 · Zhao Mingxuan';
-          if (ctxImg) {
-            var isStaffLocal = round.local.speaker && (round.local.speaker.indexOf('Staff') !== -1 || round.local.speaker.indexOf('工作') !== -1);
-            ctxImg.src = '/assets/characters/mingxuan/mingxuan_head.png';
-            ctxImg.alt = isStaffLocal ? '工作人员' : '明轩';
+          if (isStaffLocal) {
+            if (ctxWrap)  ctxWrap.style.display  = 'none';
+            if (ctxBadge) ctxBadge.style.display = 'flex';
+          } else {
+            if (ctxWrap)  ctxWrap.style.display  = '';
+            if (ctxBadge) ctxBadge.style.display = 'none';
+            if (ctxImg)   { ctxImg.src = '/assets/characters/mingxuan/mingxuan_head.png'; ctxImg.alt = '明轩'; }
           }
           if (ctxZhEl) { ctxZhEl.innerHTML = ''; buildCtxKara(ctxZhEl, round.local.zh, round.local.pinyin); }
           if (ctxEnEl) ctxEnEl.textContent = round.local.en || '';
@@ -7557,38 +7575,54 @@
     }
 
     // 根据说话人数据返回头像 / 姓名配置
+    function _isStaffSpeaker(s) {
+      return !!(s && (s.indexOf('Staff') !== -1 || s.indexOf('工作') !== -1));
+    }
+    function _speakerRole(speaker) {
+      return _isStaffSpeaker(speaker) ? 'linyue' : 'local';
+    }
+
     function _plpSpeakerMeta(d) {
       if (!d) return null;
       if (d.role === 'learner') {
         return {
-          img:   '/assets/characters/nora/nora_head.png',
-          alt:   'Nora', cls: 'nora',
+          img:      '/assets/characters/nora/nora_head.png',
+          alt:      'Nora', cls: 'nora',
           imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);',
-          name:  '诺拉 · Nora',
-          tag:   'You · 你（学员 Learner）'
+          name:     '诺拉 · Nora',
+          tag:      'You · 你（学员 Learner）',
+          isStaff:  false
         };
       }
-      var isStaff = d.speaker && (d.speaker.indexOf('Staff') !== -1 || d.speaker.indexOf('工作') !== -1);
+      var isStaff = _isStaffSpeaker(d.speaker);
       return {
-        img:   '/assets/characters/mingxuan/mingxuan_head.png',
-        alt:   isStaff ? '工作人员' : '明轩', cls: 'mx',
+        img:      '/assets/characters/mingxuan/mingxuan_head.png',
+        alt:      isStaff ? '工作人员' : '明轩', cls: 'mx',
         imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);',
-        name:  d.speaker || '赵明轩 · Zhao Mingxuan',
-        tag:   'Local · 本地说话人 Native Speaker'
+        name:     d.speaker || '赵明轩 · Zhao Mingxuan',
+        tag:      'Local · 本地说话人 Native Speaker',
+        isStaff:  isStaff
       };
     }
 
     // 更新面板头像 + 姓名（top 或 bottom）
     function _plpUpdatePanel(pos, d) {
-      var meta = _plpSpeakerMeta(d);
+      var meta  = _plpSpeakerMeta(d);
       if (!meta) return;
       var suffix = pos === 'top' ? 'top' : 'bot';
-      var wrap = document.getElementById('plp-avatar-wrap-' + suffix);
-      var img  = document.getElementById('plp-avatar-img-' + suffix);
-      var name = document.getElementById('plp-name-' + suffix);
-      var tag  = document.getElementById('plp-roletag-' + suffix);
-      if (wrap) { wrap.className = 'avatar-wrap ' + meta.cls; }
-      if (img)  { img.src = meta.img; img.alt = meta.alt; img.style.cssText = meta.imgStyle; }
+      var wrap  = document.getElementById('plp-avatar-wrap-' + suffix);
+      var img   = document.getElementById('plp-avatar-img-' + suffix);
+      var badge = document.getElementById('plp-badge-' + suffix);
+      var name  = document.getElementById('plp-name-' + suffix);
+      var tag   = document.getElementById('plp-roletag-' + suffix);
+      if (meta.isStaff) {
+        if (wrap)  wrap.style.display  = 'none';
+        if (badge) badge.style.display = 'flex';
+      } else {
+        if (wrap)  { wrap.style.display = ''; wrap.className = 'avatar-wrap ' + meta.cls; }
+        if (badge) badge.style.display = 'none';
+        if (img)   { img.src = meta.img; img.alt = meta.alt; img.style.cssText = meta.imgStyle; }
+      }
       if (name) name.textContent = meta.name;
       if (tag)  tag.textContent  = meta.tag;
     }
@@ -7659,11 +7693,11 @@
       // 每对的第一句：同时刷新上下两个面板（含头像更新）
       if (isTop) { plpRenderPair(idx); }
       plpSetActive(isTop ? 'top' : 'bottom');
-      var plpRole = d.role === 'learner' ? 'learner' : 'local';
+      var plpRole = d.role === 'learner' ? 'learner' : _speakerRole(d.speaker);
       // Pre-fetch next sentence while current plays (skip when static audio exists)
       var plpNextD = plpSeq[idx + 1];
       if (plpNextD && !getStaticAudioUrl(plpNextD.zh)) {
-        var plpNextRole = plpNextD.role === 'learner' ? 'learner' : 'local';
+        var plpNextRole = plpNextD.role === 'learner' ? 'learner' : _speakerRole(plpNextD.speaker);
         var plpNextKey = plpNextRole + ':1.00:' + plpNextD.zh;
         if (!_ttsCache[plpNextKey]) {
           fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -8867,6 +8901,11 @@
             <img id="plp-avatar-img-top" src="/assets/characters/nora/nora_head.png" alt="Nora"
                  style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">
           </div>
+          <div class="npc-badge" id="plp-badge-top" style="display:none">
+            <svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.70)" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>
         </div>
         <div class="card-content-col">
           <div class="plp-speaker-row">
@@ -8890,6 +8929,11 @@
           <div class="avatar-wrap mx" id="plp-avatar-wrap-bot">
             <img id="plp-avatar-img-bot" src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
                  style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
+          </div>
+          <div class="npc-badge" id="plp-badge-bot" style="display:none">
+            <svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.70)" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
           </div>
         </div>
         <div class="card-content-col">
