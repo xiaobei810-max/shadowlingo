@@ -3177,6 +3177,11 @@
               <img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩"
                    style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">
             </div>
+            <div class="npc-badge" id="ctx-badge-below" style="display:none">
+              <svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.70)" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
           </div>
           <div class="card-content-col">
             <div class="ctx-header">
@@ -6179,9 +6184,21 @@
     }
 
     function playContext() {
-      var s = LESSONS[lessonIdx].sentences[idx];
-      if (!s || !s.context) return;
       if (phase === 'recording') return;
+      var zh, pinyin, role;
+      if (dialogMode && dialogStep === 2 && dialogRounds.length) {
+        var round = dialogRounds[dialogRoundIdx];
+        if (!round || !round.local) return;
+        zh     = round.local.zh;
+        pinyin = round.local.pinyin;
+        role   = _speakerRole(round.local._sid || round.local.speaker);
+      } else {
+        var s = LESSONS[lessonIdx].sentences[idx];
+        if (!s || !s.context) return;
+        zh     = s.context.zh;
+        pinyin = s.context.pinyin;
+        role   = 'local';
+      }
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
         var bsBtn = document.getElementById('bs');
@@ -6189,7 +6206,6 @@
         phase = 'idle'; busy = false;
       }
       var btn = document.getElementById('ctx-play-btn');
-      // Resume from pause
       if (ctxPausedId === 'above') {
         resumeAudio();
         ctxPlayingId = 'above'; ctxPausedId = null;
@@ -6197,7 +6213,6 @@
         setPanelFocus('above');
         return;
       }
-      // Pause if currently playing
       if (ctxPlayingId === 'above') {
         pauseAudio();
         ctxPausedId = 'above'; ctxPlayingId = null;
@@ -6205,13 +6220,12 @@
         setPanelFocus('learner');
         return;
       }
-      // Start fresh (cancel any other panel playing)
       stopCtxTTS();
       ctxPlayingId = 'above';
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       setPanelFocus('above');
       var ctxZhEl = document.getElementById('ctx-zh');
-      speakAzure(s.context.zh, 'local', 1.0,
+      speakAzure(zh, role, 1.0,
         function () {
           if (ctxPlayingId === 'above') { ctxPlayingId = null; ctxPausedId = null; }
           if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
@@ -6219,14 +6233,27 @@
         },
         function (dur) {
           if (ctxZhEl) ctxRunKara(ctxZhEl, dur * 1000,
-            computeCharTimingsForDuration(s.context.zh, s.context.pinyin, dur));
+            computeCharTimingsForDuration(zh, pinyin, dur));
         });
     }
 
     function playContextBelow() {
-      var s = LESSONS[lessonIdx].sentences[idx];
-      if (!s || !s.contextBelow) return;
       if (phase === 'recording') return;
+      var zh, pinyin, role;
+      if (dialogMode && dialogStep === 2 && dialogRounds.length) {
+        var round = dialogRounds[dialogRoundIdx];
+        var es = round && round.evalSentence;
+        if (!es || !es.contextBelow) return;
+        zh     = es.contextBelow.zh;
+        pinyin = es.contextBelow.pinyin;
+        role   = _speakerRole(es.contextBelow.speaker);
+      } else {
+        var s = LESSONS[lessonIdx].sentences[idx];
+        if (!s || !s.contextBelow) return;
+        zh     = s.contextBelow.zh;
+        pinyin = s.contextBelow.pinyin;
+        role   = 'local';
+      }
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
         var bsBtn = document.getElementById('bs');
@@ -6234,7 +6261,6 @@
         phase = 'idle'; busy = false;
       }
       var btn = document.getElementById('ctx-play-btn-below');
-      // Resume from pause
       if (ctxPausedId === 'below') {
         resumeAudio();
         ctxPlayingId = 'below'; ctxPausedId = null;
@@ -6242,7 +6268,6 @@
         setPanelFocus('below');
         return;
       }
-      // Pause if currently playing
       if (ctxPlayingId === 'below') {
         pauseAudio();
         ctxPausedId = 'below'; ctxPlayingId = null;
@@ -6250,13 +6275,12 @@
         setPanelFocus('learner');
         return;
       }
-      // Start fresh (cancel any other panel playing)
       stopCtxTTS();
       ctxPlayingId = 'below';
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       setPanelFocus('below');
       var ctxBelowZhEl = document.getElementById('ctx-zh-below');
-      speakAzure(s.contextBelow.zh, 'local', 1.0,
+      speakAzure(zh, role, 1.0,
         function () {
           if (ctxPlayingId === 'below') { ctxPlayingId = null; ctxPausedId = null; }
           if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
@@ -6264,7 +6288,7 @@
         },
         function (dur) {
           if (ctxBelowZhEl) ctxRunKara(ctxBelowZhEl, dur * 1000,
-            computeCharTimingsForDuration(s.contextBelow.zh, s.contextBelow.pinyin, dur));
+            computeCharTimingsForDuration(zh, pinyin, dur));
         });
     }
 
@@ -7415,6 +7439,16 @@
           var cbZh      = document.getElementById('ctx-zh-below');
           var cbEn      = document.getElementById('ctx-en-below');
           var cbBtn     = document.getElementById('ctx-play-btn-below');
+          var cbWrap    = document.getElementById('ctx-avatar-mx-below');
+          var cbBadge   = document.getElementById('ctx-badge-below');
+          var isBelowStaff = _isStaffSpeaker(es.contextBelow.speaker);
+          if (isBelowStaff) {
+            if (cbWrap)  cbWrap.style.display  = 'none';
+            if (cbBadge) cbBadge.style.display = 'flex';
+          } else {
+            if (cbWrap)  cbWrap.style.display  = '';
+            if (cbBadge) cbBadge.style.display = 'none';
+          }
           if (cbSpeaker) cbSpeaker.textContent = es.contextBelow.speaker;
           buildCtxKara(cbZh, es.contextBelow.zh, es.contextBelow.pinyin);
           if (cbEn) cbEn.textContent = es.contextBelow.en;
