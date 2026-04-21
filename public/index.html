@@ -3662,8 +3662,12 @@
           { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "我知道在哪，送你过去吧。",     pinyin: "Wǒ zhī dào zài nǎ, sòng nǐ guò qù ba.",      en: "I know where it is, let me walk you over." }
         ],
         correct: [
-          { zh: "给",   pinyin: "Gěi",    en: "Here (handing something over)", note: "口语递东西只说【给】，比【给你】更自然利落。" },
-          { zh: "给你", pinyin: "Gěi nǐ", en: "Give you (textbook)",           note: "书面语，实际递东西时较少说完整句。" }
+          { zh: "给",   pinyin: "Gěi",    tag: "口语 (Real Street)",
+            desc: "在日常生活中递给别人东西时，中国人经常省略宾语，只说一个单音节的「给 (Gěi)」。这听起来非常干练、自然。" },
+          { zh: "给你", pinyin: "Gěi nǐ", tag: "书面语 (Textbook) — Here you go.",
+            desc: "书本上的标准说法，但在实际口语递东西时，年轻人更倾向于直接说「给」。" },
+          { type: "culture", zh: "门牌号的读法",
+            desc: "在读房号、电话号码或公交路线时，中国人习惯把数字一个个分开读。比如 402 读作「四-零-二 (sì líng èr)」，绝不会读成「四百零二」。" }
         ]
       }
     ];
@@ -5673,7 +5677,9 @@
       document.getElementById("eval-dualtrack-body").innerHTML = "";
       document.getElementById("eval-nav").style.display = "none";
       document.getElementById("eval-prev").disabled = false;
-      var isLast = idx >= LESSONS[lessonIdx].sentences.length - 1;
+      var isLast = (dialogMode && dialogStep === 2)
+        ? dialogRoundIdx >= dialogRounds.length - 1
+        : idx >= LESSONS[lessonIdx].sentences.length - 1;
       document.getElementById("eval-next").textContent = isLast ? "完成 Finish 🎉" : "下一页 Next ▶";
       document.getElementById("eval-page").classList.add("show");
       document.getElementById("eval-page").scrollTop = 0;
@@ -7367,9 +7373,6 @@
           if (ctxZhEl) { ctxZhEl.innerHTML = ''; buildCtxKara(ctxZhEl, round.local.zh, round.local.pinyin); }
           if (ctxEnEl) ctxEnEl.textContent = round.local.en || '';
           ctxPanel.style.display = 'block';
-
-          // 自动朗读前置台词
-          speakTTS(round.local.zh, 'local', function() {});
         } else {
           ctxPanel.style.display = 'none';
         }
@@ -7435,12 +7438,19 @@
 
       if (dialogLessonMeta && dialogLessonMeta.correct && dialogLessonMeta.correct.length) {
         dialogLessonMeta.correct.forEach(function (item) {
-          html += "<div style='text-align:left;margin-top:14px;padding:10px 12px;border-radius:12px;background:#020617;border:1px solid #1e293b;'>"
-            + "<div style='font-size:15px;font-weight:600;margin-bottom:6px;'>" + item.zh + " · " + item.pinyin + "</div>"
-            + "<div style='font-size:13px;color:#94a3b8;margin-bottom:4px;'>✅ 正确说法：" + item.en + "</div>"
-            + "<div style='font-size:13px;color:#f97316;'>❌ 常见错误：直译成生硬的英文语序，比如「I am very good at Chinese」</div>"
-            + "<div style='font-size:12px;color:#64748b;margin-top:4px;'>" + (item.note || '') + "</div>"
-            + "</div>";
+          if (item.type === 'culture') {
+            html += "<div style='text-align:left;margin-top:14px;padding:10px 12px;border-radius:12px;background:#020617;border:1px solid #334155;'>"
+              + "<div style='font-size:11px;font-weight:600;color:#7dd3fc;letter-spacing:.06em;margin-bottom:6px;text-transform:uppercase;'>🧭 文化解析</div>"
+              + "<div style='font-size:15px;font-weight:600;margin-bottom:6px;'>" + item.zh + "</div>"
+              + "<div style='font-size:13px;color:#94a3b8;line-height:1.6;'>" + (item.desc || '') + "</div>"
+              + "</div>";
+          } else {
+            html += "<div style='text-align:left;margin-top:14px;padding:10px 12px;border-radius:12px;background:#020617;border:1px solid #1e293b;'>"
+              + "<div style='font-size:15px;font-weight:600;margin-bottom:4px;'>" + item.zh + (item.pinyin ? ' · ' + item.pinyin : '') + "</div>"
+              + (item.tag ? "<div style='font-size:11px;font-weight:600;color:#22c55e;letter-spacing:.05em;margin-bottom:6px;'>" + item.tag + "</div>" : "")
+              + "<div style='font-size:13px;color:#94a3b8;line-height:1.6;'>" + (item.desc || item.note || '') + "</div>"
+              + "</div>";
+          }
         });
       } else {
         html += "<div style='margin-top:12px;font-size:14px;color:#94a3b8;'>本课暂无详细地道指南配置。</div>";
