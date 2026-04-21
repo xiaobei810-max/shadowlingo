@@ -8600,8 +8600,7 @@
       try { return !!localStorage.getItem('sl_completed_' + idx); } catch(e) { return false; }
     }
     function isLessonUnlocked(idx) {
-      if (idx === 0) return true;
-      return isLessonCompleted(idx - 1);
+      return true; // all lessons open during development
     }
     function markLessonCompleted(idx) {
       try { localStorage.setItem('sl_completed_' + idx, '1'); } catch(e) {}
