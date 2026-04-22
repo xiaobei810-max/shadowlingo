@@ -7414,9 +7414,9 @@
   document.getElementById("pinyin").textContent = lineB.pinyin || '';
   document.getElementById("en").textContent = lineB.en || '';
   buildKara(lineB.zh, currentSentenceForEval.chars);
-  
-  var estSec = Math.max(2, lineB.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
-  runKaraWithTimer(estSec * 1000, computeCharTimingsForDuration(lineB.zh, lineB.pinyin, estSec));
+  // 进入跟读页时仅显示台词，不自动播放卡拉OK；
+  // 必须点击「跟读 Listen」后才开始变绿。
+  resetKara();
 
   // 隐藏多余层
   document.getElementById('context-panel-below').style.display = 'none';
