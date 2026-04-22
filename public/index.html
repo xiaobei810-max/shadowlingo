@@ -5427,23 +5427,26 @@
       var timings = computeCharTimingsForDuration(s.zh, s.pinyin, estSec);
       if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
-      speakAzure(s.zh, 'learner', slowSpeed,
-        // onend
-        function () {
-          if (phase !== "slow") return;
-          ttsPaused = false;
-          completeKara();
-          if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
-          busy = false; phase = "idle";
-        },
-        // onplay(actualDuration) — start karaoke once audio begins
-        function (actualDuration) {
-          if (phase !== "slow") return;
-          var dur = actualDuration || estSec;
-          var actualTimings = computeCharTimingsForDuration(s.zh, s.pinyin, dur);
-          runKaraTimedMain(dur * 1000, actualTimings, false);
-        }
-      );
+               // 动态判断当前发音角色：Staff -> linyue; Nora -> learner; 其他 -> local
+      var currentRole = (s._sid === 'staff') ? 'linyue' : ((s._sid === 'nora' || s.role === 'learner') ? 'learner' : 'local');
+
+speakAzure(s.zh, currentRole, slowSpeed,
+  // 播放结束回调 (onend)
+  function () {
+    if (phase !== "slow") return;
+    ttsPaused = false;
+    completeKara();
+    if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
+    busy = false; phase = "idle";
+  },
+  // 播放开始及卡拉OK同步回调 (onplay)
+  function (actualDuration) {
+    if (phase !== "slow") return;
+    var dur = actualDuration || estSec;
+    var actualTimings = computeCharTimingsForDuration(s.zh, s.pinyin, dur);
+    runKaraTimedMain(dur * 1000, actualTimings, false);
+  }
+);
     }
 
     var doNormal = doSlow; // merged into single listen button
@@ -7365,73 +7368,68 @@
 
     // 渲染当前轮的 local & learner 台词（含上下文面板）
     function renderDialogYourTurn() {
-      // ── 直接从原始 8 句数组切片，不依赖 dialogRounds ────────
-      var dialogue = dialogLessonMeta && dialogLessonMeta.dialogue ? dialogLessonMeta.dialogue : [];
-      console.log("跟读页面的数据长度:", dialogue.length, "当前轮:", dialogRoundIdx);
-      if (!dialogue.length) return;
+  var dialogue = dialogLessonMeta && dialogLessonMeta.dialogue ? dialogLessonMeta.dialogue : [];
+  if (!dialogue.length) return;
 
-      // 硬编码分页：每页 2 句，lineA=上方台词，lineB=学员台词
-      var lineA = _normD(dialogue[dialogRoundIdx * 2]);
-      var lineB = _normD(dialogue[dialogRoundIdx * 2 + 1]);
-      if (!lineA || !lineB) return;
+  // 1. 强制按每页 2 句获取数据（[0,1], [2,3], [4,5], [6,7]）
+  var lineA = _normD(dialogue[dialogRoundIdx * 2]);
+  var lineB = _normD(dialogue[dialogRoundIdx * 2 + 1]);
+  if (!lineA || !lineB) return;
 
-      // ── 上方：context-panel 头像（硬编码 if/else，按 _sid 判断）──
-      var ctxPanel   = document.getElementById('context-panel');
-      var ctxSpeaker = document.getElementById('ctx-speaker');
-      var ctxZhEl    = document.getElementById('ctx-zh');
-      var ctxEnEl    = document.getElementById('ctx-en');
-      var ctxWrap    = document.getElementById('ctx-avatar-mx');
-      var ctxImg     = document.getElementById('ctx-avatar-img');
-      var ctxBadge   = document.getElementById('ctx-avatar-badge');
-      if (ctxPanel) {
-        ctxPanel.style.display = 'block';
-        if (ctxSpeaker) ctxSpeaker.textContent = lineA.speakerName || lineA.speaker || '';
-        var sidA = lineA._sid; // raw speaker id: 'staff' | 'nora' | 'mingxuan'
-        if (sidA === 'staff') {
-          if (ctxWrap)  ctxWrap.style.display  = 'none';
-          if (ctxBadge) ctxBadge.style.display = 'flex';
-        } else if (sidA === 'nora') {
-          if (ctxWrap)  { ctxWrap.style.display = ''; ctxWrap.className = 'avatar-wrap nora'; }
-          if (ctxBadge) ctxBadge.style.display  = 'none';
-          if (ctxImg)   { ctxImg.src = '/assets/characters/nora/nora_head.png'; ctxImg.alt = 'Nora'; ctxImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);'; }
-        } else {
-          // Mingxuan 或其他 local 角色
-          if (ctxWrap)  { ctxWrap.style.display = ''; ctxWrap.className = 'avatar-wrap mx'; }
-          if (ctxBadge) ctxBadge.style.display  = 'none';
-          if (ctxImg)   { ctxImg.src = '/assets/characters/mingxuan/mingxuan_head.png'; ctxImg.alt = '明轩'; ctxImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);'; }
-        }
-        if (ctxZhEl) { ctxZhEl.innerHTML = ''; buildCtxKara(ctxZhEl, lineA.zh, lineA.pinyin); }
-        if (ctxEnEl) ctxEnEl.textContent = lineA.en || '';
-      }
+  // 2. 渲染上方【对方台词面板】 (Context Above)
+  var ctxPanel = document.getElementById('context-panel');
+  if (ctxPanel) {
+    ctxPanel.style.display = 'block';
+    document.getElementById('ctx-speaker').textContent = lineA.speaker;
+    
+    var isStaffA = lineA._sid === 'staff' || (lineA.speaker && (lineA.speaker.includes('工作人员') || lineA.speaker.includes('Staff')));
+    var ctxWrap = document.getElementById('ctx-avatar-mx');
+    var ctxBadge = document.getElementById('ctx-avatar-badge');
+    var ctxImg = document.getElementById('ctx-avatar-img');
 
-      // ── 中间：学员台词（sentence-box）───────────────────────
-      if (el("pinyin")) el("pinyin").textContent = lineB.pinyin || '';
-      if (el("en"))     el("en").textContent     = lineB.en     || '';
-      // 找 evalSentence（用于评测和 chars），找不到就用 lineB 的拼音/chars
-      var lesson = LESSONS[lessonIdx];
-      var evalSentence = null;
-      if (lesson && lesson.sentences) {
-        for (var _ej = 0; _ej < lesson.sentences.length; _ej++) {
-          if (lesson.sentences[_ej].zh === lineB.zh) { evalSentence = lesson.sentences[_ej]; break; }
-        }
-      }
-      if (!evalSentence) evalSentence = { zh: lineB.zh, pinyin: lineB.pinyin, en: lineB.en, chars: [] };
-      currentSentenceForEval = evalSentence;
-      buildKara(lineB.zh, evalSentence.chars && evalSentence.chars.length ? evalSentence.chars : null);
-      var estSeconds = Math.max(2, lineB.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
-      var timings = computeCharTimingsForDuration(lineB.zh, lineB.pinyin, estSeconds);
-      runKaraWithTimer(estSeconds * 1000, timings);
-
-      // 跟读页固定每页 2 句：[0,1] [2,3] [4,5] [6,7]，隐藏第三块下方面板
-      var ctxBelowPanel = document.getElementById('context-panel-below');
-      if (ctxBelowPanel) {
-        ctxBelowPanel.style.display = 'none';
-      }
-
-      // ── 辅助文字（role-text 元素，若页面上存在）───────────
-      if (el("role-text-local"))   el("role-text-local").textContent   = lineA.zh || '';
-      if (el("role-text-learner")) el("role-text-learner").textContent = lineB.zh || '';
+    if (isStaffA) {
+      if (ctxWrap) ctxWrap.style.display = 'none';
+      if (ctxBadge) ctxBadge.style.display = 'flex';
+    } else {
+      if (ctxWrap) ctxWrap.style.display = 'block';
+      if (ctxBadge) ctxBadge.style.display = 'none';
+      var imgSrcA = (lineA._sid === 'nora') ? '/assets/characters/nora/nora_head.png' : '/assets/characters/mingxuan/mingxuan_head.png';
+      if (ctxImg) ctxImg.src = imgSrcA;
     }
+    buildCtxKara(document.getElementById('ctx-zh'), lineA.zh, lineA.pinyin);
+    document.getElementById('ctx-en').textContent = lineA.en;
+  }
+
+  // 3. 渲染中间【练习面板】 (Sentence Box) - 修复 Nora 图像写死问题
+  document.getElementById('learner-panel-name').textContent = lineB.speaker;
+  
+  var isStaffB = lineB._sid === 'staff' || (lineB.speaker && (lineB.speaker.includes('工作人员') || lineB.speaker.includes('Staff')));
+  var panelAvatarWrap = document.getElementById('panel-avatar-nora');
+
+  if (isStaffB) {
+     // 如果练习位是 Staff，显示剪影
+     panelAvatarWrap.innerHTML = `<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" style="width:28px;height:28px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
+  } else {
+     // 动态切换明轩或诺拉头像
+     var imgSrcB = (lineB._sid === 'mingxuan') ? '/assets/characters/mingxuan/mingxuan_head.png' : '/assets/characters/nora/nora_head.png';
+     panelAvatarWrap.innerHTML = `<img src="${imgSrcB}" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 20%;transform:scale(2.2);">`;
+  }
+
+  // 重要：绑定当前评测句
+  currentSentenceForEval = LESSONS[lessonIdx].sentences.find(s => s.zh === lineB.zh) || { zh: lineB.zh, pinyin: lineB.pinyin, en: lineB.en, _sid: lineB._sid, chars: [] };
+
+  document.getElementById("pinyin").textContent = lineB.pinyin || '';
+  document.getElementById("en").textContent = lineB.en || '';
+  buildKara(lineB.zh, currentSentenceForEval.chars);
+  
+  var estSeconds = Math.max(2, lineB.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
+  var timings = computeCharTimingsForDuration(lineB.zh, lineB.pinyin, estSeconds);
+  runKaraWithTimer(estSeconds * 1000, timings);
+
+  // 4. 强制隐藏底部多余面板
+  var ctxBelow = document.getElementById('context-panel-below');
+  if (ctxBelow) ctxBelow.style.display = 'none';
+}
 
     // Your Turn 下方麦克风点击
     function dialogRecordToggle() {
