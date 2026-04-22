@@ -5420,14 +5420,14 @@
       stopAudio();
       busy = true; phase = "slow";
 
-      // 【核心修复】：优先使用当前练习句的数据，确保对话模式下台词不乱
+      // 【核心修复】：使用当前练习位真正对应的台词数据
       var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
       
       var estSec = Math.max(2.0, s.zh.replace(/[，。！？,.!?]/g, '').length * 0.28 / slowSpeed);
       if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
 
-      // 【核心修复】：动态映射声音角色，Staff 强制转女声
+      // 【核心修复】：动态映射声音角色
       var currentRole = (s._sid === 'staff') ? 'linyue' : ((s._sid === 'nora' || s.role === 'learner') ? 'learner' : 'local');
 
       speakAzure(s.zh, currentRole, slowSpeed,
@@ -7364,8 +7364,6 @@
       dialogRoundIdx = 0;
       renderDialogYourTurn();
     }
-
-    // 渲染当前轮的 local & learner 台词（含上下文面板）
     function renderDialogYourTurn() {
   var dialogue = dialogLessonMeta && dialogLessonMeta.dialogue ? dialogLessonMeta.dialogue : [];
   if (!dialogue.length) return;
@@ -7424,12 +7422,6 @@
   // 隐藏多余层
   document.getElementById('context-panel-below').style.display = 'none';
 }
-    // Your Turn 下方麦克风点击
-    function dialogRecordToggle() {
-      // 直接复用原来的录音按钮逻辑
-      doRecord();
-    }
-
     // 第 3 步：地道指南
     function enterDialogStep3() {
       dialogStep = 3;
