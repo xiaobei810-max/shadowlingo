@@ -7764,10 +7764,10 @@
       // 确保 tip-page 不遮挡跟读页（重新复习流程中可能残留）
       var tipEl = document.getElementById('tip-page');
       if (tipEl) tipEl.classList.remove('show');
-      idx = 0; // always start shadow reading from sentence 1
-      updateUI();
       var page = document.getElementById('pre-listen-page');
       if (page) page.classList.remove('show');
+      // 跟读页强制进入「第2步双句模式」：每页固定 2 句 [0,1] [2,3] [4,5] [6,7]
+      enterDialogStep2();
     }
 
     // ── Lesson Cover ──────────────────────────────────────────
