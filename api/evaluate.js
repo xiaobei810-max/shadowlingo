@@ -310,8 +310,7 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
 
     async function sendAudioFrames() {
       try {
-        // first frame
-        const first = rawPcm.slice(0, CHUNK_SIZE).toString('base64');
+        // 首帧：仅参数初始化（按讯飞ISE流式示例），不携带音频数据
         const firstFrame = {
           common: { app_id: XFYUN_APP_ID },
           business: {
@@ -321,22 +320,31 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
             cmd: 'ssb',
             text: '\uFEFF' + cleanRef,
             auf: 'audio/L16;rate=16000',
-            aue: 'raw'
+            aue: 'raw',
+            rstcd: 'utf8'
           },
           data: {
             status: 0,
-            data: first
+            data: ''
           }
         };
         ws.send(JSON.stringify(firstFrame));
 
-        for (let i = 1; i < totalChunks; i++) {
+        // 中间帧：发送音频，需携带 cmd=auw / aus=1
+        for (let i = 0; i < totalChunks; i++) {
           await new Promise(r => setTimeout(r, CHUNK_DELAY));
           const start = i * CHUNK_SIZE;
           const end = Math.min(start + CHUNK_SIZE, rawPcm.length);
           ws.send(JSON.stringify({
+            business: {
+              cmd: 'auw',
+              aus: 1,
+              aue: 'raw'
+            },
             data: {
               status: 1,
+              data_type: 1,
+              encoding: 'raw',
               data: rawPcm.slice(start, end).toString('base64')
             }
           }));
@@ -344,7 +352,17 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
 
         await new Promise(r => setTimeout(r, CHUNK_DELAY));
         ws.send(JSON.stringify({
-          data: { status: 2, data: '' }
+          business: {
+            cmd: 'auw',
+            aus: 4,
+            aue: 'raw'
+          },
+          data: {
+            status: 2,
+            data_type: 1,
+            encoding: 'raw',
+            data: ''
+          }
         }));
       } catch (e) {
         finish({
