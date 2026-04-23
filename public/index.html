@@ -1755,13 +1755,20 @@
       text-decoration-line: underline;
       text-decoration-style: wavy;
     }
-    .anno-punct {
-      color: #e2e8f0;
-      font-size: 0.92em;
-      font-weight: 700;
+    .anno-punct-char {
+      padding: 0;
+      margin: 0 1px;
       line-height: 1;
-      align-self: flex-end;
-      margin-bottom: 3px;
+    }
+    .anno-punct-char rt {
+      min-height: 14px;
+      opacity: 0;
+    }
+    /* 标点不显示纠错下划线/底线，只继承颜色与位置 */
+    .anno-punct-char.confused,
+    .anno-punct-char.miss {
+      border-bottom: none !important;
+      text-decoration: none !important;
     }
 
     .anno-rec {
@@ -6049,16 +6056,21 @@
           annoQueue[a.char].push(a);
         });
         var renderZh = (sentence && sentence.zh) ? sentence.zh : '';
-        var html = Array.from(renderZh).map(function (ch) {
+        var lastType = 'correct';
+        var html = '';
+        Array.from(renderZh).forEach(function (ch) {
           if (/[\u4e00-\u9fff]/.test(ch)) {
             var q = annoQueue[ch] || [];
             var a = q.length ? q.shift() : { char: ch, type: 'correct', perrMsg: '', py: '' };
             var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
             var rt = toToneMark(a.py || '');
-            return '<ruby class="anno-char ' + a.type + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
+            lastType = a.type || 'correct';
+            html += '<ruby class="anno-char ' + lastType + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
+          } else {
+            // 标点跟随前一个汉字的颜色，并占位到汉字同一基线
+            html += '<ruby class="anno-char anno-punct-char ' + lastType + '">' + ch + '<rt></rt></ruby>';
           }
-          return '<span class="anno-punct">' + ch + '</span>';
-        }).join('');
+        });
         document.getElementById("eval-anno-chars").innerHTML = html;
         compareCard.style.display = "block";
       } else {
