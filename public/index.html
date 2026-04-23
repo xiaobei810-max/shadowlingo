@@ -1723,6 +1723,46 @@
       justify-content: center;
       gap: 8px 6px;
     }
+    .anno-line-py {
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.35;
+      color: #94a3b8;
+      opacity: 0.9;
+      margin-bottom: 6px;
+      letter-spacing: 0;
+    }
+    .anno-line-zh {
+      width: 100%;
+      text-align: center;
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+      color: #e2e8f0;
+      word-break: keep-all;
+    }
+    .anno-line-zh .anno-zh-char.correct { color: #22c55e; }
+    .anno-line-zh .anno-zh-char.confused {
+      color: #fbbf24;
+      border-bottom: 2px solid #fbbf24;
+    }
+    .anno-line-zh .anno-zh-char.miss {
+      color: #f87171;
+      border-bottom: 2px solid #f87171;
+      text-decoration-line: underline;
+      text-decoration-style: wavy;
+    }
+    .anno-line-zh .anno-zh-punct {
+      font-size: 0.72em;
+      font-weight: 600;
+      font-family: inherit;
+      letter-spacing: 0;
+      vertical-align: baseline;
+      margin-left: 0.02em;
+      margin-right: 0.02em;
+    }
 
     ruby.anno-char {
       display: inline-flex;
@@ -6068,28 +6108,24 @@
           annoQueue[a.char].push(a);
         });
         var renderZh = (sentence && sentence.zh) ? sentence.zh : '';
-        var chars = Array.from(renderZh);
-        var html = '';
-        for (var i = 0; i < chars.length; i++) {
-          var ch = chars[i];
+        var renderPy = (sentence && sentence.pinyin) ? sentence.pinyin : '';
+        var esc = function (s) {
+          return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        };
+        var zhHtml = '';
+        Array.from(renderZh).forEach(function (ch) {
           if (/[\u4e00-\u9fff]/.test(ch)) {
             var q = annoQueue[ch] || [];
-            var a = q.length ? q.shift() : { char: ch, type: 'correct', perrMsg: '', py: '' };
-            var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
-            var rt = toToneMark(a.py || '');
-            var punct = '';
-            while (i + 1 < chars.length && !/[\u4e00-\u9fff]/.test(chars[i + 1])) {
-              punct += chars[i + 1];
-              i++;
-            }
-            var punctHtml = punct ? '<span class="anno-inline-punct">' + punct + '</span>' : '';
-            html += '<ruby class="anno-char ' + (a.type || 'correct') + '"' + tip + '>' + a.char + punctHtml + '<rt>' + rt + '</rt></ruby>';
+            var a = q.length ? q.shift() : { char: ch, type: 'correct', perrMsg: '' };
+            var tip = a.perrMsg ? ' title="' + esc(a.perrMsg).replace(/"/g, '&quot;') + '"' : '';
+            zhHtml += '<span class="anno-zh-char ' + (a.type || 'correct') + '"' + tip + '>' + esc(ch) + '</span>';
           } else {
-            // 句首标点兜底（极少见）
-            html += '<span class="anno-inline-punct">' + ch + '</span>';
+            zhHtml += '<span class="anno-zh-punct">' + esc(ch) + '</span>';
           }
-        }
-        document.getElementById("eval-anno-chars").innerHTML = html;
+        });
+        document.getElementById("eval-anno-chars").innerHTML =
+          '<div class="anno-line-py">' + esc(renderPy) + '</div>' +
+          '<div class="anno-line-zh">' + zhHtml + '</div>';
         compareCard.style.display = "block";
       } else {
         compareCard.style.display = "none";
