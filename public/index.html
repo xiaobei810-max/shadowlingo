@@ -1757,17 +1757,19 @@
       text-decoration-style: wavy;
     }
     .anno-punct-char {
-      display: inline-block !important;
-      position: relative !important;
-      top: 16px !important;   /* 强制下沉到汉字底部（明显可见） */
-      vertical-align: bottom !important;
-      line-height: 1 !important;
+      display: inline-flex;
+      align-items: flex-end;
+      align-self: flex-end;
+      vertical-align: baseline;
+      line-height: 1;
       margin: 0 1px;
       font-size: 0.72em;      /* 再缩小一档，减轻违和 */
       font-weight: 600;
       font-family: inherit;   /* 与汉字同字体体系 */
       letter-spacing: 0;
-      transform: none !important;
+      position: static;
+      top: auto;
+      transform: none;
     }
     .anno-punct-char.correct  { color: #22c55e; }
     .anno-punct-char.confused { color: #fbbf24; }
