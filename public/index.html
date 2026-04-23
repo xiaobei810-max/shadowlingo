@@ -1755,6 +1755,14 @@
       text-decoration-line: underline;
       text-decoration-style: wavy;
     }
+    .anno-punct {
+      color: #e2e8f0;
+      font-size: 0.92em;
+      font-weight: 700;
+      line-height: 1;
+      align-self: flex-end;
+      margin-bottom: 3px;
+    }
 
     .anno-rec {
       font-size: 12px;
@@ -4946,15 +4954,24 @@
           }
         }
 
-        // 5. 声学错误计入扣分（Azure 无法识别平翘舌，需手动补偿）
-        // 每个声学错误按置信度扣 2–4 分，最多扣 15 分
-        // ⚠️ 不依赖 allCorrect：即使 Azure 满分，声学检测到错误也要扣分
-        var acousticPenalty = acousticErrors.length > 0 ? Math.min(15,
+        // 5. 分数温和校准：后端总分为主，字级命中率为辅（避免单个黄字时分数波动过大）
+        var blendedBaseScore = baseScore;
+        if (!allCorrect && result.wordResults && result.wordResults.length) {
+          var charHeuristic = Math.round(result.wordResults.reduce(function (acc, w) {
+            return acc + (w.perrLevel === 0 ? 100 : w.perrLevel === 1 ? 82 : 58);
+          }, 0) / result.wordResults.length);
+          blendedBaseScore = Math.round(baseScore * 0.80 + charHeuristic * 0.20);
+        }
+
+        // 6. 声学错误扣分（适度放宽）：每项约扣 1–2 分，且上限动态封顶
+        // 仍保留惩罚，避免过于宽松；但不再出现一次误判拉低十几分的情况。
+        var acousticCap = Math.min(8, Math.max(4, Math.round(blendedBaseScore * 0.12)));
+        var acousticPenalty = acousticErrors.length > 0 ? Math.min(acousticCap,
           acousticErrors.reduce(function(s, e) {
-            return s + Math.round(2 + e.confidence * 2);  // conf 0.4→3pts, 1.0→4pts
+            return s + Math.round(0.8 + e.confidence * 1.2);  // conf 0.4→1, 1.0→2
           }, 0)
         ) : 0;
-        var displayScore = Math.max(0, baseScore - acousticPenalty);
+        var displayScore = Math.max(0, blendedBaseScore - acousticPenalty);
         var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
         sessionScores[scoreSlot] = displayScore;   // 对话模式按轮次记分，避免都写到 idx=0
         incPracticeCount(lessonIdx, idx);
@@ -6026,10 +6043,21 @@
       // 发音对比（ISE 字符注释）
       var compareCard = document.getElementById("eval-compare-card");
       if (annotations && annotations.length) {
-        var html = annotations.map(function (a) {
-          var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
-          var rt = toToneMark(a.py);
-          return '<ruby class="anno-char ' + a.type + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
+        var annoQueue = {};
+        annotations.forEach(function (a) {
+          if (!annoQueue[a.char]) annoQueue[a.char] = [];
+          annoQueue[a.char].push(a);
+        });
+        var renderZh = (sentence && sentence.zh) ? sentence.zh : '';
+        var html = Array.from(renderZh).map(function (ch) {
+          if (/[\u4e00-\u9fff]/.test(ch)) {
+            var q = annoQueue[ch] || [];
+            var a = q.length ? q.shift() : { char: ch, type: 'correct', perrMsg: '', py: '' };
+            var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
+            var rt = toToneMark(a.py || '');
+            return '<ruby class="anno-char ' + a.type + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
+          }
+          return '<span class="anno-punct">' + ch + '</span>';
         }).join('');
         document.getElementById("eval-anno-chars").innerHTML = html;
         compareCard.style.display = "block";
