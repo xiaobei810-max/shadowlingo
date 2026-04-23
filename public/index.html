@@ -1756,30 +1756,15 @@
       text-decoration-line: underline;
       text-decoration-style: wavy;
     }
-    /* 评分标点：用独立两层盒子模拟“拼音占位 + 汉字底部”，确保底边与汉字底边严格对齐 */
-    .anno-punct-box {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      margin: 0 1px;
-      line-height: 1;
-    }
-    .anno-punct-spacer {
-      height: 19px; /* 近似 .anno-char rt 的占位高度(14*1.4≈19.6) */
-      width: 0;
-      pointer-events: none;
-    }
-    .anno-punct-glyph {
+    /* 评分台词：标点并入前一个汉字单元，天然与汉字同基线 */
+    .anno-inline-punct {
       font-size: 0.72em;
       font-weight: 600;
       font-family: inherit;
       letter-spacing: 0;
-      line-height: 1;
+      margin-left: 0.02em;
+      vertical-align: baseline;
     }
-    .anno-punct-box.correct  .anno-punct-glyph { color: #22c55e; }
-    .anno-punct-box.confused .anno-punct-glyph { color: #fbbf24; }
-    .anno-punct-box.miss     .anno-punct-glyph { color: #f87171; }
     .anno-punct-char.correct  { color: #22c55e; }
     .anno-punct-char.confused { color: #fbbf24; }
     .anno-punct-char.miss     { color: #f87171; }
@@ -6083,21 +6068,27 @@
           annoQueue[a.char].push(a);
         });
         var renderZh = (sentence && sentence.zh) ? sentence.zh : '';
-        var lastType = 'correct';
+        var chars = Array.from(renderZh);
         var html = '';
-        Array.from(renderZh).forEach(function (ch) {
+        for (var i = 0; i < chars.length; i++) {
+          var ch = chars[i];
           if (/[\u4e00-\u9fff]/.test(ch)) {
             var q = annoQueue[ch] || [];
             var a = q.length ? q.shift() : { char: ch, type: 'correct', perrMsg: '', py: '' };
             var tip = a.perrMsg ? ' title="' + a.perrMsg.replace(/"/g, '') + '"' : '';
             var rt = toToneMark(a.py || '');
-            lastType = a.type || 'correct';
-            html += '<ruby class="anno-char ' + lastType + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
+            var punct = '';
+            while (i + 1 < chars.length && !/[\u4e00-\u9fff]/.test(chars[i + 1])) {
+              punct += chars[i + 1];
+              i++;
+            }
+            var punctHtml = punct ? '<span class="anno-inline-punct">' + punct + '</span>' : '';
+            html += '<ruby class="anno-char ' + (a.type || 'correct') + '"' + tip + '>' + a.char + punctHtml + '<rt>' + rt + '</rt></ruby>';
           } else {
-            // 标点单独用“占位层+字形层”，确保底部与汉字底部严格同线
-            html += '<span class="anno-punct-box ' + lastType + '"><span class="anno-punct-spacer"></span><span class="anno-punct-glyph">' + ch + '</span></span>';
+            // 句首标点兜底（极少见）
+            html += '<span class="anno-inline-punct">' + ch + '</span>';
           }
-        });
+        }
         document.getElementById("eval-anno-chars").innerHTML = html;
         compareCard.style.display = "block";
       } else {
