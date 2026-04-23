@@ -320,14 +320,11 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
             ent: 'cn_vip',
             cmd: 'ssb',
             text: '\uFEFF' + cleanRef,
-            tte: 'utf-8',
             auf: 'audio/L16;rate=16000',
             aue: 'raw'
           },
           data: {
             status: 0,
-            format: 'audio/L16;rate=16000',
-            encoding: 'raw',
             data: first
           }
         };
@@ -340,8 +337,6 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
           ws.send(JSON.stringify({
             data: {
               status: 1,
-              format: 'audio/L16;rate=16000',
-              encoding: 'raw',
               data: rawPcm.slice(start, end).toString('base64')
             }
           }));
@@ -349,7 +344,7 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
 
         await new Promise(r => setTimeout(r, CHUNK_DELAY));
         ws.send(JSON.stringify({
-          data: { status: 2, format: 'audio/L16;rate=16000', encoding: 'raw', data: '' }
+          data: { status: 2, data: '' }
         }));
       } catch (e) {
         finish({
