@@ -313,8 +313,6 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
         // first frame
         const first = rawPcm.slice(0, CHUNK_SIZE).toString('base64');
         const firstFrame = {
-          // 一些控制台版本要求顶层也有 cmd；与 business.cmd 并存可兼容更多版本
-          cmd: 'ssb',
           common: { app_id: XFYUN_APP_ID },
           business: {
             category: 'read_sentence',
@@ -324,11 +322,7 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
             text: '\uFEFF' + cleanRef,
             tte: 'utf-8',
             auf: 'audio/L16;rate=16000',
-            aue: 'raw',
-            // 兼容字段（老版本/部分地域节点会读取）
-            language: 'zh_cn',
-            domain: 'ise',
-            accent: 'mandarin'
+            aue: 'raw'
           },
           data: {
             status: 0,
