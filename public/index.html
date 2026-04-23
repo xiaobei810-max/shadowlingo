@@ -2771,6 +2771,11 @@
     .ctx-kchar.ctx-done   .ctx-krt { color: #94a3b8; }  /* pinyin resets */
     .ctx-kchar.ctx-active + .kpunct { color: var(--green); }
     .ctx-kchar.ctx-done   + .kpunct { color: var(--green); }
+    .ctx-zh .kpunct {
+      font-size: 1.08em;
+      font-weight: 700;
+      line-height: 1;
+    }
     .ctx-krt {
       font-size: 11px;
       color: #94a3b8;
@@ -5039,6 +5044,28 @@
         var obviousErrCount = Object.keys(obviousByChar).length;
         var mildErrCount = Object.keys(mildByChar).filter(function (c) { return !obviousByChar[c]; }).length;
 
+        // 5.1 讯飞 shadow 兜底：腾讯漏检时，用 tone/phone/total 低分阻止“有错仍100”
+        var xfyunSummary = (((result || {})._debug || {}).xfyun || {}).summary || null;
+        var xfyunTone = Number(xfyunSummary && xfyunSummary.tone_score);
+        var xfyunPhone = Number(xfyunSummary && xfyunSummary.phone_score);
+        var xfyunTotal = Number(xfyunSummary && xfyunSummary.total_score);
+        var xfyunObviousIssue = false;
+        var xfyunMildIssue = false;
+        if (Number.isFinite(xfyunTone)) {
+          if (xfyunTone < 90) xfyunObviousIssue = true;
+          else if (xfyunTone < 96) xfyunMildIssue = true;
+        }
+        if (Number.isFinite(xfyunPhone)) {
+          if (xfyunPhone < 88) xfyunObviousIssue = true;
+          else if (xfyunPhone < 95) xfyunMildIssue = true;
+        }
+        if (Number.isFinite(xfyunTotal)) {
+          if (xfyunTotal < 85) xfyunObviousIssue = true;
+          else if (xfyunTotal < 93) xfyunMildIssue = true;
+        }
+        if (xfyunObviousIssue) obviousErrCount += 1;
+        else if (xfyunMildIssue) mildErrCount += 1;
+
         // 若存在明显错，不允许维持“全对满分”态
         if (allCorrect && obviousErrCount > 0) allCorrect = false;
         baseScore = allCorrect ? 100 : result.totalScore;
@@ -5084,6 +5111,8 @@
         var hasAnyIssue = hasBackendIssue ||
           obviousErrCount > 0 ||
           mildErrCount > 0 ||
+          xfyunObviousIssue ||
+          xfyunMildIssue ||
           (dualTrackErrors && dualTrackErrors.length > 0) ||
           (acousticErrors && acousticErrors.length > 0);
         if (hasAnyIssue && displayScore >= 100) displayScore = 98;
