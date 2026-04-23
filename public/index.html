@@ -1719,6 +1719,7 @@
       line-height: 1;
       display: flex;
       flex-wrap: wrap;
+      align-items: flex-end;
       justify-content: center;
       gap: 8px 6px;
     }
@@ -1761,8 +1762,9 @@
       line-height: 1;
     }
     .anno-punct-char rt {
-      min-height: 14px;
-      opacity: 0;
+      font-size: 14px;
+      line-height: 1.4;
+      visibility: hidden; /* 占位对齐到汉字拼音行 */
     }
     /* 标点不显示纠错下划线/底线，只继承颜色与位置 */
     .anno-punct-char.confused,
@@ -8542,8 +8544,7 @@
       if (fcTopCount) fcTopCount.textContent = (fcIdx + 1) + ' / ' + vocab.length;
       var fcTopProg = document.getElementById('fc-top-prog');
       if (fcTopProg) fcTopProg.style.width = Math.round(fcIdx / vocab.length * 100) + '%';
-      var isLast = (fcIdx === vocab.length - 1);
-      document.getElementById('fc-next-btn').textContent = isLast ? '开始对话 Start →' : '下一个 Next →';
+      document.getElementById('fc-next-btn').textContent = '下一页 Next ▶';
       // animate timer bar
       var fill = document.getElementById('fc-timer-fill');
       fill.style.transition = 'none';
@@ -8600,10 +8601,13 @@
         fcIdx--;
         fcShowCard();
       } else {
-        // 第一张卡片：返回最后一个角色介绍页
+        // 第一张卡片：返回上一页面（优先角色介绍，否则回封面）
         var lastCharId = _charIntroHistory[_charIntroHistory.length - 1];
         if (lastCharId) {
           charIntroShow(lastCharId, false);
+          document.getElementById('flashcard-page').classList.remove('show');
+        } else {
+          showCoverPage();
           document.getElementById('flashcard-page').classList.remove('show');
         }
       }
@@ -9073,9 +9077,9 @@
         <div class="fc-en" id="fc-en">Excuse me / Sorry to bother you</div>
       </div>
       <div class="fc-footer">
-        <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ 上一个 Prev</button>
+        <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ 上一页 Prev</button>
         <button class="fc-skip-btn" onclick="fcSkipAll()">跳过 Skip</button>
-        <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">下一个 Next →</button>
+        <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">下一页 Next ▶</button>
       </div>
     </div>
   </div>
