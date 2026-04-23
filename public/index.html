@@ -4970,11 +4970,25 @@
           blendedBaseScore = Math.round(baseScore * 0.80 + charHeuristic * 0.20);
         }
 
-        // 6. 声学错误扣分（适度放宽）：每项约扣 1–2 分，且上限动态封顶
-        // 仍保留惩罚，避免过于宽松；但不再出现一次误判拉低十几分的情况。
+        // 6. 声学错误扣分（适度放宽 + 防误判）
+        // 仅当后端字级也提示了平翘舌相关问题时，声学项才参与扣分；
+        // 纯声学命中仅用于提示，不直接扣分，避免把正确发音误伤成低分。
+        var hasRetroflexMsg = function (m) {
+          if (!m) return false;
+          return /平翘舌|翘舌|卷舌|retroflex|zh_z|z_zh/i.test(String(m));
+        };
+        var backendRetroflexChars = {};
+        (result.wordResults || []).forEach(function (w) {
+          if (!w || !w.content) return;
+          if (hasRetroflexMsg(w.perrMsg)) backendRetroflexChars[w.content] = true;
+        });
+        var penalizedAcousticErrors = (acousticErrors || []).filter(function (e) {
+          return !!(e && e.char && backendRetroflexChars[e.char]);
+        });
+
         var acousticCap = Math.min(8, Math.max(4, Math.round(blendedBaseScore * 0.12)));
-        var acousticPenalty = acousticErrors.length > 0 ? Math.min(acousticCap,
-          acousticErrors.reduce(function(s, e) {
+        var acousticPenalty = penalizedAcousticErrors.length > 0 ? Math.min(acousticCap,
+          penalizedAcousticErrors.reduce(function(s, e) {
             return s + Math.round(0.8 + e.confidence * 1.2);  // conf 0.4→1, 1.0→2
           }, 0)
         ) : 0;
