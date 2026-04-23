@@ -1760,10 +1760,13 @@
       display: inline-flex;
       align-items: flex-end;
       line-height: 1;
+      align-self: flex-end;
       margin: 0 1px;
-      padding-top: 20px; /* 给“拼音行”留出上方高度，让标点落在汉字底部 */
-      font-size: 34px;
-      font-weight: 700;
+      font-size: 0.76em;      /* 标点比汉字小一档，视觉更协调 */
+      font-weight: 600;
+      font-family: inherit;   /* 与汉字同字体体系 */
+      letter-spacing: 0;
+      transform: translateY(9px); /* 明确下沉到汉字底部附近（向下调整） */
     }
     .anno-punct-char.correct  { color: #22c55e; }
     .anno-punct-char.confused { color: #fbbf24; }
