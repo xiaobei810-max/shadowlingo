@@ -4992,6 +4992,7 @@
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
+        var dualTrackErrors = result.dualTrackErrors || [];
         // 全部正确时强制给满分
         var allCorrect = result.wordResults.length > 0 &&
           result.wordResults.every(function(w) { return w.perrLevel === 0; });
@@ -5011,7 +5012,33 @@
           }
         }
 
-        // 5. 分数温和校准：后端总分为主，字级命中率为辅（避免单个黄字时分数波动过大）
+        // 5. “明显错必扣，轻微错温和扣”：
+        // - 明显错：双轨命中声调/平翘舌，或高置信声学平翘舌
+        // - 轻微错：双轨一般分歧、或中置信声学提示
+        var obviousByChar = {};
+        var mildByChar = {};
+        dualTrackErrors.forEach(function (e) {
+          if (!e || !e.targetChar) return;
+          if (e.type === 'tone_confusion' || e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') {
+            obviousByChar[e.targetChar] = true;
+          } else if (e.type === 'disagreement') {
+            mildByChar[e.targetChar] = true;
+          }
+        });
+        (acousticErrors || []).forEach(function (e) {
+          if (!e || !e.char) return;
+          var conf = Number(e.confidence || 0);
+          if (conf >= 0.82) obviousByChar[e.char] = true;
+          else if (conf >= 0.58) mildByChar[e.char] = true;
+        });
+        var obviousErrCount = Object.keys(obviousByChar).length;
+        var mildErrCount = Object.keys(mildByChar).filter(function (c) { return !obviousByChar[c]; }).length;
+
+        // 若存在明显错，不允许维持“全对满分”态
+        if (allCorrect && obviousErrCount > 0) allCorrect = false;
+        baseScore = allCorrect ? 100 : result.totalScore;
+
+        // 6. 分数温和校准：后端总分为主，字级命中率为辅（避免单个黄字时分数波动过大）
         var blendedBaseScore = baseScore;
         if (!allCorrect && result.wordResults && result.wordResults.length) {
           var charHeuristic = Math.round(result.wordResults.reduce(function (acc, w) {
@@ -5020,7 +5047,7 @@
           blendedBaseScore = Math.round(baseScore * 0.80 + charHeuristic * 0.20);
         }
 
-        // 6. 声学错误扣分（适度放宽 + 防误判）
+        // 7. 声学错误扣分（适度放宽 + 防误判）
         // 仅当后端字级也提示了平翘舌相关问题时，声学项才参与扣分；
         // 纯声学命中仅用于提示，不直接扣分，避免把正确发音误伤成低分。
         var hasRetroflexMsg = function (m) {
@@ -5042,13 +5069,18 @@
             return s + Math.round(0.8 + e.confidence * 1.2);  // conf 0.4→1, 1.0→2
           }, 0)
         ) : 0;
-        var displayScore = Math.max(0, blendedBaseScore - acousticPenalty);
+
+        // 8. 明显/轻微错误附加扣分（与声学主扣分分离，避免漏检时“有错仍100”）
+        var obviousPenalty = Math.min(18, obviousErrCount * 6);
+        var mildPenalty = Math.min(8, mildErrCount * 2);
+
+        var displayScore = Math.max(0, blendedBaseScore - acousticPenalty - obviousPenalty - mildPenalty);
         var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
         sessionScores[scoreSlot] = displayScore;   // 对话模式按轮次记分，避免都写到 idx=0
         incPracticeCount(lessonIdx, idx);
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           iseHintText(result.wordResults, s.chars), s, null, recText,
-          result.dualTrackErrors || [], acousticErrors);
+          dualTrackErrors, acousticErrors);
       } catch (err) {
         console.error('评测失败:', err);
         var failScoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
