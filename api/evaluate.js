@@ -295,21 +295,24 @@ function _extractXfyunSummary(xml) {
   if (!xml) return null;
   const readSentenceMatch = xml.match(/<read_sentence\b([^>]*)>/i);
   const attrs = _parseXfyunAttrs(readSentenceMatch ? readSentenceMatch[1] : '');
+  const sentenceMatch = xml.match(/<sentence\b([^>]*)>/i);
+  const sentenceAttrs = _parseXfyunAttrs(sentenceMatch ? sentenceMatch[1] : '');
   const recPaperMatch = xml.match(/<rec_paper\b([^>]*)>/i);
   const recAttrs = _parseXfyunAttrs(recPaperMatch ? recPaperMatch[1] : '');
-  if (!Object.keys(attrs).length && !Object.keys(recAttrs).length) return null;
-  const sentence = _pickAttr(attrs, recAttrs, 'content') || '';
+  if (!Object.keys(attrs).length && !Object.keys(sentenceAttrs).length && !Object.keys(recAttrs).length) return null;
+  const sentence = _pickAttr(sentenceAttrs, attrs, 'content') || _pickAttr(attrs, recAttrs, 'content') || '';
+  // 讯飞ISE常见结构中，细粒度评测分数多在 <sentence ...> 上。
   return {
     sentence: sentence || null,
-    total_score: _toNum(_pickAttr(recAttrs, attrs, 'total_score')),
-    integrity_score: _toNum(_pickAttr(recAttrs, attrs, 'integrity_score')),
-    fluency_score: _toNum(_pickAttr(recAttrs, attrs, 'fluency_score')),
-    standard_score: _toNum(_pickAttr(recAttrs, attrs, 'standard_score')),
-    accuracy_score: _toNum(_pickAttr(recAttrs, attrs, 'accuracy_score')),
-    tone_score: _toNum(_pickAttr(recAttrs, attrs, 'tone_score')),
-    phone_score: _toNum(_pickAttr(recAttrs, attrs, 'phone_score')),
-    except_info: _pickAttr(attrs, recAttrs, 'except_info'),
-    is_rejected: _pickAttr(attrs, recAttrs, 'is_rejected')
+    total_score: _toNum(_pickAttr(sentenceAttrs, recAttrs, 'total_score') || _pickAttr(recAttrs, attrs, 'total_score')),
+    integrity_score: _toNum(_pickAttr(sentenceAttrs, recAttrs, 'integrity_score') || _pickAttr(recAttrs, attrs, 'integrity_score')),
+    fluency_score: _toNum(_pickAttr(sentenceAttrs, recAttrs, 'fluency_score') || _pickAttr(recAttrs, attrs, 'fluency_score')),
+    standard_score: _toNum(_pickAttr(sentenceAttrs, recAttrs, 'standard_score') || _pickAttr(recAttrs, attrs, 'standard_score')),
+    accuracy_score: _toNum(_pickAttr(sentenceAttrs, recAttrs, 'accuracy_score') || _pickAttr(recAttrs, attrs, 'accuracy_score')),
+    tone_score: _toNum(_pickAttr(sentenceAttrs, recAttrs, 'tone_score') || _pickAttr(recAttrs, attrs, 'tone_score')),
+    phone_score: _toNum(_pickAttr(sentenceAttrs, recAttrs, 'phone_score') || _pickAttr(recAttrs, attrs, 'phone_score')),
+    except_info: _pickAttr(sentenceAttrs, attrs, 'except_info') || _pickAttr(attrs, recAttrs, 'except_info'),
+    is_rejected: _pickAttr(sentenceAttrs, attrs, 'is_rejected') || _pickAttr(attrs, recAttrs, 'is_rejected')
   };
 }
 
