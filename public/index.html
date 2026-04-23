@@ -6706,6 +6706,14 @@
     }
 
     // ── 动态填充并显示封面页 ──────────────────────────────────────
+    function _hideFullscreenLayersForRoute() {
+      var ids = ['flashcard-page','pre-listen-page','dialog-listen-page','eval-page','tip-page','overlay'];
+      ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('show');
+      });
+    }
+
     function showCoverPage() {
       var lesson   = LESSONS[lessonIdx];
       var lessonNum = lessonIdx + 1;
@@ -6739,6 +6747,8 @@
       setupAudio(lesson.audio || '');
       saveState();
 
+      // 先收起其它全屏层，避免切页时露出旧页面
+      _hideFullscreenLayersForRoute();
       document.getElementById('cover-page').classList.add('show');
     }
 
@@ -8590,6 +8600,8 @@
       var lesson = LESSONS[lessonIdx];
       if (!lesson.vocab || !lesson.vocab.length) { showPreListenPage(); return; }
       fcIdx = 0;
+      // 只保留目标页，防止 CG/预听等旧层短暂露出
+      _hideFullscreenLayersForRoute();
       document.getElementById('flashcard-page').classList.add('show');
       fcShowCard();
     }
@@ -9017,8 +9029,9 @@
       lessonIdx = chsActiveIdx;
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
-      // Fade out chapter select, then show cover page
-      hideChapterSelectPage(function() { showCoverPage(); });
+      // 先把封面页就位，再淡出章节页，避免中间露出底层练习页
+      showCoverPage();
+      hideChapterSelectPage();
     }
 
     function chsInitTouch() {
