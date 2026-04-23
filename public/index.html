@@ -1757,19 +1757,19 @@
       text-decoration-style: wavy;
     }
     .anno-punct-char {
-      display: inline-flex;
-      align-items: flex-end;
-      align-self: flex-end;
-      vertical-align: baseline;
-      line-height: 1;
-      margin: 0 1px;
+      margin: 0 1px !important;
       font-size: 0.72em;      /* 再缩小一档，减轻违和 */
       font-weight: 600;
       font-family: inherit;   /* 与汉字同字体体系 */
       letter-spacing: 0;
-      position: static;
-      top: auto;
-      transform: none;
+      border-bottom: none !important;
+      text-decoration: none !important;
+    }
+    .anno-punct-char rt {
+      font-size: 14px;
+      line-height: 1.4;
+      min-height: 15px;
+      visibility: hidden; /* 仅占位，使标点与汉字共享同一底部基线 */
     }
     .anno-punct-char.correct  { color: #22c55e; }
     .anno-punct-char.confused { color: #fbbf24; }
@@ -6085,8 +6085,8 @@
             lastType = a.type || 'correct';
             html += '<ruby class="anno-char ' + lastType + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
           } else {
-            // 标点跟随前一个汉字的颜色，并占位到汉字同一基线
-            html += '<span class="anno-punct-char ' + lastType + '">' + ch + '</span>';
+            // 标点也使用 ruby 结构：上方 rt 隐形占位，底部与汉字基线对齐
+            html += '<ruby class="anno-char anno-punct-char ' + lastType + '">' + ch + '<rt>·</rt></ruby>';
           }
         });
         document.getElementById("eval-anno-chars").innerHTML = html;
