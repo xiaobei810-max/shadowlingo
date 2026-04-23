@@ -951,14 +951,43 @@ async function getPinyinMap(refText) {
   const body = {
     contents: [{ parts: [{ text: `${GEMINI_SYSTEM}\n\n句子：${refText}\n请返回每个汉字的拼音JSON：` }] }]
   };
-  const resp = await fetch(url, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(body)
-  });
-  const data = await resp.json();
-  console.log('[Gemini] HTTP状态:', resp.status, '原始返回:', JSON.stringify(data).slice(0, 400));
-  if (!resp.ok) throw Object.assign(new Error(data?.error?.message || 'Gemini error'), { status: resp.status, body: data });
+  const MAX_ATTEMPTS = 2; // 首次 + 1次重试
+  let lastErr = null;
+  let data = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let resp = null;
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 7000);
+      resp = await fetch(url, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+        signal:  ctrl.signal
+      });
+      clearTimeout(timeout);
+      data = await resp.json();
+      console.log('[Gemini] 尝试 %s/%s HTTP状态:%s 返回:%s',
+        attempt, MAX_ATTEMPTS, resp.status, JSON.stringify(data).slice(0, 400));
+      if (resp.ok) break;
+      const err = Object.assign(new Error(data?.error?.message || 'Gemini error'), { status: resp.status, body: data });
+      const retryable = resp.status === 429 || resp.status >= 500;
+      if (!retryable || attempt >= MAX_ATTEMPTS) throw err;
+      lastErr = err;
+    } catch (e) {
+      const isTimeout = e && e.name === 'AbortError';
+      const retryable = isTimeout || !resp || (resp.status === 429 || resp.status >= 500);
+      const wrapped = Object.assign(new Error(isTimeout ? 'Gemini timeout' : (e.message || String(e))), {
+        status: e.status ?? (resp ? resp.status : null),
+        body: e.body ?? null
+      });
+      if (!retryable || attempt >= MAX_ATTEMPTS) throw wrapped;
+      lastErr = wrapped;
+    }
+    const jitterMs = 200 + Math.floor(Math.random() * 250);
+    await new Promise(r => setTimeout(r, jitterMs));
+  }
+  if (!data) throw (lastErr || new Error('Gemini error'));
 
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
   console.log('[Gemini] 文本返回:', raw);
