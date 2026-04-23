@@ -6885,10 +6885,11 @@
           cgTypeTimers.length = 0;
           if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
           stopAudio();
+          // 先切到目标页，再淡出 CG，避免淡出过程露出底层旧页面
+          if (callback) callback();
           page.style.opacity = '0';
           setTimeout(function() {
             if (page.parentNode) page.parentNode.removeChild(page);
-            callback();
           }, 500);
         });
       }, 400);
