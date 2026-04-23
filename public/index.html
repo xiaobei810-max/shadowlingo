@@ -869,6 +869,14 @@
       word-break: keep-all;
       text-wrap: balance;
     }
+    /* 跟读页：避免卡拉 OK 折成「第二行只剩一个字」；整句单行，必要时横向滑动 */
+    #sentence-box .kara-wrap {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      text-wrap: unset;
+      justify-content: flex-start;
+    }
 
     /* Punctuation fix: group wraps kchar + trailing punct as one flex item */
     .kchar-group {
@@ -2637,6 +2645,12 @@
       gap: 4px 3px;
       word-break: keep-all;
       text-wrap: balance;
+    }
+    #context-panel .ctx-zh {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      text-wrap: unset;
     }
     .ctx-kchar {
       display: inline-flex;
@@ -7387,10 +7401,19 @@
       if (ctxWrap) ctxWrap.style.display = 'none';
       if (ctxBadge) ctxBadge.style.display = 'flex';
     } else {
-      if (ctxWrap) { ctxWrap.style.display = 'block'; ctxWrap.className = 'avatar-wrap mx'; }
+      if (ctxWrap) { ctxWrap.style.display = ''; ctxWrap.className = (lineA._sid === 'nora') ? 'avatar-wrap nora' : 'avatar-wrap mx'; }
       if (ctxBadge) ctxBadge.style.display = 'none';
-      var imgSrcA = (lineA._sid === 'nora') ? '/assets/characters/nora/nora_head.png' : '/assets/characters/mingxuan/mingxuan_head.png';
-      if (ctxImg) ctxImg.src = imgSrcA;
+      if (ctxImg) {
+        if (lineA._sid === 'nora') {
+          ctxImg.src = '/assets/characters/nora/nora_head.png';
+          ctxImg.alt = 'Nora';
+          ctxImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);';
+        } else {
+          ctxImg.src = '/assets/characters/mingxuan/mingxuan_head.png';
+          ctxImg.alt = '明轩';
+          ctxImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);';
+        }
+      }
     }
     buildCtxKara(document.getElementById('ctx-zh'), lineA.zh, lineA.pinyin);
     document.getElementById('ctx-en').textContent = lineA.en;
@@ -7402,10 +7425,14 @@
   var isStaffB = lineB._sid === 'staff' || (lineB.speaker && (lineB.speaker.includes('工作人员') || lineB.speaker.includes('Staff')));
 
   if (isStaffB) {
+    panelAvWrap.className = 'avatar-wrap nora glow';
     panelAvWrap.innerHTML = `<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" style="width:28px;height:28px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
+  } else if (lineB._sid === 'mingxuan') {
+    panelAvWrap.className = 'avatar-wrap mx glow';
+    panelAvWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
   } else {
-    var imgSrcB = (lineB._sid === 'mingxuan') ? '/assets/characters/mingxuan/mingxuan_head.png' : '/assets/characters/nora/nora_head.png';
-    panelAvWrap.innerHTML = `<img src="${imgSrcB}" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 20%;transform:scale(2.2);">`;
+    panelAvWrap.className = 'avatar-wrap nora glow';
+    panelAvWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
   }
 
   // 绑定当前评测句
