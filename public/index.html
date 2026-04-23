@@ -4955,14 +4955,16 @@
           }, 0)
         ) : 0;
         var displayScore = Math.max(0, baseScore - acousticPenalty);
-        sessionScores[idx] = displayScore;   // 用索引赋值：重复录音时替换而非追加
+        var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
+        sessionScores[scoreSlot] = displayScore;   // 对话模式按轮次记分，避免都写到 idx=0
         incPracticeCount(lessonIdx, idx);
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           iseHintText(result.wordResults, s.chars), s, null, recText,
           result.dualTrackErrors || [], acousticErrors);
       } catch (err) {
         console.error('评测失败:', err);
-        sessionScores[idx] = 0;   // 同上，替换而非追加
+        var failScoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
+        sessionScores[failScoreSlot] = 0;   // 同上，替换而非追加
         incPracticeCount(lessonIdx, idx);
         fillEvalResult(0, null, [], s, '评测失败：' + err.message);
       }
@@ -6178,8 +6180,9 @@
     function doRetry() {
       stopMediaRecorderIfRunning();
       clearTimers();
-      // Remove the last score so the retry score replaces it
-      if (sessionScores.length > 0) sessionScores.pop();
+      // 只清当前句（或当前轮）分数，避免误删其它句成绩
+      var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
+      delete sessionScores[scoreSlot];
       updateUI();
     }
 
@@ -6396,8 +6399,10 @@
     }
 
     function showCompletion() {
-      var totalSentences = LESSONS[lessonIdx].sentences.length;
-      var recorded = sessionScores.length;
+      var totalSentences = (dialogMode && dialogStep === 2)
+        ? getDialogRoundCount()
+        : LESSONS[lessonIdx].sentences.length;
+      var recorded = sessionScores.filter(function (v) { return typeof v === 'number'; }).length;
       // Skipped sentences count as 0 — divide by total, not just recorded
       var sum = sessionScores.reduce(function (a, b) { return a + b; }, 0);
       var overall = Math.min(100, totalSentences > 0 ? Math.round(sum / totalSentences) : 0);
