@@ -2619,7 +2619,8 @@
       font-size: 11px; font-weight: 400; line-height: 1.4; color: #94a3b8;
       min-height: 15px; opacity: 0.85; letter-spacing: 0;
     }
-    #pre-listen-page .plp-kara .kpunct { font-size: 20px; font-weight: 700; color: #e2e8f0; line-height: 1; }
+    /* 不固定标点颜色，便于与 .dlp-kchar.dlp-active/.dlp-done + .kpunct 同步变绿 */
+    #pre-listen-page .plp-kara .kpunct { font-size: 20px; font-weight: 700; line-height: 1; }
     .plp-en  { font-size: 15px; color: #6b7280; line-height: 1.6; font-style: italic; flex-shrink: 0; }
     .plp-bar { height: 3px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; flex-shrink: 0; }
     .plp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
@@ -6680,6 +6681,8 @@
       page.appendChild(hint);
 
       document.body.appendChild(page);
+      var cgTypeTimers = [];
+      var cgFallbackTid = null;
 
       // 淡入后启动打字机 + TTS
       requestAnimationFrame(function() {
@@ -6687,33 +6690,51 @@
           page.style.opacity = '1';
           if (onShown) setTimeout(onShown, 500);
 
-          // ── 打字机 + 语音 ──────────────────────────────────────
+          // ── 打字机 + 语音：中文逐字与整句 TTS 大致同拍；英文整句一次出现 ──
           setTimeout(function() {
-            // TTS 播放金句（不等打字机，同步启动）
-            if (textZh) speakTTS(textZh, 'learner', null);
-
-            // 中文：每字 110ms
             var zhChars = textZh ? Array.from(textZh) : [];
-            zhChars.forEach(function(ch, i) {
-              setTimeout(function() { if (zhEl) zhEl.textContent += ch; }, i * 110);
-            });
-
-            // 英文：中文打完 + 500ms 缓冲后，每字 45ms
-            var zhDone = zhChars.length * 110 + 500;
-            var enChars = textEn ? Array.from(textEn) : [];
-            enChars.forEach(function(ch, i) {
-              setTimeout(function() { if (enEl) enEl.textContent += ch; }, zhDone + i * 45);
-            });
-
-            // 全部打完后显示「点击继续」呼吸提示
-            var allDone = zhDone + enChars.length * 45 + 300;
-            setTimeout(function() {
+            var n = Math.max(1, zhChars.length);
+            function showTapHint() {
               var hintEl = document.getElementById(hintId);
               if (hintEl) {
                 hintEl.style.color = 'rgba(255,255,255,0.5)';
                 hintEl.style.animation = 'breatheHint 2.4s ease-in-out infinite';
               }
-            }, allDone);
+            }
+            function armZhEn(stepMs, zhDonePadMs) {
+              stepMs = Math.max(52, Math.min(220, stepMs));
+              zhDonePadMs = zhDonePadMs == null ? 420 : zhDonePadMs;
+              if (zhEl) zhEl.textContent = '';
+              if (enEl) enEl.textContent = '';
+              zhChars.forEach(function(ch, i) {
+                var tid = setTimeout(function() { if (zhEl) zhEl.textContent += ch; }, Math.round(i * stepMs));
+                cgTypeTimers.push(tid);
+              });
+              var zhDone = Math.round(zhChars.length * stepMs) + zhDonePadMs;
+              var tidEn = setTimeout(function() { if (enEl && textEn) enEl.textContent = textEn; }, zhDone);
+              cgTypeTimers.push(tidEn);
+              var tidHint = setTimeout(showTapHint, zhDone + 320);
+              cgTypeTimers.push(tidHint);
+            }
+            var armed = false;
+            function armOnceFromDuration(durSec) {
+              if (armed) return;
+              armed = true;
+              var totalMs = (durSec && isFinite(durSec) && durSec > 0.28) ? durSec * 1000 : n * 110;
+              armZhEn(totalMs / n);
+            }
+            /* onplay 拿到时长后再开打字机；极慢网络下超时兜底（避免永远不出现字） */
+            cgFallbackTid = setTimeout(function() { armOnceFromDuration(0); }, 4500);
+            if (textZh) {
+              speakAzure(textZh, 'learner', 1.0, null, function (durSec) {
+                if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
+                armOnceFromDuration(durSec);
+              });
+            } else {
+              if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
+              if (enEl && textEn) enEl.textContent = textEn;
+              cgTypeTimers.push(setTimeout(showTapHint, 500));
+            }
           }, 600); // 等页面淡入完成
         });
       });
@@ -6723,6 +6744,10 @@
       setTimeout(function() {
         page.addEventListener('click', function() {
           if (_clicked) return; _clicked = true;
+          cgTypeTimers.forEach(function (t) { clearTimeout(t); });
+          cgTypeTimers.length = 0;
+          if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
+          stopAudio();
           page.style.opacity = '0';
           setTimeout(function() {
             if (page.parentNode) page.parentNode.removeChild(page);
