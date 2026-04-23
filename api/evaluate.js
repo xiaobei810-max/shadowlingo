@@ -23,6 +23,7 @@ const XFYUN_APP_ID       = process.env.XFYUN_APP_ID;
 const XFYUN_API_KEY      = process.env.XFYUN_API_KEY;
 const XFYUN_API_SECRET   = process.env.XFYUN_API_SECRET;
 const XFYUN_ISE_ENABLED  = String(process.env.XFYUN_ISE_ENABLED || '').toLowerCase() === 'true';
+const XFYUN_SHADOW_LOG_LEVEL = String(process.env.XFYUN_SHADOW_LOG_LEVEL || 'full').toLowerCase();
 
 // ── PCM → WAV（44 字节 RIFF 头）────────────────────────────────
 function pcmToWav(pcmBuf) {
@@ -258,11 +259,60 @@ function buildXfyunWsUrl() {
 function _decodeXfyunResultData(payloadBase64) {
   if (!payloadBase64) return null;
   try {
-    const xml = Buffer.from(payloadBase64, 'base64').toString('utf8');
-    return xml.slice(0, 1200); // shadow only: keep concise snippet
+    return Buffer.from(payloadBase64, 'base64').toString('utf8');
   } catch (_) {
     return null;
   }
+}
+
+function _parseXfyunAttrs(openTagText) {
+  const attrs = {};
+  if (!openTagText) return attrs;
+  const attrRegex = /([a-zA-Z_][\w.-]*)\s*=\s*"([^"]*)"/g;
+  let m;
+  while ((m = attrRegex.exec(openTagText)) !== null) {
+    attrs[m[1]] = m[2];
+  }
+  return attrs;
+}
+
+function _toNum(val) {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : null;
+}
+
+function _extractXfyunSummary(xml) {
+  if (!xml) return null;
+  const readSentenceMatch = xml.match(/<read_sentence\b([^>]*)>/i);
+  if (!readSentenceMatch) return null;
+  const attrs = _parseXfyunAttrs(readSentenceMatch[1]);
+  const recPaperMatch = xml.match(/<rec_paper\b([^>]*)>/i);
+  const recAttrs = _parseXfyunAttrs(recPaperMatch ? recPaperMatch[1] : '');
+  const sentence = attrs.content || recAttrs.content || '';
+  return {
+    sentence: sentence || null,
+    total_score: _toNum(attrs.total_score),
+    integrity_score: _toNum(attrs.integrity_score),
+    fluency_score: _toNum(attrs.fluency_score),
+    standard_score: _toNum(attrs.standard_score),
+    accuracy_score: _toNum(attrs.accuracy_score),
+    tone_score: _toNum(attrs.tone_score),
+    phone_score: _toNum(attrs.phone_score),
+    except_info: attrs.except_info || null,
+    is_rejected: attrs.is_rejected || null
+  };
+}
+
+function _formatXfyunShadowDebug(base, xml) {
+  const level = XFYUN_SHADOW_LOG_LEVEL;
+  if (level === 'off' || level === 'none') return base;
+  const out = Object.assign({}, base);
+  const summary = _extractXfyunSummary(xml);
+  if (summary) out.summary = summary;
+  if (level === 'full' || level === 'verbose') {
+    out.xmlSnippet = xml ? xml.slice(0, 1200) : null;
+  }
+  return out;
 }
 
 async function xfyunIseAssessShadow(pcmBase64, refText) {
@@ -284,7 +334,7 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
     let finalCode = 0;
     let finalMessage = 'ok';
     let finalStatus = -1;
-    let xmlSnippet = null;
+    let xmlRaw = null;
     let msgCount = 0;
     const ws = new WebSocket(wsUrl);
     const timeoutMs = Math.max(totalChunks * CHUNK_DELAY + 18000, 28000);
@@ -403,10 +453,10 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
       }
       if (msg.data && msg.data.data) {
         const maybeXml = _decodeXfyunResultData(msg.data.data);
-        if (maybeXml) xmlSnippet = maybeXml;
+        if (maybeXml) xmlRaw = maybeXml;
       }
       if (status === 2) {
-        finish({
+        finish(_formatXfyunShadowDebug({
           enabled: true,
           ok: true,
           provider: 'xfyun-ise',
@@ -414,9 +464,8 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
           code: finalCode,
           message: finalMessage,
           status: finalStatus,
-          messages: msgCount,
-          xmlSnippet
-        });
+          messages: msgCount
+        }, xmlRaw));
       }
     });
     ws.on('error', (e) => {
@@ -431,7 +480,7 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
     });
     ws.on('close', () => {
       if (!resolved) {
-        finish({
+        finish(_formatXfyunShadowDebug({
           enabled: true,
           ok: finalCode === 0,
           provider: 'xfyun-ise',
@@ -439,9 +488,8 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
           code: finalCode,
           message: finalMessage || 'closed',
           status: finalStatus,
-          messages: msgCount,
-          xmlSnippet
-        });
+          messages: msgCount
+        }, xmlRaw));
       }
     });
   });
