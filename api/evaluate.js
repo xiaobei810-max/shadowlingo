@@ -24,6 +24,7 @@ const XFYUN_API_KEY      = process.env.XFYUN_API_KEY;
 const XFYUN_API_SECRET   = process.env.XFYUN_API_SECRET;
 const XFYUN_ISE_ENABLED  = String(process.env.XFYUN_ISE_ENABLED || '').toLowerCase() === 'true';
 const XFYUN_SHADOW_LOG_LEVEL = String(process.env.XFYUN_SHADOW_LOG_LEVEL || 'full').toLowerCase();
+const GEMINI_ERROR_LOG_LEVEL = String(process.env.GEMINI_ERROR_LOG_LEVEL || 'compact').toLowerCase();
 
 // ── PCM → WAV（44 字节 RIFF 头）────────────────────────────────
 function pcmToWav(pcmBuf) {
@@ -1018,9 +1019,21 @@ async function getPinyinMapSafe(refText) {
   } catch(e) {
     const fallbackMap = buildFallbackPyMap(refText);
     const detail = { status: e.status ?? null, message: e.message ?? String(e), body: e.body ?? null };
+    const compactMsg = detail.status === 429
+      ? 'Gemini quota exceeded (429), using local fallback'
+      : detail.message;
+    const errorPayload = {
+      status: detail.status,
+      message: compactMsg,
+      fallback: 'local-char-py'
+    };
+    if (GEMINI_ERROR_LOG_LEVEL === 'full' || GEMINI_ERROR_LOG_LEVEL === 'verbose') {
+      errorPayload.rawMessage = detail.message;
+      errorPayload.body = detail.body ?? null;
+    }
     console.error('[Gemini] 拼音请求失败 status=%s message=%s fallbackCount=%s',
       detail.status, detail.message, Object.keys(fallbackMap).length);
-    return { map: fallbackMap, error: Object.assign({}, detail, { fallback: 'local-char-py' }) };
+    return { map: fallbackMap, error: errorPayload };
   }
 }
 
