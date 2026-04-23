@@ -1723,45 +1723,56 @@
       justify-content: center;
       gap: 8px 6px;
     }
-    .anno-line-py {
+    .anno-grid {
       width: 100%;
-      text-align: center;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 8px 2px;
+    }
+    .anno-token {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 1.35em;
+      line-height: 1;
+    }
+    .anno-token-py {
       font-size: 14px;
       font-weight: 400;
       line-height: 1.35;
       color: #94a3b8;
       opacity: 0.9;
-      margin-bottom: 6px;
+      min-height: 19px;
       letter-spacing: 0;
+      margin-bottom: 4px;
+      white-space: nowrap;
     }
-    .anno-line-zh {
-      width: 100%;
-      text-align: center;
+    .anno-token-hz {
       font-size: 34px;
       font-weight: 700;
       line-height: 1;
       color: #e2e8f0;
-      word-break: keep-all;
     }
-    .anno-line-zh .anno-zh-char.correct { color: #22c55e; }
-    .anno-line-zh .anno-zh-char.confused {
+    .anno-token-hz.correct { color: #22c55e; }
+    .anno-token-hz.confused {
       color: #fbbf24;
       border-bottom: 2px solid #fbbf24;
     }
-    .anno-line-zh .anno-zh-char.miss {
+    .anno-token-hz.miss {
       color: #f87171;
       border-bottom: 2px solid #f87171;
       text-decoration-line: underline;
       text-decoration-style: wavy;
     }
-    .anno-line-zh .anno-zh-punct {
+    .anno-token-hz.punct {
       font-size: 0.82em;
       font-weight: 700;
       font-family: inherit;
       letter-spacing: 0;
       vertical-align: baseline;
-      margin-left: 0.02em;
-      margin-right: 0.02em;
       color: #22c55e;
     }
 
@@ -6109,24 +6120,35 @@
           annoQueue[a.char].push(a);
         });
         var renderZh = (sentence && sentence.zh) ? sentence.zh : '';
-        var renderPy = (sentence && sentence.pinyin) ? sentence.pinyin : '';
         var esc = function (s) {
           return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         };
+        var pySeq = (sentence && sentence.pinyin ? sentence.pinyin : '')
+          .trim()
+          .split(/\s+/)
+          .map(function (s) { return s.replace(/^[,，。！？.!?]+|[,，。！？.!?]+$/g, ''); })
+          .filter(function (s) { return s.length > 0; });
+        var pyIdx = 0;
         var zhHtml = '';
         Array.from(renderZh).forEach(function (ch) {
           if (/[\u4e00-\u9fff]/.test(ch)) {
             var q = annoQueue[ch] || [];
             var a = q.length ? q.shift() : { char: ch, type: 'correct', perrMsg: '' };
             var tip = a.perrMsg ? ' title="' + esc(a.perrMsg).replace(/"/g, '&quot;') + '"' : '';
-            zhHtml += '<span class="anno-zh-char ' + (a.type || 'correct') + '"' + tip + '>' + esc(ch) + '</span>';
+            var py = esc(pySeq[pyIdx] || '');
+            pyIdx++;
+            zhHtml += '<span class="anno-token">' +
+              '<span class="anno-token-py">' + py + '</span>' +
+              '<span class="anno-token-hz ' + (a.type || 'correct') + '"' + tip + '>' + esc(ch) + '</span>' +
+            '</span>';
           } else {
-            zhHtml += '<span class="anno-zh-punct">' + esc(ch) + '</span>';
+            zhHtml += '<span class="anno-token">' +
+              '<span class="anno-token-py"></span>' +
+              '<span class="anno-token-hz punct">' + esc(ch) + '</span>' +
+            '</span>';
           }
         });
-        document.getElementById("eval-anno-chars").innerHTML =
-          '<div class="anno-line-py">' + esc(renderPy) + '</div>' +
-          '<div class="anno-line-zh">' + zhHtml + '</div>';
+        document.getElementById("eval-anno-chars").innerHTML = '<div class="anno-grid">' + zhHtml + '</div>';
         compareCard.style.display = "block";
       } else {
         compareCard.style.display = "none";
