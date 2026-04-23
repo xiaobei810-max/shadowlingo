@@ -1757,21 +1757,17 @@
       text-decoration-style: wavy;
     }
     .anno-punct-char {
-      padding: 0;
-      margin: 0 1px;
+      display: inline-flex;
+      align-items: flex-end;
       line-height: 1;
+      margin: 0 1px;
+      padding-top: 20px; /* 给“拼音行”留出上方高度，让标点落在汉字底部 */
+      font-size: 34px;
+      font-weight: 700;
     }
-    .anno-punct-char rt {
-      font-size: 14px;
-      line-height: 1.4;
-      visibility: hidden; /* 占位对齐到汉字拼音行 */
-    }
-    /* 标点不显示纠错下划线/底线，只继承颜色与位置 */
-    .anno-punct-char.confused,
-    .anno-punct-char.miss {
-      border-bottom: none !important;
-      text-decoration: none !important;
-    }
+    .anno-punct-char.correct  { color: #22c55e; }
+    .anno-punct-char.confused { color: #fbbf24; }
+    .anno-punct-char.miss     { color: #f87171; }
 
     .anno-rec {
       font-size: 12px;
@@ -6084,7 +6080,7 @@
             html += '<ruby class="anno-char ' + lastType + '"' + tip + '>' + a.char + '<rt>' + rt + '</rt></ruby>';
           } else {
             // 标点跟随前一个汉字的颜色，并占位到汉字同一基线
-            html += '<ruby class="anno-char anno-punct-char ' + lastType + '">' + ch + '<rt></rt></ruby>';
+            html += '<span class="anno-punct-char ' + lastType + '">' + ch + '</span>';
           }
         });
         document.getElementById("eval-anno-chars").innerHTML = html;
@@ -8601,11 +8597,16 @@
         fcIdx--;
         fcShowCard();
       } else {
-        // 第一张卡片：返回上一页面（优先角色介绍，否则回封面）
+        // 第一张卡片：返回上一页面（优先角色介绍，其次回 CG 台词页，最后回封面）
         var lastCharId = _charIntroHistory[_charIntroHistory.length - 1];
         if (lastCharId) {
           charIntroShow(lastCharId, false);
           document.getElementById('flashcard-page').classList.remove('show');
+        } else if (LESSONS[lessonIdx] && LESSONS[lessonIdx].cgImage) {
+          document.getElementById('flashcard-page').classList.remove('show');
+          showLessonCg(LESSONS[lessonIdx].cgImage, function() {
+            showFlashcardPage();
+          }, null);
         } else {
           showCoverPage();
           document.getElementById('flashcard-page').classList.remove('show');
