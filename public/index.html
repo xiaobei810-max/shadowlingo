@@ -6516,7 +6516,9 @@
     }
 
     function showCompletion() {
-      var totalSentences = (dialogMode && dialogStep === 2)
+      // 对话模式下始终按“轮次”计总分（每轮=一条需跟读句），
+      // 不按底层 sentences 逐句数（如 8 句）计算，避免分母翻倍导致总分偏低。
+      var totalSentences = dialogMode
         ? getDialogRoundCount()
         : LESSONS[lessonIdx].sentences.length;
       var recorded = sessionScores.filter(function (v) { return typeof v === 'number'; }).length;
