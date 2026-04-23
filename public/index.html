@@ -5555,6 +5555,9 @@
 
     var doNormal = doSlow; // merged into single listen button
 
+    // 兼容旧按钮绑定：录音键仍调用 dialogRecordToggle()
+    function dialogRecordToggle() { doRecord(); }
+
     function doRecord() {
       if (phase === "recording") {
         stopRecording();
