@@ -808,6 +808,15 @@ const CHAR_PY = {
   '早':'zao3','造':'zao4',
 };
 
+function buildFallbackPyMap(refText) {
+  const chars = Array.from((refText || '').replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
+  const map = {};
+  for (const ch of chars) {
+    if (!map[ch] && CHAR_PY[ch]) map[ch] = CHAR_PY[ch];
+  }
+  return map;
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  编辑距离对齐 + STT 字级替换检测
 // ══════════════════════════════════════════════════════════════════
@@ -1007,9 +1016,11 @@ async function getPinyinMapSafe(refText) {
   try {
     return { map: await getPinyinMap(refText), error: null };
   } catch(e) {
+    const fallbackMap = buildFallbackPyMap(refText);
     const detail = { status: e.status ?? null, message: e.message ?? String(e), body: e.body ?? null };
-    console.error('[Gemini] 拼音请求失败 status=%s message=%s', detail.status, detail.message);
-    return { map: {}, error: detail };
+    console.error('[Gemini] 拼音请求失败 status=%s message=%s fallbackCount=%s',
+      detail.status, detail.message, Object.keys(fallbackMap).length);
+    return { map: fallbackMap, error: Object.assign({}, detail, { fallback: 'local-char-py' }) };
   }
 }
 
