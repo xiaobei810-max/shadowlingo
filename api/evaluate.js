@@ -312,7 +312,9 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
       try {
         // first frame
         const first = rawPcm.slice(0, CHUNK_SIZE).toString('base64');
-        ws.send(JSON.stringify({
+        const firstFrame = {
+          // 一些控制台版本要求顶层也有 cmd；与 business.cmd 并存可兼容更多版本
+          cmd: 'ssb',
           common: { app_id: XFYUN_APP_ID },
           business: {
             category: 'read_sentence',
@@ -322,7 +324,11 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
             text: '\uFEFF' + cleanRef,
             tte: 'utf-8',
             auf: 'audio/L16;rate=16000',
-            aue: 'raw'
+            aue: 'raw',
+            // 兼容字段（老版本/部分地域节点会读取）
+            language: 'zh_cn',
+            domain: 'ise',
+            accent: 'mandarin'
           },
           data: {
             status: 0,
@@ -330,7 +336,8 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
             encoding: 'raw',
             data: first
           }
-        }));
+        };
+        ws.send(JSON.stringify(firstFrame));
 
         for (let i = 1; i < totalChunks; i++) {
           await new Promise(r => setTimeout(r, CHUNK_DELAY));
