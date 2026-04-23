@@ -281,25 +281,35 @@ function _toNum(val) {
   return Number.isFinite(n) ? n : null;
 }
 
+function _pickAttr(attrsA, attrsB, key) {
+  if (attrsA && Object.prototype.hasOwnProperty.call(attrsA, key) && attrsA[key] !== '') {
+    return attrsA[key];
+  }
+  if (attrsB && Object.prototype.hasOwnProperty.call(attrsB, key) && attrsB[key] !== '') {
+    return attrsB[key];
+  }
+  return null;
+}
+
 function _extractXfyunSummary(xml) {
   if (!xml) return null;
   const readSentenceMatch = xml.match(/<read_sentence\b([^>]*)>/i);
-  if (!readSentenceMatch) return null;
-  const attrs = _parseXfyunAttrs(readSentenceMatch[1]);
+  const attrs = _parseXfyunAttrs(readSentenceMatch ? readSentenceMatch[1] : '');
   const recPaperMatch = xml.match(/<rec_paper\b([^>]*)>/i);
   const recAttrs = _parseXfyunAttrs(recPaperMatch ? recPaperMatch[1] : '');
-  const sentence = attrs.content || recAttrs.content || '';
+  if (!Object.keys(attrs).length && !Object.keys(recAttrs).length) return null;
+  const sentence = _pickAttr(attrs, recAttrs, 'content') || '';
   return {
     sentence: sentence || null,
-    total_score: _toNum(attrs.total_score),
-    integrity_score: _toNum(attrs.integrity_score),
-    fluency_score: _toNum(attrs.fluency_score),
-    standard_score: _toNum(attrs.standard_score),
-    accuracy_score: _toNum(attrs.accuracy_score),
-    tone_score: _toNum(attrs.tone_score),
-    phone_score: _toNum(attrs.phone_score),
-    except_info: attrs.except_info || null,
-    is_rejected: attrs.is_rejected || null
+    total_score: _toNum(_pickAttr(recAttrs, attrs, 'total_score')),
+    integrity_score: _toNum(_pickAttr(recAttrs, attrs, 'integrity_score')),
+    fluency_score: _toNum(_pickAttr(recAttrs, attrs, 'fluency_score')),
+    standard_score: _toNum(_pickAttr(recAttrs, attrs, 'standard_score')),
+    accuracy_score: _toNum(_pickAttr(recAttrs, attrs, 'accuracy_score')),
+    tone_score: _toNum(_pickAttr(recAttrs, attrs, 'tone_score')),
+    phone_score: _toNum(_pickAttr(recAttrs, attrs, 'phone_score')),
+    except_info: _pickAttr(attrs, recAttrs, 'except_info'),
+    is_rejected: _pickAttr(attrs, recAttrs, 'is_rejected')
   };
 }
 
