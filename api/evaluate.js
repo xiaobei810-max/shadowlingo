@@ -19,6 +19,10 @@ const TENCENT_SECRET_ID  = process.env.TENCENT_SECRET_ID;
 const TENCENT_SECRET_KEY = process.env.TENCENT_SECRET_KEY;
 const GEMINI_KEY         = process.env.GEMINI_API_KEY;
 const OPENAI_KEY         = process.env.OPENAI_API_KEY;
+const XFYUN_APP_ID       = process.env.XFYUN_APP_ID;
+const XFYUN_API_KEY      = process.env.XFYUN_API_KEY;
+const XFYUN_API_SECRET   = process.env.XFYUN_API_SECRET;
+const XFYUN_ISE_ENABLED  = String(process.env.XFYUN_ISE_ENABLED || '').toLowerCase() === 'true';
 
 // ── PCM → WAV（44 字节 RIFF 头）────────────────────────────────
 function pcmToWav(pcmBuf) {
@@ -230,6 +234,200 @@ async function tencentSoeAssess(pcmBase64, refText) {
         finish(null, { Response: normalizeSoeResponse(payload) });
       } else {
         finish(new Error(`SOE 关闭 code=${closeCode} reason=${reason}`));
+      }
+    });
+  });
+}
+
+// ── 讯飞 ISE（Shadow 模式，仅 debug，不参与打分）──────────────────────
+function buildXfyunWsUrl() {
+  const host = 'ise-api.xfyun.cn';
+  const path = '/v2/open-ise';
+  const date = new Date().toUTCString();
+  const signatureOrigin = `host: ${host}\ndate: ${date}\nGET ${path} HTTP/1.1`;
+  const signatureSha = crypto.createHmac('sha256', XFYUN_API_SECRET)
+    .update(signatureOrigin)
+    .digest('base64');
+  const authorizationOrigin =
+    `api_key="${XFYUN_API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signatureSha}"`;
+  const authorization = Buffer.from(authorizationOrigin).toString('base64');
+  const qs = new URLSearchParams({ authorization, date, host });
+  return `wss://${host}${path}?${qs.toString()}`;
+}
+
+function _decodeXfyunResultData(payloadBase64) {
+  if (!payloadBase64) return null;
+  try {
+    const xml = Buffer.from(payloadBase64, 'base64').toString('utf8');
+    return xml.slice(0, 1200); // shadow only: keep concise snippet
+  } catch (_) {
+    return null;
+  }
+}
+
+async function xfyunIseAssessShadow(pcmBase64, refText) {
+  if (!XFYUN_ISE_ENABLED) return { enabled: false, skipped: 'XFYUN_ISE_ENABLED=false' };
+  if (!XFYUN_APP_ID || !XFYUN_API_KEY || !XFYUN_API_SECRET) {
+    return { enabled: false, skipped: 'missing XFYUN_APP_ID/API_KEY/API_SECRET' };
+  }
+
+  const cleanRef = refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, '');
+  const rawPcm = Buffer.from(pcmBase64, 'base64');
+  const CHUNK_SIZE = 5120; // 160ms
+  const CHUNK_DELAY = 80;
+  const totalChunks = Math.ceil(rawPcm.length / CHUNK_SIZE);
+  const wsUrl = buildXfyunWsUrl();
+
+  return new Promise((resolve) => {
+    let resolved = false;
+    let sid = '';
+    let finalCode = 0;
+    let finalMessage = 'ok';
+    let finalStatus = -1;
+    let xmlSnippet = null;
+    let msgCount = 0;
+    const ws = new WebSocket(wsUrl);
+    const timeoutMs = Math.max(totalChunks * CHUNK_DELAY + 18000, 28000);
+
+    const finish = (obj) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      try { ws.close(); } catch (_) {}
+      resolve(obj);
+    };
+
+    const timer = setTimeout(() => {
+      finish({
+        enabled: true,
+        ok: false,
+        provider: 'xfyun-ise',
+        error: `timeout ${(timeoutMs / 1000).toFixed(0)}s`,
+        sid,
+        messages: msgCount
+      });
+    }, timeoutMs);
+
+    async function sendAudioFrames() {
+      try {
+        // first frame
+        const first = rawPcm.slice(0, CHUNK_SIZE).toString('base64');
+        ws.send(JSON.stringify({
+          common: { app_id: XFYUN_APP_ID },
+          business: {
+            category: 'read_sentence',
+            sub: 'ise',
+            ent: 'cn_vip',
+            cmd: 'ssb',
+            text: '\uFEFF' + cleanRef,
+            tte: 'utf-8',
+            auf: 'audio/L16;rate=16000',
+            aue: 'raw'
+          },
+          data: {
+            status: 0,
+            format: 'audio/L16;rate=16000',
+            encoding: 'raw',
+            data: first
+          }
+        }));
+
+        for (let i = 1; i < totalChunks; i++) {
+          await new Promise(r => setTimeout(r, CHUNK_DELAY));
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, rawPcm.length);
+          ws.send(JSON.stringify({
+            data: {
+              status: 1,
+              format: 'audio/L16;rate=16000',
+              encoding: 'raw',
+              data: rawPcm.slice(start, end).toString('base64')
+            }
+          }));
+        }
+
+        await new Promise(r => setTimeout(r, CHUNK_DELAY));
+        ws.send(JSON.stringify({
+          data: { status: 2, format: 'audio/L16;rate=16000', encoding: 'raw', data: '' }
+        }));
+      } catch (e) {
+        finish({
+          enabled: true,
+          ok: false,
+          provider: 'xfyun-ise',
+          error: e.message || String(e),
+          sid,
+          messages: msgCount
+        });
+      }
+    }
+
+    ws.on('open', () => { sendAudioFrames(); });
+    ws.on('message', (buf) => {
+      msgCount++;
+      let msg;
+      try { msg = JSON.parse(buf.toString()); } catch (_) { return; }
+      sid = msg.sid || sid;
+      const code = msg.code ?? 0;
+      const message = msg.message || msg.desc || '';
+      const status = msg.data && msg.data.status;
+      if (status !== undefined) finalStatus = status;
+      if (code !== 0) {
+        finalCode = code;
+        finalMessage = message || `code=${code}`;
+        finish({
+          enabled: true,
+          ok: false,
+          provider: 'xfyun-ise',
+          sid,
+          code: finalCode,
+          message: finalMessage,
+          status: finalStatus,
+          messages: msgCount
+        });
+        return;
+      }
+      if (msg.data && msg.data.data) {
+        const maybeXml = _decodeXfyunResultData(msg.data.data);
+        if (maybeXml) xmlSnippet = maybeXml;
+      }
+      if (status === 2) {
+        finish({
+          enabled: true,
+          ok: true,
+          provider: 'xfyun-ise',
+          sid,
+          code: finalCode,
+          message: finalMessage,
+          status: finalStatus,
+          messages: msgCount,
+          xmlSnippet
+        });
+      }
+    });
+    ws.on('error', (e) => {
+      finish({
+        enabled: true,
+        ok: false,
+        provider: 'xfyun-ise',
+        error: e.message || String(e),
+        sid,
+        messages: msgCount
+      });
+    });
+    ws.on('close', () => {
+      if (!resolved) {
+        finish({
+          enabled: true,
+          ok: finalCode === 0,
+          provider: 'xfyun-ise',
+          sid,
+          code: finalCode,
+          message: finalMessage || 'closed',
+          status: finalStatus,
+          messages: msgCount,
+          xmlSnippet
+        });
       }
     });
   });
@@ -1151,11 +1349,17 @@ module.exports = async function handler(req, res) {
     if (!audioBase64 || !refText)
       return res.status(400).json({ error: 'audioBase64 and refText are required' });
 
-    // ── 并行调用：腾讯 SOE + Gemini 拼音 + Whisper（可选）──
-    const [tencentResp, { map: pyMap, error: geminiErr }, whisperText] = await Promise.all([
+    // ── 并行调用：腾讯 SOE + Gemini 拼音 + Whisper（可选）+ 讯飞 ISE Shadow ──
+    const [tencentResp, { map: pyMap, error: geminiErr }, whisperText, xfyunShadow] = await Promise.all([
       tencentSoeAssess(audioBase64, refText),
       getPinyinMapSafe(refText),
-      whisperStt(audioBase64)
+      whisperStt(audioBase64),
+      xfyunIseAssessShadow(audioBase64, refText).catch(e => ({
+        enabled: true,
+        ok: false,
+        provider: 'xfyun-ise',
+        error: e && e.message ? e.message : String(e)
+      }))
     ]);
     console.log('[handler] Whisper识别:', whisperText || '（空）');
 
@@ -1193,7 +1397,8 @@ module.exports = async function handler(req, res) {
       pyMap,
       whisperText:       whisperText || null,
       dualTrackErrors:   dualTrack.dualTrackErrors,
-      geminiError:       geminiErr || null
+      geminiError:       geminiErr || null,
+      xfyun:             xfyunShadow || { enabled: false, skipped: 'no result' }
     };
 
     res.status(200).json(result);
