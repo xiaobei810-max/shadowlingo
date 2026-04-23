@@ -869,14 +869,40 @@
       word-break: keep-all;
       text-wrap: balance;
     }
-    /* 跟读页：避免卡拉 OK 折成「第二行只剩一个字」；整句单行，必要时横向滑动 */
-    #sentence-box .kara-wrap {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      text-wrap: unset;
-      justify-content: flex-start;
-    }
+    /* 末行单字挤压重排：由 JS 添加 .kara-reflow-1…4，逐步收紧间距/字宽 */
+    .kara-wrap.kara-reflow-1 { gap: 22px 2px !important; }
+    .kara-wrap.kara-reflow-1 .kchar { min-width: 1.48em !important; }
+    .kara-wrap.kara-reflow-2 { gap: 22px 1px !important; }
+    .kara-wrap.kara-reflow-2 .kchar { min-width: 1.32em !important; }
+    .kara-wrap.kara-reflow-3 { gap: 22px 0px !important; }
+    .kara-wrap.kara-reflow-3 .kchar { min-width: 1.18em !important; font-size: 18px !important; }
+    .kara-wrap.kara-reflow-3 .krt { font-size: 10px !important; }
+    .kara-wrap.kara-reflow-4 .kchar { min-width: 1.05em !important; font-size: 17px !important; }
+
+    .ctx-zh.kara-reflow-1 { gap: 4px 2px !important; }
+    .ctx-zh.kara-reflow-1 .ctx-kchar { min-width: 1.48em !important; }
+    .ctx-zh.kara-reflow-2 { gap: 4px 1px !important; }
+    .ctx-zh.kara-reflow-2 .ctx-kchar { min-width: 1.32em !important; }
+    .ctx-zh.kara-reflow-3 { gap: 4px 0px !important; }
+    .ctx-zh.kara-reflow-3 .ctx-kchar { min-width: 1.18em !important; font-size: 18px !important; }
+    .ctx-zh.kara-reflow-3 .ctx-krt { font-size: 10px !important; }
+    .ctx-zh.kara-reflow-4 .ctx-kchar { min-width: 1.05em !important; font-size: 17px !important; }
+
+    .plp-kara.kara-reflow-1 { gap: 16px 3px !important; }
+    .plp-kara.kara-reflow-2 { gap: 16px 2px !important; }
+    .plp-kara.kara-reflow-3 { gap: 16px 1px !important; }
+    .plp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 22px !important; }
+    .plp-kara.kara-reflow-4 { gap: 16px 0px !important; }
+    .plp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 20px !important; }
+    #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 22px !important; }
+    #pre-listen-page .plp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 20px !important; }
+
+    .dlp-kara.kara-reflow-1 { gap: 16px 3px !important; }
+    .dlp-kara.kara-reflow-2 { gap: 16px 2px !important; }
+    .dlp-kara.kara-reflow-3 { gap: 16px 1px !important; }
+    .dlp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 20px !important; }
+    .dlp-kara.kara-reflow-4 { gap: 16px 0px !important; }
+    .dlp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 18px !important; }
 
     /* Punctuation fix: group wraps kchar + trailing punct as one flex item */
     .kchar-group {
@@ -2645,12 +2671,6 @@
       gap: 4px 3px;
       word-break: keep-all;
       text-wrap: balance;
-    }
-    #context-panel .ctx-zh {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      text-wrap: unset;
     }
     .ctx-kchar {
       display: inline-flex;
@@ -5168,6 +5188,60 @@
       }
     }
 
+    // ── 卡拉 OK 末行「只剩一个汉字」时挤回第一行（全文预览 + 跟读）────────
+    var _KARA_REFLOW_CLASSES = ['kara-reflow-1', 'kara-reflow-2', 'kara-reflow-3', 'kara-reflow-4'];
+    function _clearKaraReflow(wrapEl) {
+      if (!wrapEl) return;
+      _KARA_REFLOW_CLASSES.forEach(function (c) { wrapEl.classList.remove(c); });
+      var lay = wrapEl.closest('.card-layout');
+      if (lay && lay.getAttribute('data-kara-wide') === '1') {
+        lay.style.maxWidth = lay.getAttribute('data-kara-wide-prev') || '';
+        lay.removeAttribute('data-kara-wide');
+        lay.removeAttribute('data-kara-wide-prev');
+      }
+    }
+    function _measureKaraLastLineHanzi(wrapEl, charSelector) {
+      var nodes = wrapEl.querySelectorAll(charSelector);
+      if (!nodes.length) return { lines: 0, lastLineHanzi: 0 };
+      var map = {};
+      for (var i = 0; i < nodes.length; i++) {
+        var r = nodes[i].getBoundingClientRect();
+        var top = Math.round(r.top);
+        map[top] = (map[top] || 0) + 1;
+      }
+      var tops = Object.keys(map).map(Number).sort(function (a, b) { return a - b; });
+      var lastTop = tops[tops.length - 1];
+      return { lines: tops.length, lastLineHanzi: map[lastTop] || 0 };
+    }
+    function reflowKaraAvoidOrphanHanzi(wrapEl, charSelector) {
+      if (!wrapEl || !charSelector) return;
+      _clearKaraReflow(wrapEl);
+      var maxStep = 4;
+      for (var step = 0; step < maxStep; step++) {
+        wrapEl.offsetHeight;
+        var st = _measureKaraLastLineHanzi(wrapEl, charSelector);
+        if (st.lines < 2) return;
+        if (st.lastLineHanzi >= 2) return;
+        wrapEl.classList.add('kara-reflow-' + (step + 1));
+      }
+      wrapEl.offsetHeight;
+      var st2 = _measureKaraLastLineHanzi(wrapEl, charSelector);
+      if (st2.lines >= 2 && st2.lastLineHanzi === 1) {
+        var lay = wrapEl.closest('.card-layout');
+        if (lay && lay.getAttribute('data-kara-wide') !== '1') {
+          lay.setAttribute('data-kara-wide', '1');
+          lay.setAttribute('data-kara-wide-prev', lay.style.maxWidth || '');
+          lay.style.maxWidth = 'min(540px, 96vw)';
+        }
+      }
+    }
+    function scheduleReflowKaraAvoidOrphan(wrapEl, charSelector) {
+      if (!wrapEl) return;
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { reflowKaraAvoidOrphanHanzi(wrapEl, charSelector); });
+      });
+    }
+
     // ── Sandhi tooltip (click/tap — matches .sandhi-pair) ───────────
     (function () {
       var _tipTimer = null;
@@ -5327,6 +5401,7 @@
 
       buildKara(s.zh, s.chars);
       resetKara();
+      scheduleReflowKaraAvoidOrphan(document.getElementById('kara'), '.kchar');
 
       // Layout: every page = Nora sentence (above) + Mingxuan response (below)
       // Context-above panel is permanently hidden; contextBelow shown for every sentence.
@@ -5343,6 +5418,7 @@
           var cbBtn     = document.getElementById('ctx-play-btn-below');
           if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker;
           buildCtxKara(cbZh, s.contextBelow.zh, s.contextBelow.pinyin);
+          scheduleReflowKaraAvoidOrphan(cbZh, '.ctx-kchar');
           if (cbEn) cbEn.textContent = s.contextBelow.en;
           if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
         } else {
@@ -7010,6 +7086,7 @@
       var enEl = document.getElementById(isLocal ? 'dlp-en-local' : 'dlp-en-learner');
       if (enEl) enEl.textContent = d.en || '';
       dlpBuildKara(containerId, d.zh, d.pinyin);
+      scheduleReflowKaraAvoidOrphan(document.getElementById(containerId), '.dlp-kchar');
       // Dynamic avatar swap: Staff shows SVG badge, Mingxuan shows portrait
       if (isLocal) {
         var dlpAvatarWrap = document.getElementById('dlp-avatar-wrap-local');
@@ -7417,6 +7494,7 @@
     }
     buildCtxKara(document.getElementById('ctx-zh'), lineA.zh, lineA.pinyin);
     document.getElementById('ctx-en').textContent = lineA.en;
+    scheduleReflowKaraAvoidOrphan(document.getElementById('ctx-zh'), '.ctx-kchar');
   }
 
   // 3. 更新下方【后开口/练习面板】
@@ -7444,6 +7522,7 @@
   // 进入跟读页时仅显示台词，不自动播放卡拉OK；
   // 必须点击「跟读 Listen」后才开始变绿。
   resetKara();
+  scheduleReflowKaraAvoidOrphan(document.getElementById('kara'), '.kchar');
 
   // 隐藏多余层
   document.getElementById('context-panel-below').style.display = 'none';
@@ -7695,6 +7774,8 @@
         if (emptyKara) emptyKara.innerHTML = '';
         if (emptyEn)   emptyEn.textContent = '';
       }
+      if (dA) scheduleReflowKaraAvoidOrphan(document.getElementById('plp-kara-top'), '.dlp-kchar');
+      if (dB) scheduleReflowKaraAvoidOrphan(document.getElementById('plp-kara-bottom'), '.dlp-kchar');
     }
 
     function plpPlayOne(idx) {
