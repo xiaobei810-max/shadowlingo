@@ -879,6 +879,18 @@
     .kara-wrap.kara-reflow-3 .krt { font-size: 10px !important; }
     .kara-wrap.kara-reflow-4 .kchar { min-width: 1.05em !important; font-size: 17px !important; }
 
+    /* 全文预览 .plp-kara：挤压参数与 .kara-wrap 一致（不单独用更大/更小预听字号硬凑一行） */
+    #pre-listen-page .plp-kara.kara-reflow-1 { gap: 22px 2px !important; }
+    #pre-listen-page .plp-kara.kara-reflow-1 .dlp-kchar { min-width: 1.48em !important; }
+    #pre-listen-page .plp-kara.kara-reflow-2 { gap: 22px 1px !important; }
+    #pre-listen-page .plp-kara.kara-reflow-2 .dlp-kchar { min-width: 1.32em !important; }
+    #pre-listen-page .plp-kara.kara-reflow-3 { gap: 22px 0px !important; }
+    #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar { min-width: 1.18em !important; }
+    #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 18px !important; }
+    #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar .dlp-py { font-size: 10px !important; }
+    #pre-listen-page .plp-kara.kara-reflow-4 .dlp-kchar { min-width: 1.05em !important; }
+    #pre-listen-page .plp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 17px !important; }
+
     .ctx-zh.kara-reflow-1 { gap: 4px 2px !important; }
     .ctx-zh.kara-reflow-1 .ctx-kchar { min-width: 1.48em !important; }
     .ctx-zh.kara-reflow-2 { gap: 4px 1px !important; }
@@ -887,15 +899,6 @@
     .ctx-zh.kara-reflow-3 .ctx-kchar { min-width: 1.18em !important; font-size: 18px !important; }
     .ctx-zh.kara-reflow-3 .ctx-krt { font-size: 10px !important; }
     .ctx-zh.kara-reflow-4 .ctx-kchar { min-width: 1.05em !important; font-size: 17px !important; }
-
-    .plp-kara.kara-reflow-1 { gap: 16px 3px !important; }
-    .plp-kara.kara-reflow-2 { gap: 16px 2px !important; }
-    .plp-kara.kara-reflow-3 { gap: 16px 1px !important; }
-    .plp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 22px !important; }
-    .plp-kara.kara-reflow-4 { gap: 16px 0px !important; }
-    .plp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 20px !important; }
-    #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 22px !important; }
-    #pre-listen-page .plp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 20px !important; }
 
     .dlp-kara.kara-reflow-1 { gap: 16px 3px !important; }
     .dlp-kara.kara-reflow-2 { gap: 16px 2px !important; }
@@ -910,7 +913,6 @@
     }
     .kpunct { line-height: 1; color: #e2e8f0; }
     .dlp-kara .kpunct { font-size: 22px; font-weight: 700; }
-    #pre-listen-page .dlp-kara .kpunct { font-size: 28px; }
 
     /* Each char is a vertical stack: pinyin on top, hanzi below */
     .kchar {
@@ -2600,11 +2602,24 @@
     .plp-name     { font-size: 17px; font-weight: 700; color: var(--green); }
     .plp-role-tag { font-size: 12px; color: #94a3b8; margin-top: 3px; }
     .plp-content  { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 0; }
-    .plp-kara     { display: flex; flex-wrap: wrap; gap: 16px 4px; align-items: flex-end; min-height: 60px; }
-    /* 预听页卡拉OK字体比普通页大 */
-    #pre-listen-page .dlp-kchar .dlp-hz { font-size: 24px; }
-    #pre-listen-page .dlp-kchar .dlp-py { font-size: 11px; }
-    #pre-listen-page .dlp-kara .kpunct  { font-size: 24px; }
+    /* 与 #kara .kara-wrap 跟读台词：同一行距、字重、汉字/拼音比例与颜色体系 */
+    .plp-kara {
+      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-start;
+      min-height: 60px;
+      font-size: 20px; font-weight: 700; line-height: 1;
+      gap: 22px 3px; word-break: keep-all; text-wrap: balance;
+    }
+    #pre-listen-page .plp-kara .dlp-kchar {
+      min-width: 1.6em; color: #e2e8f0;
+    }
+    #pre-listen-page .plp-kara .dlp-kchar .dlp-hz {
+      font-size: 20px; font-weight: 700; line-height: 1.1;
+    }
+    #pre-listen-page .plp-kara .dlp-kchar .dlp-py {
+      font-size: 11px; font-weight: 400; line-height: 1.4; color: #94a3b8;
+      min-height: 15px; opacity: 0.85; letter-spacing: 0;
+    }
+    #pre-listen-page .plp-kara .kpunct { font-size: 20px; font-weight: 700; color: #e2e8f0; line-height: 1; }
     .plp-en  { font-size: 15px; color: #6b7280; line-height: 1.6; font-style: italic; flex-shrink: 0; }
     .plp-bar { height: 3px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; flex-shrink: 0; }
     .plp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
