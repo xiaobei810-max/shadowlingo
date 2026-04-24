@@ -4894,8 +4894,30 @@
         });
       }
 
-      // 兜底：若讯飞整体 tone_score 很低，但仅命中极少字，则补标末尾 2 个字避免漏提示
       var sumTone = Number(xfyun && xfyun.summary && xfyun.summary.tone_score);
+      // 三次兜底（整句级）：若当前仅命中极少字，且讯飞整体分偏低，则按 syll 顺序映射到句子字符
+      // 目的：修复“故意错多个字却只命中1字”的漏检；仅回灌展示层，不影响评分基线快照。
+      var weakCountNow = Object.keys(weakByIdx).length;
+      var sumTotal = Number(xfyun && xfyun.summary && xfyun.summary.total_score);
+      if (weakCountNow <= 1 && (Number.isFinite(sumTone) && sumTone < 96 || Number.isFinite(sumTotal) && sumTotal < 93)) {
+        var syllRe = /<syll\b([^>]*)>/g;
+        var sm;
+        var sCursor = 0;
+        while ((sm = syllRe.exec(xml)) !== null && sCursor < refChars.length) {
+          var sAttrs = _parseXmlAttrsForXfyun(sm[1] || '');
+          var inferredS = inferLevelAndReason(sAttrs, sCursor);
+          if (inferredS) {
+            var pyS = pyByIdx[sCursor] || '';
+            var msgS = inferredS.reasons.join('；');
+            if (pyS) msgS += (msgS ? '（正确：' + pyS + '）' : '正确：' + pyS);
+            if (!msgS) msgS = inferredS.level === 2 ? '发音有误' : '发音需改进';
+            upsertIndex(sCursor, inferredS.level, msgS, inferredS.total);
+          }
+          sCursor++;
+        }
+      }
+
+      // 兜底：若讯飞整体 tone_score 很低，但仅命中极少字，则补标末尾 2 个字避免漏提示
       if (Number.isFinite(sumTone) && sumTone < 78) {
         var weakCount = Object.keys(weakByIdx).length;
         if (weakCount < 3) {
