@@ -6515,11 +6515,11 @@
         var esc = function (s) {
           return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         };
-        var pySeq = (sentence && sentence.pinyin ? sentence.pinyin : '')
-          .trim()
-          .split(/\s+/)
-          .map(function (s) { return s.replace(/^[,，。！？.!?]+|[,，。！？.!?]+$/g, ''); })
-          .filter(function (s) { return s.length > 0; });
+        // 拼音按 sentence.chars 与汉字一一对应，避免“这儿/女儿”等儿化场景错位
+        var pySeq = (sentence && Array.isArray(sentence.chars) ? sentence.chars : [])
+          .map(function (c) {
+            return (c && c.p) ? toToneMark(c.p) : '';
+          });
         var pyIdx = 0;
         var zhHtml = '';
         Array.from(renderZh).forEach(function (ch) {
