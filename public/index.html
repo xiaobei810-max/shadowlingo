@@ -4655,7 +4655,7 @@
       return attrs;
     }
 
-    // 当腾讯字级未标出问题时，用讯飞 shadow 的 char 级分数补充标注，避免“错了但无提示”
+    // 当腾讯字级未标出问题时，用讯飞 shadow 结果按“字位置”回灌，避免错位/漏标
     function injectXfyunWeakMarks(result, sentence) {
       if (!result || !Array.isArray(result.wordResults) || !result.wordResults.length) return 0;
       var xfyun = (((result || {})._debug || {}).xfyun || {});
@@ -4663,46 +4663,35 @@
       var xml = xfyun.xmlSnippet || '';
       if (!xml) return 0;
 
-      var pyMap = {};
-      (sentence && sentence.chars || []).forEach(function (c) {
-        if (c && c.c && c.p && !pyMap[c.c]) pyMap[c.c] = toToneMark(c.p);
+      var refChars = Array.from(((sentence && sentence.zh) || '').replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
+      if (!refChars.length) return 0;
+
+      var pyByIdx = {};
+      (sentence && sentence.chars || []).forEach(function (c, i) {
+        if (c && c.c && c.p) pyByIdx[i] = toToneMark(c.p);
       });
 
-      var weakByChar = {};
-      var refChars = Array.from(((sentence && sentence.zh) || '').replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
-      var nodeRe = /<(rec_node|word|syll)\b([^>]*)>/g;
-      var m;
-      while ((m = nodeRe.exec(xml)) !== null) {
-        var tagName = String(m[1] || '').toLowerCase();
-        var attrs = _parseXmlAttrsForXfyun(m[2] || '');
-        if (tagName === 'rec_node') {
-          var t = (attrs.rec_node_type || '').toLowerCase();
-          if (t && t !== 'char' && t !== 'word') continue;
+      var weakByIdx = {};
+      function upsertIndex(idx, level, msg, total) {
+        if (idx < 0 || idx >= refChars.length) return;
+        var prev = weakByIdx[idx];
+        if (!prev || level > prev.level || (Number.isFinite(total) && total < prev.total)) {
+          weakByIdx[idx] = { level: level, msg: msg, total: Number.isFinite(total) ? total : 999 };
         }
+      }
 
+      function inferLevelAndReason(attrs) {
         var total = Number(attrs.total_score);
         var tone = Number(attrs.tone_score);
         var phone = Number(attrs.phone_score);
-        if (!Number.isFinite(total) && !Number.isFinite(tone) && !Number.isFinite(phone)) continue;
-
-        var targets = [];
-        var content = attrs.content || attrs.symbol || '';
-        if (content) {
-          targets = Array.from(content).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
-        }
-        if (!targets.length) {
-          var beg = parseInt(attrs.beg_pos || attrs.word_beg_pos || attrs.time_beg || '', 10);
-          var end = parseInt(attrs.end_pos || attrs.word_end_pos || attrs.time_end || '', 10);
-          if (Number.isFinite(beg) && Number.isFinite(end) && refChars.length) {
-            var sIdx = Math.max(0, Math.min(refChars.length - 1, beg));
-            var eIdx = Math.max(sIdx, Math.min(refChars.length - 1, end));
-            targets = refChars.slice(sIdx, eIdx + 1).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
-          }
-        }
-        if (!targets.length) continue;
-
+        var perrLevel = Number(attrs.perr_level);
         var level = 0;
         var reasons = [];
+
+        if (Number.isFinite(perrLevel)) {
+          if (perrLevel >= 3) level = Math.max(level, 2);
+          else if (perrLevel >= 1) level = Math.max(level, 1);
+        }
         if (Number.isFinite(tone)) {
           if (tone < 90) { level = Math.max(level, 2); reasons.push('声调偏差'); }
           else if (tone < 96) { level = Math.max(level, 1); reasons.push('声调需改进'); }
@@ -4712,39 +4701,75 @@
           else if (phone < 95) { level = Math.max(level, 1); reasons.push('发音清晰度需改进'); }
         }
         if (Number.isFinite(total)) {
-          if (total < 85) { level = Math.max(level, 2); }
-          else if (total < 93) { level = Math.max(level, 1); }
+          if (total < 85) level = Math.max(level, 2);
+          else if (total < 93) level = Math.max(level, 1);
         }
-        if (level === 0) continue;
+        if (!level) return null;
+        return { level: level, reasons: reasons, total: total };
+      }
 
+      var nodeRe = /<(rec_node|word|syll)\b([^>]*)>/g;
+      var m;
+      while ((m = nodeRe.exec(xml)) !== null) {
+        var tagName = String(m[1] || '').toLowerCase();
+        var attrs = _parseXmlAttrsForXfyun(m[2] || '');
+        if (tagName === 'rec_node') {
+          var nt = String(attrs.rec_node_type || '').toLowerCase();
+          if (nt && nt !== 'char' && nt !== 'word' && nt !== 'syll') continue;
+        }
+
+        var inferred = inferLevelAndReason(attrs);
+        if (!inferred) continue;
+
+        var targets = [];
+        var content = attrs.content || attrs.symbol || '';
+        if (content) {
+          targets = Array.from(content).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
+        }
+
+        // 首选按 beg/end 定位，避免同字多次出现时错位
+        var beg = parseInt(attrs.beg_pos || attrs.word_beg_pos || attrs.time_beg || '', 10);
+        var end = parseInt(attrs.end_pos || attrs.word_end_pos || attrs.time_end || '', 10);
+        if (Number.isFinite(beg) && Number.isFinite(end)) {
+          var sIdx = Math.max(0, Math.min(refChars.length - 1, beg));
+          var eIdx = Math.max(sIdx, Math.min(refChars.length - 1, end));
+          for (var j = sIdx; j <= eIdx; j++) {
+            var py = pyByIdx[j] || '';
+            var msg = inferred.reasons.join('；');
+            if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
+            if (!msg) msg = inferred.level === 2 ? '发音有误' : '发音需改进';
+            upsertIndex(j, inferred.level, msg, inferred.total);
+          }
+          continue;
+        }
+
+        if (!targets.length) continue;
         targets.forEach(function (ch) {
-          var py = pyMap[ch] || '';
-          var msg = reasons.join('；');
-          if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
-          if (!msg) msg = level === 2 ? '发音有误' : '发音需改进';
-          var prev = weakByChar[ch];
-          if (!prev || level > prev.level || (Number.isFinite(total) && total < prev.total)) {
-            weakByChar[ch] = { level: level, msg: msg, total: Number.isFinite(total) ? total : 999 };
+          for (var i = 0; i < refChars.length; i++) {
+            if (refChars[i] !== ch) continue;
+            var py = pyByIdx[i] || '';
+            var msg = inferred.reasons.join('；');
+            if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
+            if (!msg) msg = inferred.level === 2 ? '发音有误' : '发音需改进';
+            upsertIndex(i, inferred.level, msg, inferred.total);
           }
         });
       }
 
       var injected = 0;
-      result.wordResults.forEach(function (w) {
-        if (!w || !w.content) return;
-        var hit = weakByChar[w.content];
-        if (!hit) return;
+      for (var idxWord = 0; idxWord < result.wordResults.length && idxWord < refChars.length; idxWord++) {
+        var w = result.wordResults[idxWord];
+        var hit = weakByIdx[idxWord];
+        if (!w || !hit) continue;
         if (w.perrLevel === 0 && !(w.perrMsg && String(w.perrMsg).trim())) {
           w.perrLevel = hit.level;
           w.perrMsg = hit.msg;
           injected++;
-          return;
-        }
-        if (hit.level > Number(w.perrLevel || 0)) {
+        } else if (hit.level > Number(w.perrLevel || 0)) {
           w.perrLevel = hit.level;
           w.perrMsg = (w.perrMsg ? (w.perrMsg + '；') : '') + hit.msg;
         }
-      });
+      }
       return injected;
     }
 
