@@ -5337,6 +5337,28 @@
         if (hintPromotedCount > 0) {
           console.log('[Hint→UI] 按指南提示同步台词高亮:', hintPromotedCount);
         }
+        // 通用原则：凡命中平翘舌偏差（任一信号源），台词统一标紫
+        var retroByChar = {};
+        (dualTrackErrors || []).forEach(function (e) {
+          if (!e || !e.targetChar) return;
+          if (e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') retroByChar[e.targetChar] = true;
+          if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(e.zh || e.en || e.message || ''))) retroByChar[e.targetChar] = true;
+        });
+        (acousticErrors || []).forEach(function (e) {
+          if (!e || !e.char) return;
+          if (/zh_z|z_zh|retroflex/i.test(String(e.type || ''))) retroByChar[e.char] = true;
+        });
+        (hintItems || []).forEach(function (h) {
+          if (!h || !h.char) return;
+          if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(h.zh || h.en || ''))) retroByChar[h.char] = true;
+        });
+        (result.wordResults || []).forEach(function (w) {
+          if (!w || !w.content || !retroByChar[w.content]) return;
+          if (Number(w.perrLevel || 0) === 0) w.perrLevel = 1;
+          if (!/平翘舌|retroflex/i.test(String(w.perrMsg || ''))) {
+            w.perrMsg = w.perrMsg ? (w.perrMsg + '；平翘舌偏差') : '平翘舌偏差';
+          }
+        });
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
