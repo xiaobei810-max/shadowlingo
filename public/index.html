@@ -4713,6 +4713,16 @@
       });
 
       var weakByIdx = {};
+      function _decodeEscapedUnicode(s) {
+        var text = String(s || '');
+        try {
+          return text.replace(/\\u([0-9a-fA-F]{4})/g, function (_, hex) {
+            return String.fromCharCode(parseInt(hex, 16));
+          });
+        } catch (_) {
+          return text;
+        }
+      }
       function upsertIndex(idx, level, msg, total) {
         if (idx < 0 || idx >= refChars.length) return;
         var prev = weakByIdx[idx];
@@ -4728,6 +4738,7 @@
         var perrLevel = Number(attrs.perr_level);
         var perrMsgNum = Number(attrs.perr_msg);
         var perrLevelMsgNum = Number(attrs.perr_level_msg);
+        var perrText = String(attrs.perr_msg_text || attrs.perr_desc || attrs.perr_detail || attrs.perr_msg || '');
         var level = 0;
         var reasons = [];
 
@@ -4755,6 +4766,10 @@
           if (total < 85) level = Math.max(level, 2);
           else if (total < 93) level = Math.max(level, 1);
         }
+        if (/平翘舌|retroflex|zh_z|z_zh/i.test(perrText)) {
+          level = Math.max(level, 1);
+          reasons.push('平翘舌偏差');
+        }
         // 强制声调偏离判定：尤其修复“东/西故意变调未命中”
         if (Number.isFinite(idxForTone)) {
           var rawPy = sentence && sentence.chars && sentence.chars[idxForTone] ? (sentence.chars[idxForTone].p || '') : '';
@@ -4773,8 +4788,24 @@
               reasons.push('声调偏离');
             }
           }
+          // 强制平翘舌偏离判定：当期望声母是 zh/ch/sh/r 或 z/c/s 时，若检测到对立声母则至少紫/黄
+          var pyBase = String(rawPy || '').toLowerCase().replace(/[0-5]/g, '');
+          var expInit = (pyBase.match(/^(zh|ch|sh|r|z|c|s)/) || [])[1] || '';
+          var heardRaw = String(attrs.mono_phone || attrs.symbol || attrs.phone || attrs.rec_phone || '').toLowerCase();
+          var heardInit = (heardRaw.match(/(zh|ch|sh|r|z|c|s)/) || [])[1] || '';
+          var retro = { zh:1, ch:1, sh:1, r:1 };
+          var flat = { z:1, c:1, s:1 };
+          if (expInit && heardInit) {
+            var cross = (retro[expInit] && flat[heardInit]) || (flat[expInit] && retro[heardInit]);
+            if (cross) {
+              level = Math.max(level, 1);
+              reasons.push('平翘舌偏差');
+            }
+          }
         }
         if (!level) return null;
+        // 去重，避免重复拼接同类提示
+        reasons = reasons.filter(function (r, i, arr) { return arr.indexOf(r) === i; });
         return { level: level, reasons: reasons, total: total };
       }
 
@@ -4789,7 +4820,7 @@
         }
 
         var targets = [];
-        var content = attrs.content || attrs.symbol || '';
+        var content = _decodeEscapedUnicode(attrs.content || attrs.symbol || '');
         if (content) {
           targets = Array.from(content).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
         }
