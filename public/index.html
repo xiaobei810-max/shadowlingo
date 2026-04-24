@@ -2811,7 +2811,7 @@
     .ctx-kchar.ctx-active + .kpunct { color: var(--green); }
     .ctx-kchar.ctx-done   + .kpunct { color: var(--green); }
     .ctx-zh .kpunct {
-      font-size: 1.08em;
+      font-size: 1.22em;
       font-weight: 700;
       line-height: 1;
     }
@@ -4726,6 +4726,7 @@
         var phone = Number(attrs.phone_score);
         var perrLevel = Number(attrs.perr_level);
         var perrMsgNum = Number(attrs.perr_msg);
+        var perrLevelMsgNum = Number(attrs.perr_level_msg);
         var level = 0;
         var reasons = [];
 
@@ -4736,6 +4737,10 @@
         if (Number.isFinite(perrMsgNum)) {
           if (perrMsgNum >= 2) level = Math.max(level, 2);
           else if (perrMsgNum >= 1) level = Math.max(level, 1);
+        }
+        if (Number.isFinite(perrLevelMsgNum)) {
+          if (perrLevelMsgNum >= 3) level = Math.max(level, 2);
+          else if (perrLevelMsgNum >= 1) level = Math.max(level, 1);
         }
         if (Number.isFinite(tone)) {
           if (tone < 90) { level = Math.max(level, 2); reasons.push('声调偏差'); }
