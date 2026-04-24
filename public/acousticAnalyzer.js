@@ -213,11 +213,11 @@
       if (cls.type === 'silence' || cls.type === 'uncertain') continue;
       if (cls.confidence < CONFIG.MIN_CONFIDENCE) continue;
 
-      // 只检测「翘舌音字被读成平舌」(zh/ch/sh/r → z/c/s)，这是学习者的常见错误
-      // 不检测「平舌音字被读成翘舌」(z/c/s → zh/ch/sh)：
-      //   - 母语者极少犯此错
-      //   - 协同发音（如「是在」中 sh 影响后面 z 的频谱）会造成大量假阳性
-      var mismatch = (isTargetRetro && cls.type === 'flat');
+      // 双向检测平翘舌混淆：
+      // - 翘舌 → 平舌（zh/ch/sh/r 被读成 z/c/s）
+      // - 平舌 → 翘舌（z/c/s 被读成 zh/ch/sh/r）
+      // 具体是否计分由上层按置信度控制，这里仅提供检测信号。
+      var mismatch = (isTargetRetro && cls.type === 'flat') || (isTargetFlat && cls.type === 'retroflex');
       if (!mismatch) continue;
 
       // 新句式格式："市" 声母应为翘舌sh，而不是平舌音。

@@ -5361,19 +5361,24 @@
         var baseScore = allCorrect ? 100 : result.totalScore;
 
         // 4. 声学层平翘舌检测（本地 FFT，无需 API）
-        var acousticErrors = [];
+        var acousticErrorsDisplay = [];
+        var acousticErrorsScore = [];
         if (typeof acousticAnalyzer !== 'undefined' && audioBuffer && result.wordResults) {
           try {
             var pyMap = {};
             (s.chars || []).forEach(function (c) { if (c.c && c.p) pyMap[c.c] = c.p; });
-            acousticErrors = acousticAnalyzer.analyzeZhZConfusion(audioBuffer, result.wordResults, pyMap);
-            console.log('[Acoustic] 分析完成，共检测到', acousticErrors.length, '个平翘舌异常',
-              acousticErrors.length > 0 ? JSON.stringify(acousticErrors) : '（无异常）');
+            acousticErrorsDisplay = acousticAnalyzer.analyzeZhZConfusion(audioBuffer, result.wordResults, pyMap);
+            // 仅高置信声学命中参与计分；低置信仅用于提示/着色，避免影响评分稳定性
+            acousticErrorsScore = (acousticErrorsDisplay || []).filter(function (e) {
+              return Number(e && e.confidence || 0) >= 0.58;
+            });
+            console.log('[Acoustic] 分析完成，展示=', acousticErrorsDisplay.length, '计分=', acousticErrorsScore.length,
+              acousticErrorsDisplay.length > 0 ? JSON.stringify(acousticErrorsDisplay) : '（无异常）');
           } catch (ae) {
             console.warn('[Acoustic] 分析出错（不影响主流程）:', ae);
           }
         }
-        var signalPromotedCount = promoteWordIssuesFromSignals(result.wordResults, dualTrackErrors, acousticErrors);
+        var signalPromotedCount = promoteWordIssuesFromSignals(result.wordResults, dualTrackErrors, acousticErrorsDisplay);
         if (signalPromotedCount > 0) {
           console.log('[Signal→UI] 同步台词高亮:', signalPromotedCount);
         }
@@ -5389,7 +5394,7 @@
           if (e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') retroByChar[e.targetChar] = true;
           if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(e.zh || e.en || e.message || ''))) retroByChar[e.targetChar] = true;
         });
-        (acousticErrors || []).forEach(function (e) {
+        (acousticErrorsDisplay || []).forEach(function (e) {
           if (!e || !e.char) return;
           if (/zh_z|z_zh|retroflex/i.test(String(e.type || ''))) retroByChar[e.char] = true;
         });
@@ -5419,7 +5424,7 @@
             mildByChar[e.targetChar] = true;
           }
         });
-        (acousticErrors || []).forEach(function (e) {
+        (acousticErrorsScore || []).forEach(function (e) {
           if (!e || !e.char) return;
           var conf = Number(e.confidence || 0);
           if (conf >= 0.82) obviousByChar[e.char] = true;
@@ -5475,7 +5480,7 @@
           if (!w || !w.content) return;
           if (hasRetroflexMsg(w.perrMsg)) backendRetroflexChars[w.content] = true;
         });
-        var penalizedAcousticErrors = (acousticErrors || []).filter(function (e) {
+        var penalizedAcousticErrors = (acousticErrorsScore || []).filter(function (e) {
           return !!(e && e.char && backendRetroflexChars[e.char]);
         });
 
@@ -5498,14 +5503,14 @@
           xfyunObviousIssue ||
           xfyunMildIssue ||
           (dualTrackErrors && dualTrackErrors.length > 0) ||
-          (acousticErrors && acousticErrors.length > 0);
+          (acousticErrorsScore && acousticErrorsScore.length > 0);
         if (hasAnyIssue && displayScore >= 100) displayScore = 98;
         var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
         sessionScores[scoreSlot] = displayScore;   // 对话模式按轮次记分，避免都写到 idx=0
         incPracticeCount(lessonIdx, idx);
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           hintItems, s, null, recText,
-          dualTrackErrors, acousticErrors);
+          dualTrackErrors, acousticErrorsDisplay);
       } catch (err) {
         console.error('评测失败:', err);
         var failScoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
