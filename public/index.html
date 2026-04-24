@@ -5318,6 +5318,16 @@
         }
         var result = await resp.json();
         if (result.error) throw new Error(result.error);
+        // 评分基线快照：后续UI同步/着色可改 result.wordResults，但计分只使用这份原始结果
+        var scoreWordResults = Array.isArray(result.wordResults)
+          ? result.wordResults.map(function (w) {
+              return {
+                content: w && w.content,
+                perrLevel: Number(w && w.perrLevel || 0),
+                perrMsg: String((w && w.perrMsg) || '')
+              };
+            })
+          : [];
 
         // 3. 展示结果
         if (isIncompleteRecording(result.wordResults, refText)) {
@@ -5341,10 +5351,10 @@
         }
         var dualTrackErrors = result.dualTrackErrors || [];
         // 全部正确时强制给满分
-        var allCorrect = result.wordResults.length > 0 &&
-          result.wordResults.every(function(w) { return w.perrLevel === 0; });
+        var allCorrect = scoreWordResults.length > 0 &&
+          scoreWordResults.every(function(w) { return w.perrLevel === 0; });
         // 若后端已经给出任意错误文案（即便 perrLevel 仍是0），也不能判定“全对”
-        var hasBackendIssue = (result.wordResults || []).some(function (w) {
+        var hasBackendIssue = (scoreWordResults || []).some(function (w) {
           return !!(w && (w.perrLevel !== 0 || (w.perrMsg && String(w.perrMsg).trim())));
         });
         if (allCorrect && hasBackendIssue) allCorrect = false;
@@ -5446,10 +5456,10 @@
 
         // 6. 分数温和校准：后端总分为主，字级命中率为辅（避免单个黄字时分数波动过大）
         var blendedBaseScore = baseScore;
-        if (!allCorrect && result.wordResults && result.wordResults.length) {
-          var charHeuristic = Math.round(result.wordResults.reduce(function (acc, w) {
+        if (!allCorrect && scoreWordResults && scoreWordResults.length) {
+          var charHeuristic = Math.round(scoreWordResults.reduce(function (acc, w) {
             return acc + (w.perrLevel === 0 ? 100 : w.perrLevel === 1 ? 82 : 58);
-          }, 0) / result.wordResults.length);
+          }, 0) / scoreWordResults.length);
           blendedBaseScore = Math.round(baseScore * 0.80 + charHeuristic * 0.20);
         }
 
@@ -5461,7 +5471,7 @@
           return /平翘舌|翘舌|卷舌|retroflex|zh_z|z_zh/i.test(String(m));
         };
         var backendRetroflexChars = {};
-        (result.wordResults || []).forEach(function (w) {
+        (scoreWordResults || []).forEach(function (w) {
           if (!w || !w.content) return;
           if (hasRetroflexMsg(w.perrMsg)) backendRetroflexChars[w.content] = true;
         });
