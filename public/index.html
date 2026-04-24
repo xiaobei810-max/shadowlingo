@@ -4685,12 +4685,17 @@
         var tone = Number(attrs.tone_score);
         var phone = Number(attrs.phone_score);
         var perrLevel = Number(attrs.perr_level);
+        var perrMsgNum = Number(attrs.perr_msg);
         var level = 0;
         var reasons = [];
 
         if (Number.isFinite(perrLevel)) {
           if (perrLevel >= 3) level = Math.max(level, 2);
           else if (perrLevel >= 1) level = Math.max(level, 1);
+        }
+        if (Number.isFinite(perrMsgNum)) {
+          if (perrMsgNum >= 2) level = Math.max(level, 2);
+          else if (perrMsgNum >= 1) level = Math.max(level, 1);
         }
         if (Number.isFinite(tone)) {
           if (tone < 90) { level = Math.max(level, 2); reasons.push('声调偏差'); }
@@ -4771,6 +4776,36 @@
         }
       }
       return injected;
+    }
+
+    // 保证“下方指南有提示 <=> 上方台词有高亮”一致
+    function promoteWordIssuesFromSignals(wordResults, dualTrackErrors, acousticErrors) {
+      if (!Array.isArray(wordResults) || !wordResults.length) return 0;
+      var byChar = {};
+      (dualTrackErrors || []).forEach(function (e) {
+        if (!e || !e.targetChar) return;
+        byChar[e.targetChar] = byChar[e.targetChar] || [];
+        if (e.type === 'tone_confusion') byChar[e.targetChar].push('声调偏差');
+        else if (e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') byChar[e.targetChar].push('平翘舌偏差');
+        else byChar[e.targetChar].push('发音有误');
+      });
+      (acousticErrors || []).forEach(function (e) {
+        if (!e || !e.char) return;
+        byChar[e.char] = byChar[e.char] || [];
+        byChar[e.char].push('发音有误');
+      });
+
+      var promoted = 0;
+      wordResults.forEach(function (w) {
+        if (!w || !w.content || !byChar[w.content] || !byChar[w.content].length) return;
+        if (Number(w.perrLevel || 0) === 0) {
+          w.perrLevel = 1;
+          var msg = byChar[w.content][0] || '发音需改进';
+          w.perrMsg = w.perrMsg ? (w.perrMsg + '；' + msg) : msg;
+          promoted++;
+        }
+      });
+      return promoted;
     }
 
     // ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
@@ -5125,9 +5160,6 @@
         if (xfyunInjectedCount > 0) {
           console.log('[XFYUN→UI] 注入字级弱项标注:', xfyunInjectedCount);
         }
-        var recText = result.wordResults.map(function (w) {
-          return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
-        }).join('');
         var dualTrackErrors = result.dualTrackErrors || [];
         // 全部正确时强制给满分
         var allCorrect = result.wordResults.length > 0 &&
@@ -5152,6 +5184,13 @@
             console.warn('[Acoustic] 分析出错（不影响主流程）:', ae);
           }
         }
+        var signalPromotedCount = promoteWordIssuesFromSignals(result.wordResults, dualTrackErrors, acousticErrors);
+        if (signalPromotedCount > 0) {
+          console.log('[Signal→UI] 同步台词高亮:', signalPromotedCount);
+        }
+        var recText = result.wordResults.map(function (w) {
+          return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
+        }).join('');
 
         // 5. “明显错必扣，轻微错温和扣”：
         // - 明显错：双轨命中声调/平翘舌，或高置信声学平翘舌
