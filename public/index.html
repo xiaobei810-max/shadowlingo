@@ -4726,6 +4726,11 @@
           return text;
         }
       }
+      function _decodeXmlEntities(s) {
+        return String(s || '')
+          .replace(/&#x([0-9a-fA-F]+);/g, function (_, hex) { return String.fromCharCode(parseInt(hex, 16)); })
+          .replace(/&#(\d+);/g, function (_, num) { return String.fromCharCode(parseInt(num, 10)); });
+      }
       function upsertIndex(idx, level, msg, total) {
         if (idx < 0 || idx >= refChars.length) return;
         var prev = weakByIdx[idx];
@@ -4823,7 +4828,7 @@
         }
 
         var targets = [];
-        var content = _decodeEscapedUnicode(attrs.content || attrs.symbol || '');
+        var content = _decodeXmlEntities(_decodeEscapedUnicode(attrs.content || attrs.symbol || ''));
         if (content) {
           targets = Array.from(content).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
         }
@@ -4859,6 +4864,33 @@
             if (!msg) msg = inferred.level === 2 ? '发音有误' : '发音需改进';
             upsertIndex(i, inferred.level, msg, inferred.total);
           }
+        });
+      }
+
+      // 二次兜底：当 beg/end 无法稳定定位时，按 <word content> 与句子从左到右顺序对齐
+      // 注意：只做“前进式”匹配，不回绕，避免把后续同字错配到前文位置
+      var seqCursor = 0;
+      var wordRe = /<word\b([^>]*)>/g;
+      var wm;
+      while ((wm = wordRe.exec(xml)) !== null) {
+        var wAttrs = _parseXmlAttrsForXfyun(wm[1] || '');
+        var wContent = _decodeXmlEntities(_decodeEscapedUnicode(wAttrs.content || wAttrs.symbol || ''));
+        var wChars = Array.from(wContent).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
+        if (!wChars.length) continue;
+        wChars.forEach(function (wch) {
+          var hitIdx = -1;
+          for (var k = seqCursor; k < refChars.length; k++) {
+            if (refChars[k] === wch) { hitIdx = k; break; }
+          }
+          if (hitIdx < 0) return;
+          seqCursor = hitIdx + 1;
+          var inferredW = inferLevelAndReason(wAttrs, hitIdx);
+          if (!inferredW) return;
+          var pyW = pyByIdx[hitIdx] || '';
+          var msgW = inferredW.reasons.join('；');
+          if (pyW) msgW += (msgW ? '（正确：' + pyW + '）' : '正确：' + pyW);
+          if (!msgW) msgW = inferredW.level === 2 ? '发音有误' : '发音需改进';
+          upsertIndex(hitIdx, inferredW.level, msgW, inferredW.total);
         });
       }
 
