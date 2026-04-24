@@ -4858,35 +4858,51 @@
     function promoteWordIssuesFromSignals(wordResults, dualTrackErrors, acousticErrors, hintItems) {
       if (!Array.isArray(wordResults) || !wordResults.length) return 0;
       var byChar = {};
+      function ensureChar(ch) {
+        if (!/[\u4e00-\u9fff]/.test(String(ch || ''))) return null;
+        if (!byChar[ch]) byChar[ch] = { msgs: [], retroflex: false };
+        return byChar[ch];
+      }
       (hintItems || []).forEach(function (h) {
         if (!h || !h.char) return;
-        byChar[h.char] = byChar[h.char] || [];
+        var rec = ensureChar(h.char);
+        if (!rec) return;
         var text = String(h.zh || h.en || '');
-        if (/平翘舌|retroflex/i.test(text)) byChar[h.char].push('平翘舌偏差');
-        else if (/声调|tone/i.test(text)) byChar[h.char].push('声调偏差');
-        else byChar[h.char].push('发音需改进');
+        if (/平翘舌|retroflex/i.test(text)) { rec.msgs.push('平翘舌偏差'); rec.retroflex = true; }
+        else if (/声调|tone/i.test(text)) rec.msgs.push('声调偏差');
+        else rec.msgs.push('发音需改进');
       });
       (dualTrackErrors || []).forEach(function (e) {
         if (!e || !e.targetChar) return;
-        byChar[e.targetChar] = byChar[e.targetChar] || [];
-        if (e.type === 'tone_confusion') byChar[e.targetChar].push('声调偏差');
-        else if (e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') byChar[e.targetChar].push('平翘舌偏差');
-        else byChar[e.targetChar].push('发音有误');
+        var rec = ensureChar(e.targetChar);
+        if (!rec) return;
+        if (e.type === 'tone_confusion') rec.msgs.push('声调偏差');
+        else if (e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') { rec.msgs.push('平翘舌偏差'); rec.retroflex = true; }
+        else rec.msgs.push('发音有误');
       });
       (acousticErrors || []).forEach(function (e) {
         if (!e || !e.char) return;
-        byChar[e.char] = byChar[e.char] || [];
-        byChar[e.char].push('发音有误');
+        var rec = ensureChar(e.char);
+        if (!rec) return;
+        rec.msgs.push('发音有误');
+        if (/zh_z|z_zh/i.test(String(e.type || ''))) rec.retroflex = true;
       });
 
       var promoted = 0;
       wordResults.forEach(function (w) {
-        if (!w || !w.content || !byChar[w.content] || !byChar[w.content].length) return;
+        if (!w || !w.content) return;
+        var rec = byChar[w.content];
+        if (!rec || !rec.msgs.length) return;
+        var existingMsg = String(w.perrMsg || '');
         if (Number(w.perrLevel || 0) === 0) {
           w.perrLevel = 1;
-          var msg = byChar[w.content][0] || '发音需改进';
+          var msg = rec.msgs[0] || '发音需改进';
           w.perrMsg = w.perrMsg ? (w.perrMsg + '；' + msg) : msg;
           promoted++;
+          existingMsg = String(w.perrMsg || '');
+        }
+        if (rec.retroflex && !/平翘舌|retroflex/i.test(existingMsg)) {
+          w.perrMsg = existingMsg ? (existingMsg + '；平翘舌偏差') : '平翘舌偏差';
         }
       });
       return promoted;
@@ -6551,6 +6567,7 @@
 
         // ISE 条目补充：仅对声学未覆盖的字加入（声学已有则跳过）
         allHintItems.forEach(function (item) {
+          if (!item || !/[\u4e00-\u9fff]/.test(String(item.char || ''))) return;
           if (mergedMap[item.char]) return;  // 声学已覆盖此字，跳过
           addEntry(item.char, item.icon, item.zh, item.en);
         });
@@ -6593,12 +6610,7 @@
         guideBody.innerHTML = '';
       }
       var legend = document.getElementById('guide-legend');
-      if (legend && !legend.dataset.inited) {
-        legend.dataset.inited = '1';
-        try {
-          if (localStorage.getItem('guideLegendSeen') === '1') legend.classList.add('show');
-        } catch (_) {}
-      }
+      if (legend) legend.classList.remove('show'); // 默认收起，仅点击 i 展开
     }
 
     function evalRetry() {
