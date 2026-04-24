@@ -4646,6 +4646,88 @@
       return trailing >= 2;
     }
 
+    function _parseXmlAttrsForXfyun(tagAttrsText) {
+      var attrs = {};
+      if (!tagAttrsText) return attrs;
+      var re = /([a-zA-Z_][\w.-]*)\s*=\s*"([^"]*)"/g;
+      var m;
+      while ((m = re.exec(tagAttrsText)) !== null) attrs[m[1]] = m[2];
+      return attrs;
+    }
+
+    // 当腾讯字级未标出问题时，用讯飞 shadow 的 char 级分数补充标注，避免“错了但无提示”
+    function injectXfyunWeakMarks(result, sentence) {
+      if (!result || !Array.isArray(result.wordResults) || !result.wordResults.length) return 0;
+      var xfyun = (((result || {})._debug || {}).xfyun || {});
+      if (!xfyun || xfyun.ok !== true) return 0;
+      var xml = xfyun.xmlSnippet || '';
+      if (!xml) return 0;
+
+      var pyMap = {};
+      (sentence && sentence.chars || []).forEach(function (c) {
+        if (c && c.c && c.p && !pyMap[c.c]) pyMap[c.c] = toToneMark(c.p);
+      });
+
+      var weakByChar = {};
+      var nodeRe = /<rec_node\b([^>]*)>/g;
+      var m;
+      while ((m = nodeRe.exec(xml)) !== null) {
+        var attrs = _parseXmlAttrsForXfyun(m[1] || '');
+        if ((attrs.rec_node_type || '').toLowerCase() !== 'char') continue;
+        var ch = attrs.content || attrs.symbol || '';
+        if (!/[\u4e00-\u9fff]/.test(ch)) continue;
+
+        var total = Number(attrs.total_score);
+        var tone = Number(attrs.tone_score);
+        var phone = Number(attrs.phone_score);
+        if (!Number.isFinite(total) && !Number.isFinite(tone) && !Number.isFinite(phone)) continue;
+
+        var level = 0;
+        var reasons = [];
+        if (Number.isFinite(tone)) {
+          if (tone < 90) { level = Math.max(level, 2); reasons.push('声调偏差'); }
+          else if (tone < 96) { level = Math.max(level, 1); reasons.push('声调需改进'); }
+        }
+        if (Number.isFinite(phone)) {
+          if (phone < 88) { level = Math.max(level, 2); reasons.push('声母/韵母偏差'); }
+          else if (phone < 95) { level = Math.max(level, 1); reasons.push('发音清晰度需改进'); }
+        }
+        if (Number.isFinite(total)) {
+          if (total < 85) { level = Math.max(level, 2); }
+          else if (total < 93) { level = Math.max(level, 1); }
+        }
+        if (level === 0) continue;
+
+        var py = pyMap[ch] || '';
+        var msg = reasons.join('；');
+        if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
+        if (!msg) msg = level === 2 ? '发音有误' : '发音需改进';
+
+        var prev = weakByChar[ch];
+        if (!prev || level > prev.level || (Number.isFinite(total) && total < prev.total)) {
+          weakByChar[ch] = { level: level, msg: msg, total: Number.isFinite(total) ? total : 999 };
+        }
+      }
+
+      var injected = 0;
+      result.wordResults.forEach(function (w) {
+        if (!w || !w.content) return;
+        var hit = weakByChar[w.content];
+        if (!hit) return;
+        if (w.perrLevel === 0 && !(w.perrMsg && String(w.perrMsg).trim())) {
+          w.perrLevel = hit.level;
+          w.perrMsg = hit.msg;
+          injected++;
+          return;
+        }
+        if (hit.level > Number(w.perrLevel || 0)) {
+          w.perrLevel = hit.level;
+          w.perrMsg = (w.perrMsg ? (w.perrMsg + '；') : '') + hit.msg;
+        }
+      });
+      return injected;
+    }
+
     // ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
     // （原 evaluateWithIse、buildIseUrl、parseIseResult、
     //   logAllAttrs、decodeDp、getInitial、applyRetroflexCheck 均移入后端）
@@ -4993,6 +5075,10 @@
           setStatus('准备好了 Ready');
           currentSentenceForEval = null;
           return;
+        }
+        var xfyunInjectedCount = injectXfyunWeakMarks(result, s);
+        if (xfyunInjectedCount > 0) {
+          console.log('[XFYUN→UI] 注入字级弱项标注:', xfyunInjectedCount);
         }
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
