@@ -1767,6 +1767,10 @@
       text-decoration-line: underline;
       text-decoration-style: wavy;
     }
+    .anno-token-hz.retroflex {
+      color: #a78bfa;
+      border-bottom: 2px solid #a78bfa;
+    }
     .anno-token-hz.punct {
       font-size: 0.9em;
       font-weight: 700;
@@ -4176,6 +4180,7 @@
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
       return words.map(function (w) {
         var type = w.perrLevel === 0 ? 'correct' : w.perrLevel === 1 ? 'confused' : 'miss';
+        if (/平翘舌|retroflex/i.test(String(w.perrMsg || ''))) type = 'retroflex';
         var idx = pyI[w.content] || 0;
         var py = pyQ[w.content] ? (pyQ[w.content][idx] || '') : '';
         pyI[w.content] = idx + 1;
@@ -4786,7 +4791,8 @@
         // 首选按 beg/end 定位，避免同字多次出现时错位
         var beg = parseInt(attrs.beg_pos || attrs.word_beg_pos || attrs.time_beg || '', 10);
         var end = parseInt(attrs.end_pos || attrs.word_end_pos || attrs.time_end || '', 10);
-        if (Number.isFinite(beg) && Number.isFinite(end)) {
+        if (Number.isFinite(beg) && Number.isFinite(end) && beg >= 0 && end >= 0 &&
+            beg < refChars.length && end < refChars.length) {
           var sIdx = Math.max(0, Math.min(refChars.length - 1, beg));
           var eIdx = Math.max(sIdx, Math.min(refChars.length - 1, end));
           for (var j = sIdx; j <= eIdx; j++) {
@@ -4814,6 +4820,21 @@
             upsertIndex(i, inferred.level, msg, inferred.total);
           }
         });
+      }
+
+      // 兜底：若讯飞整体 tone_score 很低，但仅命中极少字，则补标末尾 2 个字避免漏提示
+      var sumTone = Number(xfyun && xfyun.summary && xfyun.summary.tone_score);
+      if (Number.isFinite(sumTone) && sumTone < 78) {
+        var weakCount = Object.keys(weakByIdx).length;
+        if (weakCount < 3) {
+          for (var tail = refChars.length - 1; tail >= 0 && weakCount < 3; tail--) {
+            if (weakByIdx[tail]) continue;
+            var pyTail = pyByIdx[tail] || '';
+            var tailMsg = pyTail ? ('声调需改进（正确：' + pyTail + '）') : '声调需改进';
+            upsertIndex(tail, 1, tailMsg, 77);
+            weakCount++;
+          }
+        }
       }
 
       var injected = 0;
@@ -9751,10 +9772,10 @@
           <button class="guide-legend-btn" id="guide-legend-btn" type="button" onclick="toggleGuideLegend()" title="颜色说明">i</button>
         </div>
         <div class="guide-legend" id="guide-legend">
-          <div>🟢 绿色：发音正确</div>
-          <div>🟡 黄色：需改进（轻微偏差）</div>
-          <div>🔴 红色：明显错误</div>
-          <div>🟣 紫色：平翘舌专项提示（类型提示，不一定比黄色更严重）</div>
+          <div>🟢 绿色：发音正确 / Green: Correct</div>
+          <div>🟡 黄色：需改进（轻微偏差）/ Yellow: Needs improvement</div>
+          <div>🔴 红色：明显错误 / Red: Clear error</div>
+          <div>🟣 紫色：平翘舌专项提示 / Purple: Retroflex-specific hint</div>
         </div>
         <div class="guide-compare-btns" style="margin-bottom:12px">
           <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 录音<br><span style="font-size:10px;opacity:0.75">Recording</span></button>
