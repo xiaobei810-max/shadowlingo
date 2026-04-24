@@ -4175,13 +4175,16 @@
 
     // ── 以下函数已移至 api/evaluate.js，前端仅保留展示逻辑 ──────────
 
+    // 仅用于显示层：强制将命中平翘舌的字渲染为紫色，不改评分数据
+    var _forceRetroByChar = {};
+
     // perrLevel: 0=绿(正确) 1=黄(需改进) 2=红(错误)
     function iseAnnotations(words, chars) {
       var pyQ = {}, pyI = {};
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
       return words.map(function (w) {
         var type = w.perrLevel === 0 ? 'correct' : w.perrLevel === 1 ? 'confused' : 'miss';
-        if (/平翘舌|retroflex/i.test(String(w.perrMsg || ''))) type = 'retroflex';
+        if (/平翘舌|retroflex/i.test(String(w.perrMsg || '')) || !!_forceRetroByChar[w.content]) type = 'retroflex';
         var idx = pyI[w.content] || 0;
         var py = pyQ[w.content] ? (pyQ[w.content][idx] || '') : '';
         pyI[w.content] = idx + 1;
@@ -5337,7 +5340,7 @@
         if (hintPromotedCount > 0) {
           console.log('[Hint→UI] 按指南提示同步台词高亮:', hintPromotedCount);
         }
-        // 通用原则：凡命中平翘舌偏差（任一信号源），台词统一标紫
+        // 通用原则：凡命中平翘舌偏差（任一信号源），台词统一标紫（仅影响显示层）
         var retroByChar = {};
         (dualTrackErrors || []).forEach(function (e) {
           if (!e || !e.targetChar) return;
@@ -5353,12 +5356,10 @@
           if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(h.zh || h.en || ''))) retroByChar[h.char] = true;
         });
         (result.wordResults || []).forEach(function (w) {
-          if (!w || !w.content || !retroByChar[w.content]) return;
-          if (Number(w.perrLevel || 0) === 0) w.perrLevel = 1;
-          if (!/平翘舌|retroflex/i.test(String(w.perrMsg || ''))) {
-            w.perrMsg = w.perrMsg ? (w.perrMsg + '；平翘舌偏差') : '平翘舌偏差';
-          }
+          if (!w || !w.content) return;
+          if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(w.perrMsg || ''))) retroByChar[w.content] = true;
         });
+        _forceRetroByChar = retroByChar;
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
