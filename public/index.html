@@ -4669,18 +4669,37 @@
       });
 
       var weakByChar = {};
-      var nodeRe = /<rec_node\b([^>]*)>/g;
+      var refChars = Array.from(((sentence && sentence.zh) || '').replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
+      var nodeRe = /<(rec_node|word|syll)\b([^>]*)>/g;
       var m;
       while ((m = nodeRe.exec(xml)) !== null) {
-        var attrs = _parseXmlAttrsForXfyun(m[1] || '');
-        if ((attrs.rec_node_type || '').toLowerCase() !== 'char') continue;
-        var ch = attrs.content || attrs.symbol || '';
-        if (!/[\u4e00-\u9fff]/.test(ch)) continue;
+        var tagName = String(m[1] || '').toLowerCase();
+        var attrs = _parseXmlAttrsForXfyun(m[2] || '');
+        if (tagName === 'rec_node') {
+          var t = (attrs.rec_node_type || '').toLowerCase();
+          if (t && t !== 'char' && t !== 'word') continue;
+        }
 
         var total = Number(attrs.total_score);
         var tone = Number(attrs.tone_score);
         var phone = Number(attrs.phone_score);
         if (!Number.isFinite(total) && !Number.isFinite(tone) && !Number.isFinite(phone)) continue;
+
+        var targets = [];
+        var content = attrs.content || attrs.symbol || '';
+        if (content) {
+          targets = Array.from(content).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
+        }
+        if (!targets.length) {
+          var beg = parseInt(attrs.beg_pos || attrs.word_beg_pos || attrs.time_beg || '', 10);
+          var end = parseInt(attrs.end_pos || attrs.word_end_pos || attrs.time_end || '', 10);
+          if (Number.isFinite(beg) && Number.isFinite(end) && refChars.length) {
+            var sIdx = Math.max(0, Math.min(refChars.length - 1, beg));
+            var eIdx = Math.max(sIdx, Math.min(refChars.length - 1, end));
+            targets = refChars.slice(sIdx, eIdx + 1).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
+          }
+        }
+        if (!targets.length) continue;
 
         var level = 0;
         var reasons = [];
@@ -4698,15 +4717,16 @@
         }
         if (level === 0) continue;
 
-        var py = pyMap[ch] || '';
-        var msg = reasons.join('；');
-        if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
-        if (!msg) msg = level === 2 ? '发音有误' : '发音需改进';
-
-        var prev = weakByChar[ch];
-        if (!prev || level > prev.level || (Number.isFinite(total) && total < prev.total)) {
-          weakByChar[ch] = { level: level, msg: msg, total: Number.isFinite(total) ? total : 999 };
-        }
+        targets.forEach(function (ch) {
+          var py = pyMap[ch] || '';
+          var msg = reasons.join('；');
+          if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
+          if (!msg) msg = level === 2 ? '发音有误' : '发音需改进';
+          var prev = weakByChar[ch];
+          if (!prev || level > prev.level || (Number.isFinite(total) && total < prev.total)) {
+            weakByChar[ch] = { level: level, msg: msg, total: Number.isFinite(total) ? total : 999 };
+          }
+        });
       }
 
       var injected = 0;
