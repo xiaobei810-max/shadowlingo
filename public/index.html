@@ -2333,6 +2333,41 @@
       color: #fbbf24;
       margin-bottom: 10px;
     }
+    .eval-dualtrack-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .guide-legend-btn {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.6);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .guide-legend {
+      display: none;
+      margin: -2px 0 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(100,116,139,0.35);
+      background: rgba(15,23,42,0.6);
+      color: #cbd5e1;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .guide-legend.show { display: block; }
 
     .dt-error-row {
       display: flex;
@@ -4680,7 +4715,7 @@
         }
       }
 
-      function inferLevelAndReason(attrs) {
+      function inferLevelAndReason(attrs, idxForTone) {
         var total = Number(attrs.total_score);
         var tone = Number(attrs.tone_score);
         var phone = Number(attrs.phone_score);
@@ -4709,6 +4744,25 @@
           if (total < 85) level = Math.max(level, 2);
           else if (total < 93) level = Math.max(level, 1);
         }
+        // 强制声调偏离判定：尤其修复“东/西故意变调未命中”
+        if (Number.isFinite(idxForTone)) {
+          var rawPy = sentence && sentence.chars && sentence.chars[idxForTone] ? (sentence.chars[idxForTone].p || '') : '';
+          var expectedTone = (String(rawPy).match(/([0-5])$/) || [])[1];
+          var mono = String(attrs.mono_tone || '').toUpperCase();
+          var heardTone = (mono.match(/TONE([1-4])/i) || [])[1];
+          if (expectedTone) {
+            if (expectedTone === '5' || expectedTone === '0') {
+              // 轻声被读成明显调值，给至少黄标
+              if (heardTone) {
+                level = Math.max(level, 1);
+                reasons.push('轻声需读轻短');
+              }
+            } else if (heardTone && heardTone !== expectedTone) {
+              level = Math.max(level, 1);
+              reasons.push('声调偏离');
+            }
+          }
+        }
         if (!level) return null;
         return { level: level, reasons: reasons, total: total };
       }
@@ -4723,9 +4777,6 @@
           if (nt && nt !== 'char' && nt !== 'word' && nt !== 'syll') continue;
         }
 
-        var inferred = inferLevelAndReason(attrs);
-        if (!inferred) continue;
-
         var targets = [];
         var content = attrs.content || attrs.symbol || '';
         if (content) {
@@ -4739,6 +4790,8 @@
           var sIdx = Math.max(0, Math.min(refChars.length - 1, beg));
           var eIdx = Math.max(sIdx, Math.min(refChars.length - 1, end));
           for (var j = sIdx; j <= eIdx; j++) {
+            var inferred = inferLevelAndReason(attrs, j);
+            if (!inferred) continue;
             var py = pyByIdx[j] || '';
             var msg = inferred.reasons.join('；');
             if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
@@ -4752,6 +4805,8 @@
         targets.forEach(function (ch) {
           for (var i = 0; i < refChars.length; i++) {
             if (refChars[i] !== ch) continue;
+            var inferred = inferLevelAndReason(attrs, i);
+            if (!inferred) continue;
             var py = pyByIdx[i] || '';
             var msg = inferred.reasons.join('；');
             if (py) msg += (msg ? '（正确：' + py + '）' : '正确：' + py);
@@ -4779,9 +4834,17 @@
     }
 
     // 保证“下方指南有提示 <=> 上方台词有高亮”一致
-    function promoteWordIssuesFromSignals(wordResults, dualTrackErrors, acousticErrors) {
+    function promoteWordIssuesFromSignals(wordResults, dualTrackErrors, acousticErrors, hintItems) {
       if (!Array.isArray(wordResults) || !wordResults.length) return 0;
       var byChar = {};
+      (hintItems || []).forEach(function (h) {
+        if (!h || !h.char) return;
+        byChar[h.char] = byChar[h.char] || [];
+        var text = String(h.zh || h.en || '');
+        if (/平翘舌|retroflex/i.test(text)) byChar[h.char].push('平翘舌偏差');
+        else if (/声调|tone/i.test(text)) byChar[h.char].push('声调偏差');
+        else byChar[h.char].push('发音需改进');
+      });
       (dualTrackErrors || []).forEach(function (e) {
         if (!e || !e.targetChar) return;
         byChar[e.targetChar] = byChar[e.targetChar] || [];
@@ -4806,6 +4869,13 @@
         }
       });
       return promoted;
+    }
+
+    function toggleGuideLegend() {
+      var box = document.getElementById('guide-legend');
+      if (!box) return;
+      box.classList.toggle('show');
+      try { localStorage.setItem('guideLegendSeen', box.classList.contains('show') ? '1' : '0'); } catch (_) {}
     }
 
     // ── 下面是已被替换的旧 ISE 代码（删除）─────────────────────────
@@ -5188,6 +5258,11 @@
         if (signalPromotedCount > 0) {
           console.log('[Signal→UI] 同步台词高亮:', signalPromotedCount);
         }
+        var hintItems = iseHintText(result.wordResults, s.chars);
+        var hintPromotedCount = promoteWordIssuesFromSignals(result.wordResults, [], [], hintItems);
+        if (hintPromotedCount > 0) {
+          console.log('[Hint→UI] 按指南提示同步台词高亮:', hintPromotedCount);
+        }
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
@@ -5290,7 +5365,7 @@
         sessionScores[scoreSlot] = displayScore;   // 对话模式按轮次记分，避免都写到 idx=0
         incPracticeCount(lessonIdx, idx);
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
-          iseHintText(result.wordResults, s.chars), s, null, recText,
+          hintItems, s, null, recText,
           dualTrackErrors, acousticErrors);
       } catch (err) {
         console.error('评测失败:', err);
@@ -6495,6 +6570,13 @@
         guideBody.innerHTML = html;
       } else {
         guideBody.innerHTML = '';
+      }
+      var legend = document.getElementById('guide-legend');
+      if (legend && !legend.dataset.inited) {
+        legend.dataset.inited = '1';
+        try {
+          if (localStorage.getItem('guideLegendSeen') === '1') legend.classList.add('show');
+        } catch (_) {}
       }
     }
 
@@ -9664,7 +9746,16 @@
 
       <!-- 发音指南（ISE 提示 + Whisper 双轨 + 声学 FFT，统一显示） -->
       <div class="eval-dualtrack-card" id="eval-dualtrack-card" style="display:none">
-        <div class="eval-dualtrack-title">📖 发音指南 Pronunciation Guide</div>
+        <div class="eval-dualtrack-title-row">
+          <div class="eval-dualtrack-title">📖 发音指南 Pronunciation Guide</div>
+          <button class="guide-legend-btn" id="guide-legend-btn" type="button" onclick="toggleGuideLegend()" title="颜色说明">i</button>
+        </div>
+        <div class="guide-legend" id="guide-legend">
+          <div>🟢 绿色：发音正确</div>
+          <div>🟡 黄色：需改进（轻微偏差）</div>
+          <div>🔴 红色：明显错误</div>
+          <div>🟣 紫色：平翘舌专项提示（类型提示，不一定比黄色更严重）</div>
+        </div>
         <div class="guide-compare-btns" style="margin-bottom:12px">
           <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 录音<br><span style="font-size:10px;opacity:0.75">Recording</span></button>
           <button class="guide-btn-native" id="guide-btn-native" onclick="playGuideNative()">🔊 原声<br><span style="font-size:10px;opacity:0.75">Native</span></button>
