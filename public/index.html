@@ -2811,7 +2811,7 @@
     .ctx-kchar.ctx-active + .kpunct { color: var(--green); }
     .ctx-kchar.ctx-done   + .kpunct { color: var(--green); }
     .ctx-zh .kpunct {
-      font-size: 1.42em;
+      font-size: 1.52em;
       font-weight: 800;
       line-height: 1;
       margin-left: 0.02em;
@@ -4713,6 +4713,16 @@
       });
 
       var weakByIdx = {};
+      function _decodeEscapedUnicode(s) {
+        var text = String(s || '');
+        try {
+          return text.replace(/\\u([0-9a-fA-F]{4})/g, function (_, hex) {
+            return String.fromCharCode(parseInt(hex, 16));
+          });
+        } catch (_) {
+          return text;
+        }
+      }
       function upsertIndex(idx, level, msg, total) {
         if (idx < 0 || idx >= refChars.length) return;
         var prev = weakByIdx[idx];
@@ -4825,6 +4835,37 @@
             if (!msg) msg = inferred.level === 2 ? '发音有误' : '发音需改进';
             upsertIndex(i, inferred.level, msg, inferred.total);
           }
+        });
+      }
+
+      // 二次兜底：按 <word ... content="..."> 顺序从左到右对齐，修复时序坐标漂移导致的漏标
+      var cursor = 0;
+      var wordRe = /<word\b([^>]*)>/g;
+      var wm;
+      while ((wm = wordRe.exec(xml)) !== null) {
+        var wAttrs = _parseXmlAttrsForXfyun(wm[1] || '');
+        var wContentRaw = _decodeEscapedUnicode(wAttrs.content || wAttrs.symbol || '');
+        var wChars = Array.from(wContentRaw).filter(function (ch) { return /[\u4e00-\u9fff]/.test(ch); });
+        if (!wChars.length) continue;
+        wChars.forEach(function (wch) {
+          var hitIdx = -1;
+          for (var k = cursor; k < refChars.length; k++) {
+            if (refChars[k] === wch) { hitIdx = k; break; }
+          }
+          if (hitIdx < 0) {
+            for (var k2 = 0; k2 < cursor; k2++) {
+              if (refChars[k2] === wch) { hitIdx = k2; break; }
+            }
+          }
+          if (hitIdx < 0) return;
+          cursor = hitIdx + 1;
+          var inferredW = inferLevelAndReason(wAttrs, hitIdx);
+          if (!inferredW) return;
+          var pyW = pyByIdx[hitIdx] || '';
+          var msgW = inferredW.reasons.join('；');
+          if (pyW) msgW += (msgW ? '（正确：' + pyW + '）' : '正确：' + pyW);
+          if (!msgW) msgW = inferredW.level === 2 ? '发音有误' : '发音需改进';
+          upsertIndex(hitIdx, inferredW.level, msgW, inferredW.total);
         });
       }
 
