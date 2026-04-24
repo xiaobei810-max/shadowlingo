@@ -324,7 +324,8 @@ function _formatXfyunShadowDebug(base, xml) {
   const summary = _extractXfyunSummary(xml);
   if (summary) out.summary = summary;
   if (level === 'full' || level === 'verbose') {
-    out.xmlSnippet = xml ? xml.slice(0, 1200) : null;
+    // 保留更长片段，避免前端只看到句首节点导致“只标出第一个错字”
+    out.xmlSnippet = xml ? xml.slice(0, 8000) : null;
   }
   return out;
 }
