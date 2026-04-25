@@ -4639,7 +4639,14 @@
     function iseHintText(words, chars) {
       var reds    = words.filter(function (w) { return w.perrLevel === 2; });
       var yellows = words.filter(function (w) { return w.perrLevel === 1; });
-      if (!reds.length && !yellows.length) return [];
+      // 补充：腾讯有时返回 perrLevel=0 但 perrMsg 非空（有实质错误描述却未升级 level）
+      // 将这类字归入 yellows 级，避免"有错误描述却无提示"的空白指导页
+      var msgOnly = words.filter(function (w) {
+        if (w.perrLevel !== 0) return false;            // 已有 level，不重复
+        var msg = String(w.perrMsg || '').trim();
+        return msg.length > 2;                          // 非空且非单字符噪声
+      });
+      if (!reds.length && !yellows.length && !msgOnly.length) return [];
 
       // 构建音变后声调队列（按字符分组，保持出现顺序）
       var sandhiQueue = {};
@@ -4655,6 +4662,12 @@
         items.push(buildHintLine(w, true, sandhiQueue));
       });
       yellows.forEach(function (w) {
+        if (seen[w.content]) return;
+        seen[w.content] = true;
+        items.push(buildHintLine(w, false, sandhiQueue));
+      });
+      // perrLevel=0 但有 perrMsg 的字：作为黄色（轻度）提示
+      msgOnly.forEach(function (w) {
         if (seen[w.content]) return;
         seen[w.content] = true;
         items.push(buildHintLine(w, false, sandhiQueue));
