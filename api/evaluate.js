@@ -364,19 +364,27 @@ function parseXfyunPhoneErrors(xml, refText, pyMap) {
 
       if (nameMatchesInit && dpMsg !== 0) {
         const type = isRetro ? 'zh_z_ise' : 'z_zh_ise';
-        const msg  = `平翘舌：${ch} 声母应为${isRetro ? '翘舌' : '平舌'}【${expectedInit}】，发音有偏差`;
+        const msg  = isRetro
+          ? `"${ch}" 声母应为翘舌${expectedInit}，而不是平舌音。`
+          : `"${ch}" 声母应为平舌${expectedInit}，而不是翘舌音。`;
         errors.push({ charIdx: syllIdx - 1, char: ch, expectedInit, phName, dpMsg, phAcc, syllAcc, type, message: msg });
         console.log(`[ISE-Ph] char="${ch}" init=${expectedInit} phone="${phName}" dpMsg=${dpMsg} phAcc=${phAcc}`);
         continue;
       }
     }
 
-    // 降级：无音素数据但音节准确度极低（<40）且非轻声字 → 弱提示
+    // 降级：无音素数据但音节准确度极低且非轻声字
+    // syllAcc=0 视为强提示；0<syllAcc<40 视为弱提示（仅在已有其他错误时附加）
     if (syllAcc !== null && syllAcc < 40 && getTone(py) !== 0) {
-      const type = isRetro ? 'zh_z_ise_weak' : 'z_zh_ise_weak';
-      const msg  = `${ch}（${py}）音节准确度偏低（讯飞：${syllAcc}分），注意${isRetro ? '翘舌' : '平舌'}声母【${expectedInit}】`;
+      const isStrong = syllAcc === 0;
+      const type = isRetro
+        ? (isStrong ? 'zh_z_ise' : 'zh_z_ise_weak')
+        : (isStrong ? 'z_zh_ise' : 'z_zh_ise_weak');
+      const msg = isRetro
+        ? `"${ch}" 声母应为翘舌${expectedInit}，而不是平舌音。`
+        : `"${ch}" 声母应为平舌${expectedInit}，而不是翘舌音。`;
       errors.push({ charIdx: syllIdx - 1, char: ch, expectedInit, syllAcc, type, message: msg });
-      console.log(`[ISE-Syl] char="${ch}" init=${expectedInit} syllAcc=${syllAcc} (weak)`);
+      console.log(`[ISE-Syl] char="${ch}" init=${expectedInit} syllAcc=${syllAcc} ${isStrong ? '(strong)' : '(weak)'}`);
     }
   }
 

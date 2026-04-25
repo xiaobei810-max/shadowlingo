@@ -4563,9 +4563,18 @@
           return;
         }
 
-        // ── 翘舌音提示（启发式）─────────────────────────────
-        if (p.indexOf('翘舌音') >= 0) {
-          pairs.push({ cat: 'RETROFLEX', zh: p, en: p.replace('注意翘舌音声母','check retroflex initial').replace(/【/g,'"').replace(/】/g,'"') });
+        // ── 翘舌/平舌提示（兼容讯飞 ISE 格式和旧格式）────────
+        // 匹配：含"翘舌音"、"平舌音"，或 ISE/声学格式 "X" 声母应为翘舌/平舌Y
+        if (p.indexOf('翘舌音') >= 0 || p.indexOf('平舌音') >= 0 ||
+            /声母应为(?:翘舌|平舌)/.test(p)) {
+          var enP = p
+            .replace('注意翘舌音声母', 'check retroflex initial')
+            .replace(/声母应为翘舌(\w+)/g, 'initial should be retroflex $1')
+            .replace(/声母应为平舌(\w+)/g, 'initial should be flat $1')
+            .replace(/而不是翘舌音/g, 'not retroflex')
+            .replace(/而不是平舌音/g, 'not flat')
+            .replace(/【/g, '"').replace(/】/g, '"');
+          pairs.push({ cat: 'RETROFLEX', zh: p, en: enP });
           tipCats.push('RETROFLEX');
           return;
         }
@@ -4629,7 +4638,8 @@
         }
       }
 
-      var icon   = isRed ? '🔴' : '🟡';
+      var hasRetroflex = tipCats.indexOf('RETROFLEX') >= 0;
+      var icon = hasRetroflex ? '🟣' : (isRed ? '🔴' : '🟡');
       var result = pairsToSentence(w.content, isRed, pairs);
       return { char: w.content, isRed: isRed, icon: icon, zh: result.zh, en: result.en };
     }
