@@ -167,7 +167,8 @@ module.exports = async function handler(req, res) {
   try { parsed = JSON.parse(body); }
   catch { return res.status(400).json({ error: 'bad json' }); }
 
-  const { text, role, rate } = parsed;
+  const { text: rawText, role, rate } = parsed;
+  const text = rawText != null ? String(rawText).trim() : '';
   if (!text) return res.status(400).json({ error: 'text required' });
 
   const ssml = buildSSML(text, role || 'local', rate || 1.0);

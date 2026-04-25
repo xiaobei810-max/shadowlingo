@@ -6550,7 +6550,7 @@
       } else {
         animateCountUp(numEl, score, 600, function() {
           numEl.classList.add('score-anim-shake');
-          if (prevBtn) setTimeout(function() { prevBtn.classList.add('eval-retry-heartbeat'); }, 900);
+          // 去掉「上一页」红色心跳呼吸动画（用户反馈：误导性视觉提示）
           if (onCountDone) onCountDone();
         });
       }
