@@ -317,6 +317,72 @@ function _extractXfyunSummary(xml) {
   };
 }
 
+// ── 解析讯飞 ISE 音素级平翘舌错误 ────────────────────────────────────
+// 原理：iFlyTek ISE 在 rst:'entirety' 时返回 <syll>→<phone> 层级数据，
+//       每个 <phone> 有 dp_message 属性（0=正确，非零=有误）。
+//       若声母音素（<syll> 里第一个 <phone>）dp_message≠0，
+//       且期望声母是平/翘舌声母，则判定为平翘舌错误。
+function parseXfyunPhoneErrors(xml, refText, pyMap) {
+  if (!xml) return [];
+
+  const errors   = [];
+  const refChars = Array.from((refText || '').replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
+  if (!refChars.length) return errors;
+
+  const RETRO = ['zh', 'ch', 'sh', 'r'];
+  const FLAT  = ['z',  'c',  's'      ];
+
+  // 每个 <syll> 对应一个汉字的拼音读音
+  const syllRe = /<syll\b([^>]*)>([\s\S]*?)<\/syll>/gi;
+  let syllIdx = 0, sm;
+
+  while ((sm = syllRe.exec(xml)) !== null && syllIdx < refChars.length) {
+    const syllAttrs = _parseXfyunAttrs(sm[1]);
+    const syllXml   = sm[2];
+    const syllAcc   = _toNum(syllAttrs.accuracy || syllAttrs.acc || null);
+
+    const ch = refChars[syllIdx++];
+    const py = normalizePy((pyMap && pyMap[ch]) || '');
+    if (!py) continue;
+
+    const expectedInit = getInitial(py);
+    const isRetro = RETRO.includes(expectedInit);
+    const isFlat  = FLAT.includes(expectedInit);
+    if (!isRetro && !isFlat) continue;
+
+    // 取声母音素（<syll> 内第一个 <phone>）
+    const phM = syllXml.match(/<phone\b([^>]*)(?:\/>|>[^<]*<\/phone>)/i);
+    if (phM) {
+      const phAttrs = _parseXfyunAttrs(phM[1]);
+      const phName  = (phAttrs.content || '').toLowerCase().trim();
+      const dpMsg   = parseInt(phAttrs.dp_message || phAttrs.dp || '0') || 0;
+      const phAcc   = _toNum(phAttrs.accuracy || phAttrs.acc || null);
+
+      // 确认这个 phone 就是期望的声母，且标记有误
+      const nameMatchesInit = (phName === expectedInit) ||
+        (['zh','ch','sh'].some(r => r === expectedInit && phName.startsWith(r)));
+
+      if (nameMatchesInit && dpMsg !== 0) {
+        const type = isRetro ? 'zh_z_ise' : 'z_zh_ise';
+        const msg  = `平翘舌：${ch} 声母应为${isRetro ? '翘舌' : '平舌'}【${expectedInit}】，发音有偏差`;
+        errors.push({ charIdx: syllIdx - 1, char: ch, expectedInit, phName, dpMsg, phAcc, syllAcc, type, message: msg });
+        console.log(`[ISE-Ph] char="${ch}" init=${expectedInit} phone="${phName}" dpMsg=${dpMsg} phAcc=${phAcc}`);
+        continue;
+      }
+    }
+
+    // 降级：无音素数据但音节准确度极低（<40）且非轻声字 → 弱提示
+    if (syllAcc !== null && syllAcc < 40 && getTone(py) !== 0) {
+      const type = isRetro ? 'zh_z_ise_weak' : 'z_zh_ise_weak';
+      const msg  = `${ch}（${py}）音节准确度偏低（讯飞：${syllAcc}分），注意${isRetro ? '翘舌' : '平舌'}声母【${expectedInit}】`;
+      errors.push({ charIdx: syllIdx - 1, char: ch, expectedInit, syllAcc, type, message: msg });
+      console.log(`[ISE-Syl] char="${ch}" init=${expectedInit} syllAcc=${syllAcc} (weak)`);
+    }
+  }
+
+  return errors;
+}
+
 function _formatXfyunShadowDebug(base, xml) {
   const level = XFYUN_SHADOW_LOG_LEVEL;
   if (level === 'off' || level === 'none') return base;
@@ -386,7 +452,8 @@ async function xfyunIseAssessShadow(pcmBase64, refText) {
             text: '\uFEFF' + cleanRef,
             auf: 'audio/L16;rate=16000',
             aue: 'raw',
-            rstcd: 'utf8'
+            rstcd: 'utf8',
+            rst: 'entirety'   // 请求词/音节/音素级详细结果
           },
           data: {
             status: 0,
@@ -1500,6 +1567,24 @@ module.exports = async function handler(req, res) {
 
     // ── 核心解析（全部业务逻辑在此）──
     const result = await parseAzureResult(azureFormat, refText, pyMap, sttText);
+
+    // ── 讯飞 ISE 音素级平翘舌错误合并 ──
+    if (xfyunShadow && xfyunShadow.ok && xfyunShadow.xmlSnippet) {
+      const isePhErrors = parseXfyunPhoneErrors(xfyunShadow.xmlSnippet, refText, pyMap);
+      if (isePhErrors.length) {
+        console.log('[ISE-Ph] 合并', isePhErrors.length, '个平翘舌提示:', isePhErrors.map(e => `"${e.char}"(${e.type})`).join(', '));
+        for (const pe of isePhErrors) {
+          const wr = result.wordResults[pe.charIdx];
+          if (!wr) continue;
+          // 已有平翘舌提示则跳过，避免重复
+          if (wr.perrMsg && (wr.perrMsg.includes('翘舌') || wr.perrMsg.includes('平舌'))) continue;
+          // 弱提示（_weak 类型）只在原本有错时附加，不单独触发
+          if (pe.type.endsWith('_weak') && wr.perrLevel === 0) continue;
+          wr.perrMsg = wr.perrMsg ? wr.perrMsg + '；' + pe.message : pe.message;
+          if (wr.perrLevel === 0) wr.perrLevel = 1;
+        }
+      }
+    }
 
     // ── 双轨分析 ──
     const refClean = Array.from(refText.replace(/[，。！？,.!?\s、；：""''《》【】]/g, ''));
