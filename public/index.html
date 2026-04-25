@@ -6690,7 +6690,8 @@
 
         // 声学条目优先：先加入声学检测结果
         allAcoustic.forEach(function (e) {
-          var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟡';
+          // zh_z_acoustic: 应翘舌读成平舌；z_zh_acoustic: 应平舌读成翘舌。两者都是平翘舌混淆，统一用紫色。
+          var icon = (e.type === 'zh_z_acoustic' || e.type === 'z_zh_acoustic') ? '🟣' : '🟡';
           addEntry(e.char, icon, e.zh, e.en, e.position);
         });
 
