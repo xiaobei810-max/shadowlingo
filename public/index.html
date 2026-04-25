@@ -4449,6 +4449,15 @@
         }
       }
 
+      // ── 预处理：若 sandhiQueue 中有正确读音，修正 parts 里的"正确：X"──
+      // 防止讯飞 ISE syll 位置偏移导致错误拼音（如"你"显示"guò"）传入提示文字
+      if (entry && entry.p) {
+        var _truePy = correctPy || toToneMark(entry.p);
+        parts = parts.map(function (pp) {
+          return pp.replace(/正确[：:]\s*\S+/g, '正确：' + _truePy);
+        });
+      }
+
       parts.forEach(function (p) {
 
         // ── 后端新格式：平翘舌 ───────────────────────────────
@@ -4928,6 +4937,10 @@
         var sCursor = 0;
         while ((sm = syllRe.exec(xml)) !== null && sCursor < refChars.length) {
           var sAttrs = _parseXmlAttrsForXfyun(sm[1] || '');
+          // 跳过标点音节（content 不含汉字）以防止 sCursor 偏移导致拼音错位
+          var syllContent = _decodeXmlEntities(_decodeEscapedUnicode(sAttrs.content || sAttrs.symbol || ''));
+          var hasCJK = /[\u4e00-\u9fff]/.test(syllContent);
+          if (syllContent && !hasCJK) continue;  // 标点/空白音节，不推进 cursor
           var inferredS = inferLevelAndReason(sAttrs, sCursor);
           if (inferredS) {
             var pyS = pyByIdx[sCursor] || '';
