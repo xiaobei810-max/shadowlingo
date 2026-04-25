@@ -365,8 +365,8 @@ function parseXfyunPhoneErrors(xml, refText, pyMap) {
       if (nameMatchesInit && dpMsg !== 0) {
         const type = isRetro ? 'zh_z_ise' : 'z_zh_ise';
         const msg  = isRetro
-          ? `"${ch}" 声母应为翘舌${expectedInit}，而不是平舌音。`
-          : `"${ch}" 声母应为平舌${expectedInit}，而不是翘舌音。`;
+          ? `平翘舌：应读翘舌【${expectedInit}】，而不是平舌音`
+          : `平翘舌：应读平舌【${expectedInit}】，而不是翘舌音`;
         errors.push({ charIdx: syllIdx - 1, char: ch, expectedInit, phName, dpMsg, phAcc, syllAcc, type, message: msg });
         console.log(`[ISE-Ph] char="${ch}" init=${expectedInit} phone="${phName}" dpMsg=${dpMsg} phAcc=${phAcc}`);
         continue;
@@ -381,8 +381,8 @@ function parseXfyunPhoneErrors(xml, refText, pyMap) {
         ? (isStrong ? 'zh_z_ise' : 'zh_z_ise_weak')
         : (isStrong ? 'z_zh_ise' : 'z_zh_ise_weak');
       const msg = isRetro
-        ? `"${ch}" 声母应为翘舌${expectedInit}，而不是平舌音。`
-        : `"${ch}" 声母应为平舌${expectedInit}，而不是翘舌音。`;
+        ? `平翘舌：应读翘舌【${expectedInit}】，而不是平舌音`
+        : `平翘舌：应读平舌【${expectedInit}】，而不是翘舌音`;
       errors.push({ charIdx: syllIdx - 1, char: ch, expectedInit, syllAcc, type, message: msg });
       console.log(`[ISE-Syl] char="${ch}" init=${expectedInit} syllAcc=${syllAcc} ${isStrong ? '(strong)' : '(weak)'}`);
     }

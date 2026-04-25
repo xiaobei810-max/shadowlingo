@@ -4184,7 +4184,7 @@
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
       return words.map(function (w) {
         var type = w.perrLevel === 0 ? 'correct' : w.perrLevel === 1 ? 'confused' : 'miss';
-        if (/平翘舌|retroflex/i.test(String(w.perrMsg || '')) || !!_forceRetroByChar[w.content]) type = 'retroflex';
+        if (/平翘舌|retroflex|声母应为(?:翘舌|平舌)/i.test(String(w.perrMsg || '')) || !!_forceRetroByChar[w.content]) type = 'retroflex';
         var idx = pyI[w.content] || 0;
         var py = pyQ[w.content] ? (pyQ[w.content][idx] || '') : '';
         pyI[w.content] = idx + 1;
