@@ -1569,16 +1569,25 @@ module.exports = async function handler(req, res) {
     const result = await parseAzureResult(azureFormat, refText, pyMap, sttText);
 
     // ── 讯飞 ISE 音素级平翘舌错误合并 ──
+    let isePhErrors = [];
+    let iseDiag = { syllsFound: 0, phonesFound: 0, wordsFound: 0, errors: [] };
     if (xfyunShadow && xfyunShadow.ok && xfyunShadow.xmlSnippet) {
-      const isePhErrors = parseXfyunPhoneErrors(xfyunShadow.xmlSnippet, refText, pyMap);
+      const xmlSnip = xfyunShadow.xmlSnippet;
+      // 诊断：统计 XML 里各层级元素数量
+      iseDiag.syllsFound  = (xmlSnip.match(/<syll\b/gi)  || []).length;
+      iseDiag.phonesFound = (xmlSnip.match(/<phone\b/gi) || []).length;
+      iseDiag.wordsFound  = (xmlSnip.match(/<word\b/gi)  || []).length;
+      console.log('[ISE-Diag] words=%d sylls=%d phones=%d', iseDiag.wordsFound, iseDiag.syllsFound, iseDiag.phonesFound);
+
+      isePhErrors = parseXfyunPhoneErrors(xmlSnip, refText, pyMap);
+      iseDiag.errors = isePhErrors;
+
       if (isePhErrors.length) {
         console.log('[ISE-Ph] 合并', isePhErrors.length, '个平翘舌提示:', isePhErrors.map(e => `"${e.char}"(${e.type})`).join(', '));
         for (const pe of isePhErrors) {
           const wr = result.wordResults[pe.charIdx];
           if (!wr) continue;
-          // 已有平翘舌提示则跳过，避免重复
           if (wr.perrMsg && (wr.perrMsg.includes('翘舌') || wr.perrMsg.includes('平舌'))) continue;
-          // 弱提示（_weak 类型）只在原本有错时附加，不单独触发
           if (pe.type.endsWith('_weak') && wr.perrLevel === 0) continue;
           wr.perrMsg = wr.perrMsg ? wr.perrMsg + '；' + pe.message : pe.message;
           if (wr.perrLevel === 0) wr.perrLevel = 1;
@@ -1612,7 +1621,8 @@ module.exports = async function handler(req, res) {
       whisperText:       whisperText || null,
       dualTrackErrors:   dualTrack.dualTrackErrors,
       geminiError:       geminiErr || null,
-      xfyun:             xfyunShadow || { enabled: false, skipped: 'no result' }
+      xfyun:             xfyunShadow || { enabled: false, skipped: 'no result' },
+      iseDiag
     };
 
     res.status(200).json(result);
