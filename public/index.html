@@ -6773,10 +6773,11 @@
             renderDialogYourTurn();
           }
         } else {
-          if (dialogRoundIdx > 0) {
-            dialogRoundIdx--;
-            renderDialogYourTurn();
-          }
+          // 无论 dialogRoundIdx 是否为 0，都必须调用 renderDialogYourTurn()，
+          // 以恢复 currentSentenceForEval（evaluateAudio 末尾会把它清空）。
+          // 若已在第一轮则原地重渲，若 >0 则先退一轮再渲染。
+          if (dialogRoundIdx > 0) dialogRoundIdx--;
+          renderDialogYourTurn();
         }
         return;
       }
