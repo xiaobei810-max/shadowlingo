@@ -911,7 +911,7 @@
     .kchar-group {
       display: inline-flex; flex-direction: row; align-items: flex-end;
     }
-    .kpunct { line-height: 1; color: #e2e8f0; }
+    .kpunct { font-size: 26px; font-weight: 700; line-height: 1; color: #e2e8f0; }
     .dlp-kara .kpunct { font-size: 24px; font-weight: 700; }
 
     /* Each char is a vertical stack: pinyin on top, hanzi below */
@@ -6690,7 +6690,7 @@
 
         // 声学条目优先：先加入声学检测结果
         allAcoustic.forEach(function (e) {
-          var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟤';
+          var icon = e.type === 'zh_z_acoustic' ? '🟣' : '🟡';
           addEntry(e.char, icon, e.zh, e.en, e.position);
         });
 
