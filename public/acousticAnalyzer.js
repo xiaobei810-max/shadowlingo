@@ -19,10 +19,10 @@
     LOW_BAND_HI:      4000,   // 翘舌音主能量带上限 (Hz)
     HIGH_BAND_LO:     4000,   // 平舌音主能量带下限 (Hz)
     HIGH_BAND_HI:     8000,   // 平舌音主能量带上限 (Hz)
-    FLAT_THRESHOLD:   1.2,    // ratio > 此值 → 平舌音倾向 (s/z/c)（降低以捕捉更多边界）
-    RETRO_THRESHOLD:  0.75,   // ratio < 此值 → 翘舌音倾向 (sh/zh/ch)（提高以捕捉更多边界）
+    FLAT_THRESHOLD:   1.55,   // ratio > 此值 → 平舌音倾向 (s/z/c)（保守阈值，减少误报）
+    RETRO_THRESHOLD:  0.55,   // ratio < 此值 → 翘舌音倾向 (sh/zh/ch)（保守阈值，减少误报）
     MIN_ENERGY:       1e-7,   // 静音过滤阈值（低于此值忽略）
-    MIN_CONFIDENCE:   0.32,   // 最低置信度（降低以捕捉置信度较低但可疑的案例）
+    MIN_CONFIDENCE:   0.48,   // 最低置信度（较高门槛，优先保证正确发音不被误判）
   };
 
   // ── 声母纠正提示 ──────────────────────────────────────────────
