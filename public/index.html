@@ -2719,10 +2719,22 @@
       min-width: 1.85em !important; color: #e2e8f0;
       letter-spacing: 0.08em !important;
       margin: 0 2px !important;
+      /* 每个汉字列独立居中，禁止向相邻列收缩；保证儿化音 r 不挤到 zhè 旁边 */
+      flex: 0 0 auto !important;
+      text-align: center !important;
+    }
+    #pre-listen-page .plp-kara .dlp-kchar .dlp-py {
+      display: block !important;
+      width: 100% !important;
+      text-align: center !important;
+      letter-spacing: 0 !important;  /* 拼音内字母不再额外加间距 */
     }
     #pre-listen-page .plp-kara .dlp-kchar .dlp-hz {
       font-size: 20px; font-weight: 700; line-height: 1.1;
       letter-spacing: 0.08em !important;
+      display: block !important;
+      width: 100% !important;
+      text-align: center !important;
     }
     #pre-listen-page .plp-kara .dlp-kchar .dlp-py {
       font-size: 11px; font-weight: 400; line-height: 1.4; color: #94a3b8;
@@ -4184,6 +4196,7 @@
 
     // 仅用于显示层：强制将命中平翘舌的字渲染为紫色，不改评分数据
     var _forceRetroByChar = {};
+    var _retroDirectionByChar = {}; // char -> 'retroflex'(应翘舌 zh/ch/sh) | 'sibilant'(应平舌 z/c/s)
 
     // perrLevel: 0=绿(正确) 1=黄(需改进) 2=红(错误)
     function iseAnnotations(words, chars) {
@@ -5473,7 +5486,31 @@
           if (!w || !w.content) return;
           if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(w.perrMsg || ''))) retroByChar[w.content] = true;
         });
+
+        // ── Task 3：双向平翘舌兜底（基于拼音字头 + perrLevel）──
+        // 条件：① 该字 perrLevel > 0（腾讯判错）；② 正确拼音以 zh/ch/sh/z/c/s 开头
+        // 行为：强制升级为紫色（retroByChar），并附加教学方向标记 _retroDirection
+        var retroDirection = {}; // char -> 'retroflex'(应翘舌) | 'sibilant'(应平舌)
+        try {
+          var pyMapForRetro = {};
+          (s.chars || []).forEach(function (cc) {
+            if (cc && cc.c && cc.p) pyMapForRetro[cc.c] = String(cc.p).toLowerCase();
+          });
+          (result.wordResults || []).forEach(function (w) {
+            if (!w || !w.content) return;
+            if (Number(w.perrLevel || 0) <= 0) return;
+            var py = pyMapForRetro[w.content] || '';
+            if (/^(zh|ch|sh)/.test(py)) {
+              retroByChar[w.content] = true;
+              retroDirection[w.content] = 'retroflex';
+            } else if (/^(z|c|s)(?![h])/.test(py)) {
+              retroByChar[w.content] = true;
+              retroDirection[w.content] = 'sibilant';
+            }
+          });
+        } catch (_eRetro) { /* 兜底：异常时不影响主流程 */ }
         _forceRetroByChar = retroByChar;
+        _retroDirectionByChar = retroDirection; // 供发音指南文案使用
         var recText = result.wordResults.map(function (w) {
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
@@ -5547,6 +5584,50 @@
         var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
         sessionScores[scoreSlot] = displayScore;   // 对话模式按轮次记分，避免都写到 idx=0
         incPracticeCount(lessonIdx, idx);
+
+        // ── Task 3：为反向平翘舌字（perrLevel>0 + zh/ch/sh/z/c/s 字头）补一条紫色提示
+        //    （iseHintText 已生成 hintItems，这里只补未被覆盖的字）
+        try {
+          var hintCharSet = {};
+          (hintItems || []).forEach(function (it) { if (it && it.char) hintCharSet[it.char] = true; });
+          Object.keys(_retroDirectionByChar || {}).forEach(function (ch) {
+            if (hintCharSet[ch]) return;          // 已有提示，不重复
+            var dir = _retroDirectionByChar[ch];
+            var pyR = (function () {
+              var m = {};
+              (s.chars || []).forEach(function (c) { if (c && c.c && c.p) m[c.c] = c.p; });
+              return m[ch] || '';
+            })();
+            var initial = (pyR.match(/^(zh|ch|sh|z|c|s)/i) || [''])[0].toLowerCase();
+            var zhTip, enTip;
+            if (dir === 'retroflex') {
+              // 应翘舌（zh/ch/sh）被读错 → 提醒不要平舌化
+              var flat = ({ zh: 'z', ch: 'c', sh: 's' })[initial] || 'z';
+              zhTip = '"' + ch + '" 声母应为翘舌【' + initial + '】，注意不要发成平舌【' + flat + '】。';
+              enTip = '"' + ch + '" should use retroflex initial "' + initial + '", not flat "' + flat + '".';
+            } else {
+              // 应平舌（z/c/s）被读错 → 提醒不要翘舌化
+              var retro = ({ z: 'zh', c: 'ch', s: 'sh' })[initial] || 'zh';
+              zhTip = '"' + ch + '" 声母应为平舌【' + initial + '】，注意不要发成翘舌【' + retro + '】。';
+              enTip = '"' + ch + '" should use flat initial "' + initial + '", not retroflex "' + retro + '".';
+            }
+            hintItems.push({ char: ch, icon: '🟣', zh: zhTip, en: enTip });
+          });
+        } catch (_eHintRetro) { /* 兜底 */ }
+
+        // ── Task 2：低分但无字级错误 → 兜底流利度提示，避免空白指南面板
+        if ((!hintItems || hintItems.length === 0) &&
+            (!acousticErrorsDisplay || acousticErrorsDisplay.length === 0) &&
+            displayScore < 85) {
+          hintItems = hintItems || [];
+          hintItems.push({
+            char: null,
+            icon: '💡',
+            zh: '发音准确度尚可，但请注意朗读的流利度、语调和节奏感，避免过度停顿。',
+            en: 'Accuracy is OK, but watch your fluency, intonation and pacing — avoid excessive pauses.'
+          });
+        }
+
         fillEvalResult(displayScore, iseAnnotations(result.wordResults, s.chars),
           hintItems, s, null, recText,
           dualTrackErrors, acousticErrorsDisplay);
@@ -6678,6 +6759,9 @@
       var allDtErrors  = dualTrackErrors || [];
       var allAcoustic  = acousticErrors  || [];
       var hasAny = allHintItems.length > 0 || allDtErrors.length > 0 || allAcoustic.length > 0;
+      // 兜底提示也算"有内容"，确保面板可见
+      var hasGenericTip = allHintItems.some(function (it) { return it && it.char == null; });
+      if (hasGenericTip) hasAny = true;
 
       // Guide card (with 录音/原声 buttons) is always visible.
       // Body shows error items when hasAny; stays empty on a perfect score.
@@ -6716,8 +6800,15 @@
         });
 
         // ISE 条目补充：仅对声学未覆盖的字加入（声学已有则跳过）
+        // 通用条目（char:null）不绑定具体汉字，作为整句兜底提示置于最后
+        var genericTipItems = [];
         allHintItems.forEach(function (item) {
-          if (!item || !/[\u4e00-\u9fff]/.test(String(item.char || ''))) return;
+          if (!item) return;
+          if (item.char == null) {           // Task 2 兜底：无字提示
+            genericTipItems.push(item);
+            return;
+          }
+          if (!/[\u4e00-\u9fff]/.test(String(item.char || ''))) return;
           if (mergedMap[item.char]) return;  // 声学已覆盖此字，跳过
           addEntry(item.char, item.icon, item.zh, item.en);
         });
@@ -6735,6 +6826,14 @@
               + '<div class="guide-en">' + entry.en + '</div>'
               + '</div>';
           });
+        });
+
+        // 通用兜底提示（无具体字）追加在所有字级提示之后
+        genericTipItems.forEach(function (entry) {
+          html += '<div class="guide-row guide-row-generic">'
+            + '<div class="guide-zh">' + (entry.icon || '💡') + ' ' + entry.zh + '</div>'
+            + '<div class="guide-en">' + entry.en + '</div>'
+            + '</div>';
         });
 
         // Whisper 语音识别对比（独立显示，不参与合并）
@@ -7581,7 +7680,38 @@
       if (!wrap) return;
       wrap.innerHTML = '';
       var rawSyls = (pinyinStr || '').trim().split(/\s+/).filter(function (s) { return s.length > 0; });
-      rawSyls = rawSyls.filter(function (s) { return /[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/.test(s); });
+      rawSyls = rawSyls.filter(function (s) { return /[a-zA-Zāáǎàéěèīíǐìōóǒòūúǔùǖǘǚǜ]/.test(s); });
+
+      // ── 儿化音切分：当汉字数 > 拼音音节数，且某个音节以 r 结尾，
+      //    后一个汉字是 "儿"，则把 "xxxr" 拆成 "xxx" + "r"
+      //    （保留 "ér"/"er" 不拆，避免误伤独立 儿 字读音；保护"人 rén"等正常 r 音节）
+      try {
+        var hanziSeqDlp = [];
+        Array.from(text).forEach(function (c) {
+          if (/[\u4e00-\u9fff]/.test(c)) hanziSeqDlp.push(c);
+        });
+        if (hanziSeqDlp.length > rawSyls.length) {
+          var fixedSyls = [];
+          var hi = 0;
+          for (var siE = 0; siE < rawSyls.length; siE++) {
+            var sylE = rawSyls[siE];
+            fixedSyls.push(sylE);
+            hi++;
+            // 关键三条件：① 下一个汉字是 "儿"；② 当前音节以 r 结尾；
+            //         ③ 当前音节本身不是 "ér/er"（独立 儿 已自带拼音）
+            if (hi < hanziSeqDlp.length &&
+                hanziSeqDlp[hi] === '儿' &&
+                /r$/i.test(sylE) &&
+                sylE.length > 1 &&
+                !/^[eēéěè]r$/i.test(sylE)) {
+              fixedSyls[fixedSyls.length - 1] = sylE.replace(/r$/i, '');
+              fixedSyls.push('r');
+              hi++;
+            }
+          }
+          rawSyls = fixedSyls;
+        }
+      } catch (_e) { /* 兜底：异常时保留原拼音数组 */ }
 
       // ── Build chars array for sandhi detection (numeric tone notation) ──
       var chars4s = [];
