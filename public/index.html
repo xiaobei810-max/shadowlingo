@@ -7097,16 +7097,26 @@
 
     function playContext() {
       if (phase === 'recording') return;
-      // 对话模式第2步：上方 context-panel 永久隐藏，不再播放
+      var zh, pinyin, role;
       if (dialogMode && dialogStep === 2) {
-        console.warn('[playContext] 对话模式下上方面板已禁用，请使用下方 playContextBelow');
-        return;
+        // 对话模式：上方 context-panel 渲染的是当前页 round.top（仅当 Nora 在 bottom 或整页无 Nora 时显示）
+        var _round = dialogRounds && dialogRounds[dialogRoundIdx];
+        var _top   = _round && _round.top;
+        if (!_top || (_round.learner && _round.learner === _top)) {
+          // top 不存在，或 top 本身就是 Nora（已渲染到 sentence-box，上方面板隐藏，此函数不该被调用）
+          console.warn('[playContext] 上方面板未渲染或当前页 Nora 在上方');
+          return;
+        }
+        zh     = _top.zh;
+        pinyin = _top.pinyin;
+        role   = _speakerRole(_top._sid || _top.speaker);
+      } else {
+        var s = LESSONS[lessonIdx].sentences[idx];
+        if (!s || !s.context) return;
+        zh     = s.context.zh;
+        pinyin = s.context.pinyin;
+        role   = 'local';
       }
-      var s = LESSONS[lessonIdx].sentences[idx];
-      if (!s || !s.context) return;
-      var zh     = s.context.zh;
-      var pinyin = s.context.pinyin;
-      var role   = 'local';
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
         var bsBtn = document.getElementById('bs');
@@ -7149,11 +7159,16 @@
       if (phase === 'recording') return;
       var zh, pinyin, role;
       if (dialogMode && dialogStep === 2) {
-        if (!currentSentenceForEval || !currentSentenceForEval.contextBelow) return;
-        var _cb = currentSentenceForEval.contextBelow;
-        zh     = _cb.zh;
-        pinyin = _cb.pinyin;
-        role = _speakerRole(_cb.speaker || _cb.speakerName || '');
+        // 对话模式：下方 context-panel-below 渲染的是当前页 round.bottom（仅当 Nora 在 top 或整页无 Nora 时显示）
+        var _round = dialogRounds && dialogRounds[dialogRoundIdx];
+        var _bot   = _round && _round.bottom;
+        if (!_bot || (_round.learner && _round.learner === _bot)) {
+          console.warn('[playContextBelow] 下方面板未渲染或当前页 Nora 在下方');
+          return;
+        }
+        zh     = _bot.zh;
+        pinyin = _bot.pinyin;
+        role   = _speakerRole(_bot._sid || _bot.speaker);
       } else {
         var s = LESSONS[lessonIdx].sentences[idx];
         if (!s || !s.contextBelow) return;
@@ -7237,10 +7252,16 @@
     }
 
     function showCompletion() {
-      // 对话模式下始终按“轮次”计总分（每轮=一条需跟读句），
-      // 不按底层 sentences 逐句数（如 8 句）计算，避免分母翻倍导致总分偏低。
+      // 对话模式下按“可评分轮次”（含 Nora 跟读句的页）计总分；
+      // 整页无 Nora 的页（如 L3 末页）不计入分母，避免无录音页拖低均分。
+      var scorableRounds = 0;
+      if (dialogMode && dialogRounds && dialogRounds.length) {
+        for (var _r = 0; _r < dialogRounds.length; _r++) {
+          if (dialogRounds[_r] && dialogRounds[_r].hasLearner) scorableRounds++;
+        }
+      }
       var totalSentences = dialogMode
-        ? getDialogRoundCount()
+        ? (scorableRounds > 0 ? scorableRounds : getDialogRoundCount())
         : LESSONS[lessonIdx].sentences.length;
       var recorded = sessionScores.filter(function (v) { return typeof v === 'number'; }).length;
       // Skipped sentences count as 0 — divide by total, not just recorded
@@ -7728,23 +7749,33 @@
       if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
       var dialogue = dialogLessonMeta.dialogue;
       var lesson   = LESSONS[lessonIdx];
-      // 时间线扫描：每个 learner 行开一轮；下方回答 = 该行紧跟着的下一句（Mingxuan/Staff 的回应）
-      // 布局：中间 sentence-box = Nora（跟读目标）；下方 context-below = 紧跟其后的回答；上方 panel 永久隐藏
-      for (var i = 0; i < dialogue.length; i++) {
-        var dCurr = _normD(dialogue[i]);
-        if (!dCurr || dCurr.role !== 'learner') continue;
-        var dNext = (i + 1 < dialogue.length) ? _normD(dialogue[i + 1]) : null;
+      // 顺序双句切分：dialogue 是按真实对话时间线排序的扁平数组，
+      // 直接每 2 句切一页：page k = { top: d[2k], bottom: d[2k+1] }
+      // 谁在数组前 → 上方容器；谁在后 → 下方容器；谁是 Nora（learner）→ 绑定绿光+录音
+      for (var i = 0; i < dialogue.length; i += 2) {
+        var top    = _normD(dialogue[i]);
+        var bottom = (i + 1 < dialogue.length) ? _normD(dialogue[i + 1]) : null;
+        var learner = null, other = null;
+        if (top    && top.role    === 'learner') { learner = top;    other = bottom; }
+        else if (bottom && bottom.role === 'learner') { learner = bottom; other = top; }
+        else { other = null; } // 整页无 Nora（如 L3 第4页 = 工作人员 + 明轩）
+
         var evalSentence = null;
-        if (lesson && lesson.sentences) {
+        if (learner && lesson && lesson.sentences) {
           for (var j = 0; j < lesson.sentences.length; j++) {
-            if (lesson.sentences[j].zh === dCurr.zh) { evalSentence = lesson.sentences[j]; break; }
+            if (lesson.sentences[j].zh === learner.zh) { evalSentence = lesson.sentences[j]; break; }
           }
         }
         dialogRounds.push({
-          learner:  dCurr,    // 中间 sentence-box（Nora 当前要说的话，跟读目标）
-          response: dNext,    // 下方 context-below（紧跟其后的回答；末句无回答时为 null → 隐藏下面板）
-          local:    dNext,    // 兼容字段：旧代码读 round.local 当作上方/下方 context 时也走 response
-          evalSentence: evalSentence || { zh: dCurr.zh, pinyin: dCurr.pinyin, en: dCurr.en, chars: [] }
+          top:        top,      // 上方容器渲染（数组中前一句）
+          bottom:     bottom,   // 下方容器渲染（数组中后一句；末页奇数行时为 null）
+          learner:    learner,  // 这两句中是 Nora 的那一句（无则为 null）
+          response:   other,    // 这两句中非 Nora 的那一句（用于兼容旧字段）
+          local:      other,    // 兼容旧字段
+          hasLearner: !!learner,
+          evalSentence: learner
+            ? (evalSentence || { zh: learner.zh, pinyin: learner.pinyin, en: learner.en, chars: [] })
+            : null
         });
       }
       dialogRoundIdx = 0;
@@ -8388,109 +8419,177 @@
     // 进入第 2 步：Your Turn
     function enterDialogStep2() {
       dialogStep = 2;
-      setStepTitle("第2步：轮到你说 🎯", "上方跟读 Nora 的台词，下方听赵明轩的回答");
+      setStepTitle("第2步：轮到你说 🎯", "按对话顺序：先听上方，再说/听下方");
       dialogRoundIdx = 0;
       renderDialogYourTurn();
     }
-    function renderDialogYourTurn() {
-  if (!dialogRounds || !dialogRounds.length) return;
-  var round = dialogRounds[dialogRoundIdx];
-  if (!round || !round.learner) return;
 
-  // ── 任务2：闪屏修复 — 切换前彻底清空上一轮评测残影 ──────────────
-  if (el("eval-page"))        el("eval-page").classList.remove("show");
-  if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
-  if (el("bn"))  { el("bn").disabled  = false; el("bn").classList.remove("active");  el("bn").textContent = "🎤 录音 Record"; }
-  if (el("bs"))  { el("bs").disabled  = false; el("bs").classList.remove("active");  el("bs").textContent = "▶ 跟读 Listen"; }
-  if (el("bm"))  el("bm").classList.remove("active");
-  if (el("bdone"))  el("bdone").className  = "btn btn-done show";
-  if (el("bretry")) el("bretry").className = "btn btn-retry";
-  // ── 重置上方 context 播放状态，避免上一轮泄漏导致首次点击被误判为"暂停" ──
-  ctxPlayingId = null;
-  ctxPausedId  = null;
-  var _btnAbove = document.getElementById('ctx-play-btn');
-  if (_btnAbove) { _btnAbove.textContent = '▶ 播放 Play'; _btnAbove.classList.remove('playing'); }
-  setStatus("准备好了 Ready");
+    // ── 工具：把一行台词渲染到指定的 context 容器（上方 / 下方） ──
+    // panelKind: 'above' | 'below'
+    // line: 归一化后的对话行 { zh, pinyin, en, speaker, _sid, role }
+    function _renderContextPanel(panelKind, line) {
+      var idMap = panelKind === 'above'
+        ? { panel:'context-panel',       speaker:'ctx-speaker',       zh:'ctx-zh',       en:'ctx-en',       btn:'ctx-play-btn',
+            avWrap:'ctx-avatar-mx',      avBadge:'ctx-avatar-badge',  avImg:'ctx-avatar-img' }
+        : { panel:'context-panel-below', speaker:'ctx-speaker-below', zh:'ctx-zh-below', en:'ctx-en-below', btn:'ctx-play-btn-below',
+            avWrap:'ctx-avatar-mx-below', avBadge:'ctx-badge-below',  avImg:null };
 
-  // 1. 自然顺序模型：lineB = 中间 sentence-box（Nora，跟读目标）；lineC = 下方 context-below（紧跟回答）
-  var lineB = round.learner;     // 中间跟读目标
-  var lineC = round.response;    // 下方回答（Mingxuan/Staff 紧跟其后的话；末句无回答时为 null）
+      var panel = document.getElementById(idMap.panel);
+      if (!panel) return;
+      if (!line) { panel.style.display = 'none'; return; }
+      panel.style.display = 'block';
 
-  // 2. 上方【context-panel】永久隐藏 — 不再使用，避免出现"未来回答"
-  var ctxPanel = document.getElementById('context-panel');
-  if (ctxPanel) ctxPanel.style.display = 'none';
+      var sp = document.getElementById(idMap.speaker);
+      if (sp) sp.textContent = line.speaker || '';
 
-  // 3. 更新中间【sentence-box / 跟读面板】
-  document.getElementById('learner-panel-name').textContent = lineB.speaker;
-  var panelAvWrap = document.getElementById('panel-avatar-nora');
-  var isStaffB = lineB._sid === 'staff' || (lineB.speaker && (lineB.speaker.includes('工作人员') || lineB.speaker.includes('Staff')));
-
-  if (isStaffB) {
-    panelAvWrap.className = 'avatar-wrap nora glow';
-    panelAvWrap.innerHTML = `<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" style="width:28px;height:28px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
-  } else if (lineB._sid === 'mingxuan') {
-    panelAvWrap.className = 'avatar-wrap mx glow';
-    panelAvWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
-  } else {
-    panelAvWrap.className = 'avatar-wrap nora glow';
-    panelAvWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
-  }
-
-  // 绑定当前评测句
-  currentSentenceForEval = LESSONS[lessonIdx].sentences.find(s => s.zh === lineB.zh) || { zh: lineB.zh, pinyin: lineB.pinyin, en: lineB.en, _sid: lineB._sid, chars: [] };
-
-  document.getElementById("pinyin").textContent = lineB.pinyin || '';
-  document.getElementById("en").textContent = lineB.en || '';
-  buildKara(lineB.zh, currentSentenceForEval.chars);
-  // 进入跟读页时仅显示台词，不自动播放卡拉OK；
-  // 必须点击「跟读 Listen」后才开始变绿。
-  resetKara();
-  scheduleReflowKaraAvoidOrphan(document.getElementById('kara'), '.kchar');
-
-  // 4. 更新下方【context-panel-below / 回答面板】= lineC（Mingxuan/Staff 紧跟回答）
-  var ctxBelowPanel = document.getElementById('context-panel-below');
-  if (ctxBelowPanel) {
-    if (lineC) {
-      ctxBelowPanel.style.display = 'block';
-      var cbSpeaker = document.getElementById('ctx-speaker-below');
-      var cbZh      = document.getElementById('ctx-zh-below');
-      var cbEn      = document.getElementById('ctx-en-below');
-      var cbBtn     = document.getElementById('ctx-play-btn-below');
-      var cbAvWrap  = document.getElementById('ctx-avatar-mx-below');
-      if (cbSpeaker) cbSpeaker.textContent = lineC.speaker || '';
-      if (cbZh) {
-        buildCtxKara(cbZh, lineC.zh, lineC.pinyin);
-        scheduleReflowKaraAvoidOrphan(cbZh, '.ctx-kchar');
+      var zhEl = document.getElementById(idMap.zh);
+      if (zhEl) {
+        buildCtxKara(zhEl, line.zh, line.pinyin);
+        scheduleReflowKaraAvoidOrphan(zhEl, '.ctx-kchar');
       }
-      if (cbEn) cbEn.textContent = lineC.en || '';
-      if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
-      if (cbAvWrap) {
-        var isStaffC = lineC._sid === 'staff' || (lineC.speaker && (lineC.speaker.includes('工作人员') || lineC.speaker.includes('Staff')));
-        if (isStaffC) {
-          cbAvWrap.className = 'avatar-wrap nora';
-          cbAvWrap.innerHTML = '<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" style="width:28px;height:28px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>';
-        } else if (lineC._sid === 'nora') {
-          cbAvWrap.className = 'avatar-wrap nora';
-          cbAvWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
+      var enEl = document.getElementById(idMap.en);
+      if (enEl) enEl.textContent = line.en || '';
+
+      var btn = document.getElementById(idMap.btn);
+      if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
+
+      // 头像：mingxuan / nora / staff
+      var isStaff = line._sid === 'staff' || (line.speaker && (line.speaker.includes('工作人员') || line.speaker.includes('Staff')));
+      if (panelKind === 'above') {
+        var aWrap  = document.getElementById(idMap.avWrap);
+        var aBadge = document.getElementById(idMap.avBadge);
+        var aImg   = document.getElementById(idMap.avImg);
+        if (isStaff) {
+          if (aWrap)  aWrap.style.display = 'none';
+          if (aBadge) aBadge.style.display = 'flex';
         } else {
-          cbAvWrap.className = 'avatar-wrap mx';
-          cbAvWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
+          if (aWrap)  { aWrap.style.display = ''; aWrap.className = (line._sid === 'nora') ? 'avatar-wrap nora' : 'avatar-wrap mx'; }
+          if (aBadge) aBadge.style.display = 'none';
+          if (aImg) {
+            if (line._sid === 'nora') {
+              aImg.src = '/assets/characters/nora/nora_head.png';
+              aImg.alt = 'Nora';
+              aImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);';
+            } else {
+              aImg.src = '/assets/characters/mingxuan/mingxuan_head.png';
+              aImg.alt = '明轩';
+              aImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);';
+            }
+          }
+        }
+      } else {
+        var bWrap = document.getElementById(idMap.avWrap);
+        if (bWrap) {
+          if (isStaff) {
+            bWrap.className = 'avatar-wrap nora';
+            bWrap.innerHTML = '<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" style="width:28px;height:28px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>';
+          } else if (line._sid === 'nora') {
+            bWrap.className = 'avatar-wrap nora';
+            bWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
+          } else {
+            bWrap.className = 'avatar-wrap mx';
+            bWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
+          }
         }
       }
-    } else {
-      ctxBelowPanel.style.display = 'none';
     }
-  }
 
-  // ── 任务2：淡入过渡 — 用 0.15s fade 掩盖数据切换瞬间 ─────────────
-  ['sentence-box', 'context-panel-below'].forEach(function(id) {
-    var panelEl = document.getElementById(id);
-    if (!panelEl) return;
-    panelEl.classList.remove('panel-switching');
-    void panelEl.offsetWidth; // force reflow to restart animation
-    panelEl.classList.add('panel-switching');
-  });
-}
+    function renderDialogYourTurn() {
+      if (!dialogRounds || !dialogRounds.length) return;
+      var round = dialogRounds[dialogRoundIdx];
+      if (!round) return;
+
+      // ── 切换前彻底清空上一轮评测残影 ──────────────
+      if (el("eval-page"))        el("eval-page").classList.remove("show");
+      if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
+      if (el("bn"))     { el("bn").disabled = false;     el("bn").classList.remove("active");     el("bn").textContent = "🎤 录音 Record"; }
+      if (el("bs"))     { el("bs").disabled = false;     el("bs").classList.remove("active");     el("bs").textContent = "▶ 跟读 Listen"; }
+      if (el("bm"))     el("bm").classList.remove("active");
+      if (el("bdone"))  el("bdone").className = "btn btn-done show";
+      if (el("bretry")) el("bretry").className = "btn btn-retry";
+      ctxPlayingId = null;
+      ctxPausedId  = null;
+      setStatus("准备好了 Ready");
+
+      var top    = round.top;
+      var bottom = round.bottom;
+      var noraLine = round.learner; // 这两句中是 Nora 的那一句（无则为 null）
+
+      // ── 三种情况 ──
+      // A. Nora 在 top：上方 sentence-box（绿光+录音），下方 context-panel-below
+      // B. Nora 在 bottom：上方 context-panel，下方 sentence-box（绿光+录音）
+      // C. 整页无 Nora：上方 context-panel，下方 context-panel-below，sentence-box 隐藏
+
+      var sentenceBox      = document.getElementById('sentence-box');
+      var ctxAbovePanel    = document.getElementById('context-panel');
+      var ctxBelowPanel    = document.getElementById('context-panel-below');
+      var btnRow_bs        = document.getElementById('bs');
+      var btnRow_bn        = document.getElementById('bn');
+
+      // 先全部隐藏，再按情况显示
+      if (sentenceBox)   sentenceBox.style.display   = 'none';
+      if (ctxAbovePanel) ctxAbovePanel.style.display = 'none';
+      if (ctxBelowPanel) ctxBelowPanel.style.display = 'none';
+
+      // 配置 sentence-box：作为 Nora 跟读面板（绿光 + 录音）
+      function _placeNoraInSentenceBox(line) {
+        if (!sentenceBox) return;
+        sentenceBox.style.display = 'block';
+        document.getElementById('learner-panel-name').textContent = line.speaker || 'Nora';
+
+        var panelAvWrap = document.getElementById('panel-avatar-nora');
+        if (panelAvWrap) {
+          // 跟读目标永远带 glow，头像按角色画
+          if (line._sid === 'mingxuan') {
+            panelAvWrap.className = 'avatar-wrap mx glow';
+            panelAvWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
+          } else {
+            panelAvWrap.className = 'avatar-wrap nora glow';
+            panelAvWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
+          }
+        }
+
+        currentSentenceForEval = LESSONS[lessonIdx].sentences.find(function(s){ return s.zh === line.zh; })
+          || { zh: line.zh, pinyin: line.pinyin, en: line.en, _sid: line._sid, chars: [] };
+
+        document.getElementById('pinyin').textContent = line.pinyin || '';
+        document.getElementById('en').textContent     = line.en || '';
+        buildKara(line.zh, currentSentenceForEval.chars);
+        resetKara();
+        scheduleReflowKaraAvoidOrphan(document.getElementById('kara'), '.kchar');
+      }
+
+      if (noraLine && noraLine === top) {
+        // 情况 A：Nora 在上方
+        _placeNoraInSentenceBox(top);
+        _renderContextPanel('below', bottom);
+        if (btnRow_bs) btnRow_bs.style.display = '';
+        if (btnRow_bn) btnRow_bn.style.display = '';
+      } else if (noraLine && noraLine === bottom) {
+        // 情况 B：Nora 在下方
+        _renderContextPanel('above', top);
+        _placeNoraInSentenceBox(bottom);
+        if (btnRow_bs) btnRow_bs.style.display = '';
+        if (btnRow_bn) btnRow_bn.style.display = '';
+      } else {
+        // 情况 C：整页无 Nora（如 L3 末页 = 工作人员 + 明轩）
+        _renderContextPanel('above', top);
+        _renderContextPanel('below', bottom);
+        currentSentenceForEval = null;
+        if (btnRow_bs) btnRow_bs.style.display = 'none';
+        if (btnRow_bn) btnRow_bn.style.display = 'none';
+        setStatus("听完两句后点击 ▶ 下一页");
+      }
+
+      // 淡入过渡，掩盖切换瞬间
+      ['context-panel', 'sentence-box', 'context-panel-below'].forEach(function(id) {
+        var panelEl = document.getElementById(id);
+        if (!panelEl || panelEl.style.display === 'none') return;
+        panelEl.classList.remove('panel-switching');
+        void panelEl.offsetWidth;
+        panelEl.classList.add('panel-switching');
+      });
+    }
     // 第 3 步：地道指南
     function enterDialogStep3() {
       dialogStep = 3;
