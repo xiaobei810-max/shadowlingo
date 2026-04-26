@@ -14,15 +14,15 @@
   var CONFIG = {
     FFT_SIZE:         2048,   // FFT 点数（16kHz 下频率分辨率 ≈ 7.8 Hz/bin）
     CONSONANT_SKIP_MS: 15,    // 跳过字起始的过渡段（毫秒）
-    CONSONANT_TAKE_MS: 150,   // 分析声母段的时长（毫秒）
+    CONSONANT_TAKE_MS: 100,   // 分析声母段的时长（毫秒）↓150→100：缩短窗口，减少元音污染
     LOW_BAND_LO:      2000,   // 翘舌音主能量带下限 (Hz)
     LOW_BAND_HI:      4000,   // 翘舌音主能量带上限 (Hz)
     HIGH_BAND_LO:     4000,   // 平舌音主能量带下限 (Hz)
     HIGH_BAND_HI:     8000,   // 平舌音主能量带上限 (Hz)
-    FLAT_THRESHOLD:   1.55,   // ratio > 此值 → 平舌音倾向 (s/z/c)（保守阈值，减少误报）
-    RETRO_THRESHOLD:  0.55,   // ratio < 此值 → 翘舌音倾向 (sh/zh/ch)（保守阈值，减少误报）
+    FLAT_THRESHOLD:   1.45,   // ratio > 此值 → 平舌音倾向 (s/z/c)（↓1.55→1.45，更易识别平舌）
+    RETRO_THRESHOLD:  0.40,   // ratio < 此值 → 翘舌音倾向 (sh/zh/ch)（↓0.55→0.40，减少误报）
     MIN_ENERGY:       1e-7,   // 静音过滤阈值（低于此值忽略）
-    MIN_CONFIDENCE:   0.48,   // 最低置信度（较高门槛，优先保证正确发音不被误判）
+    MIN_CONFIDENCE:   0.55,   // 最低置信度（↑0.48→0.55，更高门槛，减少"在/zài"等假阳性）
   };
 
   // ── 声母纠正提示 ──────────────────────────────────────────────

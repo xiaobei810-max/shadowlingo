@@ -886,10 +886,9 @@
     #pre-listen-page .plp-kara.kara-reflow-2 .dlp-kchar { min-width: 1.32em !important; }
     #pre-listen-page .plp-kara.kara-reflow-3 { gap: 22px 0px !important; }
     #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar { min-width: 1.18em !important; }
-    #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 18px !important; }
+    /* 不缩小字号：保证上下两个面板字号始终一致（20px），避免较长句子被缩小 */
     #pre-listen-page .plp-kara.kara-reflow-3 .dlp-kchar .dlp-py { font-size: 10px !important; }
     #pre-listen-page .plp-kara.kara-reflow-4 .dlp-kchar { min-width: 1.05em !important; }
-    #pre-listen-page .plp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 17px !important; }
 
     .ctx-zh.kara-reflow-1 { gap: 4px 2px !important; }
     .ctx-zh.kara-reflow-1 .ctx-kchar { min-width: 1.48em !important; }
@@ -905,14 +904,14 @@
     .dlp-kara.kara-reflow-3 { gap: 16px 1px !important; }
     .dlp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 20px !important; }
     .dlp-kara.kara-reflow-4 { gap: 16px 0px !important; }
-    .dlp-kara.kara-reflow-4 .dlp-kchar .dlp-hz { font-size: 18px !important; }
+    /* 不缩小字号：避免对话聆听页上下面板字号不一致 */
 
     /* Punctuation fix: group wraps kchar + trailing punct as one flex item */
     .kchar-group {
       display: inline-flex; flex-direction: row; align-items: flex-end;
     }
-    .kpunct { font-size: 16px; font-weight: 700; line-height: 1; color: #e2e8f0; }
-    .dlp-kara .kpunct { font-size: 15px; font-weight: 700; }
+    .kpunct { font-size: 18px; font-weight: 700; line-height: 1; color: #e2e8f0; }
+    .dlp-kara .kpunct { font-size: 17px; font-weight: 700; }
 
     /* Each char is a vertical stack: pinyin on top, hanzi below */
     .kchar {
@@ -3717,6 +3716,7 @@
     let sessionScores = [];
     var _sessionCoinsEarned = 0; // 本课本次会话累计获得的回声币
     let slowSpeed = 0.7;
+    var _evalGeneration = 0;  // 每次新录音递增；旧评测回调发现版本不匹配时静默丢弃
 
     // ── Dialogue meta（内嵌，不依赖 fetch） ──────────────────────
     const LESSONS_META = [
@@ -5340,6 +5340,8 @@
 
     // 主评测流程：录音 → PCM → POST /api/evaluate → 展示结果
     async function evaluateAudio(blob) {
+      // 版本戳：防止旧评测回调（用户已导航到其他句子时）覆盖新结果
+      var thisEvalGen = ++_evalGeneration;
       // Store the user's recording for later playback in the pronunciation guide
       if (_lastUserRecordingUrl) { try { URL.revokeObjectURL(_lastUserRecordingUrl); } catch(e) {} }
       _lastUserRecordingUrl = URL.createObjectURL(blob);
@@ -5376,6 +5378,8 @@
         }
         var result = await resp.json();
         if (result.error) throw new Error(result.error);
+        // 用户已导航到其他句子，静默丢弃过期评测结果
+        if (thisEvalGen !== _evalGeneration) { busy = false; return; }
         // 评分基线快照：后续UI同步/着色可改 result.wordResults，但计分只使用这份原始结果
         var scoreWordResults = Array.isArray(result.wordResults)
           ? result.wordResults.map(function (w) {
@@ -5510,8 +5514,9 @@
           if (xfyunTotal < 85) xfyunObviousIssue = true;
           else if (xfyunTotal < 93) xfyunMildIssue = true;
         }
-        if (xfyunObviousIssue) obviousErrCount += 1;
-        else if (xfyunMildIssue) mildErrCount += 1;
+        // 仅在无声学层命中时才叠加讯飞扣分，避免同一平翘舌错误被双重计分
+        if (xfyunObviousIssue && acousticErrorsScore.length === 0) obviousErrCount += 1;
+        else if (xfyunMildIssue && acousticErrorsScore.length === 0) mildErrCount += 1;
 
         // 若存在明显错，不允许维持“全对满分”态
         if (allCorrect && obviousErrCount > 0) allCorrect = false;
@@ -5542,12 +5547,9 @@
           return !!(e && e.char && backendRetroflexChars[e.char]);
         });
 
-        var acousticCap = Math.min(8, Math.max(4, Math.round(blendedBaseScore * 0.12)));
-        var acousticPenalty = penalizedAcousticErrors.length > 0 ? Math.min(acousticCap,
-          penalizedAcousticErrors.reduce(function(s, e) {
-            return s + Math.round(0.8 + e.confidence * 1.2);  // conf 0.4→1, 1.0→2
-          }, 0)
-        ) : 0;
+        // 每个声学层命中固定扣8分（上限8），与讯飞层分离不叠加
+        // 这样：1个FFT错误 → 腾讯底分 - 8，最高不超过92分
+        var acousticPenalty = penalizedAcousticErrors.length > 0 ? 8 : 0;
 
         // 8. 明显/轻微错误附加扣分（与声学主扣分分离，避免漏检时”有错仍100”）
         // 每个明显错扣3分（上限9），轻微错扣1分（上限4），避免少量错误拉分过猛
@@ -6015,6 +6017,9 @@
       speak(false);
       busy = false;
       phase = "idle";
+      // 导航时使旧评测回调失效，并清除句子覆盖，避免状态污染
+      _evalGeneration++;
+      currentSentenceForEval = null;
 
       var lesson = LESSONS[lessonIdx];
       var s = lesson.sentences[idx];
@@ -7015,6 +7020,8 @@
       window.speechSynthesis && stopAudio();
       speak(false);
       busy = false; phase = "idle";
+      _evalGeneration++;          // 使任何进行中的评测回调失效
+      currentSentenceForEval = null;
       if (dialogMode && dialogStep === 2) {
         if (dialogRoundIdx > 0) { dialogRoundIdx--; renderDialogYourTurn(); }
         else { showPreListenPage(); }
