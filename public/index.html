@@ -5400,7 +5400,42 @@
         if (result.error) throw new Error(result.error);
         // 用户已导航到其他句子，静默丢弃过期评测结果
         if (thisEvalGen !== _evalGeneration) { busy = false; return; }
-        // 评分基线快照：后续UI同步/着色可改 result.wordResults，但计分只使用这份原始结果
+        // ─────────────────────────────────────────────────────────────────
+        // 🩹 UX 校准 · Task 2 : 词级别"微小瑕疵"容错 (Word-level Forgiveness)
+        // ─────────────────────────────────────────────────────────────────
+        // 背景：腾讯 SOE 的 perrLevel 阈值偏严，55-60 分这一档就开始报黄。
+        //       例如母语者连读"需要"时，"需"被打 58 分 → perrLevel=1 → UI 黄字。
+        //       这种"微弱不达标"对学习者并非真错误，只是引擎过敏，强行报黄
+        //       会带来挫败感。这里在 UI/打分链路开始之前，对 perrMsg 中
+        //       内嵌的实际分数（如"发音需改进 (58分)"）做提取，分数 ≥ 55
+        //       且 perrLevel===1 时，强制降级为 perrLevel=0（绿字正确）。
+        //       <55 仍保留原级别，严重错误（perrLevel===2 红字）一律不动。
+        // ─────────────────────────────────────────────────────────────────
+        var FORGIVE_THRESHOLD = 55;
+        var _extractInlineScore = function (msg) {
+          if (!msg) return null;
+          var m = String(msg).match(/[(（]\s*(\d+(?:\.\d+)?)\s*分\s*[)）]/);
+          return m ? Number(m[1]) : null;
+        };
+        var forgivenChars = [];
+        if (Array.isArray(result.wordResults)) {
+          result.wordResults.forEach(function (w) {
+            if (!w) return;
+            if (Number(w.perrLevel || 0) !== 1) return;        // 仅处理黄字
+            var inline = _extractInlineScore(w.perrMsg);
+            if (inline != null && inline >= FORGIVE_THRESHOLD) {
+              forgivenChars.push({ char: w.content, score: inline, msg: w.perrMsg });
+              w.perrLevel = 0;                                  // ⬇️ 降级到绿
+              w.perrMsg = '';                                   // 清空消息防 msgOnly 触发黄
+            }
+          });
+        }
+        if (forgivenChars.length > 0) {
+          console.log('%c🩹 词级容错 (Forgiveness)：' + forgivenChars.length + ' 字降级为正确',
+                      'color:#22c55e;font-weight:bold;', forgivenChars);
+        }
+
+        // 评分基线快照（在 Task 2 容错之后建立，确保字级计分与 UI 一致）
         var scoreWordResults = Array.isArray(result.wordResults)
           ? result.wordResults.map(function (w) {
               return {
@@ -5439,6 +5474,32 @@
         });
         var baseScore = Number(result.totalScore);
         if (!Number.isFinite(baseScore)) baseScore = 0;
+
+        // ─────────────────────────────────────────────────────────────────
+        // 🩹 UX 校准 · Task 1 : 得分兜底与平滑 (Score Smoothing)
+        // ─────────────────────────────────────────────────────────────────
+        // 背景：腾讯 totalScore 受木桶效应影响——单字 58 分能把整句拉到
+        //       78 分，即便 accuracy 92.8、fluency 0.97。这种"局部过敏导致
+        //       全局塌方"的体验不公平。当用户整体读得流利且准确（accuracy>85
+        //       且 fluency>0.8）时，用 (accuracy*0.7 + fluency*100*0.3) 做
+        //       加权重算；只有当重算分高于腾讯 totalScore 时才采纳，避免
+        //       拉低真实差的录音。上限 100。
+        // ─────────────────────────────────────────────────────────────────
+        var tencentAccuracy = Number(result.accuracyScore);
+        var tencentFluency  = Number(result.fluencyScore);
+        var smoothedFromBase = baseScore;
+        if (Number.isFinite(tencentAccuracy) && Number.isFinite(tencentFluency) &&
+            tencentAccuracy > 85 && tencentFluency > 0.8) {
+          var optimizedScore = Math.round(tencentAccuracy * 0.7 + tencentFluency * 100 * 0.3);
+          if (optimizedScore > baseScore) {
+            console.log('%c🩹 得分平滑 (Smoothing)：' + baseScore + ' → ' + optimizedScore,
+                        'color:#22c55e;font-weight:bold;',
+                        '(accuracy=' + tencentAccuracy.toFixed(2) +
+                        ', fluency=' + tencentFluency.toFixed(3) + ')');
+            smoothedFromBase = Math.min(100, optimizedScore);
+            baseScore = smoothedFromBase;
+          }
+        }
 
         // 4. 声学层平翘舌检测（本地 FFT，无需 API）
         var acousticErrorsDisplay = [];
@@ -5567,7 +5628,12 @@
 
         // 📊 醒目调试日志：评分计算明细（与 UI 显示对齐）
         console.log('%c📊 === 评分计算明细 ===', 'color:#22c55e;font-weight:bold;font-size:14px;');
-        console.log('  1. 腾讯 SOE 原始底分 totalScore      :', baseScore);
+        console.log('  0. 词级容错降级数 (Forgiveness)       :', forgivenChars.length,
+                    forgivenChars.length ? forgivenChars.map(function(f){return f.char+'('+f.score+')';}) : '');
+        console.log('  1. 当前底分 baseScore (含平滑后)     :', baseScore,
+                    '(腾讯原始 totalScore=' + Number(result.totalScore) +
+                    ', accuracy=' + (Number.isFinite(tencentAccuracy)?tencentAccuracy.toFixed(2):'n/a') +
+                    ', fluency=' + (Number.isFinite(tencentFluency)?tencentFluency.toFixed(3):'n/a') + ')');
         console.log('  2. FFT 声学扣分 acousticPenalty       :', acousticPenalty,
                     '(命中字:', penalizedAcousticErrors.map(function(e){return e.char;}), ')');
         console.log('  3. UI 红字(obvious)                   :', Object.keys(obviousByChar));
