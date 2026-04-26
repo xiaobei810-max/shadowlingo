@@ -2651,6 +2651,9 @@
     .dlp-kchar.dlp-done   + .kpunct { color: var(--green); }
     .dlp-bar { height: 2px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; flex-shrink: 0; }
     .dlp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
+    /* ── Page-turn fade-in: masks data-swap flicker on prev/next ── */
+    @keyframes panelFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .panel-switching { animation: panelFadeIn 0.15s ease; }
     .dlp-en { font-size: 13px; color: #6b7280; line-height: 1.5; font-style: italic; flex-shrink: 0; }
     .dlp-footer { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
     .dlp-play-btn {
@@ -7097,7 +7100,7 @@
       var zh, pinyin, role;
       if (dialogMode && dialogStep === 2) {
         var _dlg = dialogLessonMeta && dialogLessonMeta.dialogue ? dialogLessonMeta.dialogue : [];
-        var _lineA = _normD(_dlg[dialogRoundIdx * 2]);
+        var _lineA = _normD(_dlg[dialogRoundIdx * 2 + 1]);  // 上方 = 本地说话人（Mingxuan）
         if (!_lineA) return;
         zh     = _lineA.zh;
         pinyin = _lineA.pinyin;
@@ -7733,8 +7736,8 @@
       var lesson   = LESSONS[lessonIdx];
       // Pair consecutive lines: [0,1], [2,3], [4,5], [6,7] — exactly 2 bubbles per round
       for (var i = 0; i + 1 < dialogue.length; i += 2) {
-        var dA = _normD(dialogue[i]);       // context-above
-        var dB = _normD(dialogue[i + 1]);   // sentence-box (shadowing target)
+        var dA = _normD(dialogue[i + 1]);   // context-above (local speaker — Mingxuan/Staff)
+        var dB = _normD(dialogue[i]);       // sentence-box (learner / shadowing target — Nora)
         var evalSentence = null;
         if (lesson && lesson.sentences) {
           for (var j = 0; j < lesson.sentences.length; j++) {
@@ -8396,9 +8399,19 @@
   var dialogue = dialogLessonMeta && dialogLessonMeta.dialogue ? dialogLessonMeta.dialogue : [];
   if (!dialogue.length) return;
 
-  // 1. 严格按时间顺序取两条数据 (A上 B下)
-  var lineA = _normD(dialogue[dialogRoundIdx * 2]);
-  var lineB = _normD(dialogue[dialogRoundIdx * 2 + 1]);
+  // ── 任务2：闪屏修复 — 切换前彻底清空上一轮评测残影 ──────────────
+  if (el("eval-page"))        el("eval-page").classList.remove("show");
+  if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
+  if (el("bn"))  { el("bn").disabled  = false; el("bn").classList.remove("active");  el("bn").textContent = "🎤 录音 Record"; }
+  if (el("bs"))  { el("bs").disabled  = false; el("bs").classList.remove("active");  el("bs").textContent = "▶ 跟读 Listen"; }
+  if (el("bm"))  el("bm").classList.remove("active");
+  if (el("bdone"))  el("bdone").className  = "btn btn-done show";
+  if (el("bretry")) el("bretry").className = "btn btn-retry";
+  setStatus("准备好了 Ready");
+
+  // 1. 正确配对：偶数索引 = learner（Nora，下方跟读目标）；奇数索引 = local（Mingxuan，上方参考）
+  var lineA = _normD(dialogue[dialogRoundIdx * 2 + 1]);   // 上方参考（Mingxuan / 本地说话人）
+  var lineB = _normD(dialogue[dialogRoundIdx * 2]);        // 下方跟读目标（Nora / 学员）
   if (!lineA || !lineB) return;
 
   // 2. 更新上方【先开口面板】
@@ -8461,6 +8474,15 @@
   // 必须点击「跟读 Listen」后才开始变绿。
   resetKara();
   scheduleReflowKaraAvoidOrphan(document.getElementById('kara'), '.kchar');
+
+  // ── 任务2：淡入过渡 — 用 0.15s fade 掩盖数据切换瞬间 ─────────────
+  ['sentence-box', 'context-panel'].forEach(function(id) {
+    var panelEl = document.getElementById(id);
+    if (!panelEl) return;
+    panelEl.classList.remove('panel-switching');
+    void panelEl.offsetWidth; // force reflow to restart animation
+    panelEl.classList.add('panel-switching');
+  });
 
   // 隐藏多余层
   document.getElementById('context-panel-below').style.display = 'none';
@@ -8621,7 +8643,18 @@
       var name = d.name  !== undefined ? d.name  : d.speaker;
       var role = d.role  !== undefined ? d.role
                : (d.speaker === 'nora' ? 'learner' : 'local');
-      return { zh: zh, pinyin: d.pinyin, en: d.en, role: role, speaker: name, speakerName: d.speakerName, _sid: d.speaker };
+      // ── 规范化 _sid：无论 lesson 用哪种 schema，统一输出 'nora'/'mingxuan'/'staff'
+      //    lesson-1/2 用 speaker:"Nora"/"赵明轩 · Zhao Mingxuan"（中文全名）
+      //    lesson-3   用 speaker:"nora"/"mingxuan"/"staff"（小写 id）
+      var sid;
+      if (role === 'learner' || /nora/i.test(String(d.speaker || ''))) {
+        sid = 'nora';
+      } else if (_isStaffSpeaker(String(d.speaker || ''))) {
+        sid = 'staff';
+      } else {
+        sid = 'mingxuan';   // 所有非 learner、非 staff 的本地说话人默认 Mingxuan
+      }
+      return { zh: zh, pinyin: d.pinyin, en: d.en, role: role, speaker: name, speakerName: d.speakerName, _sid: sid };
     }
 
     function _plpSpeakerMeta(d) {
