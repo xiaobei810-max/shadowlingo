@@ -2712,11 +2712,17 @@
       font-size: 20px; font-weight: 700; line-height: 1;
       gap: 22px 3px; word-break: keep-all; text-wrap: balance;
     }
+    #pre-listen-page .plp-kara {
+      letter-spacing: 0.08em !important;
+    }
     #pre-listen-page .plp-kara .dlp-kchar {
-      min-width: 1.7em; color: #e2e8f0; letter-spacing: 0.05em;
+      min-width: 1.85em !important; color: #e2e8f0;
+      letter-spacing: 0.08em !important;
+      margin: 0 2px !important;
     }
     #pre-listen-page .plp-kara .dlp-kchar .dlp-hz {
-      font-size: 20px; font-weight: 700; line-height: 1.1; letter-spacing: 0.05em;
+      font-size: 20px; font-weight: 700; line-height: 1.1;
+      letter-spacing: 0.08em !important;
     }
     #pre-listen-page .plp-kara .dlp-kchar .dlp-py {
       font-size: 11px; font-weight: 400; line-height: 1.4; color: #94a3b8;
@@ -5412,16 +5418,14 @@
         if (xfyunInjectedCount > 0) {
           console.log('[XFYUN→UI] 注入字级弱项标注:', xfyunInjectedCount);
         }
-        var dualTrackErrors = result.dualTrackErrors || [];
-        // 全部正确时强制给满分
-        var allCorrect = scoreWordResults.length > 0 &&
-          scoreWordResults.every(function(w) { return w.perrLevel === 0; });
-        // 若后端已经给出任意错误文案（即便 perrLevel 仍是0），也不能判定“全对”
+        // ⚠️ 已废弃 dualTrackErrors（Gemini/Whisper 双轨）：429 配额不可控，前端不再依赖
+        var dualTrackErrors = []; // 仅占位，下游函数签名兼容
+        // ⛔ 已删除"allCorrect→100"覆盖逻辑：基础分严格使用腾讯 SOE 返回的 totalScore
         var hasBackendIssue = (scoreWordResults || []).some(function (w) {
           return !!(w && (w.perrLevel !== 0 || (w.perrMsg && String(w.perrMsg).trim())));
         });
-        if (allCorrect && hasBackendIssue) allCorrect = false;
-        var baseScore = allCorrect ? 100 : result.totalScore;
+        var baseScore = Number(result.totalScore);
+        if (!Number.isFinite(baseScore)) baseScore = 0;
 
         // 4. 声学层平翘舌检测（本地 FFT，无需 API）
         var acousticErrorsDisplay = [];
@@ -5474,19 +5478,17 @@
           return w.perrLevel === 0 ? w.content : w.perrLevel === 1 ? (w.content + '△') : (w.content + '★');
         }).join('');
 
-        // 5. “明显错必扣，轻微错温和扣”：
-        // - 明显错：双轨命中声调/平翘舌，或高置信声学平翘舌
-        // - 轻微错：双轨一般分歧、或中置信声学提示
+        // 5. UI 高亮字符集合（仅来源：腾讯 wordResults + FFT 声学）
+        //    讯飞和废弃的双轨不再参与"是否高亮"判定。
         var obviousByChar = {};
         var mildByChar = {};
-        dualTrackErrors.forEach(function (e) {
-          if (!e || !e.targetChar) return;
-          if (e.type === 'tone_confusion' || e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') {
-            obviousByChar[e.targetChar] = true;
-          } else if (e.type === 'disagreement') {
-            mildByChar[e.targetChar] = true;
-          }
+        // 5a. 腾讯 wordResults：perrLevel=2 红字 → obvious；perrLevel=1 黄字 → mild
+        (scoreWordResults || []).forEach(function (w) {
+          if (!w || !w.content) return;
+          if (w.perrLevel === 2) obviousByChar[w.content] = true;
+          else if (w.perrLevel === 1) mildByChar[w.content] = true;
         });
+        // 5b. FFT 声学命中（按置信度分级，与 UI 紫色提示对齐）
         (acousticErrorsScore || []).forEach(function (e) {
           if (!e || !e.char) return;
           var conf = Number(e.confidence || 0);
@@ -5496,45 +5498,13 @@
         var obviousErrCount = Object.keys(obviousByChar).length;
         var mildErrCount = Object.keys(mildByChar).filter(function (c) { return !obviousByChar[c]; }).length;
 
-        // 5.1 讯飞 shadow 兜底：腾讯漏检时，用 tone/phone/total 低分阻止“有错仍100”
+        // 5.1 讯飞 ISE：仅作为日志信号，不再参与扣分（dualTrack 已废弃）
         var xfyunSummary = (((result || {})._debug || {}).xfyun || {}).summary || null;
-        var xfyunTone = Number(xfyunSummary && xfyunSummary.tone_score);
+        var xfyunTone  = Number(xfyunSummary && xfyunSummary.tone_score);
         var xfyunPhone = Number(xfyunSummary && xfyunSummary.phone_score);
         var xfyunTotal = Number(xfyunSummary && xfyunSummary.total_score);
-        var xfyunObviousIssue = false;
-        var xfyunMildIssue = false;
-        if (Number.isFinite(xfyunTone)) {
-          if (xfyunTone < 90) xfyunObviousIssue = true;
-          else if (xfyunTone < 96) xfyunMildIssue = true;
-        }
-        if (Number.isFinite(xfyunPhone)) {
-          if (xfyunPhone < 88) xfyunObviousIssue = true;
-          else if (xfyunPhone < 95) xfyunMildIssue = true;
-        }
-        if (Number.isFinite(xfyunTotal)) {
-          if (xfyunTotal < 85) xfyunObviousIssue = true;
-          else if (xfyunTotal < 93) xfyunMildIssue = true;
-        }
-        // ⚠️ 严格规则：UI 上没有红/紫高亮 → 不能扣分
-        // 讯飞 tone/phone/total 阈值仅做信号记录，不再直接加到 obviousErrCount/mildErrCount
-        // （此前会出现“UI 全绿但分数 75/82”的 bug）
 
-        // 若存在明显错，不允许维持“全对满分”态
-        if (allCorrect && obviousErrCount > 0) allCorrect = false;
-        baseScore = allCorrect ? 100 : result.totalScore;
-
-        // 6. 分数温和校准：后端总分为主，字级命中率为辅（避免单个黄字时分数波动过大）
-        var blendedBaseScore = baseScore;
-        if (!allCorrect && scoreWordResults && scoreWordResults.length) {
-          var charHeuristic = Math.round(scoreWordResults.reduce(function (acc, w) {
-            return acc + (w.perrLevel === 0 ? 100 : w.perrLevel === 1 ? 82 : 58);
-          }, 0) / scoreWordResults.length);
-          blendedBaseScore = Math.round(baseScore * 0.80 + charHeuristic * 0.20);
-        }
-
-        // 7. 声学错误扣分（适度放宽 + 防误判）
-        // 仅当后端字级也提示了平翘舌相关问题时，声学项才参与扣分；
-        // 纯声学命中仅用于提示，不直接扣分，避免把正确发音误伤成低分。
+        // 6. 声学（FFT）扣分：仅当字级也命中平翘舌提示时生效，避免误伤
         var hasRetroflexMsg = function (m) {
           if (!m) return false;
           return /平翘舌|翘舌|卷舌|retroflex|zh_z|z_zh/i.test(String(m));
@@ -5547,41 +5517,33 @@
         var penalizedAcousticErrors = (acousticErrorsScore || []).filter(function (e) {
           return !!(e && e.char && backendRetroflexChars[e.char]);
         });
-
-        // 每个声学层命中固定扣8分（上限8），与讯飞层分离不叠加
-        // 这样：1个FFT错误 → 腾讯底分 - 8，最高不超过92分
         var acousticPenalty = penalizedAcousticErrors.length > 0 ? 8 : 0;
 
-        // 8. 明显/轻微错误附加扣分（与声学主扣分分离，避免漏检时”有错仍100”）
-        // 每个明显错扣3分（上限9），轻微错扣1分（上限4），避免少量错误拉分过猛
-        var obviousPenalty = Math.min(9, obviousErrCount * 3);
-        var mildPenalty = Math.min(4, mildErrCount * 1);
-
-        // 🛡️ 强保护：若 UI 不会显示任何红/紫字（无 obviousByChar / mildByChar 视觉标记），
-        // 所有扣分变量必须严格为 0；最终展示分必须 = 腾讯 SOE 底分（blendedBaseScore）
+        // 🛡️ 严格规则：UI 上没有红/紫高亮 → 所有前端扣分变量强制为 0
+        //    displayScore 必须严格等于腾讯 SOE 的 totalScore
         var hasVisibleUIError = (Object.keys(obviousByChar).length + Object.keys(mildByChar).length) > 0;
-        if (!hasVisibleUIError) {
-          acousticPenalty = 0;
-          obviousPenalty = 0;
-          mildPenalty = 0;
-        }
+        if (!hasVisibleUIError) acousticPenalty = 0;
 
-        var displayScore = Math.max(0, blendedBaseScore - acousticPenalty - obviousPenalty - mildPenalty);
+        // 🚫 已删除：blendedBaseScore（字级启发混合）、obviousPenalty/mildPenalty（讯飞兜底扣分）
+        //    以及 allCorrect→100 强制满分。displayScore 现在严格基于腾讯 totalScore - 可见 FFT 扣分。
+        var displayScore = Math.max(0, baseScore - acousticPenalty);
 
-        // 📊 醒目调试日志：评分计算明细
+        // 📊 醒目调试日志：评分计算明细（与 UI 显示对齐）
         console.log('%c📊 === 评分计算明细 ===', 'color:#22c55e;font-weight:bold;font-size:14px;');
-        console.log('  1. 腾讯 SOE 原始底分 baseScore       :', baseScore);
-        console.log('  2. blendedBaseScore (含字级启发)     :', blendedBaseScore);
-        console.log('  3. 声学层 FFT 扣分 acousticPenalty   :', acousticPenalty);
-        console.log('  4. 明显错误扣分 obviousPenalty       :', obviousPenalty, '(visible chars:', Object.keys(obviousByChar), ')');
-        console.log('  5. 轻微错误扣分 mildPenalty          :', mildPenalty,    '(visible chars:', Object.keys(mildByChar), ')');
-        console.log('  6. 讯飞信号 xfyunObvious/Mild        :', xfyunObviousIssue, '/', xfyunMildIssue, '(仅记录，不扣分)');
-        console.log('  7. UI 是否有可见高亮 hasVisibleUIError:', hasVisibleUIError);
-        console.log('%c  ✅ 最终展示分数 displayScore         : ' + displayScore, 'color:#22c55e;font-weight:bold;font-size:14px;');
+        console.log('  1. 腾讯 SOE 原始底分 totalScore      :', baseScore);
+        console.log('  2. FFT 声学扣分 acousticPenalty       :', acousticPenalty,
+                    '(命中字:', penalizedAcousticErrors.map(function(e){return e.char;}), ')');
+        console.log('  3. UI 红字(obvious)                   :', Object.keys(obviousByChar));
+        console.log('  4. UI 黄字(mild)                      :', Object.keys(mildByChar));
+        console.log('  5. 讯飞信号(仅参考,不扣分) tone/phone/total :',
+                    Number.isFinite(xfyunTone)  ? xfyunTone  : 'n/a',
+                    Number.isFinite(xfyunPhone) ? xfyunPhone : 'n/a',
+                    Number.isFinite(xfyunTotal) ? xfyunTotal : 'n/a');
+        console.log('  6. UI 是否有可见高亮 hasVisibleUIError:', hasVisibleUIError);
+        console.log('%c  ✅ 最终展示分数 displayScore         : ' + displayScore +
+                    ' (= ' + baseScore + ' - ' + acousticPenalty + ')',
+                    'color:#22c55e;font-weight:bold;font-size:14px;');
         console.log('%c========================', 'color:#22c55e;font-weight:bold;');
-        // 只要存在任意错误信号，就不允许最终分=100，避免“有错仍满分”
-        // 仅在 UI 上有可见高亮时才限制满分
-        if (hasVisibleUIError && displayScore >= 100) displayScore = 98;
         var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
         sessionScores[scoreSlot] = displayScore;   // 对话模式按轮次记分，避免都写到 idx=0
         incPracticeCount(lessonIdx, idx);
