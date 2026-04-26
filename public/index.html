@@ -5514,24 +5514,15 @@
           }
         }
 
-        // 4. 声学层平翘舌检测（本地 FFT，无需 API）
+        // 4. 声学层平翘舌检测（本地 FFT）
+        // ⛔ 彻底废弃：analyzeZhZConfusion 基于浏览器 Web Audio FFT，在麦克风质量差、
+        //    环境噪音、嘴距麦克风远近等条件下极易误报，将平舌 z 判为翘舌 zh，
+        //    且与云端 SOE 结果冲突造成"台词绿字 + 面板紫色提示"的 UI 状态不同步。
+        //    平翘舌判定权从现在起完全交给腾讯 SOE（perrLevel>0）+
+        //    拼音字头规则（_retroDirectionByChar，见下方 Task 3 块）。
         var acousticErrorsDisplay = [];
         var acousticErrorsScore = [];
-        if (typeof acousticAnalyzer !== 'undefined' && audioBuffer && result.wordResults) {
-          try {
-            var pyMap = {};
-            (s.chars || []).forEach(function (c) { if (c.c && c.p) pyMap[c.c] = c.p; });
-            acousticErrorsDisplay = acousticAnalyzer.analyzeZhZConfusion(audioBuffer, result.wordResults, pyMap);
-            // 仅高置信声学命中参与计分；低置信仅用于提示/着色，避免影响评分稳定性
-            acousticErrorsScore = (acousticErrorsDisplay || []).filter(function (e) {
-              return Number(e && e.confidence || 0) >= 0.58;
-            });
-            console.log('[Acoustic] 分析完成，展示=', acousticErrorsDisplay.length, '计分=', acousticErrorsScore.length,
-              acousticErrorsDisplay.length > 0 ? JSON.stringify(acousticErrorsDisplay) : '（无异常）');
-          } catch (ae) {
-            console.warn('[Acoustic] 分析出错（不影响主流程）:', ae);
-          }
-        }
+        // （acousticAnalyzer 保留文件但不再调用 analyzeZhZConfusion）
         var signalPromotedCount = promoteWordIssuesFromSignals(result.wordResults, dualTrackErrors, acousticErrorsDisplay);
         if (signalPromotedCount > 0) {
           console.log('[Signal→UI] 同步台词高亮:', signalPromotedCount);
@@ -5541,25 +5532,20 @@
         if (hintPromotedCount > 0) {
           console.log('[Hint→UI] 按指南提示同步台词高亮:', hintPromotedCount);
         }
-        // 通用原则：凡命中平翘舌偏差（任一信号源），台词统一标紫（仅影响显示层）
+        // 平翘舌紫色路径：仅接受云端信号（腾讯 perrMsg 关键词 + hintItems），
+        // 彻底排除已废弃的 FFT 声学路径和 dualTrackErrors（Gemini/Whisper 已废弃）
         var retroByChar = {};
-        (dualTrackErrors || []).forEach(function (e) {
-          if (!e || !e.targetChar) return;
-          if (e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') retroByChar[e.targetChar] = true;
-          if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(e.zh || e.en || e.message || ''))) retroByChar[e.targetChar] = true;
-        });
-        (acousticErrorsDisplay || []).forEach(function (e) {
-          if (!e || !e.char) return;
-          if (/zh_z|z_zh|retroflex/i.test(String(e.type || ''))) retroByChar[e.char] = true;
-        });
-        (hintItems || []).forEach(function (h) {
-          if (!h || !h.char) return;
-          if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(h.zh || h.en || ''))) retroByChar[h.char] = true;
-        });
+        // 来源 1：腾讯 wordResults perrMsg 含平翘舌关键词（腾讯自身已标注）
         (result.wordResults || []).forEach(function (w) {
           if (!w || !w.content) return;
           if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(w.perrMsg || ''))) retroByChar[w.content] = true;
         });
+        // 来源 2：hintItems（由腾讯 ISE 驱动的发音指南）含平翘舌关键词
+        (hintItems || []).forEach(function (h) {
+          if (!h || !h.char) return;
+          if (/平翘舌|retroflex|zh_z|z_zh/i.test(String(h.zh || h.en || ''))) retroByChar[h.char] = true;
+        });
+        // ⛔ 已移除：acousticErrorsDisplay（FFT 已废弃）和 dualTrackErrors（Gemini 已废弃）
 
         // ── Task 3：双向平翘舌兜底（基于拼音字头 + perrLevel）──
         // 条件：① 该字 perrLevel > 0（腾讯判错）；② 正确拼音以 zh/ch/sh/z/c/s 开头
@@ -6857,9 +6843,30 @@
       // ── 统一发音指南卡片（ISE 提示 + 声学 FFT，按句中顺序合并同字）──
       var guideCard = document.getElementById("eval-dualtrack-card");
       var guideBody = document.getElementById("eval-dualtrack-body");
+      // char:null 通用兜底条目直接保留；有字的条目在后面过滤（_correctChars 建立之后）
       var allHintItems = Array.isArray(hintItems) ? hintItems : [];
       var allDtErrors  = dualTrackErrors || [];
-      var allAcoustic  = acousticErrors  || [];
+      // 🛡️ 面板数据源同步保护：过滤掉所有对应字 perrLevel===0（腾讯判为正确）的声学条目。
+      //    这是最后一道防线，确保"台词绿字"⟺"面板无提示"严格一致，
+      //    杜绝"绿字+紫色提示"的 UI 精神分裂现象。
+      var _wordPerfect = {};
+      if (sentence && Array.isArray(sentence.wordResults || [])) {
+        // 优先用传入的 wordResults（已经过容错降级处理）
+      }
+      // 从 annotations 反推：type==='correct' 的字不允许出现在面板
+      var _correctChars = {};
+      if (Array.isArray(annotations)) {
+        annotations.forEach(function (a) { if (a && a.type === 'correct') _correctChars[a.char] = true; });
+      }
+      var allAcoustic = (acousticErrors || []).filter(function (e) {
+        return e && e.char && !_correctChars[e.char];
+      });
+      // 同步过滤 hintItems：腾讯判定正确（annotations type==='correct'）的字不显示提示
+      allHintItems = allHintItems.filter(function (it) {
+        if (!it) return false;
+        if (it.char == null) return true;    // char:null 通用兜底条目始终保留
+        return !_correctChars[it.char];      // 有字提示：必须腾讯判为非正确才显示
+      });
       var hasAny = allHintItems.length > 0 || allDtErrors.length > 0 || allAcoustic.length > 0;
       // 兜底提示也算"有内容"，确保面板可见
       var hasGenericTip = allHintItems.some(function (it) { return it && it.char == null; });
