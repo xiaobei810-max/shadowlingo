@@ -7097,26 +7097,16 @@
 
     function playContext() {
       if (phase === 'recording') return;
-      var zh, pinyin, role;
+      // 对话模式第2步：上方 context-panel 永久隐藏，不再播放
       if (dialogMode && dialogStep === 2) {
-        var _round = dialogRounds && dialogRounds[dialogRoundIdx];
-        var _lineA = _round && _round.local;
-        if (!_lineA) {
-          console.warn('[playContext] No upper context line for round', dialogRoundIdx,
-                       '(Nora 主动开口的首轮无前置台词)');
-          return;
-        }
-        zh     = _lineA.zh;
-        pinyin = _lineA.pinyin;
-        // 硬编码：staff → 女声 linyue，其余 → local
-        role   = _speakerRole(_lineA._sid || _lineA.speaker);
-      } else {
-        var s = LESSONS[lessonIdx].sentences[idx];
-        if (!s || !s.context) return;
-        zh     = s.context.zh;
-        pinyin = s.context.pinyin;
-        role   = 'local';
+        console.warn('[playContext] 对话模式下上方面板已禁用，请使用下方 playContextBelow');
+        return;
       }
+      var s = LESSONS[lessonIdx].sentences[idx];
+      if (!s || !s.context) return;
+      var zh     = s.context.zh;
+      var pinyin = s.context.pinyin;
+      var role   = 'local';
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
         var bsBtn = document.getElementById('bs');
@@ -7738,12 +7728,12 @@
       if (!dialogLessonMeta || !dialogLessonMeta.dialogue) return;
       var dialogue = dialogLessonMeta.dialogue;
       var lesson   = LESSONS[lessonIdx];
-      // 时间线扫描：每遇到一个 learner 行就开一轮；上方 context = 该行的前一行（不存在则 null）
-      // 这样保证：跟读目标永远是 Nora 当前要说的话，上方永远是她开口前发生的事
+      // 时间线扫描：每个 learner 行开一轮；下方回答 = 该行紧跟着的下一句（Mingxuan/Staff 的回应）
+      // 布局：中间 sentence-box = Nora（跟读目标）；下方 context-below = 紧跟其后的回答；上方 panel 永久隐藏
       for (var i = 0; i < dialogue.length; i++) {
         var dCurr = _normD(dialogue[i]);
         if (!dCurr || dCurr.role !== 'learner') continue;
-        var dPrev = i > 0 ? _normD(dialogue[i - 1]) : null;
+        var dNext = (i + 1 < dialogue.length) ? _normD(dialogue[i + 1]) : null;
         var evalSentence = null;
         if (lesson && lesson.sentences) {
           for (var j = 0; j < lesson.sentences.length; j++) {
@@ -7751,8 +7741,9 @@
           }
         }
         dialogRounds.push({
-          local:        dPrev,    // 上方参考（按时间线为该行的前一句；首句开口时为 null → 隐藏面板）
-          learner:      dCurr,    // 下方跟读目标（Nora 当前要说的话）
+          learner:  dCurr,    // 中间 sentence-box（Nora 当前要说的话，跟读目标）
+          response: dNext,    // 下方 context-below（紧跟其后的回答；末句无回答时为 null → 隐藏下面板）
+          local:    dNext,    // 兼容字段：旧代码读 round.local 当作上方/下方 context 时也走 response
           evalSentence: evalSentence || { zh: dCurr.zh, pinyin: dCurr.pinyin, en: dCurr.en, chars: [] }
         });
       }
@@ -8397,7 +8388,7 @@
     // 进入第 2 步：Your Turn
     function enterDialogStep2() {
       dialogStep = 2;
-      setStepTitle("第2步：轮到你说 🎯", "上方听赵明轩，下方轮到你用中文回答");
+      setStepTitle("第2步：轮到你说 🎯", "上方跟读 Nora 的台词，下方听赵明轩的回答");
       dialogRoundIdx = 0;
       renderDialogYourTurn();
     }
@@ -8421,49 +8412,15 @@
   if (_btnAbove) { _btnAbove.textContent = '▶ 播放 Play'; _btnAbove.classList.remove('playing'); }
   setStatus("准备好了 Ready");
 
-  // 1. 时间线模型：lineA = 上方 context（前一句，可能为 null）；lineB = 下方跟读目标
-  var lineA = round.local;       // 上方参考（前一句台词，首轮 Nora 主动开口时为 null）
-  var lineB = round.learner;     // 下方跟读目标（Nora 当前要说的话）
+  // 1. 自然顺序模型：lineB = 中间 sentence-box（Nora，跟读目标）；lineC = 下方 context-below（紧跟回答）
+  var lineB = round.learner;     // 中间跟读目标
+  var lineC = round.response;    // 下方回答（Mingxuan/Staff 紧跟其后的话；末句无回答时为 null）
 
-  // 2. 更新上方【先开口面板】 — lineA 为 null 时整面板隐藏（避免显示"未来回答"）
+  // 2. 上方【context-panel】永久隐藏 — 不再使用，避免出现"未来回答"
   var ctxPanel = document.getElementById('context-panel');
-  if (ctxPanel) {
-    if (!lineA) {
-      ctxPanel.style.display = 'none';
-    } else {
-      ctxPanel.style.display = 'block';
-      document.getElementById('ctx-speaker').textContent = lineA.speaker;
+  if (ctxPanel) ctxPanel.style.display = 'none';
 
-      var isStaffA = lineA._sid === 'staff' || (lineA.speaker && (lineA.speaker.includes('工作人员') || lineA.speaker.includes('Staff')));
-      var ctxWrap  = document.getElementById('ctx-avatar-mx');
-      var ctxBadge = document.getElementById('ctx-avatar-badge');
-      var ctxImg   = document.getElementById('ctx-avatar-img');
-
-      if (isStaffA) {
-        if (ctxWrap) ctxWrap.style.display = 'none';
-        if (ctxBadge) ctxBadge.style.display = 'flex';
-      } else {
-        if (ctxWrap) { ctxWrap.style.display = ''; ctxWrap.className = (lineA._sid === 'nora') ? 'avatar-wrap nora' : 'avatar-wrap mx'; }
-        if (ctxBadge) ctxBadge.style.display = 'none';
-        if (ctxImg) {
-          if (lineA._sid === 'nora') {
-            ctxImg.src = '/assets/characters/nora/nora_head.png';
-            ctxImg.alt = 'Nora';
-            ctxImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);';
-          } else {
-            ctxImg.src = '/assets/characters/mingxuan/mingxuan_head.png';
-            ctxImg.alt = '明轩';
-            ctxImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);';
-          }
-        }
-      }
-      buildCtxKara(document.getElementById('ctx-zh'), lineA.zh, lineA.pinyin);
-      document.getElementById('ctx-en').textContent = lineA.en;
-      scheduleReflowKaraAvoidOrphan(document.getElementById('ctx-zh'), '.ctx-kchar');
-    }
-  }
-
-  // 3. 更新下方【后开口/练习面板】
+  // 3. 更新中间【sentence-box / 跟读面板】
   document.getElementById('learner-panel-name').textContent = lineB.speaker;
   var panelAvWrap = document.getElementById('panel-avatar-nora');
   var isStaffB = lineB._sid === 'staff' || (lineB.speaker && (lineB.speaker.includes('工作人员') || lineB.speaker.includes('Staff')));
@@ -8490,17 +8447,49 @@
   resetKara();
   scheduleReflowKaraAvoidOrphan(document.getElementById('kara'), '.kchar');
 
+  // 4. 更新下方【context-panel-below / 回答面板】= lineC（Mingxuan/Staff 紧跟回答）
+  var ctxBelowPanel = document.getElementById('context-panel-below');
+  if (ctxBelowPanel) {
+    if (lineC) {
+      ctxBelowPanel.style.display = 'block';
+      var cbSpeaker = document.getElementById('ctx-speaker-below');
+      var cbZh      = document.getElementById('ctx-zh-below');
+      var cbEn      = document.getElementById('ctx-en-below');
+      var cbBtn     = document.getElementById('ctx-play-btn-below');
+      var cbAvWrap  = document.getElementById('ctx-avatar-mx-below');
+      if (cbSpeaker) cbSpeaker.textContent = lineC.speaker || '';
+      if (cbZh) {
+        buildCtxKara(cbZh, lineC.zh, lineC.pinyin);
+        scheduleReflowKaraAvoidOrphan(cbZh, '.ctx-kchar');
+      }
+      if (cbEn) cbEn.textContent = lineC.en || '';
+      if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
+      if (cbAvWrap) {
+        var isStaffC = lineC._sid === 'staff' || (lineC.speaker && (lineC.speaker.includes('工作人员') || lineC.speaker.includes('Staff')));
+        if (isStaffC) {
+          cbAvWrap.className = 'avatar-wrap nora';
+          cbAvWrap.innerHTML = '<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" style="width:28px;height:28px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>';
+        } else if (lineC._sid === 'nora') {
+          cbAvWrap.className = 'avatar-wrap nora';
+          cbAvWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
+        } else {
+          cbAvWrap.className = 'avatar-wrap mx';
+          cbAvWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
+        }
+      }
+    } else {
+      ctxBelowPanel.style.display = 'none';
+    }
+  }
+
   // ── 任务2：淡入过渡 — 用 0.15s fade 掩盖数据切换瞬间 ─────────────
-  ['sentence-box', 'context-panel'].forEach(function(id) {
+  ['sentence-box', 'context-panel-below'].forEach(function(id) {
     var panelEl = document.getElementById(id);
     if (!panelEl) return;
     panelEl.classList.remove('panel-switching');
     void panelEl.offsetWidth; // force reflow to restart animation
     panelEl.classList.add('panel-switching');
   });
-
-  // 隐藏多余层
-  document.getElementById('context-panel-below').style.display = 'none';
 }
     // 第 3 步：地道指南
     function enterDialogStep3() {
