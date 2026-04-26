@@ -4204,7 +4204,14 @@
       (chars || []).forEach(function (c) { (pyQ[c.c] = pyQ[c.c] || []).push(c.p); });
       return words.map(function (w) {
         var type = w.perrLevel === 0 ? 'correct' : w.perrLevel === 1 ? 'confused' : 'miss';
-        if (/平翘舌|retroflex|声母应为(?:翘舌|平舌)/i.test(String(w.perrMsg || '')) || !!_forceRetroByChar[w.content]) type = 'retroflex';
+        // 🛡️ 防御性规则：FFT 声学 / perrMsg 中的平翘舌标记只能在腾讯已判错（perrLevel>0）时染紫。
+        //    若腾讯返回 perrLevel===0（完美），则强制保持绿色，不允许本地算法推翻云端判定。
+        var tencentSaysCorrect = (w.perrLevel === 0);
+        if (!tencentSaysCorrect &&
+            (/平翘舌|retroflex|声母应为(?:翘舌|平舌)/i.test(String(w.perrMsg || '')) ||
+             !!_forceRetroByChar[w.content])) {
+          type = 'retroflex';
+        }
         var idx = pyI[w.content] || 0;
         var py = pyQ[w.content] ? (pyQ[w.content][idx] || '') : '';
         pyI[w.content] = idx + 1;
@@ -5008,14 +5015,16 @@
     function promoteWordIssuesFromSignals(wordResults, dualTrackErrors, acousticErrors, hintItems) {
       if (!Array.isArray(wordResults) || !wordResults.length) return 0;
       var byChar = {};
-      function ensureChar(ch) {
+      function ensureChar(ch, fromAcousticOnly) {
         if (!/[\u4e00-\u9fff]/.test(String(ch || ''))) return null;
-        if (!byChar[ch]) byChar[ch] = { msgs: [], retroflex: false };
+        if (!byChar[ch]) byChar[ch] = { msgs: [], retroflex: false, onlyAcoustic: true };
+        // 一旦有非声学信号加入，就标记为"非纯声学"
+        if (!fromAcousticOnly) byChar[ch].onlyAcoustic = false;
         return byChar[ch];
       }
       (hintItems || []).forEach(function (h) {
         if (!h || !h.char) return;
-        var rec = ensureChar(h.char);
+        var rec = ensureChar(h.char, false);  // hintItems 来自腾讯 ISE，非纯声学
         if (!rec) return;
         var text = String(h.zh || h.en || '');
         if (/平翘舌|retroflex/i.test(text)) { rec.msgs.push('平翘舌偏差'); rec.retroflex = true; }
@@ -5024,7 +5033,7 @@
       });
       (dualTrackErrors || []).forEach(function (e) {
         if (!e || !e.targetChar) return;
-        var rec = ensureChar(e.targetChar);
+        var rec = ensureChar(e.targetChar, false);  // 双轨来自云端，非纯声学
         if (!rec) return;
         if (e.type === 'tone_confusion') rec.msgs.push('声调偏差');
         else if (e.type === 'zh_z_confusion' || e.type === 'z_zh_confusion') { rec.msgs.push('平翘舌偏差'); rec.retroflex = true; }
@@ -5032,7 +5041,7 @@
       });
       (acousticErrors || []).forEach(function (e) {
         if (!e || !e.char) return;
-        var rec = ensureChar(e.char);
+        var rec = ensureChar(e.char, true);   // 声学为本地 FFT，标记 onlyAcoustic
         if (!rec) return;
         rec.msgs.push('发音有误');
         if (/zh_z|z_zh/i.test(String(e.type || ''))) rec.retroflex = true;
@@ -5045,6 +5054,10 @@
         if (!rec || !rec.msgs.length) return;
         var existingMsg = String(w.perrMsg || '');
         if (Number(w.perrLevel || 0) === 0) {
+          // 🛡️ 防御性规则：若信号仅来自本地 FFT 声学（腾讯已判定完全正确 perrLevel=0），
+          //    绝不升级 perrLevel，避免"冤假错案"把绿字改成黄字或紫字。
+          //    只有腾讯+声学双重命中、或有来自讯飞/hintItems 的非声学信号，才允许升级。
+          if (rec.onlyAcoustic) return;
           w.perrLevel = 1;
           var msg = rec.msgs[0] || '发音需改进';
           w.perrMsg = w.perrMsg ? (w.perrMsg + '；' + msg) : msg;
@@ -7761,16 +7774,21 @@
           var hi = 0;
           for (var siE = 0; siE < rawSyls.length; siE++) {
             var sylE = rawSyls[siE];
-            fixedSyls.push(sylE);
+            // ⚠️ 关键：先剥去尾部标点再做 r$ 检测
+            // 原 bug："zhèr." 末尾有句号，/r$/ 无法匹配 → 拆分失败
+            var sylEClean = sylE.replace(/[,，。！？.!?\s]+$/, '');
+            var trailingPunct = sylE.slice(sylEClean.length);   // 还原时带回标点
+            fixedSyls.push(sylE);    // 先占位，若需要拆分则原地替换
             hi++;
-            // 关键三条件：① 下一个汉字是 "儿"；② 当前音节以 r 结尾；
-            //         ③ 当前音节本身不是 "ér/er"（独立 儿 已自带拼音）
+            // 关键三条件：① 下一个汉字是 "儿"；② 清洁音节以 r 结尾；
+            //         ③ 清洁音节本身不是 "ér/er"（独立 儿 已自带拼音）
             if (hi < hanziSeqDlp.length &&
                 hanziSeqDlp[hi] === '儿' &&
-                /r$/i.test(sylE) &&
-                sylE.length > 1 &&
-                !/^[eēéěè]r$/i.test(sylE)) {
-              fixedSyls[fixedSyls.length - 1] = sylE.replace(/r$/i, '');
+                /r$/i.test(sylEClean) &&
+                sylEClean.length > 1 &&
+                !/^[eēéěè]r$/i.test(sylEClean)) {
+              // "zhèr." → 这: "zhè." (渲染时自动strip), 儿: "r"
+              fixedSyls[fixedSyls.length - 1] = sylEClean.replace(/r$/i, '') + trailingPunct;
               fixedSyls.push('r');
               hi++;
             }
