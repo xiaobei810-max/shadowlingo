@@ -7562,6 +7562,29 @@
       document.body.appendChild(page);
       var cgTypeTimers = [];
       var cgFallbackTid = null;
+      // 视觉小说式两段交互：typed=false 时点击=立即出全文；typed=true 时点击=进入下一页
+      var typed = false;
+
+      function showTapHint() {
+        var hintEl = document.getElementById(hintId);
+        if (hintEl) {
+          hintEl.style.color = 'rgba(255,255,255,0.5)';
+          hintEl.style.animation = 'breatheHint 2.4s ease-in-out infinite';
+        }
+      }
+      // 立即把全文塞进去（用户在打字过程中点击时调用）
+      function finishTypingNow() {
+        if (typed) return;
+        cgTypeTimers.forEach(function (t) { clearTimeout(t); });
+        cgTypeTimers.length = 0;
+        if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
+        if (zhEl && textZh) zhEl.textContent = textZh;
+        if (enEl && textEn) enEl.textContent = textEn;
+        // 不停 TTS — 让旁白继续播完更自然；如希望同步停掉，注释下一行打开即可
+        // stopAudio();
+        showTapHint();
+        typed = true;
+      }
 
       // 淡入后启动打字机 + TTS
       requestAnimationFrame(function() {
@@ -7573,13 +7596,6 @@
           setTimeout(function() {
             var zhChars = textZh ? Array.from(textZh) : [];
             var n = Math.max(1, zhChars.length);
-            function showTapHint() {
-              var hintEl = document.getElementById(hintId);
-              if (hintEl) {
-                hintEl.style.color = 'rgba(255,255,255,0.5)';
-                hintEl.style.animation = 'breatheHint 2.4s ease-in-out infinite';
-              }
-            }
             function armZhEn(stepMs, zhDonePadMs) {
               stepMs = Math.max(52, Math.min(220, stepMs));
               zhDonePadMs = zhDonePadMs == null ? 420 : zhDonePadMs;
@@ -7592,7 +7608,7 @@
               var zhDone = Math.round(zhChars.length * stepMs) + zhDonePadMs;
               var tidEn = setTimeout(function() { if (enEl && textEn) enEl.textContent = textEn; }, zhDone);
               cgTypeTimers.push(tidEn);
-              var tidHint = setTimeout(showTapHint, zhDone + 320);
+              var tidHint = setTimeout(function() { typed = true; showTapHint(); }, zhDone + 320);
               cgTypeTimers.push(tidHint);
             }
             var armed = false;
@@ -7612,17 +7628,19 @@
             } else {
               if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
               if (enEl && textEn) enEl.textContent = textEn;
-              cgTypeTimers.push(setTimeout(showTapHint, 500));
+              cgTypeTimers.push(setTimeout(function() { typed = true; showTapHint(); }, 500));
             }
           }, 600); // 等页面淡入完成
         });
       });
 
-      // 点击关闭
-      var _clicked = false;
+      // 点击逻辑：第一次点击（typing 中）→ 立即出全文；第二次点击（已出全）→ 进入下一页
+      var _dismissed = false;
       setTimeout(function() {
         page.addEventListener('click', function() {
-          if (_clicked) return; _clicked = true;
+          if (_dismissed) return;
+          if (!typed) { finishTypingNow(); return; }
+          _dismissed = true;
           cgTypeTimers.forEach(function (t) { clearTimeout(t); });
           cgTypeTimers.length = 0;
           if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
@@ -9335,13 +9353,15 @@
         hintEl.style.transition = '';
         hintEl.classList.remove('breathing');
       }
-      if (startHint) startHint.classList.add('show');
+      // 自动播放：不再需要"点击屏幕开始"提示
+      if (startHint) startHint.classList.remove('show');
       page.classList.add('show');
 
       var _audio = new Audio('/assets/audio/lesson1_prologue.mp3');
       _audio.volume = 0.85;
       var _utter = null;   // TTS 备用
       var _dismissed = false;
+      var _typed = false;  // 视觉小说式：第一次点击 = 立即出全文；之后点击 = 进入下一页
 
       // ── 停止所有音频（MP3 + TTS 两路都停） ──
       function _stopAudio() {
@@ -9352,11 +9372,41 @@
         }
       }
 
-      // ── 第二次点击：关闭 prologue，进入角色介绍 ──
-      function dismiss() {
+      var ZH_TEXT = '机场，不仅是终点，更是初见……';
+      var EN_TEXT = 'The airport is not just a destination, but a first encounter...';
+
+      // 显示呼吸继续提示
+      function _showHint() {
+        if (hintEl) {
+          hintEl.style.transition = 'opacity 1.2s ease';
+          hintEl.style.opacity = '0.28';
+          setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
+        }
+      }
+
+      // 立即把全文塞进去（点击发生在打字过程中时调用）
+      function _finishTypingNow() {
+        if (_typed) return;
+        // prologueTypewriter 用 CSS animation+forwards 控制每个字的淡入；
+        // 强制完成 = 用纯文本直接重写容器内容（覆盖未完成的 span 动画）
+        if (textZhEl) textZhEl.textContent = ZH_TEXT;
+        if (textEnEl) textEnEl.textContent = EN_TEXT;
+        _typed = true;
+        _showHint();
+      }
+
+      // 打字机自然完成回调
+      function onAllTyped() {
+        _typed = true;
+        _showHint();
+      }
+
+      // 单一点击处理器：未打完 → 立即打完；已打完 → 进入下一页
+      function onClick() {
         if (_dismissed) return;
+        if (!_typed) { _finishTypingNow(); return; }
         _dismissed = true;
-        page.removeEventListener('click', dismiss);
+        page.removeEventListener('click', onClick);
         _stopAudio();
         callback();
         page.style.transition = 'opacity 0.7s ease';
@@ -9367,47 +9417,33 @@
           page.style.transition = '';
         }, 700);
       }
+      page.addEventListener('click', onClick);
 
-      // 打字机结束后显示呼吸继续提示，并等待第二次点击
-      function onAllTyped() {
-        if (hintEl) {
-          hintEl.style.transition = 'opacity 1.2s ease';
-          hintEl.style.opacity = '0.28';
-          setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
+      // ── 自动启动配音 + 双语打字机（不再等待首次点击） ──
+      // 优先播放 MP3；文件不存在时自动降级到浏览器内置 TTS 朗读中文旁白
+      _audio.play().catch(function() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          _utter = new SpeechSynthesisUtterance(ZH_TEXT);
+          _utter.lang  = 'zh-CN';
+          _utter.rate  = 0.82;
+          _utter.pitch = 1.0;
+          _utter.volume = 0.9;
+          window.speechSynthesis.speak(_utter);
         }
-        page.addEventListener('click', dismiss);
-      }
+      });
 
-      var ZH_TEXT = '机场，不仅是终点，更是初见……';
-      var EN_TEXT = 'The airport is not just a destination, but a first encounter...';
-
-      // ── 第一次点击：隐藏开始提示，同步启动配音 + 双语打字机 ──
-      function onFirstClick() {
-        page.removeEventListener('click', onFirstClick);
-        if (startHint) startHint.classList.remove('show');
-
-        // 优先播放 MP3；文件不存在时自动降级到浏览器内置 TTS 朗读中文旁白
-        _audio.play().catch(function() {
-          if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            _utter = new SpeechSynthesisUtterance(ZH_TEXT);
-            _utter.lang  = 'zh-CN';
-            _utter.rate  = 0.82;
-            _utter.pitch = 1.0;
-            _utter.volume = 0.9;
-            window.speechSynthesis.speak(_utter);
-          }
-        });
-
-        // 先打中文（120ms/字），结束后短暂停顿再打英文（38ms/字）
-        prologueTypewriter(ZH_TEXT, textZhEl, 120, function() {
-          setTimeout(function() {
-            prologueTypewriter(EN_TEXT, textEnEl, 38, onAllTyped);
-          }, 280);
-        });
-      }
-
-      page.addEventListener('click', onFirstClick);
+      // 先打中文（120ms/字），结束后短暂停顿再打英文（38ms/字）
+      prologueTypewriter(ZH_TEXT, textZhEl, 120, function() {
+        if (_typed) return;       // 用户已点击跳过，不再触发后续打字
+        setTimeout(function() {
+          if (_typed) return;
+          prologueTypewriter(EN_TEXT, textEnEl, 38, function() {
+            if (_typed) return;
+            onAllTyped();
+          });
+        }, 280);
+      });
     }
 
     // ── CG 纯净看图模式 ───────────────────────────────────────
