@@ -5639,6 +5639,27 @@
         //    以及 allCorrect→100 强制满分。displayScore 现在严格基于腾讯 totalScore - 可见 FFT 扣分。
         var displayScore = Math.max(0, baseScore - acousticPenalty);
 
+        // ⭐ 满分吸附（Score Ceiling / Perfect Snap）
+        // 背景：即便发音完美，声学模型数学特性决定了极难给出 100 分（通常止步于 96-99）。
+        //       当得分已经 ≥ 95，且 UI 上无任何红字/黄字/紫字时，说明用户实际发音达到了
+        //       母语级水平——将分数提升至 100，以给予应有的成就感。
+        // 触发条件（同时满足）：
+        //   1. displayScore >= 95
+        //   2. 无红字（obviousByChar 为空）
+        //   3. 无黄字（mildByChar 为空）
+        //   4. 无 FFT 声学命中（acousticErrorsScore 为空）
+        // 注意：只要有任意一个字被标黄/紫/红，即使得分 99，也不触发，保留严谨性。
+        var perfectSnapTriggered = false;
+        if (displayScore >= 95 &&
+            Object.keys(obviousByChar).length === 0 &&
+            Object.keys(mildByChar).length === 0 &&
+            (!acousticErrorsScore || acousticErrorsScore.length === 0)) {
+          perfectSnapTriggered = true;
+          displayScore = 100;
+          console.log('%c🌟 触发满分吸附机制：发音极佳且无错字，自动提升为 100 分',
+                      'color:#FFD700;font-weight:bold;font-size:14px;');
+        }
+
         // 📊 醒目调试日志：评分计算明细（与 UI 显示对齐）
         console.log('%c📊 === 评分计算明细 ===', 'color:#22c55e;font-weight:bold;font-size:14px;');
         console.log('  0. 词级容错降级数 (Forgiveness)       :', forgivenChars.length,
@@ -5656,8 +5677,10 @@
                     Number.isFinite(xfyunPhone) ? xfyunPhone : 'n/a',
                     Number.isFinite(xfyunTotal) ? xfyunTotal : 'n/a');
         console.log('  6. UI 是否有可见高亮 hasVisibleUIError:', hasVisibleUIError);
+        console.log('  7. 满分吸附 perfectSnapTriggered       :', perfectSnapTriggered);
         console.log('%c  ✅ 最终展示分数 displayScore         : ' + displayScore +
-                    ' (= ' + baseScore + ' - ' + acousticPenalty + ')',
+                    ' (= ' + baseScore + ' - ' + acousticPenalty +
+                    (perfectSnapTriggered ? ' → 满分吸附 100' : '') + ')',
                     'color:#22c55e;font-weight:bold;font-size:14px;');
         console.log('%c========================', 'color:#22c55e;font-weight:bold;');
         var scoreSlot = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
