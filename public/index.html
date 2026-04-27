@@ -1724,13 +1724,21 @@
     }
     .anno-grid {
       width: 100%;
-      display: block;
-      text-align: center;
-      line-height: 2.4;
-      /* 不再使用 flex；改为块级文本流，依赖浏览器原生 CJK 排版（kinsoku）
-         避免句末「？」「。」等标点单独换行 */
-      word-break: normal;
-      overflow-wrap: break-word;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 8px 2px;
+    }
+    /* 把 [汉字 + 紧随的标点] 绑在一起，换行时整体移动，
+       杜绝句末「？」「。」等标点孤立换行。
+       inline-flex + white-space:nowrap 既阻止换行，
+       又保留每个 token 内部「拼音上 / 汉字下」的列对齐结构。 */
+    .anno-pair {
+      display: inline-flex;
+      align-items: flex-end;
+      white-space: nowrap;
+      gap: 2px;
     }
     .anno-token {
       display: inline-flex;
@@ -1739,8 +1747,6 @@
       justify-content: flex-end;
       min-width: 1.35em;
       line-height: 1;
-      vertical-align: bottom;
-      margin: 0 1px;
     }
     .anno-token-py {
       font-size: 14px;
@@ -6936,7 +6942,10 @@
             return (c && c.p) ? toToneMark(c.p) : '';
           });
         var pyIdx = 0;
-        var zhHtml = '';
+        // 先把每个字符渲染成独立的 anno-token（拼音/汉字结构 100% 不变），
+        // 再把「汉字 + 紧随其后的标点」配对包进 .anno-pair（white-space:nowrap），
+        // 让浏览器在换行时把它们视为不可分割的整体，杜绝句末标点孤立换行。
+        var charTokens = [];
         Array.from(renderZh).forEach(function (ch) {
           if (/[\u4e00-\u9fff]/.test(ch)) {
             var q = annoQueue[ch] || [];
@@ -6944,17 +6953,35 @@
             var tip = a.perrMsg ? ' title="' + esc(a.perrMsg).replace(/"/g, '&quot;') + '"' : '';
             var py = esc(pySeq[pyIdx] || '');
             pyIdx++;
-            zhHtml += '<span class="anno-token">' +
-              '<span class="anno-token-py">' + py + '</span>' +
-              '<span class="anno-token-hz ' + (a.type || 'correct') + '"' + tip + '>' + esc(ch) + '</span>' +
-            '</span>';
+            charTokens.push({
+              isHz: true,
+              html: '<span class="anno-token">' +
+                '<span class="anno-token-py">' + py + '</span>' +
+                '<span class="anno-token-hz ' + (a.type || 'correct') + '"' + tip + '>' + esc(ch) + '</span>' +
+              '</span>'
+            });
           } else {
-            zhHtml += '<span class="anno-token">' +
-              '<span class="anno-token-py"></span>' +
-              '<span class="anno-token-hz punct">' + esc(ch) + '</span>' +
-            '</span>';
+            charTokens.push({
+              isHz: false,
+              html: '<span class="anno-token">' +
+                '<span class="anno-token-py"></span>' +
+                '<span class="anno-token-hz punct">' + esc(ch) + '</span>' +
+              '</span>'
+            });
           }
         });
+        var zhHtml = '';
+        for (var ti = 0; ti < charTokens.length; ti++) {
+          var cur = charTokens[ti];
+          var nxt = charTokens[ti + 1];
+          if (cur.isHz && nxt && !nxt.isHz) {
+            // 把 [汉字, 标点] 绑成一个不可分割的 pair
+            zhHtml += '<span class="anno-pair">' + cur.html + nxt.html + '</span>';
+            ti++; // 跳过标点
+          } else {
+            zhHtml += cur.html;
+          }
+        }
         document.getElementById("eval-anno-chars").innerHTML = '<div class="anno-grid">' + zhHtml + '</div>';
         compareCard.style.display = "block";
       } else {
