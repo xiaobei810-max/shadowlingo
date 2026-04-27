@@ -1740,6 +1740,12 @@
       white-space: nowrap;
       gap: 2px;
     }
+    /* flex 强制换行符：占据整行宽度但零高度，让逗号后内容另起一行 */
+    .anno-break {
+      flex-basis: 100%;
+      width: 100%;
+      height: 0;
+    }
     .anno-token {
       display: inline-flex;
       flex-direction: column;
@@ -6954,6 +6960,7 @@
             var py = esc(pySeq[pyIdx] || '');
             pyIdx++;
             charTokens.push({
+              ch: ch,
               isHz: true,
               html: '<span class="anno-token">' +
                 '<span class="anno-token-py">' + py + '</span>' +
@@ -6962,6 +6969,7 @@
             });
           } else {
             charTokens.push({
+              ch: ch,
               isHz: false,
               html: '<span class="anno-token">' +
                 '<span class="anno-token-py"></span>' +
@@ -6970,13 +6978,19 @@
             });
           }
         });
+        // 在逗号 / 顿号 / 分号后插入 flex 强制换行，
+        // 让长句按朗读节奏自然断行，避免句末标点孤立成行。
+        var BREAK_PUNCTS = '，、；,;';
+        var FLEX_BREAK   = '<span class="anno-break" aria-hidden="true"></span>';
         var zhHtml = '';
         for (var ti = 0; ti < charTokens.length; ti++) {
           var cur = charTokens[ti];
           var nxt = charTokens[ti + 1];
           if (cur.isHz && nxt && !nxt.isHz) {
-            // 把 [汉字, 标点] 绑成一个不可分割的 pair
             zhHtml += '<span class="anno-pair">' + cur.html + nxt.html + '</span>';
+            if (BREAK_PUNCTS.indexOf(nxt.ch) >= 0 && ti + 2 < charTokens.length) {
+              zhHtml += FLEX_BREAK;
+            }
             ti++; // 跳过标点
           } else {
             zhHtml += cur.html;
