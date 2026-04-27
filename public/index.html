@@ -6935,7 +6935,8 @@
             return (c && c.p) ? toToneMark(c.p) : '';
           });
         var pyIdx = 0;
-        var zhHtml = '';
+        // 收集为 token 数组：把标点合并到前一个汉字 token，避免末尾「？」单独换行
+        var tokens = [];
         Array.from(renderZh).forEach(function (ch) {
           if (/[\u4e00-\u9fff]/.test(ch)) {
             var q = annoQueue[ch] || [];
@@ -6943,17 +6944,28 @@
             var tip = a.perrMsg ? ' title="' + esc(a.perrMsg).replace(/"/g, '&quot;') + '"' : '';
             var py = esc(pySeq[pyIdx] || '');
             pyIdx++;
-            zhHtml += '<span class="anno-token">' +
-              '<span class="anno-token-py">' + py + '</span>' +
-              '<span class="anno-token-hz ' + (a.type || 'correct') + '"' + tip + '>' + esc(ch) + '</span>' +
-            '</span>';
+            tokens.push({
+              type: 'hz',
+              py: py,
+              hzHtml: '<span class="anno-token-hz ' + (a.type || 'correct') + '"' + tip + '>' + esc(ch) + '</span>'
+            });
           } else {
-            zhHtml += '<span class="anno-token">' +
-              '<span class="anno-token-py"></span>' +
-              '<span class="anno-token-hz punct">' + esc(ch) + '</span>' +
-            '</span>';
+            // 标点：若前一个是汉字 token，则把标点附加进去（同一 flex item，不会被拆行）
+            var last = tokens.length ? tokens[tokens.length - 1] : null;
+            var punctHtml = '<span class="anno-token-hz punct">' + esc(ch) + '</span>';
+            if (last && last.type === 'hz') {
+              last.hzHtml += punctHtml;
+            } else {
+              tokens.push({ type: 'punct', py: '', hzHtml: punctHtml });
+            }
           }
         });
+        var zhHtml = tokens.map(function (t) {
+          return '<span class="anno-token">' +
+            '<span class="anno-token-py">' + t.py + '</span>' +
+            t.hzHtml +
+          '</span>';
+        }).join('');
         document.getElementById("eval-anno-chars").innerHTML = '<div class="anno-grid">' + zhHtml + '</div>';
         compareCard.style.display = "block";
       } else {
