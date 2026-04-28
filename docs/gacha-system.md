@@ -14,6 +14,7 @@
 - 不打断学习心流：抽卡入口只在"自然停顿点"出现
 - 内容驱动：盲盒是叙事杠杆，不是单纯付费墙
 - 配置驱动：系列/物品/概率全在配置表里，不写死代码
+- **渐进式门槛 + 平滑奖励曲线**：保证所有水平用户首次抽卡都在前 2 课内触发
 
 **Phase 1 范围（本文档覆盖）**
 - 单系列（"初见诺拉"）首发，6 件物品
@@ -32,6 +33,35 @@
 ---
 
 ## 2. 数据模型
+
+### 2.0 货币产出与抽卡门槛
+
+**单句跟读奖励曲线**（替换原有 1/2/3 币方案）：
+
+| 跟读得分 | 回声币 |
+|---------|--------|
+| 60-80   | **2** 币 |
+| 80-90   | **3** 币 |
+| 90+     | **5** 币 |
+
+**渐进式抽卡门槛**（首次抽卡保证在前 2 课内触发）：
+
+```js
+const GACHA_THRESHOLDS = [10, 25, 50];  // 第 1 / 2 / 3+ 次抽卡所需币数
+function getCurrentThreshold(pullCount) {
+  return GACHA_THRESHOLDS[Math.min(pullCount, GACHA_THRESHOLDS.length - 1)];
+}
+```
+
+`pullCount` 从 0 起累加，前两次抽卡享受新手价（10 / 25），第 3 次起稳态 50 币。
+
+**节奏验证表**（4 句 / 课）：
+
+| 用户表现 | 单课收益 | 首次抽卡 | 第 2 次 | 稳态频率 |
+|---------|---------|---------|---------|----------|
+| 全 90+   | 20 币 | 第 1 课 | 第 2 课中段 | 每 2-3 课 |
+| 全 80-90 | 12 币 | 第 1 课 | 第 2-3 课 | 每 4-5 课 |
+| 全 60-80 | 8 币 | 第 2 课 | 第 4-5 课 | 每 6-7 课 |
 
 ### 2.1 物品定义（静态配置 · 写死在代码里）
 
@@ -134,7 +164,8 @@ const GACHA_RATES = {
   },
   flags: {
     storeUnlockedSeen: true,     // 是否看过首次解锁动画
-    lastUnlockAt:      0
+    lastUnlockAt:      0,
+    pullCount:         2         // 累计抽卡次数（用于查 GACHA_THRESHOLDS）
   }
 }
 ```
@@ -170,11 +201,14 @@ function pullGacha(seriesId) {
   const series = GACHA_SERIES[seriesId];
   const state  = loadGachaState();
 
+  // 0. 计算当前门槛（渐进式：前两次便宜）
+  const cost = getCurrentThreshold(state.flags.pullCount);
+
   // 1. 校验余额
-  if (getCoins() < series.cost) return { ok: false, reason: 'no-coins' };
+  if (getCoins() < cost) return { ok: false, reason: 'no-coins' };
 
   // 2. 扣币
-  spendCoins(series.cost);
+  spendCoins(cost);
 
   // 3. 决定稀有度（含保底覆盖）
   const tier = rollTier(state.pity[seriesId]);
@@ -192,13 +226,14 @@ function pullGacha(seriesId) {
   // 重复仍然 +1 count，方便统计
   if (isDup) state.collection[item.id].count++;
 
-  // 6. 更新保底计数
+  // 6. 更新保底计数 + 抽卡次数
   updatePity(state.pity[seriesId], tier);
+  state.flags.pullCount++;
 
   // 7. 持久化
   saveGachaState(state);
 
-  return { ok: true, item, isDup, tier, shardsGained: isDup ? SHARD_REWARD[tier] : 0 };
+  return { ok: true, item, isDup, tier, cost, shardsGained: isDup ? SHARD_REWARD[tier] : 0 };
 }
 ```
 
@@ -244,8 +279,8 @@ function pickItemByTier(items, tier) {
 
 | 入口 | 触发 | 视觉 |
 |------|------|------|
-| **解锁弹窗** | 金币 ≥ 50 时 `addCoins()` 内触发，`flags.lastUnlockAt` 防重 | 顶部下滑通知条 + 2 秒后自动展示按钮 |
-| **评分页 🎁** | 评分页 render 时检查 `getCoins() >= 50` | 右上角常驻图标 |
+| **解锁弹窗** | 金币 ≥ `getCurrentThreshold(pullCount)` 时 `addCoins()` 内触发，`flags.lastUnlockAt` 防重 | 顶部下滑通知条 + 2 秒后自动展示按钮 |
+| **评分页 🎁** | 评分页 render 时检查 `getCoins() >= getCurrentThreshold(pullCount)` | 右上角常驻图标 |
 | **顶部金币条** | 任意时刻点击金币条（已有）| 增加 onClick → 进商店 |
 
 ### 4.2 商店页（新页面 `#gacha-store-page`）
@@ -355,11 +390,13 @@ const outfitFull = equippedId
 // ════════════════════════════════════════════════
 
 // ─ 5.1 配置层 ─────────────────────────────────
-const GACHA_SERIES = { ... };
-const GACHA_RATES  = { ... };
-const SHARD_REWARD = { N: 1, R: 3, SR: 8, SSR: 20 };
-const SHARD_PRICE  = { N: 5, R: 15, SR: 40, SSR: 80 };
-const DEFAULT_COVER = { nora: '/assets/...', ... };
+const GACHA_SERIES     = { ... };
+const GACHA_RATES      = { ... };
+const GACHA_THRESHOLDS = [10, 25, 50];   // 渐进式门槛
+const COIN_REWARD      = { tier1: 2, tier2: 3, tier3: 5 };  // 60-80/80-90/90+
+const SHARD_REWARD     = { N: 1, R: 3, SR: 8, SSR: 20 };
+const SHARD_PRICE      = { N: 5, R: 15, SR: 40, SSR: 80 };
+const DEFAULT_COVER    = { nora: '/assets/...', ... };
 
 // ─ 5.2 状态层 ─────────────────────────────────
 function loadGachaState()  { /* localStorage 读取，缺省返回初始结构 */ }
@@ -431,11 +468,20 @@ public/assets/
 ## 7. 与既有系统的集成点
 
 ### 7.1 金币结算
-当前 `addCoins(n)` 在跟读评分结束时调用。需要在其末尾插入：
+当前评分逻辑给币数为 1/2/3，需要替换为新曲线 2/3/5：
+```js
+function scoreToCoins(score) {
+  if (score >= 90) return COIN_REWARD.tier3;   // 5 币
+  if (score >= 80) return COIN_REWARD.tier2;   // 3 币
+  if (score >= 60) return COIN_REWARD.tier1;   // 2 币
+  return 0;
+}
+```
+`addCoins(n)` 在跟读评分结束时调用。需要在其末尾插入：
 ```js
 function addCoins(n) {
   // ...既有逻辑...
-  checkGachaUnlock();   // 新增
+  checkGachaUnlock();   // 新增：内部用 getCurrentThreshold(pullCount) 判断
 }
 ```
 
@@ -524,7 +570,11 @@ Phase 2 增加配置项：
 
 ## 10. 测试清单（Phase 1 上线前）
 
-- [ ] 首次进入：`gachaState` 正确初始化
+- [ ] 首次进入：`gachaState` 正确初始化（`pullCount = 0`）
+- [ ] **第 1 次抽卡**：门槛显示为 10 币、扣 10 币
+- [ ] **第 2 次抽卡**：门槛显示为 25 币
+- [ ] **第 3 次起**：门槛稳定在 50 币
+- [ ] 单句评分曲线：60 分得 2 币、85 分得 3 币、95 分得 5 币
 - [ ] 单抽：扣币、抽出物品、入库、动画完整
 - [ ] 重复抽到 N → 碎片正确累加
 - [ ] 连抽 10 次：第 10 次出现 SR 或 SSR（中保底）
