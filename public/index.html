@@ -2956,7 +2956,10 @@
       flex: 1; display: flex; align-items: center;
       width: 100%; overflow: hidden; min-height: 0;
       position: relative; z-index: 1;
+      cursor: grab;
+      user-select: none;
     }
+    .chs-track-wrap:active { cursor: grabbing; }
     .chs-track {
       display: flex; gap: 20px;
       will-change: transform; padding: 24px 0; align-items: center;
@@ -10274,6 +10277,8 @@
     var CHS_GAP      = 20;
     var _chsTouchX   = 0;
     var _chsSwiping  = false;
+    var _chsMouseX   = 0;
+    var _chsDragging = false;
 
     function isLessonCompleted(idx) {
       try { return !!localStorage.getItem('sl_completed_' + idx); } catch(e) { return false; }
@@ -10484,6 +10489,8 @@
       var wrap = document.getElementById('chs-track-wrap');
       if (!wrap || wrap._chsTouch) return;
       wrap._chsTouch = true;
+
+      // ── 触屏滑动 ────────────────────────────────────────────────
       wrap.addEventListener('touchstart', function(e) {
         _chsTouchX  = e.touches[0].clientX;
         _chsSwiping = true;
@@ -10496,6 +10503,41 @@
           else        chsSetActive(chsActiveIdx - 1);
         }
       }, {passive: true});
+
+      // ── 鼠标拖拽 ────────────────────────────────────────────────
+      wrap.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        _chsMouseX   = e.clientX;
+        _chsDragging = true;
+        wrap.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (!_chsDragging) return;
+        var track = document.getElementById('chs-track');
+        if (!track) return;
+        var dx  = e.clientX - _chsMouseX;
+        var vw  = window.innerWidth || 375;
+        var base = (vw / 2) - (CHS_CARD_W / 2) - chsActiveIdx * (CHS_CARD_W + CHS_GAP);
+        track.classList.add('no-anim');
+        track.style.transform = 'translateX(' + Math.round(base + dx) + 'px)';
+      });
+
+      document.addEventListener('mouseup', function(e) {
+        if (!_chsDragging) return;
+        _chsDragging = false;
+        wrap.style.cursor = '';
+        var track = document.getElementById('chs-track');
+        if (track) track.classList.remove('no-anim');
+        var dx = e.clientX - _chsMouseX;
+        if (Math.abs(dx) > 50) {
+          if (dx < 0) chsSetActive(chsActiveIdx + 1);
+          else        chsSetActive(chsActiveIdx - 1);
+        } else {
+          chsUpdateTrack(true); // 未达阈值：回弹到原位
+        }
+      });
     }
 
     // ── Init ──────────────────────────────────────────────────
