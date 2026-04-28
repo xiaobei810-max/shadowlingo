@@ -9359,13 +9359,10 @@
           { icon: '💬', label: '室友日常', labelEn: 'ROOMMATE VIBE',
             val: '别见外啊，有事直接喊我！', quote: true },
         ],
-        body:    '/assets/characters/qiqi/qiqi_body.png',
+        /* 单图立绘：头/衣/身已在源文件中合成为一张 RGBA PNG */
+        singleSprite: '/assets/characters/qiqi/qiqi_full_base.png',
+        /* 小头像仍单独使用 qiqi_head.png（context-panel / sentence-box / DLP / _plpSpeakerMeta）*/
         head:    '/assets/characters/qiqi/qiqi_head.png',
-        clothes: '/assets/clothes/qiqi_clothes_jeans_jacket.png',
-        /* 与明轩相同的初始 transform 起点；上线后如发现错位再微调 */
-        bodyTf:    'translate(-45px,-25px) scale(1.14)',
-        clothesTf: 'translate(-38px,-14px) scale(1.08)',
-        headTf:    'translate(-34px,-9px) scale(1.06)',
       },
 
       nora: {
@@ -9409,9 +9406,8 @@
         '/assets/characters/mingxuan/mingxuan_body.png',
         '/assets/characters/mingxuan/mingxuan_head.png',
         '/assets/clothes/mx_clothes_green_jacket.png',
-        '/assets/characters/qiqi/qiqi_body.png',
+        '/assets/characters/qiqi/qiqi_full_base.png',
         '/assets/characters/qiqi/qiqi_head.png',
-        '/assets/clothes/qiqi_clothes_jeans_jacket.png',
       ].forEach(function(src) { var img = new Image(); img.src = src; });
     })();
 
@@ -9516,7 +9512,23 @@
 
       // ── 立绘图层（支持任意层数的 layers 数组，或旧版 body/clothes/head 三层）──
       var sprite = el('char-intro-sprite');
-      if (c.layers) {
+      if (c.singleSprite) {
+        // 单图立绘：源文件已合成头/衣/身，直接居中渲染
+        sprite.className = '';
+        sprite.style.cssText =
+          'position:absolute;top:0;left:0;width:100%;height:100%;' +
+          'transform:none;overflow:visible;z-index:2;pointer-events:none;';
+        sprite.innerHTML =
+          '<div style="position:absolute;bottom:0;left:0;width:100%;height:100%;' +
+                      'transform:scale(1.18);transform-origin:bottom center;' +
+                      'overflow:visible !important;pointer-events:none;">' +
+            '<img src="' + c.singleSprite + '" style="' +
+              'position:absolute;bottom:0;left:50%;transform:translateX(-50%);' +
+              'height:100%;width:auto;max-width:none;object-fit:contain;' +
+              'filter:contrast(1.05) brightness(0.95);' +
+            '" />' +
+          '</div>';
+      } else if (c.layers) {
         // 外层：全卡片透明底座，清除所有 CSS 类偏移
         sprite.className = '';
         sprite.style.cssText =
