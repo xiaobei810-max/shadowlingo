@@ -50,12 +50,12 @@ const VOICES = {
     rateScale: 1.0,
     pitchAdj:  '+4%',
   },
-  // 夏七七：活力大学生女声，热情爽朗（XiaochenNeural 比 XiaoyiNeural 成熟、不幼态），语速 +5%
+  // 夏七七：活力大学生女声，热情爽朗（XiaohanNeural 成熟干练，Edge TTS 稳定支持），语速 +5%
   qiqi: {
-    name:      'zh-CN-XiaochenNeural',
+    name:      'zh-CN-XiaohanNeural',
     lang:      'zh-CN',
     rateScale: 1.05,
-    pitchAdj:  '+3%',
+    pitchAdj:  '+2%',
   },
 };
 
