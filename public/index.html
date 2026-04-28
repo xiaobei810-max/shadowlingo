@@ -3881,7 +3881,7 @@
         cgImage:   '/assets/cg/lesson5_dorm.png',
         cardImage: '/assets/cg/lesson5_dorm_card.jpg',
         cgText:  '阳光、笑脸与新室友，这是大学生活最完美的开场白。',
-        cgTextEn: 'Sunlight, smiling faces, and a new roommate — the perfect opening line to university life.',
+        cgTextEn: 'Sunlight, smiling faces, and a new roommate — the perfect opening to university life.',
         coverScene: {
           zh: 'Nora 打开宿舍门，<br>见到了中国室友夏七七。',
           en: "Nora opens the dorm door and meets her Chinese roommate, Xia Qiqi."
@@ -4510,22 +4510,44 @@
 
     // 把后端 perrMsg 转成纯英文一行
     // 计算音变后的正确声调（一/不/三声连读等）
-    function computeSandhiTones(chars) {
+    // 从原始文本（含标点）计算"断点"集合：Set<number>，breaks.has(i) = 第 i 个汉字之后有标点阻断
+    // 规则：两个汉字之间若有任意标点符号，则它们之间存在断点，三声连读/一/不变调不跨断点
+    function _computeSandhiBreaks(text) {
+      var PUNCT_RE = /[，。！？、；,;.!?]/;
+      var breaks = new Set();
+      var hanziIdx = -1;
+      var hadPunct = false;
+      for (var ci = 0; ci < (text || '').length; ci++) {
+        var ch = text[ci];
+        if (/[\u4e00-\u9fff]/.test(ch)) {
+          if (hadPunct && hanziIdx >= 0) breaks.add(hanziIdx);
+          hanziIdx++;
+          hadPunct = false;
+        } else if (PUNCT_RE.test(ch)) {
+          hadPunct = true;
+        }
+      }
+      return breaks;
+    }
+
+    // breaks: Set<number>（可选），breaks.has(i) 表示第 i 和第 i+1 个汉字之间有断点
+    function computeSandhiTones(chars, breaks) {
       if (!chars || !chars.length) return [];
       var tones = chars.map(function (c) {
         return { c: c.c, p: c.p, tone: parseInt((c.p || '').slice(-1)) || 0 };
       });
 
-      // 三声连读（分组变调）：在连续三声段中，将字按两字一组从左配对，
-      // 每组的第一个字变为2声，第二个字保持3声。
+      function hasBreak(i) { return !!(breaks && breaks.has(i)); }
+
+      // 三声连读（分组变调）：在连续三声段中，将字按两字一组从左配对；
+      // 遇到断点（标点阻断）立即终止当前段。
       // 例：你(3)好(3)打(3)扰(3) → [你好][打扰] → 你(2)好(3)打(2)扰(3)
-      // 例：你(3)好(3)打(3) → [你好][打] → 你(2)好(3)打(3)
+      // 例：有(3)。我(3) → 断点切断 → 各自独立，不触发变调
       var i = 0;
       while (i < tones.length) {
         if (tones[i].tone === 3) {
           var j = i;
-          while (j < tones.length && tones[j].tone === 3) j++;
-          // [i, j) 是连续三声段，对段内偶数步（0-indexed 内部偏移）且后面还有三声字的位置变调
+          while (j < tones.length && tones[j].tone === 3 && !(j > i && hasBreak(j - 1))) j++;
           for (var k = i; k < j - 1; k += 2) {
             tones[k].sandhiTone = 2;
           }
@@ -4535,9 +4557,10 @@
         }
       }
 
-      // 一 / 不 音变
+      // 一 / 不 音变：若与下一字之间有断点，视为句末，不触发变调
       for (var i2 = 0; i2 < tones.length; i2++) {
-        var cur = tones[i2], nxt = tones[i2 + 1];
+        var cur = tones[i2];
+        var nxt = !hasBreak(i2) ? tones[i2 + 1] : undefined;
         var nxtTone = nxt ? nxt.tone : 0;
         if (cur.c === '一' && cur.tone === 1) {
           cur.sandhiTone = (nxtTone === 4) ? 2 : (nxtTone >= 1 && nxtTone <= 3) ? 4 : 1;
@@ -4971,7 +4994,7 @@
 
     // 发音提示：去重 + 每字一条 + 双语 + 分类教学
     // 返回 Array<{char, isRed, icon, zh, en}>
-    function iseHintText(words, chars) {
+    function iseHintText(words, chars, text) {
       var reds    = words.filter(function (w) { return w.perrLevel === 2; });
       var yellows = words.filter(function (w) { return w.perrLevel === 1; });
       // 补充：腾讯有时返回 perrLevel=0 但 perrMsg 非空（有实质错误描述却未升级 level）
@@ -4985,7 +5008,7 @@
 
       // 构建音变后声调队列（按字符分组，保持出现顺序）
       var sandhiQueue = {};
-      computeSandhiTones(chars || []).forEach(function (item) {
+      computeSandhiTones(chars || [], _computeSandhiBreaks(text || '')).forEach(function (item) {
         if (!sandhiQueue[item.c]) sandhiQueue[item.c] = [];
         sandhiQueue[item.c].push(item);
       });
@@ -5816,7 +5839,7 @@
         if (signalPromotedCount > 0) {
           console.log('[Signal→UI] 同步台词高亮:', signalPromotedCount);
         }
-        var hintItems = iseHintText(result.wordResults, s.chars);
+        var hintItems = iseHintText(result.wordResults, s.chars, s.zh);
         var hintPromotedCount = promoteWordIssuesFromSignals(result.wordResults, [], [], hintItems);
         if (hintPromotedCount > 0) {
           console.log('[Hint→UI] 按指南提示同步台词高亮:', hintPromotedCount);
@@ -6188,7 +6211,7 @@
 
       // ── Sandhi: build lookup, then two-pass DOM construction ────
 
-      var sandhiArr = computeSandhiTones(chars || []);
+      var sandhiArr = computeSandhiTones(chars || [], _computeSandhiBreaks(text));
       var sandhiByChar = {};
       sandhiArr.forEach(function (item) {
         if (!sandhiByChar[item.c]) sandhiByChar[item.c] = [];
@@ -8204,7 +8227,7 @@
           ri2++;
         }
       });
-      var dlpSandhiArr = computeSandhiTones(chars4s);
+      var dlpSandhiArr = computeSandhiTones(chars4s, _computeSandhiBreaks(text));
       var dlpSandhiByChar = {};
       dlpSandhiArr.forEach(function (item) {
         if (!dlpSandhiByChar[item.c]) dlpSandhiByChar[item.c] = [];
@@ -8936,13 +8959,20 @@
         if (btnRow_bs) btnRow_bs.style.display = '';
         if (btnRow_bn) btnRow_bn.style.display = '';
       } else {
-        // 情况 C：整页无 Nora（如 L3 末页 = 工作人员 + 明轩）
-        _renderContextPanel('above', top);
+        // 情况 C：整页无 Nora（如 L5 第2页 = 七七 + 明轩）
+        // 上方渲染 top（在 sentence-box 中，供播放/卡拉OK），下方渲染 bottom（context panel）
+        _placeNoraInSentenceBox(top);          // 复用布局但显示本地话者
         _renderContextPanel('below', bottom);
-        currentSentenceForEval = null;
-        if (btnRow_bs) btnRow_bs.style.display = 'none';
-        if (btnRow_bn) btnRow_bn.style.display = 'none';
-        setStatus("听完两句后点击 ▶ 下一页");
+        // 给 doSlow() 提供播放目标（top 这句）
+        currentSentenceForEval = {
+          zh: top.zh, pinyin: top.pinyin, en: top.en,
+          _sid: top._sid, role: top.role, chars: []
+        };
+        buildKara(top.zh, []);
+        resetKara();
+        if (btnRow_bs) btnRow_bs.style.display = '';  // 播放键显示
+        if (btnRow_bn) btnRow_bn.style.display = 'none'; // 无 Nora 句 → 录音无意义
+        setStatus("听完后点击 ▶ 下一页");
       }
 
       // 淡入过渡，掩盖切换瞬间
@@ -9929,10 +9959,14 @@
 
       if (newChars.length > 0) {
         // 有新角色 → 先隐藏封面，再进角色介绍
+        // 若本课有 cgText，角色介绍结束后插入 CG 页，再进生词卡
+        var _afterIntro = (lesson.cgText && lesson.cgImage)
+          ? function() { showLessonCg(lesson.cgImage, showFlashcardPage); }
+          : showFlashcardPage;
         document.getElementById('cover-page').classList.remove('show');
         var _ciOverlay = document.getElementById('char-intro-overlay');
         if (_ciOverlay) _ciOverlay.style.transition = 'none';
-        charIntroCheck(showFlashcardPage);
+        charIntroCheck(_afterIntro);
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
             if (_ciOverlay) _ciOverlay.style.transition = '';
