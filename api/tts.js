@@ -5,6 +5,7 @@
  *   local   → 明轩（中文男声，zh-CN-YunxiNeural）
  *   learner → Nora（带外国口音的女声，en-US-AvaMultilingualNeural 读中文）
  *   linyue  → 林欣悦（中文女声，zh-CN-XiaoxiaoNeural）
+ *   qiqi    → 夏七七（活泼年轻女声，zh-CN-XiaoyiNeural）
  */
 
 const WebSocket = require('ws');
@@ -48,6 +49,13 @@ const VOICES = {
     lang:      'zh-CN',
     rateScale: 1.0,
     pitchAdj:  '+4%',
+  },
+  // 夏七七：活泼年轻女声，热情爽朗，语速稍快
+  qiqi: {
+    name:      'zh-CN-XiaoyiNeural',
+    lang:      'zh-CN',
+    rateScale: 1.05,
+    pitchAdj:  '+6%',
   },
 };
 
