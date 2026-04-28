@@ -10279,6 +10279,8 @@
     var _chsSwiping  = false;
     var _chsMouseX   = 0;
     var _chsDragging = false;
+    var _chsWheelAcc = 0;       // 触控板水平滚动累积量
+    var _chsWheelTimer = null;  // 惯性停止检测定时器
 
     function isLessonCompleted(idx) {
       try { return !!localStorage.getItem('sl_completed_' + idx); } catch(e) { return false; }
@@ -10538,6 +10540,46 @@
           chsUpdateTrack(true); // 未达阈值：回弹到原位
         }
       });
+
+      // ── 触控板水平滑动（wheel deltaX）────────────────────────────
+      wrap.addEventListener('wheel', function(e) {
+        var absDx = Math.abs(e.deltaX);
+        var absDy = Math.abs(e.deltaY);
+        // 只响应明显的水平方向滑动，忽略普通纵向滚动
+        if (absDx < absDy * 0.5 || absDx < 2) return;
+        e.preventDefault();
+
+        _chsWheelAcc += e.deltaX;
+
+        // 实时拖拽视觉
+        var track = document.getElementById('chs-track');
+        if (track) {
+          var vw   = window.innerWidth || 375;
+          var base = (vw / 2) - (CHS_CARD_W / 2) - chsActiveIdx * (CHS_CARD_W + CHS_GAP);
+          track.classList.add('no-anim');
+          // 限制最大视觉偏移，避免拖得太远
+          var visual = Math.max(-CHS_CARD_W * 0.6, Math.min(CHS_CARD_W * 0.6, -_chsWheelAcc));
+          track.style.transform = 'translateX(' + Math.round(base + visual) + 'px)';
+        }
+
+        // 累积超过阈值 → 立即切换，重置
+        if (Math.abs(_chsWheelAcc) > 80) {
+          var dir = _chsWheelAcc > 0 ? 1 : -1;
+          _chsWheelAcc = 0;
+          if (track) track.classList.remove('no-anim');
+          if (_chsWheelTimer) { clearTimeout(_chsWheelTimer); _chsWheelTimer = null; }
+          chsSetActive(chsActiveIdx + dir);
+          return;
+        }
+
+        // 惯性停止：100ms 无新事件则回弹
+        if (_chsWheelTimer) clearTimeout(_chsWheelTimer);
+        _chsWheelTimer = setTimeout(function() {
+          _chsWheelAcc = 0;
+          if (track) track.classList.remove('no-anim');
+          chsUpdateTrack(true);
+        }, 120);
+      }, {passive: false});
     }
 
     // ── Init ──────────────────────────────────────────────────
