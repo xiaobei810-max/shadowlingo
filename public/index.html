@@ -9554,9 +9554,9 @@
           'position:absolute;top:0;left:0;width:100%;height:100%;' +
           'transform:none;overflow:visible;z-index:2;pointer-events:none;';
         sprite.innerHTML =
-          '<img src="' + c.singleSprite + '?v=2" style="' +
+          '<img src="' + c.singleSprite + '?v=3" style="' +
             'position:absolute;bottom:0;left:50%;transform:translateX(-50%);' +
-            'height:88%;width:auto;max-width:none;object-fit:contain;' +
+            'height:108%;width:auto;max-width:none;object-fit:contain;' +
             'filter:contrast(1.05) brightness(0.95);' +
           '" />';
       } else if (c.layers) {
@@ -9595,19 +9595,9 @@
       // 显示弹窗
       el('char-intro-overlay').classList.add('visible');
 
-      // 自动播放问候语（受浏览器 autoplay 策略限制，改为脉冲动画提示用户点击）
+      // 自动播放问候语
       if (!isProfile) {
-        setTimeout(function() {
-          var bar = document.getElementById('char-intro-voice-bar');
-          if (bar) {
-            bar.classList.remove('pulse');
-            void bar.offsetWidth; // 强制回流，确保动画重置
-            bar.classList.add('pulse');
-            bar.addEventListener('animationend', function() {
-              bar.classList.remove('pulse');
-            }, { once: true });
-          }
-        }, 600);
+        setTimeout(function() { charIntroPlayGreeting(); }, 600);
       }
     }
 

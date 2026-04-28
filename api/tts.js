@@ -50,12 +50,13 @@ const VOICES = {
     rateScale: 1.0,
     pitchAdj:  '+4%',
   },
-  // 夏七七：活力大学生女声，热情爽朗（XiaohanNeural 成熟干练，Edge TTS 稳定支持），语速 +5%
+  // 夏七七：活力大学生女声 — 与林欣悦同基底（XiaoxiaoNeural，Edge TTS 稳定支持），
+  // 通过 +8% 语速 + +5% 音高让七七听起来更年轻活泼，避免"声音不响"问题
   qiqi: {
-    name:      'zh-CN-XiaohanNeural',
+    name:      'zh-CN-XiaoxiaoNeural',
     lang:      'zh-CN',
-    rateScale: 1.05,
-    pitchAdj:  '+2%',
+    rateScale: 1.08,
+    pitchAdj:  '+5%',
   },
 };
 
