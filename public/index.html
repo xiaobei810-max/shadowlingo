@@ -3386,6 +3386,7 @@
           <div class="card-content-col">
             <div class="learner-panel-hdr">
               <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">诺拉 · Nora</span>
+              <button class="ctx-play-btn" id="sentence-play-btn" onclick="playSentenceTop()" style="display:none">▶ 播放 Play</button>
               <div class="mascot-ring" id="ring"></div>
             </div>
             <div class="kara-wrap" id="kara"></div>
@@ -7429,8 +7430,10 @@
       stopAudio();
       var btnAbove = document.getElementById('ctx-play-btn');
       var btnBelow = document.getElementById('ctx-play-btn-below');
+      var btnTop   = document.getElementById('sentence-play-btn');
       if (btnAbove) { btnAbove.textContent = '▶ 播放 Play'; btnAbove.classList.remove('playing'); }
       if (btnBelow) { btnBelow.textContent = '▶ 播放 Play'; btnBelow.classList.remove('playing'); }
+      if (btnTop)   { btnTop.textContent   = '▶ 播放 Play'; btnTop.classList.remove('playing'); }
       ctxPlayingId = null;
       ctxPausedId = null;
       setPanelFocus('learner');
@@ -7553,6 +7556,49 @@
           if (ctxBelowZhEl) ctxRunKara(ctxBelowZhEl, dur * 1000,
             computeCharTimingsForDuration(zh, pinyin, dur));
         });
+    }
+
+    // 情况 C 专用：播放上方（sentence-box）非 Nora 说话人台词
+    function playSentenceTop() {
+      if (phase === 'recording') return;
+      var btn = document.getElementById('sentence-play-btn');
+      // 已暂停 → 继续
+      if (ctxPausedId === 'top') {
+        resumeAudio();
+        resumeKaraTimer();
+        ctxPlayingId = 'top'; ctxPausedId = null;
+        if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+        return;
+      }
+      // 正在播放 → 暂停
+      if (ctxPlayingId === 'top') {
+        pauseAudio();
+        pauseKaraTimer();
+        ctxPausedId = 'top'; ctxPlayingId = null;
+        if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
+        return;
+      }
+      // 开始播放
+      stopCtxTTS();
+      var s = currentSentenceForEval;
+      if (!s) return;
+      var role = (s._sid === 'qiqi') ? 'qiqi'
+               : (s._sid === 'staff') ? 'linyue'
+               : 'local';
+      ctxPlayingId = 'top';
+      resetKara();
+      if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+      speakAzure(s.zh, role, 1.0,
+        function () {
+          if (ctxPlayingId === 'top') { ctxPlayingId = null; ctxPausedId = null; }
+          if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
+          completeKara();
+        },
+        function (dur) {
+          var timings = computeCharTimingsForDuration(s.zh, s.pinyin, dur);
+          runKaraTimedMain(dur * 1000, timings, false);
+        }
+      );
     }
 
     function doPrev() {
@@ -8888,6 +8934,7 @@
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
       if (el("bn"))     { el("bn").disabled = false;     el("bn").classList.remove("active");     el("bn").textContent = "🎤 录音 Record"; }
       if (el("bs"))     { el("bs").disabled = false;     el("bs").classList.remove("active");     el("bs").textContent = "▶ 跟读 Listen"; }
+      if (el("sentence-play-btn")) { el("sentence-play-btn").textContent = '▶ 播放 Play'; el("sentence-play-btn").classList.remove('playing'); }
       if (el("bm"))     el("bm").classList.remove("active");
       if (el("bdone"))  el("bdone").className = "btn btn-done show";
       if (el("bretry")) el("bretry").className = "btn btn-retry";
@@ -8909,6 +8956,8 @@
       var ctxBelowPanel    = document.getElementById('context-panel-below');
       var btnRow_bs        = document.getElementById('bs');
       var btnRow_bn        = document.getElementById('bn');
+      var speedCtrl        = document.querySelector('.speed-control');
+      var sentencePlayBtn  = document.getElementById('sentence-play-btn');
 
       // 先全部隐藏，再按情况显示
       if (sentenceBox)   sentenceBox.style.display   = 'none';
@@ -8952,26 +9001,30 @@
         _renderContextPanel('below', bottom);
         if (btnRow_bs) btnRow_bs.style.display = '';
         if (btnRow_bn) btnRow_bn.style.display = '';
+        if (speedCtrl) speedCtrl.style.display = '';
+        if (sentencePlayBtn) sentencePlayBtn.style.display = 'none';
       } else if (noraLine && noraLine === bottom) {
         // 情况 B：Nora 在下方
         _renderContextPanel('above', top);
         _placeNoraInSentenceBox(bottom);
         if (btnRow_bs) btnRow_bs.style.display = '';
         if (btnRow_bn) btnRow_bn.style.display = '';
+        if (speedCtrl) speedCtrl.style.display = '';
+        if (sentencePlayBtn) sentencePlayBtn.style.display = 'none';
       } else {
         // 情况 C：整页无 Nora（如 L5 第2页 = 七七 + 明轩）
-        // 上方渲染 top（在 sentence-box 中，供播放/卡拉OK），下方渲染 bottom（context panel）
-        _placeNoraInSentenceBox(top);          // 复用布局但显示本地话者
+        _placeNoraInSentenceBox(top);
         _renderContextPanel('below', bottom);
-        // 给 doSlow() 提供播放目标（top 这句）
         currentSentenceForEval = {
           zh: top.zh, pinyin: top.pinyin, en: top.en,
           _sid: top._sid, role: top.role, chars: []
         };
         buildKara(top.zh, []);
         resetKara();
-        if (btnRow_bs) btnRow_bs.style.display = '';  // 播放键显示
-        if (btnRow_bn) btnRow_bn.style.display = 'none'; // 无 Nora 句 → 录音无意义
+        if (btnRow_bs) btnRow_bs.style.display = 'none';   // 隐藏跟读键
+        if (btnRow_bn) btnRow_bn.style.display = 'none';   // 无 Nora 句 → 录音无意义
+        if (speedCtrl) speedCtrl.style.display = 'none';   // 隐藏速度条
+        if (sentencePlayBtn) sentencePlayBtn.style.display = ''; // 显示播放键
         setStatus("听完后点击 ▶ 下一页");
       }
 
