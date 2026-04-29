@@ -4773,6 +4773,35 @@
     }
 
     // breaks: Set<number>（可选），breaks.has(i) 表示第 i 和第 i+1 个汉字之间有断点
+    // 词内 3+3 必变调白名单：这些是紧密词汇，变调强制，不放宽评分
+    // （白名单外的 3+3 视为跨词界/意群停顿，自然语流中可保留原 3 声）
+    var SANDHI_STRICT_BIGRAMS = {
+      // 高频问候 / 代词疑问词
+      '你好':1, '您好':1, '哪里':1,
+      // 助动词 / 连接词
+      '可以':1, '所以':1, '可有':1,
+      // 程度 / 数量副词 + 形容词（紧密结合）
+      '很好':1, '很美':1, '很早':1, '很短':1, '很敢':1, '很懒':1,
+      '几点':1, '几本':1, '几把':1, '几口':1, '几两':1,
+      '有点':1, '有理':1, '有种':1, '有胆':1,
+      // 常见复合名词
+      '老板':1, '老虎':1, '老手':1, '美好':1, '美女':1, '美感':1, '美满':1,
+      '水果':1, '友好':1, '雨伞':1, '总统':1, '总理':1,
+      '理想':1, '感想':1, '展览':1,
+      '宝马':1, '小狗':1, '小马':1, '小鸟':1, '小米':1,
+      // 常用形容词
+      '勇敢':1, '果敢':1, '简朴':1,
+      // 时间
+      '九点':1, '五点':1, '早起':1, '早点':1
+    };
+
+    // 判断 chars[i] + chars[i+1] 是否构成"词内强制变调"
+    function _isStrictSandhiAt(chars, i) {
+      if (!chars || i < 0 || i + 1 >= chars.length) return false;
+      var bigram = (chars[i].c || '') + (chars[i+1].c || '');
+      return !!SANDHI_STRICT_BIGRAMS[bigram];
+    }
+
     function computeSandhiTones(chars, breaks) {
       if (!chars || !chars.length) return [];
       var tones = chars.map(function (c) {
@@ -4859,14 +4888,9 @@
                  en: 'vowel: you said "' + rFinal + '", should be "' + cFinal + '"' };
       }
       var expectedTone = entry.expectedTone || correctTone;
-      var origTone     = entry.tone || correctTone;
-      // 3+3 变调宽容：自然语流中保留原 3 声也算对（一/不 变调仍严格）
-      var sandhiApplied = entry.sandhiTone && entry.sandhiTone !== entry.tone &&
-                          entry.c !== '一' && entry.c !== '不';
+      // 注意：此函数无 sentence 上下文，无法判断词内 vs 跨词界，故保持严格判定
+      // 跨词界宽容由 inferLevelAndReason()（活跃路径）处理
       if (recogTone && expectedTone && recogTone !== expectedTone) {
-        if (sandhiApplied && recogTone === origTone) {
-          return null; // 用户读了原声调，自然语流，接受
-        }
         return { zh: '声调错误：你读成了' + (toneNames[recogTone]||'第'+recogTone+'声') + '，应读' + (toneNames[expectedTone]||'第'+expectedTone+'声'),
                  en: 'wrong tone: you said ' + (toneNamesEn[recogTone]||recogTone+'th') + ', should be ' + (toneNamesEn[expectedTone]||expectedTone+'th') };
       }
@@ -5335,16 +5359,19 @@
         if (c && c.c && c.p) pyByIdx[i] = toToneMark(c.p);
       });
 
-      // 变调宽容映射：仅 3+3 变调允许保留原声调（一/不 变调更刚性，不放宽）
+      // 变调宽容映射：仅"跨词界 3+3"放宽（保留原 3 声也算对）
+      //   - 词内紧密 3+3（你好/可以/水果 等，见 SANDHI_STRICT_BIGRAMS）→ 严格判定
+      //   - 一/不 变调强制刚性，永不放宽
       var sandhiToleranceByIdx = {};
       try {
-        var _si = computeSandhiTones(
-          (sentence && sentence.chars) || [],
-          _computeSandhiBreaks((sentence && sentence.zh) || '')
-        );
+        var _chars = (sentence && sentence.chars) || [];
+        var _si = computeSandhiTones(_chars, _computeSandhiBreaks((sentence && sentence.zh) || ''));
         _si.forEach(function (info, i) {
           if (info && info.sandhiTone && info.sandhiTone !== info.tone &&
               info.c !== '一' && info.c !== '不') {
+            // 词内强制变调（如 你好）→ 不放宽
+            if (_isStrictSandhiAt(_chars, i)) return;
+            // 跨词界（如 辛苦|你了）→ 放宽，原 3 声 / 变调 2 声都接受
             sandhiToleranceByIdx[i] = { orig: info.tone, sandhi: info.sandhiTone };
           }
         });
@@ -6461,6 +6488,7 @@
     }
 
     // ── Sandhi tooltip text (shared by buildKara + dlpBuildKara) ────────
+    // sInfo 可携带 .strictBigram=true 表示词内必变调（不显示宽容提示）
     function _sandhiTip(c, sInfo) {
       var toT = sInfo.sandhiTone;
       if (c === '不') return '"不" 在4声前变2声（bú）\n不 before tone 4 → bú (tone 2)';
@@ -6469,6 +6497,10 @@
         var mk   = toT === 2 ? 'yí（2声）' : 'yì（4声）';
         return '"一" 在' + desc + '变' + mk + '\n' +
                (toT === 2 ? '一 + tone 4 → yí (tone 2)' : '一 + tone 1/2/3 → yì (tone 4)');
+      }
+      // 3+3 变调：词内必变 vs 跨词界可保留原声调
+      if (sInfo.strictBigram) {
+        return '3声+3声（词内）→ 变2声\n3rd+3rd within a word → say tone 2';
       }
       return '3声+3声连读，变2声\n3rd+3rd tone → say tone 2\n（自然语流中保留3声也可）\n(natural 3rd tone is also OK)';
     }
@@ -6483,7 +6515,11 @@
 
       var sandhiArr = computeSandhiTones(chars || [], _computeSandhiBreaks(text));
       var sandhiByChar = {};
-      sandhiArr.forEach(function (item) {
+      sandhiArr.forEach(function (item, _i) {
+        // 标记是否属于词内强制变调（如"你好"，提示文案与评分均严格）
+        if (item && item.sandhiTone && item.c !== '一' && item.c !== '不') {
+          item.strictBigram = _isStrictSandhiAt(chars || [], _i);
+        }
         if (!sandhiByChar[item.c]) sandhiByChar[item.c] = [];
         sandhiByChar[item.c].push(item);
       });
@@ -8544,7 +8580,10 @@
       });
       var dlpSandhiArr = computeSandhiTones(chars4s, _computeSandhiBreaks(text));
       var dlpSandhiByChar = {};
-      dlpSandhiArr.forEach(function (item) {
+      dlpSandhiArr.forEach(function (item, _i) {
+        if (item && item.sandhiTone && item.c !== '一' && item.c !== '不') {
+          item.strictBigram = _isStrictSandhiAt(chars4s, _i);
+        }
         if (!dlpSandhiByChar[item.c]) dlpSandhiByChar[item.c] = [];
         dlpSandhiByChar[item.c].push(item);
       });
