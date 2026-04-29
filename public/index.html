@@ -4833,6 +4833,7 @@
       state:     function() { var s = loadGachaState(); console.log('[gacha state]', s); return s; },
       threshold: function() { return getCurrentThreshold(loadGachaState().flags.pullCount); },
       reset:     function() { localStorage.removeItem(GACHA_STATE_KEY); console.log('[gacha] state reset'); },
+      open:      function() { openGachaStore(); console.log('[gacha] store opened'); },
       giveCoins: function(n) { var amt = n || 50; setCoins(getCoins() + amt); refreshCoinDisplay(); console.log('[gacha] coins =', getCoins()); },
       simulate:  function(n) {
         n = n || 10;
@@ -11701,6 +11702,8 @@
       // ────────────────────────────────────────────────────────
       loadState();
       refreshCoinDisplay();   // 初始化时显示余额
+      // 启动时也检查一次解锁（防止上次关闭时金币已够但 Toast 没弹）
+      try { checkGachaUnlock(); } catch(e) {}
       // 章节选择页作为入口，active 在已保存的 lessonIdx 上
       showChapterSelectPage(lessonIdx);
     });
