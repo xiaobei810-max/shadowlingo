@@ -2384,6 +2384,102 @@
     .gr-btn-primary { background: linear-gradient(135deg, #f5a623, #e0941c); color: #000; }
     .gr-btn-primary:hover:not(:disabled) { opacity: 0.9; }
 
+    /* ── 拆盒动效  Unboxing Animation (M3) ─────────────────────── */
+    .gacha-unbox-overlay {
+      position: fixed; inset: 0; z-index: 9550;
+      background: rgba(0,0,0,0.88);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+    .gacha-unbox-overlay.gu-visible { opacity: 1; }
+    .gacha-unbox-canvas {
+      position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    }
+    .gacha-unbox-box {
+      position: relative; z-index: 2;
+      width: 140px; height: 140px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 96px; line-height: 1;
+      transform: scale(0.5); opacity: 0;
+      transition: transform 0.45s cubic-bezier(.34,1.56,.64,1), opacity 0.3s ease, filter 0.5s ease;
+    }
+    .gacha-unbox-box.gu-box-pop { transform: scale(1.25); opacity: 1; }
+    .gacha-unbox-box.gu-box-shake {
+      animation: guShake 0.18s ease infinite;
+    }
+    @keyframes guShake {
+      0%,100% { transform: scale(1.25) rotate(0deg); }
+      25%     { transform: scale(1.25) rotate(-4deg); }
+      75%     { transform: scale(1.25) rotate(4deg); }
+    }
+    .gacha-unbox-box.gu-box-glow {
+      filter: drop-shadow(0 0 24px var(--tier-color, #fff))
+              drop-shadow(0 0 56px var(--tier-color, #fff));
+      animation: guShake 0.12s ease infinite,
+                 guPulse 0.5s ease infinite alternate;
+    }
+    @keyframes guPulse {
+      from { filter: drop-shadow(0 0 24px var(--tier-color, #fff))
+                     drop-shadow(0 0 56px var(--tier-color, #fff)); }
+      to   { filter: drop-shadow(0 0 40px var(--tier-color, #fff))
+                     drop-shadow(0 0 100px var(--tier-color, #fff)); }
+    }
+    .gacha-unbox-box.gu-box-burst {
+      animation: guBurst 0.35s ease forwards !important;
+    }
+    @keyframes guBurst {
+      0%   { transform: scale(1.25); opacity: 1; }
+      40%  { transform: scale(1.6);  opacity: 1; }
+      100% { transform: scale(0.2);  opacity: 0; }
+    }
+
+    .gacha-unbox-skip {
+      position: absolute; bottom: 36px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px; color: rgba(255,255,255,0.4);
+      letter-spacing: 0.6px; pointer-events: none;
+      animation: guSkipFade 1.2s 0.6s ease forwards; opacity: 0;
+    }
+    @keyframes guSkipFade { to { opacity: 1; } }
+
+    /* SSR 全屏金光斜扫 */
+    .gacha-ssr-beam {
+      position: absolute; top: -20%; bottom: -20%;
+      width: 90px; pointer-events: none; opacity: 0;
+      background: linear-gradient(90deg,
+                  rgba(245,166,35,0) 0%,
+                  rgba(255,221,120,0.65) 50%,
+                  rgba(245,166,35,0) 100%);
+      transform: skewX(-18deg) translateX(-100vw);
+      filter: blur(6px);
+      z-index: 4;
+    }
+    .gacha-ssr-beam.gu-beam-on { animation: guBeam 1.1s cubic-bezier(.4,0,.6,1) forwards; }
+    .gacha-ssr-beam-1 { left: 30%; }
+    .gacha-ssr-beam-2 { left: 60%; animation-delay: 0.18s !important; }
+    @keyframes guBeam {
+      0%   { opacity: 0; transform: skewX(-18deg) translateX(-100vw); }
+      20%  { opacity: 1; }
+      100% { opacity: 0; transform: skewX(-18deg) translateX(120vw); }
+    }
+
+    /* SSR 屏幕短暂闪白 */
+    .gacha-flash-white {
+      position: absolute; inset: 0; z-index: 5; pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.75), rgba(255,255,255,0));
+      opacity: 0;
+    }
+    .gacha-flash-white.gu-flash-on {
+      animation: guFlash 0.45s ease forwards;
+    }
+    @keyframes guFlash {
+      0%   { opacity: 0; }
+      30%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
     /* Wallet CTA 解锁状态 */
     .wp-cta-active {
       background: linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.08)) !important;
@@ -4959,7 +5055,174 @@
       }
       refreshCoinDisplay();
       _refreshGachaStoreUI();
-      showGachaResultCard(result);
+      // M3: 先播拆盒动画，结束后显示物品卡
+      playUnboxingAnimation(result, function() {
+        showGachaResultCard(result);
+      });
+    }
+
+    // ─ 5.7 拆盒动效  Unboxing Animation (M3) ──────────────────
+    // 时间轴（按稀有度分支，可点击屏幕跳过）：
+    //   0.00s   屏幕变暗 + 盲盒登场（scale 0.5→1.25）
+    //   0.30s   微震动开始
+    //   0.55s   光晕生效（颜色按稀有度，duration 也按稀有度）
+    //   0.55+G  粒子爆裂 + 盲盒消失 + (SSR) 全屏金光 + 闪白
+    //   0.55+G+0.45s  done() → 显示结果卡
+    // G (glow time): N=400 / R=600 / SR=900 / SSR=1500 ms
+    var TIER_PARTICLE_COUNT = { N: 14, R: 28, SR: 56, SSR: 110 };
+    var TIER_GLOW_MS        = { N: 400, R: 600, SR: 900, SSR: 1500 };
+
+    var _unboxOverlayEl = null;
+    var _unboxTimers    = [];
+    var _unboxRaf       = null;
+
+    function _unboxClearAll() {
+      _unboxTimers.forEach(function(t) { clearTimeout(t); });
+      _unboxTimers = [];
+      if (_unboxRaf) { cancelAnimationFrame(_unboxRaf); _unboxRaf = null; }
+    }
+
+    function playUnboxingAnimation(result, onComplete) {
+      var tier  = result.tier;
+      var color = TIER_COLOR[tier]    || '#fff';
+      var glowMs = TIER_GLOW_MS[tier]  || 600;
+
+      var ov = document.createElement('div');
+      ov.className = 'gacha-unbox-overlay';
+      ov.id = 'gacha-unbox-overlay';
+      ov.innerHTML =
+        '<canvas class="gacha-unbox-canvas" id="gacha-unbox-canvas"></canvas>' +
+        '<div class="gacha-unbox-box" id="gacha-unbox-box" style="--tier-color:' + color + '">🎁</div>' +
+        (tier === 'SSR'
+          ? '<div class="gacha-flash-white" id="gacha-flash-white"></div>' +
+            '<div class="gacha-ssr-beam gacha-ssr-beam-1" id="gacha-beam-1"></div>' +
+            '<div class="gacha-ssr-beam gacha-ssr-beam-2" id="gacha-beam-2"></div>'
+          : '') +
+        '<div class="gacha-unbox-skip">点击跳过 · Tap to skip</div>';
+      document.body.appendChild(ov);
+      _unboxOverlayEl = ov;
+      _unboxClearAll();
+
+      // canvas 尺寸跟随窗口
+      var canvas = document.getElementById('gacha-unbox-canvas');
+      var ctx = canvas.getContext('2d');
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width  = Math.round(window.innerWidth  * dpr);
+      canvas.height = Math.round(window.innerHeight * dpr);
+      canvas.style.width  = window.innerWidth  + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(dpr, dpr);
+
+      var skipped = false;
+      var finished = false;
+      function finish() {
+        if (finished) return;
+        finished = true;
+        _unboxClearAll();
+        if (ov.parentNode) ov.parentNode.removeChild(ov);
+        _unboxOverlayEl = null;
+        if (onComplete) onComplete();
+      }
+      function skip() {
+        if (skipped) return;
+        skipped = true;
+        finish();
+      }
+      ov.addEventListener('click', skip);
+
+      // 0.0s — 渐入显示
+      requestAnimationFrame(function() { ov.classList.add('gu-visible'); });
+      var box = document.getElementById('gacha-unbox-box');
+
+      // 0.05s — 盲盒缩放登场
+      _unboxTimers.push(setTimeout(function() {
+        if (skipped) return;
+        if (box) box.classList.add('gu-box-pop');
+      }, 50));
+
+      // 0.45s — 微震动
+      _unboxTimers.push(setTimeout(function() {
+        if (skipped) return;
+        if (box) box.classList.add('gu-box-shake');
+      }, 450));
+
+      // 0.55s — 光晕开始
+      _unboxTimers.push(setTimeout(function() {
+        if (skipped) return;
+        if (box) {
+          box.classList.remove('gu-box-shake');
+          box.classList.add('gu-box-glow');
+        }
+      }, 550));
+
+      // 0.55s + glowMs — 爆裂：粒子 + SSR 金光 + 盲盒消失
+      var burstAt = 550 + glowMs;
+      _unboxTimers.push(setTimeout(function() {
+        if (skipped) return;
+        if (box) {
+          box.classList.remove('gu-box-glow');
+          box.classList.add('gu-box-burst');
+        }
+        unboxParticleBurst(canvas, ctx, tier, color);
+        if (tier === 'SSR') {
+          var fl = document.getElementById('gacha-flash-white');
+          var b1 = document.getElementById('gacha-beam-1');
+          var b2 = document.getElementById('gacha-beam-2');
+          if (fl) fl.classList.add('gu-flash-on');
+          if (b1) b1.classList.add('gu-beam-on');
+          if (b2) b2.classList.add('gu-beam-on');
+        }
+      }, burstAt));
+
+      // 总时长 ≈ burstAt + 450ms（让爆裂动画走完一拍）
+      _unboxTimers.push(setTimeout(finish, burstAt + 450));
+    }
+
+    function unboxParticleBurst(canvas, ctx, tier, color) {
+      var count = TIER_PARTICLE_COUNT[tier] || 20;
+      var w = canvas.width  / (window.devicePixelRatio || 1);
+      var h = canvas.height / (window.devicePixelRatio || 1);
+      var cx = w / 2, cy = h / 2;
+      var particles = [];
+      for (var i = 0; i < count; i++) {
+        var ang = Math.random() * Math.PI * 2;
+        var spd = 5 + Math.random() * 10 + (tier === 'SSR' ? 3 : 0);
+        particles.push({
+          x: cx, y: cy,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 1,
+          life: 1.0,
+          decay: 0.012 + Math.random() * 0.01,
+          size: 2 + Math.random() * 3 + (tier === 'SSR' ? 1.5 : 0)
+        });
+      }
+      var t0 = Date.now();
+      function step() {
+        var t = Date.now() - t0;
+        ctx.clearRect(0, 0, w, h);
+        var alive = 0;
+        particles.forEach(function(p) {
+          if (p.life <= 0) return;
+          p.x += p.vx; p.y += p.vy;
+          p.vy += 0.18; // 重力
+          p.vx *= 0.99; p.vy *= 0.99;
+          p.life -= p.decay;
+          if (p.life <= 0) return;
+          alive++;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 8;
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+        if (alive > 0 && t < 1500) {
+          _unboxRaf = requestAnimationFrame(step);
+        }
+      }
+      step();
     }
 
     // ─ 5.6 结果卡（M2 简版；M3 替换为全屏动效）────────────────
