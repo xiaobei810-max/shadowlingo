@@ -3752,6 +3752,20 @@
       justify-content: flex-start; overflow-y: auto;
     }
     #cover-page.show { display: flex; }
+    /* 封面角色立绘 (M7 换装) */
+    .cover-character-img {
+      position: absolute; bottom: 0; right: 0;
+      height: min(55vh, 340px); width: auto;
+      object-fit: contain; object-position: bottom right;
+      opacity: 0.22;        /* 背景装饰感，不抢主文字 */
+      pointer-events: none;
+      transition: opacity 0.5s ease, src 0.3s ease;
+      filter: drop-shadow(0 0 20px rgba(31,204,102,0.12));
+    }
+    .cover-character-img.outfit-equipped {
+      opacity: 0.45;        /* 装备 SSR 时稍微更明显 */
+      filter: drop-shadow(0 0 28px rgba(245,166,35,0.18));
+    }
     .cover-inner {
       flex: 1; width: 100%; max-width: 480px; padding: 48px 32px 56px;
       display: flex; flex-direction: column; align-items: center;
@@ -4885,6 +4899,13 @@
 
     // ─ 配置层 ───────────────────────────────────────────────────
     var GACHA_THRESHOLDS = [10, 25, 50];                       // 渐进门槛
+    // 各角色封面默认立绘路径（M8 替换为正式全身立绘）
+    var DEFAULT_COVER = {
+      nora:     '/assets/clothes/nora_clothes.png',
+      mingxuan: '/assets/characters/mingxuan/mingxuan_body.png',
+      qiqi:     '/assets/characters/qiqi/qiqi_full_base.png',
+      linwan:   ''   // Phase 2
+    };
     var GACHA_RATES      = { N: 0.50, R: 0.30, SR: 0.15, SSR: 0.05 };
     var SHARD_REWARD     = { N: 1,    R: 3,    SR: 8,   SSR: 20  };
     var SHARD_PRICE      = { N: 5,    R: 15,   SR: 40,  SSR: 80  };
@@ -9604,6 +9625,28 @@
       // 先收起其它全屏层，避免切页时露出旧页面
       _hideFullscreenLayersForRoute();
       document.getElementById('cover-page').classList.add('show');
+
+      // ── M7 换装：更新封面角色立绘 ─────────────────────────
+      (function() {
+        var charImg = document.getElementById('cover-character-img');
+        if (!charImg) return;
+        try {
+          var _gs      = loadGachaState();
+          // 当前课对应的封面角色（暂时全课都用 nora，Phase 2 可在 LESSONS 里加 coverCharacter 字段）
+          var charId   = (LESSONS[lessonIdx] && LESSONS[lessonIdx].coverCharacter) || 'nora';
+          var equipped = _gs.equipped[charId];
+          var outfitItem = equipped ? findGachaItemById(equipped) : null;
+          var src = (outfitItem && outfitItem.outfitFull) ? outfitItem.outfitFull
+                  : (DEFAULT_COVER[charId] || '');
+          charImg.style.opacity = '';  // 清除 onerror 设的 opacity:0
+          charImg.src = src;
+          if (outfitItem) {
+            charImg.classList.add('outfit-equipped');
+          } else {
+            charImg.classList.remove('outfit-equipped');
+          }
+        } catch(e) { /* 安全降级 */ }
+      })();
     }
 
     // ── 无新角色时的 CG 全屏过场（模糊背景 + 衬线叙事文字，与序章风格一致）───
@@ -12384,6 +12427,9 @@
       <div class="cover-scene-en" id="cover-scene-en">Nora has just arrived at the airport and can't find her pickup, so she asks a passerby for directions to the city center.</div>
       <button class="cover-start-btn" onclick="startLesson()">开始学习 · Start Learning →</button>
     </div>
+    <!-- 封面角色立绘（换装系统，M7） -->
+    <img id="cover-character-img" class="cover-character-img" src="" alt="" aria-hidden="true"
+      onerror="this.style.opacity='0'">
   </div>
 
   <!-- 生词闪卡 Vocab Flashcards -->
