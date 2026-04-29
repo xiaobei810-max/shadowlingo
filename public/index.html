@@ -4859,7 +4859,14 @@
                  en: 'vowel: you said "' + rFinal + '", should be "' + cFinal + '"' };
       }
       var expectedTone = entry.expectedTone || correctTone;
+      var origTone     = entry.tone || correctTone;
+      // 3+3 变调宽容：自然语流中保留原 3 声也算对（一/不 变调仍严格）
+      var sandhiApplied = entry.sandhiTone && entry.sandhiTone !== entry.tone &&
+                          entry.c !== '一' && entry.c !== '不';
       if (recogTone && expectedTone && recogTone !== expectedTone) {
+        if (sandhiApplied && recogTone === origTone) {
+          return null; // 用户读了原声调，自然语流，接受
+        }
         return { zh: '声调错误：你读成了' + (toneNames[recogTone]||'第'+recogTone+'声') + '，应读' + (toneNames[expectedTone]||'第'+expectedTone+'声'),
                  en: 'wrong tone: you said ' + (toneNamesEn[recogTone]||recogTone+'th') + ', should be ' + (toneNamesEn[expectedTone]||expectedTone+'th') };
       }
@@ -5328,6 +5335,21 @@
         if (c && c.c && c.p) pyByIdx[i] = toToneMark(c.p);
       });
 
+      // 变调宽容映射：仅 3+3 变调允许保留原声调（一/不 变调更刚性，不放宽）
+      var sandhiToleranceByIdx = {};
+      try {
+        var _si = computeSandhiTones(
+          (sentence && sentence.chars) || [],
+          _computeSandhiBreaks((sentence && sentence.zh) || '')
+        );
+        _si.forEach(function (info, i) {
+          if (info && info.sandhiTone && info.sandhiTone !== info.tone &&
+              info.c !== '一' && info.c !== '不') {
+            sandhiToleranceByIdx[i] = { orig: info.tone, sandhi: info.sandhiTone };
+          }
+        });
+      } catch (e) {}
+
       var weakByIdx = {};
       function _decodeEscapedUnicode(s) {
         var text = String(s || '');
@@ -5405,8 +5427,14 @@
                 reasons.push('轻声需读轻短');
               }
             } else if (heardTone && heardTone !== expectedTone) {
-              level = Math.max(level, 1);
-              reasons.push('声调偏离');
+              // 变调宽容：3+3 段允许保留原声调（自然语流），也允许变调后的第2声
+              var _st = sandhiToleranceByIdx[idxForTone];
+              if (_st && (heardTone === String(_st.orig) || heardTone === String(_st.sandhi))) {
+                // 用户读了原 3 声或变调后 2 声，均接受，跳过扣分
+              } else {
+                level = Math.max(level, 1);
+                reasons.push('声调偏离');
+              }
             }
           }
           // 强制平翘舌偏离判定：当期望声母是 zh/ch/sh/r 或 z/c/s 时，若检测到对立声母则至少紫/黄
@@ -6442,7 +6470,7 @@
         return '"一" 在' + desc + '变' + mk + '\n' +
                (toT === 2 ? '一 + tone 4 → yí (tone 2)' : '一 + tone 1/2/3 → yì (tone 4)');
       }
-      return '3声+3声连读，变2声\n3rd+3rd tone → say tone 2';
+      return '3声+3声连读，变2声\n3rd+3rd tone → say tone 2\n（自然语流中保留3声也可）\n(natural 3rd tone is also OK)';
     }
 
     function buildKara(text, chars) {
