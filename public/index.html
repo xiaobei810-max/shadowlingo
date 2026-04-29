@@ -2254,6 +2254,12 @@
     .gs-series-name-zh { font-size: 22px; font-weight: 900; color: #f1f5f9; letter-spacing: 0.3px; }
     .gs-series-name-en { font-size: 13px; color: #6b7280; font-weight: 500; margin-top: -4px; }
     .gs-series-progress { font-size: 12px; color: #4b5563; margin-top: 2px; }
+    .gs-complete-banner {
+      font-size: 13px; font-weight: 700; color: #1fcc66;
+      background: rgba(31,204,102,0.1); border: 1px solid rgba(31,204,102,0.25);
+      border-radius: 10px; padding: 6px 14px; margin-top: 4px;
+      text-align: center;
+    }
 
     .gs-pity-row {
       display: flex; align-items: center; justify-content: center; gap: 12px;
@@ -2610,6 +2616,14 @@
       font-size: 9px; font-weight: 800; border-radius: 99px;
       padding: 1px 5px; line-height: 1.4;
     }
+    /* 已装备徽章 */
+    .gcb-equipped-badge {
+      position: absolute; top: 6px; left: 6px;
+      background: rgba(31,204,102,0.9); color: #000;
+      font-size: 8px; font-weight: 800; border-radius: 99px;
+      padding: 1px 5px; line-height: 1.4;
+    }
+    .gcb-item.gcb-equipped { box-shadow: 0 0 0 2px rgba(31,204,102,0.6); }
 
     /* ── 物品详情 Modal (M4) ────────────────────────────────── */
     .gcb-detail-overlay {
@@ -5115,9 +5129,31 @@
       pull:      function() { var r = pullGacha('nora-debut'); console.log('[gacha pull]', r); return r; },
       state:     function() { var s = loadGachaState(); console.log('[gacha state]', s); return s; },
       threshold: function() { return getCurrentThreshold(loadGachaState().flags.pullCount); },
-      reset:     function() { localStorage.removeItem(GACHA_STATE_KEY); console.log('[gacha] state reset'); },
+      reset:     function() { localStorage.removeItem(GACHA_STATE_KEY); console.log('[gacha] gacha state reset'); },
       open:      function() { openGachaStore(); console.log('[gacha] store opened'); },
+      // 完全重置：清空盲盒状态 + 回声币（用于干净复现首次体验）
+      fullReset: function() {
+        localStorage.removeItem(GACHA_STATE_KEY);
+        localStorage.removeItem('echo_coins');
+        localStorage.removeItem('echo_coin_aha_seen');
+        // 清除所有 echo_earn_* 防刷键
+        Object.keys(localStorage).filter(function(k) { return k.indexOf('echo_earn_') === 0; })
+          .forEach(function(k) { localStorage.removeItem(k); });
+        refreshCoinDisplay();
+        console.log('[gacha] full reset done — reload page to start fresh');
+      },
       giveCoins: function(n) { var amt = n || 50; setCoins(getCoins() + amt); refreshCoinDisplay(); console.log('[gacha] coins =', getCoins()); },
+      // 给碎片（测试碎片商店用）
+      giveShards: function(n) {
+        var s = loadGachaState(); s.shards += (n || 50); saveGachaState(s);
+        console.log('[gacha] shards =', s.shards);
+      },
+      // 强制下一抽为指定稀有度（测试动画用，one-shot）
+      forceTier: function(tier) {
+        var _orig = rollTier;
+        rollTier = function() { rollTier = _orig; return tier; };
+        console.log('[gacha] next pull forced to', tier);
+      },
       simulate:  function(n) {
         n = n || 10;
         var results = { pulls: 0, byTier: { N:0, R:0, SR:0, SSR:0 }, items: {}, dupShards: 0 };
@@ -5131,6 +5167,20 @@
         }
         console.log('[gacha simulate]', results);
         return results;
+      },
+      help: function() {
+        console.log([
+          '__gacha.open()           — 打开盲盒商店',
+          '__gacha.pull()           — 抽一次（有 UI 动画）',
+          '__gacha.simulate(n)      — 静默模拟 n 次',
+          '__gacha.forceTier("SSR") — 下一次强出 SSR（测动画）',
+          '__gacha.giveCoins(n)     — 加 n 回声币',
+          '__gacha.giveShards(n)    — 加 n 碎片',
+          '__gacha.state()          — 查看完整状态',
+          '__gacha.threshold()      — 当前抽卡门槛',
+          '__gacha.reset()          — 仅重置盲盒数据',
+          '__gacha.fullReset()      — 完全重置（币+盲盒+防刷）',
+        ].join('\n'));
       }
     };
 
@@ -5245,6 +5295,9 @@
               owned + ' / ' + total + ' 件' +
               (owned > 0 ? ' · ' + Math.round(owned / total * 100) + '%' : '') +
             '</div>' +
+            (owned === total
+              ? '<div class="gs-complete-banner">🎉 全部收集完成！继续抽可获得碎片</div>'
+              : '') +
           '</div>' +
         '</div>' +
         // ── 保底进度
@@ -5650,12 +5703,14 @@
       }
 
       grid.innerHTML = items.map(function(item) {
-        var rec    = state.collection[item.id];
-        var owned  = !!rec;
-        var count  = rec ? rec.count : 0;
-        var tier   = item.tier.toLowerCase();
-        var emoji  = (ITEM_EMOJI[item.type] || {})[item.tier] || '📦';
-        var cls    = 'gcb-item gcb-' + tier + (owned ? ' gcb-owned' : ' gcb-unowned');
+        var rec       = state.collection[item.id];
+        var owned     = !!rec;
+        var count     = rec ? rec.count : 0;
+        var tier      = item.tier.toLowerCase();
+        var emoji     = (ITEM_EMOJI[item.type] || {})[item.tier] || '📦';
+        var isEquipped = item.type === 'outfit' && state.equipped[item.target] === item.id;
+        var cls       = 'gcb-item gcb-' + tier + (owned ? ' gcb-owned' : ' gcb-unowned') +
+                        (isEquipped ? ' gcb-equipped' : '');
         return (
           '<div class="' + cls + '"' +
             (owned ? ' onclick="showItemDetail(\'' + item.id + '\')"' : '') + '>' +
@@ -5667,7 +5722,8 @@
                 : '<span class="gcb-item-emoji">' + emoji + '</span>') +
             '</div>' +
             '<div class="gcb-item-name">' + (owned ? item.nameZh : '?') + '</div>' +
-            (count > 1 ? '<div class="gcb-count-badge">×' + count + '</div>' : '') +
+            (isEquipped ? '<div class="gcb-equipped-badge">已装备</div>' : '') +
+            (count > 1 && !isEquipped ? '<div class="gcb-count-badge">×' + count + '</div>' : '') +
           '</div>'
         );
       }).join('');
@@ -12374,6 +12430,18 @@
       try { checkGachaUnlock(); } catch(e) {}
       // 章节选择页作为入口，active 在已保存的 lessonIdx 上
       showChapterSelectPage(lessonIdx);
+
+      // ── ESC 键关闭盲盒系统所有弹窗 ─────────────────────────
+      document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        // 按优先级从高到低关闭：结果卡 > 详情 > 碎片商店 > 收集册 > 商店
+        if (document.getElementById('gacha-result-overlay')) { closeGachaResult(); return; }
+        if (document.getElementById('gcb-detail-overlay'))   { closeItemDetail();  return; }
+        if (document.getElementById('gacha-unbox-overlay'))  { if (_unboxOverlayEl) { var el=_unboxOverlayEl; _unboxClearAll(); _unboxOverlayEl=null; if(el.parentNode)el.parentNode.removeChild(el); } return; }
+        if (_shardShopEl)      { closeShardShop();      return; }
+        if (_collectionBookEl) { closeCollectionBook(); return; }
+        if (_gachaStoreEl)     { closeGachaStore();     return; }
+      });
     });
   </script>
   <!-- 章节选择 Chapter Select / Cover Flow Carousel -->
