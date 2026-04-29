@@ -2490,6 +2490,188 @@
       background: linear-gradient(135deg, rgba(245,166,35,0.22), rgba(245,166,35,0.12)) !important;
     }
 
+    /* ── 收集册 Collection Book (M4) ───────────────────────── */
+    .gacha-collection-overlay {
+      position: fixed; inset: 0; z-index: 9300;
+      background: #0d1117;
+      display: flex; flex-direction: column;
+      transform: translateY(100%); opacity: 0;
+      transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
+      overflow: hidden;
+    }
+    .gacha-collection-overlay.gcb-visible { transform: translateY(0); opacity: 1; }
+
+    .gcb-topbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px 12px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .gcb-back-btn {
+      background: none; border: none; color: #9ca3af;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      padding: 6px 0; flex-shrink: 0; transition: color 0.15s;
+    }
+    .gcb-back-btn:hover { color: #e2e8f0; }
+    .gcb-title { font-size: 16px; font-weight: 800; color: #f1f5f9; flex: 1; }
+    .gcb-progress { font-size: 12px; color: #4b5563; }
+
+    .gcb-tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0; padding: 0 20px;
+    }
+    .gcb-tab {
+      padding: 12px 18px 10px; font-size: 14px; font-weight: 600;
+      color: #4b5563; cursor: pointer; border: none; background: none;
+      border-bottom: 2px solid transparent; transition: color 0.15s;
+    }
+    .gcb-tab.active { color: #f5a623; border-bottom-color: #f5a623; }
+    .gcb-tab:hover:not(.active) { color: #9ca3af; }
+
+    .gcb-body {
+      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 20px 16px 40px;
+    }
+    .gcb-empty {
+      text-align: center; color: #374151; font-size: 15px; margin-top: 60px;
+    }
+    .gcb-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (min-width: 480px) {
+      .gcb-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .gcb-item {
+      border-radius: 14px; border: 2px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 12px 8px 10px; gap: 8px;
+      cursor: pointer; position: relative;
+      transition: transform 0.15s, border-color 0.15s;
+      min-height: 110px;
+    }
+    .gcb-item:active { transform: scale(0.96); }
+    .gcb-item.gcb-owned { cursor: pointer; }
+    .gcb-item.gcb-owned:hover { transform: translateY(-2px); }
+    .gcb-item.gcb-unowned { cursor: default; opacity: 0.5; }
+
+    /* Tier border colors (owned only) */
+    .gcb-item.gcb-owned.gcb-n   { border-color: rgba(158,158,158,0.45); background: rgba(158,158,158,0.06); }
+    .gcb-item.gcb-owned.gcb-r   { border-color: rgba(77,171,247,0.45);  background: rgba(77,171,247,0.06); }
+    .gcb-item.gcb-owned.gcb-sr  { border-color: rgba(156,89,255,0.45);  background: rgba(156,89,255,0.06); }
+    .gcb-item.gcb-owned.gcb-ssr {
+      border-color: rgba(245,166,35,0.6);  background: rgba(245,166,35,0.08);
+      box-shadow: 0 0 14px rgba(245,166,35,0.18);
+    }
+
+    .gcb-item-tier {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.5px; line-height: 1;
+      align-self: flex-start;
+    }
+    .gcb-n  .gcb-item-tier { color: #9e9e9e; }
+    .gcb-r  .gcb-item-tier { color: #4dabf7; }
+    .gcb-sr .gcb-item-tier { color: #9c59ff; }
+    .gcb-ssr .gcb-item-tier { color: #f5a623; }
+
+    .gcb-item-img-wrap {
+      width: 52px; height: 52px; border-radius: 10px;
+      overflow: hidden; position: relative;
+      background: rgba(255,255,255,0.05); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gcb-item-img { width: 100%; height: 100%; object-fit: cover; }
+    .gcb-item-emoji { font-size: 32px; line-height: 1; }
+
+    .gcb-item-name {
+      font-size: 10px; color: #9ca3af; text-align: center;
+      line-height: 1.3; word-break: break-all;
+    }
+    .gcb-unowned .gcb-item-name { color: #2d333b; }
+
+    /* Duplicate count badge */
+    .gcb-count-badge {
+      position: absolute; top: 6px; right: 6px;
+      background: rgba(245,166,35,0.85); color: #000;
+      font-size: 9px; font-weight: 800; border-radius: 99px;
+      padding: 1px 5px; line-height: 1.4;
+    }
+
+    /* ── 物品详情 Modal (M4) ────────────────────────────────── */
+    .gcb-detail-overlay {
+      position: fixed; inset: 0; z-index: 9700;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; transition: opacity 0.22s ease;
+    }
+    .gcb-detail-overlay.gcbd-visible { opacity: 1; }
+    .gcb-detail-card {
+      background: #1c212e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 48px;
+      width: 100%; max-width: 500px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(.22,.68,0,1.3);
+      max-height: 82vh; overflow-y: auto;
+    }
+    .gcb-detail-overlay.gcbd-visible .gcb-detail-card { transform: translateY(0); }
+    .gcb-detail-handle {
+      width: 36px; height: 4px; background: rgba(255,255,255,0.12);
+      border-radius: 99px; align-self: center; flex-shrink: 0;
+    }
+    .gcb-detail-tier-badge {
+      padding: 4px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 800; color: #000;
+      align-self: flex-start;
+    }
+    .gcb-detail-img-wrap {
+      width: 160px; height: 160px; border-radius: 18px;
+      overflow: hidden; position: relative;
+      background: linear-gradient(135deg, #1a1f2e, #2a3142);
+      border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gcb-detail-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
+    .gcb-detail-img-emoji { font-size: 72px; line-height: 1; }
+    .gcb-detail-name-zh { font-size: 20px; font-weight: 900; color: #f1f5f9; text-align: center; }
+    .gcb-detail-name-en { font-size: 12px; color: #6b7280; text-align: center; margin-top: -8px; }
+    .gcb-detail-body {
+      font-size: 14px; color: #9ca3af; text-align: center; line-height: 1.6;
+      max-width: 300px; font-style: italic;
+    }
+    .gcb-detail-count { font-size: 12px; color: #4b5563; }
+    .gcb-detail-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 4px; }
+    .gcb-equip-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 14px;
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+    }
+    .gcb-equip-btn.equipped {
+      background: rgba(245,166,35,0.15); border: 1px solid rgba(245,166,35,0.4);
+      color: #f5a623;
+    }
+    .gcb-equip-btn.unequipped {
+      background: linear-gradient(135deg, #f5a623, #e0941c); color: #000;
+    }
+    .gcb-equip-btn:hover { opacity: 0.85; }
+    .gcb-audio-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 14px;
+      background: rgba(156,89,255,0.15); border: 1px solid rgba(156,89,255,0.35);
+      color: #b197fc; font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .gcb-audio-btn:hover { opacity: 0.85; }
+    .gcb-close-btn {
+      width: 100%; padding: 13px; border: none; border-radius: 12px;
+      background: rgba(255,255,255,0.06); color: #6b7280;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    }
+    .gcb-close-btn:hover { background: rgba(255,255,255,0.10); }
+
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
       display: none; align-items: center; justify-content: center;
@@ -5256,10 +5438,11 @@
             : '<div class="gr-new-hint">✓ 新物品入库！</div>') +
           '<div class="gr-btn-row">' +
             '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult()">返回商店</button>' +
+            '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult();openCollectionBook(\'' + item.type + '\')">收集册</button>' +
             (nextCost
               ? '<button class="gr-btn gr-btn-primary" onclick="closeGachaResult();onGachaPullClick()"' +
                   (canAgain ? '' : ' disabled') + '>' +
-                  '再抽一次' + (canAgain ? '' : '（不足）') +
+                  '再抽' + (canAgain ? '' : '（不足）') +
                 '</button>'
               : '') +
           '</div>' +
@@ -5276,10 +5459,236 @@
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
     }
 
-    // ─ 占位函数（M4/M5 实现，防止 M2 按钮报错）─────────────────
-    function openCollectionBook() {
-      alert('收集册 Coming soon (M4)');
+    // ════════════════════════════════════════════════════════════
+    // ── 盲盒系统 M4: 收集册 Collection Book ───────────────────
+    // ════════════════════════════════════════════════════════════
+
+    var _collectionBookEl = null;
+    var _collectionBookTab = 'card';  // 'card' | 'diary' | 'outfit'
+    var _detailAudio = null;          // 当前播放的 Audio 对象
+
+    var TAB_LABELS = { card: '📇 卡片', diary: '📖 日记', outfit: '👗 衣服' };
+    var ITEM_EMOJI = {
+      card:   { N: '📮', R: '🎖️', SR: '🌟', SSR: '✨' },
+      diary:  { N: '📄', R: '📔', SR: '📻', SSR: '📖' },
+      outfit: { N: '👕', R: '👗', SR: '💃', SSR: '✨' }
+    };
+
+    function openCollectionBook(tab) {
+      _collectionBookTab = tab || 'card';
+      if (_collectionBookEl && _collectionBookEl.parentNode) {
+        _renderCollectionGrid();  // 已打开则刷新
+        return;
+      }
+      var el = document.createElement('div');
+      el.id = 'gacha-collection-overlay';
+      el.className = 'gacha-collection-overlay';
+      _collectionBookEl = el;
+      _buildCollectionBook(el);
+      document.body.appendChild(el);
+      requestAnimationFrame(function() { el.classList.add('gcb-visible'); });
     }
+
+    function closeCollectionBook() {
+      if (!_collectionBookEl) return;
+      _stopDetailAudio();
+      _collectionBookEl.classList.remove('gcb-visible');
+      var el = _collectionBookEl;
+      _collectionBookEl = null;
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+    }
+
+    function _buildCollectionBook(container) {
+      container.innerHTML =
+        '<div class="gcb-topbar">' +
+          '<button class="gcb-back-btn" onclick="closeCollectionBook()">◀ 返回</button>' +
+          '<div class="gcb-title">收集册</div>' +
+          '<div class="gcb-progress" id="gcb-progress-text"></div>' +
+        '</div>' +
+        '<div class="gcb-tabs" id="gcb-tabs"></div>' +
+        '<div class="gcb-body">' +
+          '<div class="gcb-grid" id="gcb-grid"></div>' +
+        '</div>';
+      _renderTabs();
+      _renderCollectionGrid();
+    }
+
+    function _renderTabs() {
+      var tabsEl = document.getElementById('gcb-tabs');
+      if (!tabsEl) return;
+      var tabs = ['card', 'diary', 'outfit'];
+      tabsEl.innerHTML = tabs.map(function(t) {
+        return '<button class="gcb-tab' + (t === _collectionBookTab ? ' active' : '') + '"' +
+          ' onclick="switchCollectionTab(\'' + t + '\')">' + TAB_LABELS[t] + '</button>';
+      }).join('');
+    }
+
+    function switchCollectionTab(tab) {
+      _collectionBookTab = tab;
+      _renderTabs();
+      _renderCollectionGrid();
+    }
+
+    function _renderCollectionGrid() {
+      var state  = loadGachaState();
+      var series = GACHA_SERIES['nora-debut'];
+      var items  = series.items.filter(function(it) { return it.type === _collectionBookTab; });
+      var grid   = document.getElementById('gcb-grid');
+      var prog   = document.getElementById('gcb-progress-text');
+      if (!grid) return;
+
+      // Overall progress (all types)
+      var totalAll  = series.items.length;
+      var ownedAll  = 0;
+      series.items.forEach(function(it) { if (state.collection[it.id]) ownedAll++; });
+      if (prog) prog.textContent = ownedAll + ' / ' + totalAll;
+
+      if (!items.length) {
+        grid.innerHTML = '<div class="gcb-empty">暂无物品</div>';
+        return;
+      }
+
+      grid.innerHTML = items.map(function(item) {
+        var rec    = state.collection[item.id];
+        var owned  = !!rec;
+        var count  = rec ? rec.count : 0;
+        var tier   = item.tier.toLowerCase();
+        var emoji  = (ITEM_EMOJI[item.type] || {})[item.tier] || '📦';
+        var cls    = 'gcb-item gcb-' + tier + (owned ? ' gcb-owned' : ' gcb-unowned');
+        return (
+          '<div class="' + cls + '"' +
+            (owned ? ' onclick="showItemDetail(\'' + item.id + '\')"' : '') + '>' +
+            '<div class="gcb-item-tier">' + item.tier + '</div>' +
+            '<div class="gcb-item-img-wrap">' +
+              (owned
+                ? '<img class="gcb-item-img" src="' + item.img + '" onerror="this.style.display=\'none\'" alt="">' +
+                  '<span class="gcb-item-emoji" style="position:absolute">' + emoji + '</span>'
+                : '<span class="gcb-item-emoji">' + emoji + '</span>') +
+            '</div>' +
+            '<div class="gcb-item-name">' + (owned ? item.nameZh : '?') + '</div>' +
+            (count > 1 ? '<div class="gcb-count-badge">×' + count + '</div>' : '') +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    // ─ 物品详情 Modal ────────────────────────────────────────
+    function showItemDetail(itemId) {
+      var item  = findGachaItemById(itemId);
+      if (!item) return;
+      var state = loadGachaState();
+      var rec   = state.collection[itemId] || { count: 1 };
+      var tier  = item.tier;
+      var color = TIER_COLOR[tier] || '#9e9e9e';
+      var emoji = (ITEM_EMOJI[item.type] || {})[tier] || '📦';
+      var isEquipped = item.type === 'outfit' && state.equipped[item.target] === itemId;
+
+      var existing = document.getElementById('gcb-detail-overlay');
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+      var ov = document.createElement('div');
+      ov.id = 'gcb-detail-overlay';
+      ov.className = 'gcb-detail-overlay';
+      ov.addEventListener('click', function(e) {
+        if (e.target === ov) closeItemDetail();
+      });
+
+      var btns = '';
+      if (item.type === 'outfit') {
+        btns +=
+          '<button class="gcb-equip-btn ' + (isEquipped ? 'equipped' : 'unequipped') + '"' +
+          ' id="gcb-equip-btn" onclick="toggleEquipOutfit(\'' + itemId + '\')">' +
+          (isEquipped ? '✓ 已装备 · 点击卸下' : '装备 Equip') + '</button>';
+      }
+      if (item.audio) {
+        btns +=
+          '<button class="gcb-audio-btn" id="gcb-audio-btn"' +
+          ' onclick="toggleDetailAudio(\'' + item.audio + '\')">' +
+          '▶ 播放语音 Play Audio</button>';
+      }
+      btns += '<button class="gcb-close-btn" onclick="closeItemDetail()">关闭</button>';
+
+      ov.innerHTML =
+        '<div class="gcb-detail-card">' +
+          '<div class="gcb-detail-handle"></div>' +
+          '<div class="gcb-detail-tier-badge" style="background:' + color + '">' + TIER_LABEL[tier] + '</div>' +
+          '<div class="gcb-detail-img-wrap">' +
+            '<img class="gcb-detail-img" src="' + item.img + '" onerror="this.style.display=\'none\'" alt="">' +
+            '<span class="gcb-detail-img-emoji">' + emoji + '</span>' +
+          '</div>' +
+          '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
+          '<div class="gcb-detail-name-en">' + item.nameEn + '</div>' +
+          (item.flavor ? '<div class="gcb-detail-body">' + item.flavor + '</div>' : '') +
+          (item.body   ? '<div class="gcb-detail-body">' + item.body   + '</div>' : '') +
+          (rec.count > 1 ? '<div class="gcb-detail-count">已获得 ' + rec.count + ' 份</div>' : '') +
+          '<div class="gcb-detail-btns">' + btns + '</div>' +
+        '</div>';
+
+      document.body.appendChild(ov);
+      requestAnimationFrame(function() { ov.classList.add('gcbd-visible'); });
+    }
+
+    function closeItemDetail() {
+      _stopDetailAudio();
+      var el = document.getElementById('gcb-detail-overlay');
+      if (!el) return;
+      el.classList.remove('gcbd-visible');
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
+    }
+
+    // ─ 换装 ───────────────────────────────────────────────────
+    function toggleEquipOutfit(itemId) {
+      var item  = findGachaItemById(itemId);
+      if (!item || item.type !== 'outfit') return;
+      var state = loadGachaState();
+      var target = item.target;
+      var already = state.equipped[target] === itemId;
+      state.equipped[target] = already ? null : itemId;
+      saveGachaState(state);
+      // 更新按钮
+      var btn = document.getElementById('gcb-equip-btn');
+      if (btn) {
+        var equipped = !already;
+        btn.className = 'gcb-equip-btn ' + (equipped ? 'equipped' : 'unequipped');
+        btn.textContent = equipped ? '✓ 已装备 · 点击卸下' : '装备 Equip';
+      }
+      // 刷新收集册格子
+      _renderCollectionGrid();
+    }
+
+    // ─ 语音播放 ───────────────────────────────────────────────
+    function _stopDetailAudio() {
+      if (_detailAudio) {
+        _detailAudio.pause();
+        _detailAudio.currentTime = 0;
+        _detailAudio = null;
+      }
+    }
+
+    function toggleDetailAudio(src) {
+      var btn = document.getElementById('gcb-audio-btn');
+      if (_detailAudio && !_detailAudio.paused) {
+        _stopDetailAudio();
+        if (btn) btn.textContent = '▶ 播放语音 Play Audio';
+        return;
+      }
+      _detailAudio = new Audio(src);
+      _detailAudio.addEventListener('ended', function() {
+        _detailAudio = null;
+        if (btn) btn.textContent = '▶ 播放语音 Play Audio';
+      });
+      _detailAudio.addEventListener('error', function() {
+        _detailAudio = null;
+        if (btn) btn.textContent = '⚠ 音频暂不可用';
+      });
+      _detailAudio.play().catch(function() {
+        _detailAudio = null;
+        if (btn) btn.textContent = '⚠ 音频暂不可用';
+      });
+      if (btn) btn.textContent = '⏸ 暂停';
+    }
+
+    // ─ 占位函数（M5 实现）──────────────────────────────────────
     function openShardShop() {
       alert('碎片商店 Coming soon (M5)');
     }
