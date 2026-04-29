@@ -4193,11 +4193,12 @@
     function setDailyTier(lIdx, sIdx, tier) {
       try { localStorage.setItem(_todayKey(lIdx, sIdx), tier); } catch(e) {}
     }
-    // 根据分数返回档位
+    // 根据分数返回档位（即应得币数；保留 daily-tier 防刷的累积差值语义）
+    // v2 (gacha): 平滑奖励曲线 1/2/3 → 2/3/5
     function coinTierForScore(score) {
-      if (score >= 90) return 3;
-      if (score >= 75) return 2;
-      if (score >= 60) return 1;
+      if (score >= 90) return 5;
+      if (score >= 75) return 3;
+      if (score >= 60) return 2;
       return 0;
     }
     // 计算本次应得币数（含防刷）
@@ -4266,6 +4267,243 @@
         }
       } catch(e) {}
     }
+
+    // ════════════════════════════════════════════════════════════
+    // ── 盲盒系统 Gacha System (M1: 数据层 + 抽卡核心) ────────────
+    // ════════════════════════════════════════════════════════════
+    // 文档：docs/gacha-system.md
+    // M1 范围：配置 + 状态层 + 抽卡算法（含保底/碎片/渐进门槛）
+    //         无 UI，可通过 window.__gacha 在控制台测试
+
+    // ─ 配置层 ───────────────────────────────────────────────────
+    var GACHA_THRESHOLDS = [10, 25, 50];                       // 渐进门槛
+    var GACHA_RATES      = { N: 0.50, R: 0.30, SR: 0.15, SSR: 0.05 };
+    var SHARD_REWARD     = { N: 1,    R: 3,    SR: 8,   SSR: 20  };
+    var SHARD_PRICE      = { N: 5,    R: 15,   SR: 40,  SSR: 80  };
+
+    var GACHA_SERIES = {
+      'nora-debut': {
+        id: 'nora-debut',
+        nameZh: '初见诺拉',
+        nameEn: "Nora's Debut",
+        cover: '/assets/gacha/nora-debut/series-cover.png',
+        unlockRule: { type: 'always' },
+        items: [
+          // ── N (50%) ─────────────────────────────────────────
+          { id: 'nd_n_card_tam', tier: 'N', type: 'card',
+            nameZh: '天安门明信片', nameEn: 'Tiananmen Postcard',
+            img: '/assets/gacha/nora-debut/card_tam.png',
+            flavor: '诺拉路过时拍的第一张照片。' },
+          { id: 'nd_n_card_jh',  tier: 'N', type: 'card',
+            nameZh: '京华大学校徽', nameEn: 'JingHua Univ. Crest',
+            img: '/assets/gacha/nora-debut/card_jh.png',
+            flavor: '入学第一天领到的徽章。' },
+          // ── R (30%) ─────────────────────────────────────────
+          { id: 'nd_r_diary_01', tier: 'R', type: 'diary',
+            nameZh: '第一天上课', nameEn: 'First Day of Class',
+            img: '/assets/gacha/nora-debut/diary_01.png',
+            body: '今天第一节课，老师说话好快，只听懂了「你好」和「同学们」……' },
+          { id: 'nd_r_diary_02', tier: 'R', type: 'diary',
+            nameZh: '听懂的瞬间', nameEn: 'A Moment of Clarity',
+            img: '/assets/gacha/nora-debut/diary_02.png',
+            body: '在便利店听懂了店员问"袋子要吗"，那一刻好像有什么东西亮了。' },
+          // ── SR (15%) ────────────────────────────────────────
+          { id: 'nd_sr_diary_audio', tier: 'SR', type: 'diary',
+            nameZh: '深夜独白', nameEn: 'Late-night Monologue',
+            img: '/assets/gacha/nora-debut/diary_sr.png',
+            audio: '/assets/gacha/nora-debut/diary_sr.mp3',
+            body: '想家，但也想看看明天的北京会是什么样。' },
+          // ── SSR (5%) ────────────────────────────────────────
+          { id: 'nd_ssr_outfit_dress', tier: 'SSR', type: 'outfit',
+            nameZh: '开学第一天的连衣裙', nameEn: 'First-day Dress',
+            img: '/assets/gacha/nora-debut/outfit_dress_thumb.png',
+            outfitFull: '/assets/characters/nora/outfits/dress_full.png',
+            target: 'nora',
+            flavor: '浅色连衣裙 + 帆布包，留学生标配。' }
+        ]
+      }
+    };
+
+    // ─ 状态层 ───────────────────────────────────────────────────
+    var GACHA_STATE_KEY = 'echo_gacha_state_v1';
+
+    function _initGachaState() {
+      return {
+        version: 1,
+        collection: {},
+        shards: 0,
+        pity: {},
+        equipped: { nora: null, mingxuan: null, qiqi: null, linwan: null },
+        flags:    { storeUnlockedSeen: false, lastUnlockAt: 0, pullCount: 0 }
+      };
+    }
+
+    function migrateGachaState(state) {
+      // 缺失字段补默认值（前向兼容）
+      var fresh = _initGachaState();
+      if (!state.version)            state.version = 1;
+      if (!state.collection)         state.collection = {};
+      if (typeof state.shards !== 'number') state.shards = 0;
+      if (!state.pity)               state.pity = {};
+      if (!state.equipped)           state.equipped = fresh.equipped;
+      if (!state.flags)              state.flags = fresh.flags;
+      if (typeof state.flags.pullCount !== 'number')         state.flags.pullCount = 0;
+      if (typeof state.flags.storeUnlockedSeen !== 'boolean') state.flags.storeUnlockedSeen = false;
+      if (typeof state.flags.lastUnlockAt !== 'number')      state.flags.lastUnlockAt = 0;
+      ['nora','mingxuan','qiqi','linwan'].forEach(function(k) {
+        if (!(k in state.equipped)) state.equipped[k] = null;
+      });
+      return state;
+    }
+
+    function loadGachaState() {
+      try {
+        var raw = localStorage.getItem(GACHA_STATE_KEY);
+        if (!raw) return _initGachaState();
+        return migrateGachaState(JSON.parse(raw));
+      } catch(e) {
+        console.warn('[gacha] state load failed, reinit', e);
+        return _initGachaState();
+      }
+    }
+
+    function saveGachaState(state) {
+      try { localStorage.setItem(GACHA_STATE_KEY, JSON.stringify(state)); }
+      catch(e) { console.warn('[gacha] state save failed', e); }
+    }
+
+    function _ensurePity(state, seriesId) {
+      if (!state.pity[seriesId]) {
+        state.pity[seriesId] = { sinceLastSrPlus: 0, sinceLastSsr: 0, totalPulls: 0 };
+      }
+      return state.pity[seriesId];
+    }
+
+    function findGachaItemById(itemId) {
+      for (var sid in GACHA_SERIES) {
+        var items = GACHA_SERIES[sid].items;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].id === itemId) return items[i];
+        }
+      }
+      return null;
+    }
+
+    // ─ 抽卡核心 ─────────────────────────────────────────────────
+    function getCurrentThreshold(pullCount) {
+      var idx = Math.min(pullCount, GACHA_THRESHOLDS.length - 1);
+      return GACHA_THRESHOLDS[idx];
+    }
+
+    function rollTier(pity) {
+      // 硬保底：30 抽必 SSR
+      if (pity.sinceLastSsr     >= 29) return 'SSR';
+      // 中保底：10 抽必 SR+
+      if (pity.sinceLastSrPlus  >= 9)  return Math.random() < 0.25 ? 'SSR' : 'SR';
+      // 正常加权随机
+      var r = Math.random();
+      if (r < GACHA_RATES.SSR) return 'SSR';
+      if (r < GACHA_RATES.SSR + GACHA_RATES.SR) return 'SR';
+      if (r < GACHA_RATES.SSR + GACHA_RATES.SR + GACHA_RATES.R) return 'R';
+      return 'N';
+    }
+
+    function pickItemByTier(items, tier) {
+      var pool = items.filter(function(it) { return it.tier === tier; });
+      if (!pool.length) return null;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function updatePity(pity, tier) {
+      pity.totalPulls++;
+      pity.sinceLastSrPlus = (tier === 'SR'  || tier === 'SSR') ? 0 : pity.sinceLastSrPlus + 1;
+      pity.sinceLastSsr    = (tier === 'SSR')                   ? 0 : pity.sinceLastSsr    + 1;
+    }
+
+    function pullGacha(seriesId) {
+      var series = GACHA_SERIES[seriesId];
+      if (!series) return { ok: false, reason: 'no-series' };
+
+      var state = loadGachaState();
+      var cost  = getCurrentThreshold(state.flags.pullCount);
+
+      if (getCoins() < cost) return { ok: false, reason: 'no-coins', need: cost, have: getCoins() };
+
+      // 1) 扣币
+      setCoins(getCoins() - cost);
+
+      // 2) 决定稀有度（含保底覆盖）
+      var pity = _ensurePity(state, seriesId);
+      var tier = rollTier(pity);
+
+      // 3) 在该稀有度内随机一件
+      var item = pickItemByTier(series.items, tier);
+      if (!item) {
+        // 防御：池子空（理论不会）→ 退币
+        setCoins(getCoins() + cost);
+        return { ok: false, reason: 'no-item-in-tier', tier: tier };
+      }
+
+      // 4) 入库 / 转碎片
+      var isDup = !!state.collection[item.id];
+      var shardsGained = 0;
+      if (isDup) {
+        shardsGained = SHARD_REWARD[tier];
+        state.shards += shardsGained;
+        state.collection[item.id].count++;
+      } else {
+        state.collection[item.id] = { count: 1, firstAt: Date.now() };
+      }
+
+      // 5) 更新保底 + 累计抽卡数
+      updatePity(pity, tier);
+      state.flags.pullCount++;
+
+      // 6) 持久化 + 刷新顶部金币条
+      saveGachaState(state);
+      try { refreshCoinDisplay(); } catch(e) {}
+
+      return {
+        ok:           true,
+        item:         item,
+        isDup:        isDup,
+        tier:         tier,
+        cost:         cost,
+        shardsGained: shardsGained,
+        pullCount:    state.flags.pullCount,
+        nextCost:     getCurrentThreshold(state.flags.pullCount)
+      };
+    }
+
+    // ─ 控制台调试入口（M1） ───────────────────────────────────
+    // 使用方式：
+    //   __gacha.giveCoins(50)   // 加 50 币
+    //   __gacha.pull()          // 抽一次「初见诺拉」
+    //   __gacha.state()         // 查看完整状态
+    //   __gacha.reset()         // 清空盲盒数据
+    //   __gacha.simulate(30)    // 模拟连抽 30 次（金币要够）
+    window.__gacha = {
+      pull:      function() { var r = pullGacha('nora-debut'); console.log('[gacha pull]', r); return r; },
+      state:     function() { var s = loadGachaState(); console.log('[gacha state]', s); return s; },
+      threshold: function() { return getCurrentThreshold(loadGachaState().flags.pullCount); },
+      reset:     function() { localStorage.removeItem(GACHA_STATE_KEY); console.log('[gacha] state reset'); },
+      giveCoins: function(n) { var amt = n || 50; setCoins(getCoins() + amt); refreshCoinDisplay(); console.log('[gacha] coins =', getCoins()); },
+      simulate:  function(n) {
+        n = n || 10;
+        var results = { pulls: 0, byTier: { N:0, R:0, SR:0, SSR:0 }, items: {}, dupShards: 0 };
+        for (var i = 0; i < n; i++) {
+          var r = pullGacha('nora-debut');
+          if (!r.ok) { console.log('[sim stop]', r); break; }
+          results.pulls++;
+          results.byTier[r.tier]++;
+          results.items[r.item.id] = (results.items[r.item.id] || 0) + 1;
+          if (r.isDup) results.dupShards += r.shardsGained;
+        }
+        console.log('[gacha simulate]', results);
+        return results;
+      }
+    };
+
     // ── Mini Wallet Panel ─────────────────────────────────────
     var _walletOpen = false;
     var _walletEl   = null;
