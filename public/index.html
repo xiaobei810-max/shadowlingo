@@ -5484,8 +5484,8 @@
       el.id = 'gacha-collection-overlay';
       el.className = 'gacha-collection-overlay';
       _collectionBookEl = el;
+      document.body.appendChild(el);   // 先 append，再 build（getElementById 依赖 DOM）
       _buildCollectionBook(el);
-      document.body.appendChild(el);
       requestAnimationFrame(function() { el.classList.add('gcb-visible'); });
     }
 
