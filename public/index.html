@@ -2145,6 +2145,255 @@
     }
     .aha-btn:hover { background: #18b859; }
 
+    /* ═══════════════════════════════════════════════════════════
+       ── 盲盒系统 UI  Gacha UI ────────────────────────────────
+       ═══════════════════════════════════════════════════════════ */
+
+    /* ── 解锁提示 Toast ──────────────────────────────────────── */
+    .gacha-unlock-toast {
+      position: fixed; bottom: 90px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      z-index: 9500; background: #1c212e;
+      border: 1px solid rgba(245,166,35,0.5);
+      border-radius: 18px; padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 4px 24px rgba(245,166,35,0.2), 0 2px 8px rgba(0,0,0,0.5);
+      opacity: 0;
+      animation: gutSlideIn 0.35s 0.1s cubic-bezier(.34,1.56,.64,1) forwards;
+      white-space: nowrap;
+    }
+    .gacha-unlock-toast.gut-hiding {
+      animation: gutSlideIn 0.25s ease reverse forwards;
+    }
+    @keyframes gutSlideIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .gut-icon { font-size: 26px; line-height: 1; }
+    .gut-text { display: flex; flex-direction: column; gap: 2px; }
+    .gut-zh { font-size: 14px; font-weight: 700; color: #f5a623; }
+    .gut-en { font-size: 11px; color: #6b7280; }
+    .gut-btn {
+      padding: 8px 16px; background: #f5a623;
+      border: none; border-radius: 10px;
+      color: #000; font-size: 13px; font-weight: 800;
+      cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+    }
+    .gut-btn:hover { background: #e0941c; }
+
+    /* ── 商店页 Overlay ─────────────────────────────────────── */
+    .gacha-store-overlay {
+      position: fixed; inset: 0; z-index: 9200;
+      background: #0d1117;
+      display: flex; flex-direction: column;
+      transform: translateY(100%); opacity: 0;
+      transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+    .gacha-store-overlay.gs-visible { transform: translateY(0); opacity: 1; }
+
+    .gs-topbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px 12px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .gs-back-btn {
+      background: none; border: none; color: #9ca3af;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      padding: 6px 0; margin-right: 6px; flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .gs-back-btn:hover { color: #e2e8f0; }
+    .gs-topbar-coins, .gs-topbar-shards {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .gs-topbar-shards { margin-left: 4px; }
+    .gs-coin-icon, .gs-shard-icon { font-size: 15px; line-height: 1; }
+    .gs-coin-num  { font-size: 18px; font-weight: 800; color: #1fcc66; }
+    .gs-shard-num { font-size: 18px; font-weight: 800; color: #b197fc; }
+    .gs-coin-label, .gs-shard-label { font-size: 11px; color: #4b5563; }
+
+    .gs-series-area {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 24px 20px 10px;
+    }
+    .gs-series-box {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      max-width: 320px; width: 100%;
+    }
+    .gs-series-cover-wrap {
+      width: 180px; height: 180px; border-radius: 24px;
+      overflow: hidden; position: relative;
+      background: linear-gradient(135deg, #1c212e, #2a3142);
+      border: 2px solid rgba(245,166,35,0.35);
+      box-shadow: 0 0 40px rgba(245,166,35,0.12), 0 8px 32px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+    .gs-series-cover { width: 100%; height: 100%; object-fit: cover; }
+    .gs-series-cover-fallback {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 72px;
+    }
+    .gs-series-cover-wrap:not(.gs-cover-missing) .gs-series-cover-fallback { display: none; }
+    .gs-series-cover-wrap.gs-cover-missing .gs-series-cover { display: none; }
+
+    .gs-series-name-zh { font-size: 22px; font-weight: 900; color: #f1f5f9; letter-spacing: 0.3px; }
+    .gs-series-name-en { font-size: 13px; color: #6b7280; font-weight: 500; margin-top: -4px; }
+    .gs-series-progress { font-size: 12px; color: #4b5563; margin-top: 2px; }
+
+    .gs-pity-row {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      padding: 4px 20px 8px;
+    }
+    .gs-pity-item { font-size: 11px; color: #6b7280; }
+    .gs-pity-sep  { font-size: 10px; color: #2d333b; }
+
+    .gs-action-area { padding: 4px 24px 14px; }
+    .gs-pull-btn {
+      width: 100%; padding: 18px; border: none;
+      background: linear-gradient(135deg, #f5a623, #e0941c);
+      border-radius: 18px; color: #000;
+      font-size: 17px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(245,166,35,0.35);
+      transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s;
+      letter-spacing: 0.3px;
+    }
+    .gs-pull-btn:hover:not(.gs-pull-disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 26px rgba(245,166,35,0.45);
+    }
+    .gs-pull-btn:active:not(.gs-pull-disabled) { transform: translateY(1px); }
+    .gs-pull-disabled {
+      background: rgba(255,255,255,0.07) !important;
+      color: #4b5563 !important; cursor: not-allowed !important;
+      box-shadow: none !important;
+    }
+    @keyframes gsShake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-6px); }
+      40%     { transform: translateX(6px); }
+      60%     { transform: translateX(-4px); }
+      80%     { transform: translateX(4px); }
+    }
+    .gs-btn-shake { animation: gsShake 0.35s ease; }
+
+    .gs-secondary-row { display: flex; gap: 12px; padding: 0 24px 16px; }
+    .gs-sec-btn {
+      flex: 1; padding: 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09); border-radius: 14px;
+      color: #9ca3af; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .gs-sec-btn:hover { background: rgba(255,255,255,0.09); color: #e2e8f0; }
+
+    /* 物品预览格 */
+    .gs-preview-grid {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 0 24px 32px; justify-content: center;
+    }
+    .gs-preview-item {
+      width: 52px; height: 66px; border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.10);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 4px;
+      background: rgba(255,255,255,0.04);
+    }
+    .gs-pi-n   { border-color: rgba(158,158,158,0.35); }
+    .gs-pi-r   { border-color: rgba(77,171,247,0.35); }
+    .gs-pi-sr  { border-color: rgba(156,89,255,0.35); }
+    .gs-pi-ssr { border-color: rgba(245,166,35,0.5); }
+    .gs-pi-n.gs-pi-owned   { background: rgba(158,158,158,0.12); border-color: rgba(158,158,158,0.55); }
+    .gs-pi-r.gs-pi-owned   { background: rgba(77,171,247,0.10); border-color: rgba(77,171,247,0.55); }
+    .gs-pi-sr.gs-pi-owned  { background: rgba(156,89,255,0.10); border-color: rgba(156,89,255,0.55); }
+    .gs-pi-ssr.gs-pi-owned {
+      background: rgba(245,166,35,0.12); border-color: rgba(245,166,35,0.65);
+      box-shadow: 0 0 12px rgba(245,166,35,0.2);
+    }
+    .gs-pi-tier { font-size: 9px; font-weight: 800; letter-spacing: 0.5px; line-height: 1; }
+    .gs-pi-n   .gs-pi-tier { color: #9e9e9e; }
+    .gs-pi-r   .gs-pi-tier { color: #4dabf7; }
+    .gs-pi-sr  .gs-pi-tier { color: #9c59ff; }
+    .gs-pi-ssr .gs-pi-tier { color: #f5a623; }
+    .gs-pi-name {
+      font-size: 8px; color: #9ca3af; text-align: center;
+      padding: 0 3px; line-height: 1.3; max-width: 50px;
+      word-break: break-all;
+    }
+    .gs-pi-unknown { color: #2d333b !important; font-size: 20px !important; font-weight: 900; }
+
+    /* ── 结果卡 Result Card ──────────────────────────────────── */
+    .gacha-result-overlay {
+      position: fixed; inset: 0; z-index: 9600;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.25s ease;
+    }
+    .gacha-result-overlay.gr-visible { opacity: 1; }
+    .gr-card {
+      background: #1c212e;
+      border: 2px solid var(--tier-color, #9e9e9e);
+      border-radius: 24px; padding: 28px 24px 22px;
+      width: 340px; max-width: 92vw;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06),
+                  0 32px 80px rgba(0,0,0,0.85);
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      animation: grSlideIn 0.32s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes grSlideIn {
+      from { transform: scale(0.85) translateY(20px); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
+    .gr-tier-badge {
+      padding: 4px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 800; color: #000;
+      letter-spacing: 0.5px; align-self: flex-start;
+    }
+    .gr-img-wrap {
+      width: 140px; height: 140px; border-radius: 16px;
+      overflow: hidden; position: relative;
+      background: linear-gradient(135deg, #1a1f2e, #2a3142);
+      border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+    }
+    .gr-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
+    .gr-img-fallback {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 64px; z-index: 0;
+    }
+    .gr-name-zh { font-size: 20px; font-weight: 900; color: #f1f5f9; text-align: center; }
+    .gr-name-en { font-size: 12px; color: #6b7280; text-align: center; margin-top: -6px; }
+    .gr-flavor {
+      font-size: 13px; color: #9ca3af; text-align: center;
+      line-height: 1.5; max-width: 280px; font-style: italic;
+    }
+    .gr-dup-hint { font-size: 13px; color: #b197fc; text-align: center; }
+    .gr-new-hint { font-size: 13px; color: #1fcc66; font-weight: 700; text-align: center; }
+    .gr-btn-row { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+    .gr-btn {
+      flex: 1; padding: 13px; border-radius: 12px; border: none;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+    }
+    .gr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .gr-btn-secondary { background: rgba(255,255,255,0.08); color: #9ca3af; }
+    .gr-btn-secondary:hover { background: rgba(255,255,255,0.12); }
+    .gr-btn-primary { background: linear-gradient(135deg, #f5a623, #e0941c); color: #000; }
+    .gr-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+
+    /* Wallet CTA 解锁状态 */
+    .wp-cta-active {
+      background: linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.08)) !important;
+      border-color: rgba(245,166,35,0.4) !important;
+      color: #f5a623 !important; cursor: pointer !important;
+    }
+    .wp-cta-active:hover {
+      background: linear-gradient(135deg, rgba(245,166,35,0.22), rgba(245,166,35,0.12)) !important;
+    }
+
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
       display: none; align-items: center; justify-content: center;
@@ -4211,6 +4460,7 @@
         setDailyTier(lIdx, sIdx, tier);
         setCoins(getCoins() + earned);
         _sessionCoinsEarned += earned; // 累计本课本次会话获得的币数
+        try { checkGachaUnlock(); } catch(e) {}  // 检查是否触发盲盒解锁 Toast
       }
       return earned;
     }
@@ -4504,6 +4754,272 @@
       }
     };
 
+    // ════════════════════════════════════════════════════════════
+    // ── 盲盒系统 M2: 商店页 UI ─────────────────────────────────
+    // ════════════════════════════════════════════════════════════
+
+    var TIER_COLOR = { N: '#9e9e9e', R: '#4dabf7', SR: '#9c59ff', SSR: '#f5a623' };
+    var TIER_LABEL = { N: 'N 普通',  R: 'R 稀有',  SR: 'SR 精选', SSR: 'SSR 至臻' };
+
+    // ─ 5.4 入口逻辑 ─────────────────────────────────────────────
+    var _gachaStoreEl = null;
+
+    // 每次加币后检查是否首次解锁（终生仅触发一次 Toast）
+    function checkGachaUnlock() {
+      var state = loadGachaState();
+      var threshold = getCurrentThreshold(state.flags.pullCount);
+      if (getCoins() >= threshold && !state.flags.storeUnlockedSeen) {
+        state.flags.storeUnlockedSeen = true;
+        saveGachaState(state);
+        showGachaUnlockToast();
+      }
+    }
+
+    function showGachaUnlockToast() {
+      var existing = document.getElementById('gacha-unlock-toast');
+      if (existing) return;
+      var toast = document.createElement('div');
+      toast.id = 'gacha-unlock-toast';
+      toast.className = 'gacha-unlock-toast';
+      toast.innerHTML =
+        '<span class="gut-icon">🎁</span>' +
+        '<div class="gut-text">' +
+          '<span class="gut-zh">盲盒商店已解锁！</span>' +
+          '<span class="gut-en">Blind Box unlocked!</span>' +
+        '</div>' +
+        '<button class="gut-btn" onclick="openGachaStore();removeGachaUnlockToast()">开盲盒</button>';
+      document.body.appendChild(toast);
+      setTimeout(removeGachaUnlockToast, 6000);
+    }
+
+    function removeGachaUnlockToast() {
+      var el = document.getElementById('gacha-unlock-toast');
+      if (!el) return;
+      el.classList.add('gut-hiding');
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+    }
+
+    function openGachaStore() {
+      closeWallet();
+      if (_gachaStoreEl && _gachaStoreEl.parentNode) return;
+      var el = document.createElement('div');
+      el.id = 'gacha-store-overlay';
+      el.className = 'gacha-store-overlay';
+      _gachaStoreEl = el;
+      _renderGachaStoreContent(el);
+      document.body.appendChild(el);
+      requestAnimationFrame(function() { el.classList.add('gs-visible'); });
+    }
+
+    function closeGachaStore() {
+      if (!_gachaStoreEl) return;
+      _gachaStoreEl.classList.remove('gs-visible');
+      var el = _gachaStoreEl;
+      _gachaStoreEl = null;
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+    }
+
+    // ─ 5.5 商店页渲染 ───────────────────────────────────────────
+    function _renderGachaStoreContent(container) {
+      var state  = loadGachaState();
+      var series = GACHA_SERIES['nora-debut'];
+      var cost   = getCurrentThreshold(state.flags.pullCount);
+      var coins  = getCoins();
+      var shards = state.shards;
+      var canPull = coins >= cost;
+      var pity   = state.pity['nora-debut'] ||
+                   { sinceLastSrPlus: 0, sinceLastSsr: 0, totalPulls: 0 };
+      var srLeft  = Math.max(0, 10 - pity.sinceLastSrPlus);
+      var ssrLeft = Math.max(0, 30 - pity.sinceLastSsr);
+      var owned = 0;
+      series.items.forEach(function(it) { if (state.collection[it.id]) owned++; });
+      var total = series.items.length;
+
+      container.innerHTML =
+        // ── 顶部状态栏
+        '<div class="gs-topbar">' +
+          '<button class="gs-back-btn" onclick="closeGachaStore()">◀ 返回</button>' +
+          '<div class="gs-topbar-coins">' +
+            '<span class="gs-coin-icon">🎵</span>' +
+            '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
+            '<span class="gs-coin-label">回声币</span>' +
+          '</div>' +
+          '<div class="gs-topbar-shards">' +
+            '<span class="gs-shard-icon">💎</span>' +
+            '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
+            '<span class="gs-shard-label">碎片</span>' +
+          '</div>' +
+        '</div>' +
+        // ── 系列封面
+        '<div class="gs-series-area">' +
+          '<div class="gs-series-box">' +
+            '<div class="gs-series-cover-wrap" id="gs-cover-wrap">' +
+              '<img class="gs-series-cover" src="' + series.cover + '"' +
+                ' onerror="document.getElementById(\'gs-cover-wrap\').classList.add(\'gs-cover-missing\')"' +
+                ' alt="' + series.nameZh + '">' +
+              '<div class="gs-series-cover-fallback"><span style="font-size:72px">🎁</span></div>' +
+            '</div>' +
+            '<div class="gs-series-name-zh">' + series.nameZh + '</div>' +
+            '<div class="gs-series-name-en">' + series.nameEn + '</div>' +
+            '<div class="gs-series-progress">' +
+              owned + ' / ' + total + ' 件' +
+              (owned > 0 ? ' · ' + Math.round(owned / total * 100) + '%' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        // ── 保底进度
+        '<div class="gs-pity-row">' +
+          '<span class="gs-pity-item" id="gs-pity-sr">SR+ 保底：' +
+            (srLeft > 0 ? srLeft + ' 抽内' : '本次必出') + '</span>' +
+          '<span class="gs-pity-sep">·</span>' +
+          '<span class="gs-pity-item" id="gs-pity-ssr">SSR 保底：' +
+            (ssrLeft > 0 ? ssrLeft + ' 抽内' : '本次必出') + '</span>' +
+        '</div>' +
+        // ── 抽卡按钮
+        '<div class="gs-action-area">' +
+          '<button class="gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled') + '"' +
+            ' id="gs-pull-btn"' +
+            ' onclick="onGachaPullClick()"' +
+            (canPull ? '' : ' disabled') + '>' +
+            (canPull
+              ? '✨ 抽 1 次 &nbsp;·&nbsp; 消耗 <b>' + cost + '</b> 回声币'
+              : '回声币不足（需 ' + cost + ' · 现有 ' + coins + '）') +
+          '</button>' +
+        '</div>' +
+        // ── 次级入口
+        '<div class="gs-secondary-row">' +
+          '<button class="gs-sec-btn" onclick="openCollectionBook()">📚 收集册</button>' +
+          '<button class="gs-sec-btn" onclick="openShardShop()">💎 碎片商店</button>' +
+        '</div>' +
+        // ── 物品预览格
+        '<div class="gs-preview-grid" id="gs-preview-grid">' +
+          _renderPreviewGrid(series, state) +
+        '</div>';
+    }
+
+    function _renderPreviewGrid(series, state) {
+      var html = '';
+      series.items.forEach(function(item) {
+        var owned    = !!state.collection[item.id];
+        var tierCls  = 'gs-pi-' + item.tier.toLowerCase();
+        var ownedCls = owned ? ' gs-pi-owned' : '';
+        html +=
+          '<div class="gs-preview-item ' + tierCls + ownedCls + '">' +
+            '<div class="gs-pi-tier">' + item.tier + '</div>' +
+            '<div class="gs-pi-name' + (owned ? '' : ' gs-pi-unknown') + '">' +
+              (owned ? item.nameZh : '?') +
+            '</div>' +
+          '</div>';
+      });
+      return html;
+    }
+
+    function _refreshGachaStoreUI() {
+      if (!_gachaStoreEl) return;
+      var state   = loadGachaState();
+      var coins   = getCoins();
+      var shards  = state.shards;
+      var cost    = getCurrentThreshold(state.flags.pullCount);
+      var canPull = coins >= cost;
+      var pity    = state.pity['nora-debut'] ||
+                    { sinceLastSrPlus: 0, sinceLastSsr: 0 };
+      var srLeft  = Math.max(0, 10 - pity.sinceLastSrPlus);
+      var ssrLeft = Math.max(0, 30 - pity.sinceLastSsr);
+
+      var numEl   = document.getElementById('gs-coin-num');
+      var shdEl   = document.getElementById('gs-shard-num');
+      var pullBtn = document.getElementById('gs-pull-btn');
+      var grid    = document.getElementById('gs-preview-grid');
+      var pitySr  = document.getElementById('gs-pity-sr');
+      var pitySsr = document.getElementById('gs-pity-ssr');
+
+      if (numEl)   numEl.textContent = coins;
+      if (shdEl)   shdEl.textContent = shards;
+      if (pitySr)  pitySr.textContent  = 'SR+ 保底：' + (srLeft  > 0 ? srLeft  + ' 抽内' : '本次必出');
+      if (pitySsr) pitySsr.textContent = 'SSR 保底：' + (ssrLeft > 0 ? ssrLeft + ' 抽内' : '本次必出');
+      if (pullBtn) {
+        pullBtn.disabled  = !canPull;
+        pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
+        pullBtn.innerHTML = canPull
+          ? '✨ 抽 1 次 &nbsp;·&nbsp; 消耗 <b>' + cost + '</b> 回声币'
+          : '回声币不足（需 ' + cost + ' · 现有 ' + coins + '）';
+      }
+      if (grid) grid.innerHTML = _renderPreviewGrid(GACHA_SERIES['nora-debut'], state);
+    }
+
+    function onGachaPullClick() {
+      var result = pullGacha('nora-debut');
+      if (!result.ok) {
+        var btn = document.getElementById('gs-pull-btn');
+        if (btn) {
+          btn.classList.add('gs-btn-shake');
+          setTimeout(function() { btn.classList.remove('gs-btn-shake'); }, 400);
+        }
+        return;
+      }
+      refreshCoinDisplay();
+      _refreshGachaStoreUI();
+      showGachaResultCard(result);
+    }
+
+    // ─ 5.6 结果卡（M2 简版；M3 替换为全屏动效）────────────────
+    function showGachaResultCard(result) {
+      var item   = result.item;
+      var tier   = result.tier;
+      var color  = TIER_COLOR[tier]  || '#9e9e9e';
+      var label  = TIER_LABEL[tier]  || tier;
+      var emoji  = tier === 'SSR' ? '✨' : tier === 'SR' ? '💫' : tier === 'R' ? '⭐' : '📦';
+      var nextCost = result.nextCost;
+      var canAgain = nextCost && getCoins() >= nextCost;
+
+      var ov = document.createElement('div');
+      ov.className = 'gacha-result-overlay';
+      ov.id = 'gacha-result-overlay';
+      ov.innerHTML =
+        '<div class="gr-card" style="--tier-color:' + color + '">' +
+          '<div class="gr-tier-badge" style="background:' + color + '">' + label + '</div>' +
+          '<div class="gr-img-wrap">' +
+            '<img class="gr-img" src="' + item.img + '"' +
+              ' onerror="this.style.display=\'none\'" alt="">' +
+            '<div class="gr-img-fallback">' + emoji + '</div>' +
+          '</div>' +
+          '<div class="gr-name-zh">' + item.nameZh + '</div>' +
+          '<div class="gr-name-en">' + item.nameEn + '</div>' +
+          (item.flavor ? '<div class="gr-flavor">' + item.flavor + '</div>'
+            : item.body ? '<div class="gr-flavor">' + item.body + '</div>' : '') +
+          (result.isDup
+            ? '<div class="gr-dup-hint">已有 · 获得 <b>' + result.shardsGained + '</b> 碎片</div>'
+            : '<div class="gr-new-hint">✓ 新物品入库！</div>') +
+          '<div class="gr-btn-row">' +
+            '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult()">返回商店</button>' +
+            (nextCost
+              ? '<button class="gr-btn gr-btn-primary" onclick="closeGachaResult();onGachaPullClick()"' +
+                  (canAgain ? '' : ' disabled') + '>' +
+                  '再抽一次' + (canAgain ? '' : '（不足）') +
+                '</button>'
+              : '') +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(ov);
+      requestAnimationFrame(function() { ov.classList.add('gr-visible'); });
+    }
+
+    function closeGachaResult() {
+      var el = document.getElementById('gacha-result-overlay');
+      if (!el) return;
+      el.classList.remove('gr-visible');
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
+    }
+
+    // ─ 占位函数（M4/M5 实现，防止 M2 按钮报错）─────────────────
+    function openCollectionBook() {
+      alert('收集册 Coming soon (M4)');
+    }
+    function openShardShop() {
+      alert('碎片商店 Coming soon (M5)');
+    }
+
     // ── Mini Wallet Panel ─────────────────────────────────────
     var _walletOpen = false;
     var _walletEl   = null;
@@ -4513,10 +5029,12 @@
     }
     function openWallet() {
       if (_walletEl && _walletEl.parentNode) _walletEl.parentNode.removeChild(_walletEl);
-      var bal  = getCoins();
-      var goal = 50;
-      var pct  = Math.min(100, Math.round(bal / goal * 100));
-      var rem  = Math.max(0, goal - bal);
+      var bal      = getCoins();
+      var gState   = loadGachaState();
+      var goal     = getCurrentThreshold(gState.flags.pullCount);
+      var pct      = Math.min(100, Math.round(bal / goal * 100));
+      var rem      = Math.max(0, goal - bal);
+      var canOpen  = bal >= goal;
       // outer overlay (click to dismiss)
       var ov = document.createElement('div');
       ov.className = 'wallet-overlay'; ov.id = 'wallet-panel';
@@ -4525,6 +5043,13 @@
       var card = document.createElement('div');
       card.className = 'wallet-panel';
       card.addEventListener('click', function(e) { e.stopPropagation(); });
+      var ctaHtml = canOpen
+        ? '<div class="wp-cta wp-cta-active" onclick="closeWallet();openGachaStore()" style="cursor:pointer">' +
+            '<span>🎁</span><span>盲盒商店 · 立即进入</span>' +
+          '</div>'
+        : '<div class="wp-cta">' +
+            '<span>🔒</span><span>盲盒商店 Store (' + goal + ')</span>' +
+          '</div>';
       card.innerHTML =
         '<button class="wp-close" onclick="closeWallet()">✕</button>' +
         '<div class="wp-header">' +
@@ -4542,16 +5067,22 @@
         '<div class="wp-track-wrap">' +
           '<div class="wp-track-label">' +
             '<span class="wp-track-label-l">0</span>' +
-            '<span class="wp-track-label-r">50 · 神秘盲盒</span>' +
+            '<span class="wp-track-label-r">' + goal + ' · 盲盒商店</span>' +
           '</div>' +
           '<div class="wp-track"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
         '</div>' +
-        '<div class="wp-hint">' +
-          '<span class="wp-hint-zh">还需 ' + rem + ' 枚</span>' +
-          '<span class="wp-hint-sep">·</span>' +
-          '<span class="wp-hint-en">' + rem + ' more to unlock</span>' +
-        '</div>' +
-        '<div class="wp-cta"><span>🔒</span><span>盲盒商店 Store (50)</span></div>';
+        (canOpen
+          ? '<div class="wp-hint">' +
+              '<span class="wp-hint-zh" style="color:#1fcc66">可以抽卡了！</span>' +
+              '<span class="wp-hint-sep">·</span>' +
+              '<span class="wp-hint-en" style="color:#1fcc66">Ready to pull!</span>' +
+            '</div>'
+          : '<div class="wp-hint">' +
+              '<span class="wp-hint-zh">还需 ' + rem + ' 枚</span>' +
+              '<span class="wp-hint-sep">·</span>' +
+              '<span class="wp-hint-en">' + rem + ' more to unlock</span>' +
+            '</div>') +
+        ctaHtml;
       ov.appendChild(card);
       document.body.appendChild(ov);
       _walletEl = ov; _walletOpen = true;
