@@ -2672,6 +2672,75 @@
     }
     .gcb-close-btn:hover { background: rgba(255,255,255,0.10); }
 
+    /* ── 碎片商店 Shard Shop (M5) ───────────────────────────── */
+    .gacha-shard-shop-overlay {
+      position: fixed; inset: 0; z-index: 9400;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.22s ease;
+    }
+    .gacha-shard-shop-overlay.gss-visible { opacity: 1; }
+    .gss-card {
+      background: #1c212e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px; padding: 0 0 8px;
+      width: 380px; max-width: 94vw;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.85);
+      transform: scale(0.92) translateY(16px); opacity: 0;
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
+      max-height: 86vh; overflow-y: auto;
+    }
+    .gacha-shard-shop-overlay.gss-visible .gss-card {
+      transform: none; opacity: 1;
+    }
+    .gss-topbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .gss-title { font-size: 17px; font-weight: 800; color: #f1f5f9; flex: 1; }
+    .gss-shard-bal {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 16px; font-weight: 700; color: #b197fc;
+    }
+    .gss-close-btn {
+      background: none; border: none; color: #4b5563;
+      font-size: 18px; cursor: pointer; padding: 4px 6px;
+      transition: color 0.15s; flex-shrink: 0; line-height: 1;
+    }
+    .gss-close-btn:hover { color: #9ca3af; }
+    .gss-desc {
+      font-size: 12px; color: #4b5563; padding: 10px 20px 4px;
+      line-height: 1.5;
+    }
+    .gss-rows { display: flex; flex-direction: column; padding: 8px 16px 4px; gap: 8px; }
+    .gss-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+    }
+    .gss-tier-badge {
+      padding: 4px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 800; color: #000;
+      flex-shrink: 0;
+    }
+    .gss-row-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .gss-cost { font-size: 15px; font-weight: 700; color: #b197fc; }
+    .gss-remaining { font-size: 11px; color: #4b5563; }
+    .gss-remaining.all-owned { color: #374151; }
+    .gss-exchange-btn {
+      padding: 10px 16px; border: none; border-radius: 10px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      background: linear-gradient(135deg, #b197fc, #9c59ff);
+      color: #fff; transition: opacity 0.15s; flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .gss-exchange-btn:hover:not(:disabled) { opacity: 0.85; }
+    .gss-exchange-btn:disabled {
+      background: rgba(255,255,255,0.07); color: #374151; cursor: not-allowed;
+    }
+
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
       display: none; align-items: center; justify-content: center;
@@ -5688,9 +5757,126 @@
       if (btn) btn.textContent = '⏸ 暂停';
     }
 
-    // ─ 占位函数（M5 实现）──────────────────────────────────────
+    // ════════════════════════════════════════════════════════════
+    // ── 盲盒系统 M5: 碎片商店 Shard Shop ──────────────────────
+    // ════════════════════════════════════════════════════════════
+
+    var _shardShopEl = null;
+
     function openShardShop() {
-      alert('碎片商店 Coming soon (M5)');
+      if (_shardShopEl && _shardShopEl.parentNode) {
+        _renderShardShopRows();
+        return;
+      }
+      var ov = document.createElement('div');
+      ov.id = 'gacha-shard-shop-overlay';
+      ov.className = 'gacha-shard-shop-overlay';
+      ov.addEventListener('click', function(e) {
+        if (e.target === ov) closeShardShop();
+      });
+      var card = document.createElement('div');
+      card.className = 'gss-card';
+      card.id = 'gss-card';
+      card.addEventListener('click', function(e) { e.stopPropagation(); });
+      ov.appendChild(card);
+      _shardShopEl = ov;
+      document.body.appendChild(ov);
+      _buildShardShop(card);
+      requestAnimationFrame(function() { ov.classList.add('gss-visible'); });
+    }
+
+    function closeShardShop() {
+      if (!_shardShopEl) return;
+      _shardShopEl.classList.remove('gss-visible');
+      var el = _shardShopEl;
+      _shardShopEl = null;
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
+    }
+
+    function _buildShardShop(card) {
+      var state = loadGachaState();
+      card.innerHTML =
+        '<div class="gss-topbar">' +
+          '<div class="gss-title">💎 碎片商店</div>' +
+          '<div class="gss-shard-bal" id="gss-shard-bal">' +
+            '💎 <span id="gss-shard-num">' + state.shards + '</span> 碎片' +
+          '</div>' +
+          '<button class="gss-close-btn" onclick="closeShardShop()">✕</button>' +
+        '</div>' +
+        '<div class="gss-desc">用碎片兑换随机未持有物品。重复抽到的物品自动转为碎片。</div>' +
+        '<div class="gss-rows" id="gss-rows"></div>';
+      _renderShardShopRows();
+    }
+
+    function _renderShardShopRows() {
+      var rowsEl  = document.getElementById('gss-rows');
+      var shdNumEl = document.getElementById('gss-shard-num');
+      if (!rowsEl) return;
+      var state   = loadGachaState();
+      var shards  = state.shards;
+      if (shdNumEl) shdNumEl.textContent = shards;
+
+      var series  = GACHA_SERIES['nora-debut'];
+      var tiers   = ['N', 'R', 'SR', 'SSR'];
+      var tierNames = { N: 'N 普通', R: 'R 稀有', SR: 'SR 精选', SSR: 'SSR 至臻' };
+
+      rowsEl.innerHTML = tiers.map(function(tier) {
+        var cost     = SHARD_PRICE[tier];
+        var color    = TIER_COLOR[tier]  || '#9e9e9e';
+        var allItems = series.items.filter(function(it) { return it.tier === tier; });
+        var unowned  = allItems.filter(function(it) { return !state.collection[it.id]; });
+        var canBuy   = shards >= cost && unowned.length > 0;
+        var remText  = unowned.length > 0
+          ? '剩余 ' + unowned.length + ' 件未获得'
+          : '已全部收集！';
+        return (
+          '<div class="gss-row">' +
+            '<div class="gss-tier-badge" style="background:' + color + '">' + tierNames[tier] + '</div>' +
+            '<div class="gss-row-info">' +
+              '<div class="gss-cost">💎 ' + cost + ' 碎片</div>' +
+              '<div class="gss-remaining' + (unowned.length === 0 ? ' all-owned' : '') + '">' + remText + '</div>' +
+            '</div>' +
+            '<button class="gss-exchange-btn" ' +
+              (canBuy ? 'onclick="exchangeByTier(\'' + tier + '\')"' : 'disabled') + '>' +
+              (unowned.length === 0 ? '已集齐' : shards < cost ? '碎片不足' : '兑换') +
+            '</button>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    // ─ 兑换逻辑 ─────────────────────────────────────────────────
+    function exchangeByTier(tier) {
+      var state   = loadGachaState();
+      var cost    = SHARD_PRICE[tier];
+      if (state.shards < cost) return;
+
+      var series  = GACHA_SERIES['nora-debut'];
+      var unowned = series.items.filter(function(it) {
+        return it.tier === tier && !state.collection[it.id];
+      });
+      if (!unowned.length) return;
+
+      // 随机选一件未持有物品
+      var item = unowned[Math.floor(Math.random() * unowned.length)];
+
+      // 扣碎片 + 入库
+      state.shards -= cost;
+      state.collection[item.id] = { count: 1, firstAt: Date.now() };
+      saveGachaState(state);
+
+      // 刷新 UI
+      _renderShardShopRows();
+      if (_collectionBookEl) _renderCollectionGrid();
+
+      // 展示结果卡（复用结果卡，标记来自碎片商店）
+      var result = {
+        ok: true, item: item, isDup: false, tier: tier,
+        cost: cost, shardsGained: 0, nextCost: null,
+        fromShardShop: true
+      };
+      closeShardShop();
+      showGachaResultCard(result);
     }
 
     // ── Mini Wallet Panel ─────────────────────────────────────
