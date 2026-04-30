@@ -82,9 +82,9 @@ const GACHA_SERIES = {
         img: '/assets/gacha/nora-debut/card_keycard.png',
         flavor: '三号楼四零二——诺拉在北京的第一个家。' },
       { id: 'nd_n_card_jh',    tier: 'N',  type: 'card',
-        nameZh: '京华大学校徽', nameEn: 'JingHua Univ. Crest',
+        nameZh: '入学第一天的拍立得', nameEn: 'Day 1 Polaroid',
         img: '/assets/gacha/nora-debut/card_jh.png',
-        flavor: '入学报到那天领到的，别在胸前沉甸甸的。' },
+        flavor: '诺拉在校门口拍的第一张照片，背面用英文写了日期。' },
 
       // ── R (30%) ───────────────────────────
       { id: 'nd_r_diary_01',   tier: 'R',  type: 'diary',
@@ -105,11 +105,11 @@ const GACHA_SERIES = {
 
       // ── SSR (5%) ──────────────────────────
       { id: 'nd_ssr_outfit_dress', tier: 'SSR', type: 'outfit',
-        nameZh: '初秋见面礼', nameEn: "Nora's Arrival Outfit",
+        nameZh: '迎新夜·马面裙', nameEn: 'Welcome Night Hanfu',
         img: '/assets/gacha/nora-debut/outfit_dress_thumb.png',
         outfitFull: '/assets/characters/nora/outfits/dress_full.png',
         target: 'nora',
-        flavor: '浅色连衣裙 + 帆布包。第一天踏上北京土地时穿的，七七说"好看"。' },
+        flavor: '迎新晚会那晚，七七说"你穿这个，比我们更像北京人了。"' },
     ]
   }
 };
