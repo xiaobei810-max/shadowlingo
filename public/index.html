@@ -2231,18 +2231,24 @@
       padding: 24px 20px 10px;
     }
     .gs-series-box {
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-      max-width: 320px; width: 100%;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      max-width: 480px; width: 100%;
     }
     .gs-series-cover-wrap {
-      width: 180px; height: 180px; border-radius: 24px;
+      width: 100%; aspect-ratio: 16 / 9; border-radius: 18px;
       overflow: hidden; position: relative;
       background: linear-gradient(135deg, #1c212e, #2a3142);
-      border: 2px solid rgba(245,166,35,0.35);
-      box-shadow: 0 0 40px rgba(245,166,35,0.12), 0 8px 32px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset,
+                  0 16px 48px rgba(0,0,0,0.55);
       flex-shrink: 0;
     }
     .gs-series-cover { width: 100%; height: 100%; object-fit: cover; }
+    /* 系列封面顶部到底部的渐变遮罩，让标题文字容易读 */
+    .gs-series-cover-wrap::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.5) 100%);
+    }
     .gs-series-cover-fallback {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
@@ -2251,9 +2257,10 @@
     .gs-series-cover-wrap:not(.gs-cover-missing) .gs-series-cover-fallback { display: none; }
     .gs-series-cover-wrap.gs-cover-missing .gs-series-cover { display: none; }
 
-    .gs-series-name-zh { font-size: 22px; font-weight: 900; color: #f1f5f9; letter-spacing: 0.3px; }
-    .gs-series-name-en { font-size: 13px; color: #6b7280; font-weight: 500; margin-top: -4px; }
-    .gs-series-progress { font-size: 12px; color: #4b5563; margin-top: 2px; }
+    .gs-series-name-zh { font-size: 24px; font-weight: 700; color: #f1f5f9; letter-spacing: 2px;
+                         font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; }
+    .gs-series-name-en { font-size: 11px; color: #6b7280; font-weight: 400; margin-top: 0; letter-spacing: 3px; text-transform: uppercase; }
+    .gs-series-progress { font-size: 11px; color: #4b5563; margin-top: 2px; letter-spacing: 1.5px; }
     .gs-complete-banner {
       font-size: 13px; font-weight: 700; color: #1fcc66;
       background: rgba(31,204,102,0.1); border: 1px solid rgba(31,204,102,0.25);
@@ -2270,17 +2277,20 @@
 
     .gs-action-area { padding: 4px 24px 14px; }
     .gs-pull-btn {
-      width: 100%; padding: 18px; border: none;
-      background: linear-gradient(135deg, #f5a623, #e0941c);
-      border-radius: 18px; color: #000;
-      font-size: 17px; font-weight: 800; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(245,166,35,0.35);
-      transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s;
-      letter-spacing: 0.3px;
+      width: 100%; padding: 16px; border: 1px solid rgba(200,167,102,0.4);
+      background: linear-gradient(135deg, #c8a766, #8c6e3a);
+      border-radius: 14px; color: #1a1410;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset,
+                  0 8px 24px -8px rgba(200,167,102,0.4);
+      transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s, background 0.2s;
+      letter-spacing: 1px;
     }
     .gs-pull-btn:hover:not(.gs-pull-disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 26px rgba(245,166,35,0.45);
+      background: linear-gradient(135deg, #d6b577, #9c7d49);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.22) inset,
+                  0 12px 32px -10px rgba(200,167,102,0.55);
     }
     .gs-pull-btn:active:not(.gs-pull-disabled) { transform: translateY(1px); }
     .gs-pull-disabled {
@@ -2352,12 +2362,14 @@
     }
     .gacha-result-overlay.gr-visible { opacity: 1; }
     .gr-card {
-      background: #1c212e;
-      border: 2px solid var(--tier-color, #9e9e9e);
-      border-radius: 24px; padding: 28px 24px 22px;
+      background: linear-gradient(180deg, rgba(28,33,46,0.96), rgba(20,24,34,0.96));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 28px 24px 22px;
       width: 340px; max-width: 92vw;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06),
-                  0 32px 80px rgba(0,0,0,0.85);
+      box-shadow: 0 0 0 1px var(--tier-color, transparent) inset,
+                  0 1px 0 rgba(255,255,255,0.04) inset,
+                  0 32px 80px rgba(0,0,0,0.7),
+                  0 0 60px -10px var(--tier-color, transparent);
       display: flex; flex-direction: column; align-items: center; gap: 12px;
       animation: grSlideIn 0.32s cubic-bezier(.34,1.56,.64,1);
     }
@@ -2366,40 +2378,95 @@
       to   { transform: none; opacity: 1; }
     }
     .gr-tier-badge {
-      padding: 4px 12px; border-radius: 99px;
-      font-size: 11px; font-weight: 800; color: #000;
-      letter-spacing: 0.5px; align-self: flex-start;
+      padding: 3px 11px; border-radius: 99px;
+      font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.85);
+      letter-spacing: 1px; align-self: flex-start;
+      text-transform: uppercase;
     }
     .gr-img-wrap {
-      width: 140px; height: 140px; border-radius: 16px;
+      width: 180px; height: 180px; border-radius: 14px;
       overflow: hidden; position: relative;
-      background: linear-gradient(135deg, #1a1f2e, #2a3142);
-      border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+      background: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.04), rgba(0,0,0,0.2));
+      border: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
     }
     .gr-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
+    /* 服装类（SSR 等）需要完整展示，加 padding */
+    .gr-img-wrap.gr-img-contain { background: radial-gradient(120% 120% at 50% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.4)); }
+    .gr-img-wrap.gr-img-contain .gr-img { object-fit: contain; padding: 14px; }
     .gr-img-fallback {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
       font-size: 64px; z-index: 0;
     }
-    .gr-name-zh { font-size: 20px; font-weight: 900; color: #f1f5f9; text-align: center; }
-    .gr-name-en { font-size: 12px; color: #6b7280; text-align: center; margin-top: -6px; }
+    .gr-name-zh { font-size: 22px; font-weight: 700; color: #f1f5f9; text-align: center;
+                  font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; letter-spacing: 1px; }
+    .gr-name-en { font-size: 11px; color: #6b7280; text-align: center; margin-top: -6px; letter-spacing: 1.5px; }
     .gr-flavor {
-      font-size: 13px; color: #9ca3af; text-align: center;
-      line-height: 1.5; max-width: 280px; font-style: italic;
+      font-size: 13px; color: #b9bdc9; text-align: center;
+      line-height: 1.7; max-width: 280px; font-style: italic;
+      font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
     }
-    .gr-dup-hint { font-size: 13px; color: #b197fc; text-align: center; }
-    .gr-new-hint { font-size: 13px; color: #1fcc66; font-weight: 700; text-align: center; }
-    .gr-btn-row { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+    .gr-dup-hint { font-size: 12px; color: #8b80b5; text-align: center; letter-spacing: 0.5px; }
+    .gr-new-hint { font-size: 11px; color: #6b7280; text-align: center; letter-spacing: 1.5px; text-transform: uppercase; }
+    .gr-btn-row { display: flex; gap: 10px; width: 100%; margin-top: 6px; }
     .gr-btn {
-      flex: 1; padding: 13px; border-radius: 12px; border: none;
-      font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+      flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.18s;
+      letter-spacing: 0.5px;
     }
     .gr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .gr-btn-secondary { background: rgba(255,255,255,0.08); color: #9ca3af; }
-    .gr-btn-secondary:hover { background: rgba(255,255,255,0.12); }
-    .gr-btn-primary { background: linear-gradient(135deg, #f5a623, #e0941c); color: #000; }
-    .gr-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+    .gr-btn-secondary { background: rgba(255,255,255,0.04); color: #b9bdc9; }
+    .gr-btn-secondary:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.16); }
+    .gr-btn-primary {
+      background: linear-gradient(135deg, #c8a766, #8c6e3a);
+      color: #1a1410; border-color: rgba(200,167,102,0.4);
+    }
+    .gr-btn-primary:hover:not(:disabled) { background: linear-gradient(135deg, #d6b577, #9c7d49); }
+
+    /* ── 语音日记播放器 (SR voiceOnly) ────────────────────── */
+    .gr-voice-player, .gcb-voice-player {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 6px 0;
+    }
+    .gr-voice-btn, .gcb-voice-btn {
+      width: 56px; height: 56px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.16);
+      background: radial-gradient(circle at 30% 30%, rgba(200,167,102,0.18), rgba(0,0,0,0.4));
+      color: #d6b577; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 0 0 0 rgba(200,167,102,0.4);
+      animation: voicePulse 2.4s ease-in-out infinite;
+    }
+    .gr-voice-btn:hover, .gcb-voice-btn:hover {
+      background: radial-gradient(circle at 30% 30%, rgba(200,167,102,0.3), rgba(0,0,0,0.4));
+      transform: scale(1.05);
+    }
+    .gr-voice-btn.playing, .gcb-voice-btn.playing { animation: none; background: radial-gradient(circle at 30% 30%, rgba(200,167,102,0.4), rgba(60,40,20,0.6)); }
+    @keyframes voicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(200,167,102,0.25); }
+      50%      { box-shadow: 0 0 0 12px rgba(200,167,102,0); }
+    }
+    .gr-voice-hint, .gcb-voice-hint {
+      font-size: 11px; color: #6b7280; letter-spacing: 1.2px; text-transform: uppercase;
+    }
+    .gr-voice-toggle, .gcb-voice-toggle {
+      font-size: 11px; color: #8b8f9a; background: none; border: none; cursor: pointer;
+      letter-spacing: 1px; padding: 4px 0; text-decoration: underline; text-decoration-color: rgba(139,143,154,0.3);
+      text-underline-offset: 4px;
+    }
+    .gr-voice-toggle:hover, .gcb-voice-toggle:hover { color: #d6b577; }
+    .gr-voice-transcript, .gcb-voice-transcript {
+      font-size: 13px; color: #b9bdc9; text-align: left; line-height: 1.85;
+      font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; font-style: italic;
+      max-width: 280px; max-height: 0; overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease;
+      opacity: 0; padding: 0 6px;
+    }
+    .gr-voice-transcript.expanded, .gcb-voice-transcript.expanded {
+      max-height: 600px; opacity: 1; padding: 6px;
+    }
+    .gr-voice-transcript p, .gcb-voice-transcript p { margin: 0 0 8px 0; }
+    .gr-voice-transcript p:last-child, .gcb-voice-transcript p:last-child { margin: 0; }
 
     /* ── 拆盒动效  Unboxing Animation (M3) ─────────────────────── */
     .gacha-unbox-overlay {
@@ -2662,9 +2729,12 @@
       display: flex; align-items: center; justify-content: center;
     }
     .gcb-detail-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
+    .gcb-detail-img-wrap.gcb-img-contain { background: radial-gradient(120% 120% at 50% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.4)); }
+    .gcb-detail-img-wrap.gcb-img-contain .gcb-detail-img { object-fit: contain; padding: 14px; }
     .gcb-detail-img-emoji { font-size: 72px; line-height: 1; }
-    .gcb-detail-name-zh { font-size: 20px; font-weight: 900; color: #f1f5f9; text-align: center; }
-    .gcb-detail-name-en { font-size: 12px; color: #6b7280; text-align: center; margin-top: -8px; }
+    .gcb-detail-name-zh { font-size: 22px; font-weight: 700; color: #f1f5f9; text-align: center;
+                          font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; letter-spacing: 1px; }
+    .gcb-detail-name-en { font-size: 11px; color: #6b7280; text-align: center; margin-top: -6px; letter-spacing: 1.5px; }
     .gcb-detail-body {
       font-size: 14px; color: #9ca3af; text-align: center; line-height: 1.6;
       max-width: 300px; font-style: italic;
@@ -4940,22 +5010,23 @@
           { id: 'nd_n_card_jh',  tier: 'N', type: 'card',
             nameZh: '入学第一天的拍立得', nameEn: 'Day 1 Polaroid',
             img: '/assets/gacha/nora-debut/card_jh.png',
-            flavor: '诺拉在校门口拍的第一张照片，背面用英文写了日期。' },
+            flavor: '诺拉在校门口拍的第一张照片。' },
           // ── R (30%) ─────────────────────────────────────────
           { id: 'nd_r_diary_01', tier: 'R', type: 'diary',
             nameZh: '大巴上的二十块', nameEn: 'Twenty Yuan on the Bus',
             img: '/assets/gacha/nora-debut/diary_01.png',
-            body: '司机说"二十块"，我翻遍包才凑够零钱。旁边的阿姨笑着等我，没有催。那二十块花得心跳。' },
+            body: '那张没递出去的二十块，成了我初到北京最窘迫、也最温暖的记忆。' },
           { id: 'nd_r_diary_02', tier: 'R', type: 'diary',
             nameZh: '你好，新室友！', nameEn: 'Hi, New Roomie!',
             img: '/assets/gacha/nora-debut/diary_02.png',
-            body: '推开宿舍门，七七正坐在床上刷手机。她抬头看我，笑了："你就是诺拉？我等你好久了。"就这一句，北京好像没那么大了。' },
+            body: '看到她笑容的那一刻，初到异国的所有忐忑，都被悄悄治愈了。' },
           // ── SR (15%) ────────────────────────────────────────
           { id: 'nd_sr_diary_audio', tier: 'SR', type: 'diary',
             nameZh: '第一天的深夜独白', nameEn: 'First Night Monologue',
             img: '/assets/gacha/nora-debut/diary_sr.png',
             audio: '/assets/gacha/nora-debut/diary_sr.mp3',
-            body: '今天好长。\n\n先是飞机，然后大巴，二十块钱差点找不到。到了学校，老师递给我房卡，说"三号楼，四零二"——我愣了一秒才反应过来那是我的宿舍号。\n\n推开门，七七在。她问我要不要加微信，我说"好"，手还在抖。\n\n现在躺在床上，窗外有风，有树，还有北京的夜。\n\n想家。但也想知道明天是什么样的。' },
+            voiceOnly: true,
+            body: '终于躺在床上了。今天……真的是漫长的一天。\n\n第一天到北京，我的大脑一直在"翻译"，感觉快要短路了。在机场的时候，我连大巴在哪儿都找不到，还差点付不了车费。还好……遇到了明轩学长。他真的很细心，帮我拿那个超级重的箱子。\n\n还有我的新室友七七！她一见面就问我"饿吗"，哈哈，特别可爱。\n\n虽然中文还说不太好……但是，感觉接下来的生活，会很有趣。\n\n晚安，京华大学。' },
           // ── SSR (5%) ────────────────────────────────────────
           { id: 'nd_ssr_outfit_dress', tier: 'SSR', type: 'outfit',
             nameZh: '迎新夜·马面裙', nameEn: 'Welcome Night Hanfu',
@@ -5575,21 +5646,30 @@
       var ov = document.createElement('div');
       ov.className = 'gacha-result-overlay';
       ov.id = 'gacha-result-overlay';
+      // 服装类（SSR）需要完整展示，加 contain padding；语音日记隐藏文字
+      var imgContainCls = (item.type === 'outfit') ? ' gr-img-contain' : '';
+      var bodyHtml;
+      if (item.voiceOnly && item.audio) {
+        bodyHtml = renderVoicePlayerHtml(item, 'gr');
+      } else if (item.flavor) {
+        bodyHtml = '<div class="gr-flavor">' + item.flavor + '</div>';
+      } else if (item.body) {
+        bodyHtml = '<div class="gr-flavor">' + item.body + '</div>';
+      } else { bodyHtml = ''; }
       ov.innerHTML =
         '<div class="gr-card" style="--tier-color:' + color + '">' +
           '<div class="gr-tier-badge" style="background:' + color + '">' + label + '</div>' +
-          '<div class="gr-img-wrap">' +
+          '<div class="gr-img-wrap' + imgContainCls + '">' +
             '<img class="gr-img" src="' + item.img + '"' +
               ' onerror="this.style.display=\'none\'" alt="">' +
             '<div class="gr-img-fallback">' + emoji + '</div>' +
           '</div>' +
           '<div class="gr-name-zh">' + item.nameZh + '</div>' +
           '<div class="gr-name-en">' + item.nameEn + '</div>' +
-          (item.flavor ? '<div class="gr-flavor">' + item.flavor + '</div>'
-            : item.body ? '<div class="gr-flavor">' + item.body + '</div>' : '') +
+          bodyHtml +
           (result.isDup
             ? '<div class="gr-dup-hint">已有 · 获得 <b>' + result.shardsGained + '</b> 碎片</div>'
-            : '<div class="gr-new-hint">✓ 新物品入库！</div>') +
+            : '<div class="gr-new-hint">— 首次收藏 —</div>') +
           '<div class="gr-btn-row">' +
             '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult()">返回商店</button>' +
             '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult();openCollectionBook(\'' + item.type + '\')">收集册</button>' +
@@ -5757,7 +5837,9 @@
           ' id="gcb-equip-btn" onclick="toggleEquipOutfit(\'' + itemId + '\')">' +
           (isEquipped ? '✓ 已装备 · 点击卸下' : '装备 Equip') + '</button>';
       }
-      if (item.audio) {
+      // voiceOnly 已经在卡片中提供播放器，不再重复一个底部按钮；
+      // 非 voiceOnly 的 audio 道具（未来可能存在）保留底部按钮
+      if (item.audio && !item.voiceOnly) {
         btns +=
           '<button class="gcb-audio-btn" id="gcb-audio-btn"' +
           ' onclick="toggleDetailAudio(\'' + item.audio + '\')">' +
@@ -5765,18 +5847,28 @@
       }
       btns += '<button class="gcb-close-btn" onclick="closeItemDetail()">关闭</button>';
 
+      // 服装类用 contain padding，避免顶天立地
+      var imgContainCls = (item.type === 'outfit') ? ' gcb-img-contain' : '';
+      // voiceOnly：用播放器替代 body 文字
+      var bodyHtml = '';
+      if (item.voiceOnly && item.audio) {
+        bodyHtml = renderVoicePlayerHtml(item, 'gcb');
+      } else {
+        if (item.flavor) bodyHtml += '<div class="gcb-detail-body">' + item.flavor + '</div>';
+        if (item.body)   bodyHtml += '<div class="gcb-detail-body">' + item.body   + '</div>';
+      }
+
       ov.innerHTML =
         '<div class="gcb-detail-card">' +
           '<div class="gcb-detail-handle"></div>' +
           '<div class="gcb-detail-tier-badge" style="background:' + color + '">' + TIER_LABEL[tier] + '</div>' +
-          '<div class="gcb-detail-img-wrap">' +
+          '<div class="gcb-detail-img-wrap' + imgContainCls + '">' +
             '<img class="gcb-detail-img" src="' + item.img + '" onerror="this.style.display=\'none\'" alt="">' +
             '<span class="gcb-detail-img-emoji">' + emoji + '</span>' +
           '</div>' +
           '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
           '<div class="gcb-detail-name-en">' + item.nameEn + '</div>' +
-          (item.flavor ? '<div class="gcb-detail-body">' + item.flavor + '</div>' : '') +
-          (item.body   ? '<div class="gcb-detail-body">' + item.body   + '</div>' : '') +
+          bodyHtml +
           (rec.count > 1 ? '<div class="gcb-detail-count">已获得 ' + rec.count + ' 份</div>' : '') +
           '<div class="gcb-detail-btns">' + btns + '</div>' +
         '</div>';
@@ -5843,6 +5935,65 @@
         if (btn) btn.textContent = '⚠ 音频暂不可用';
       });
       if (btn) btn.textContent = '⏸ 暂停';
+    }
+
+    // ─ 通用语音日记播放器（结果弹窗 + 详情弹窗共用） ───────────
+    // prefix: 'gr'（result 弹窗） 或 'gcb'（详情弹窗）
+    function renderVoicePlayerHtml(item, prefix) {
+      var safeAudio = (item.audio || '').replace(/'/g, "\\'");
+      var btnId   = prefix + '-voice-btn';
+      var hintId  = prefix + '-voice-hint';
+      var transId = prefix + '-voice-transcript';
+      // 把 \n\n 拆成 <p>
+      var paragraphs = (item.body || '').split(/\n\n+/).map(function(p) {
+        return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+      }).join('');
+      return (
+        '<div class="' + prefix + '-voice-player">' +
+          '<button class="' + prefix + '-voice-btn" id="' + btnId + '"' +
+                ' onclick="toggleVoicePlayer(\'' + safeAudio + '\',\'' + btnId + '\',\'' + hintId + '\')">▶</button>' +
+          '<span class="' + prefix + '-voice-hint" id="' + hintId + '">点击播放 · Play Voice Note</span>' +
+          '<button class="' + prefix + '-voice-toggle"' +
+                ' onclick="toggleVoiceTranscript(\'' + transId + '\', this)">显示文字 · Show Transcript</button>' +
+          '<div class="' + prefix + '-voice-transcript" id="' + transId + '">' + paragraphs + '</div>' +
+        '</div>'
+      );
+    }
+
+    function toggleVoicePlayer(src, btnId, hintId) {
+      var btn  = document.getElementById(btnId);
+      var hint = document.getElementById(hintId);
+      if (_detailAudio && !_detailAudio.paused) {
+        _stopDetailAudio();
+        if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
+        if (hint) { hint.textContent = '点击播放 · Play Voice Note'; }
+        return;
+      }
+      _detailAudio = new Audio(src);
+      _detailAudio.addEventListener('ended', function() {
+        _detailAudio = null;
+        if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
+        if (hint) { hint.textContent = '点击播放 · Play Voice Note'; }
+      });
+      _detailAudio.addEventListener('error', function() {
+        _detailAudio = null;
+        if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
+        if (hint) { hint.textContent = '音频准备中 · Audio coming soon'; }
+      });
+      _detailAudio.play().catch(function() {
+        _detailAudio = null;
+        if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
+        if (hint) { hint.textContent = '音频准备中 · Audio coming soon'; }
+      });
+      if (btn)  { btn.textContent = '❚❚'; btn.classList.add('playing'); }
+      if (hint) { hint.textContent = '正在播放 · Playing...'; }
+    }
+
+    function toggleVoiceTranscript(transId, toggleBtn) {
+      var el = document.getElementById(transId);
+      if (!el) return;
+      var open = el.classList.toggle('expanded');
+      if (toggleBtn) toggleBtn.textContent = open ? '收起文字 · Hide Transcript' : '显示文字 · Show Transcript';
     }
 
     // ════════════════════════════════════════════════════════════
