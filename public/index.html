@@ -2249,7 +2249,7 @@
       box-shadow: 0 12px 32px rgba(0,0,0,0.55);
     }
 
-    /* ── 居中梦境英雄图（四边渐隐遮罩） ─────────────────────── */
+    /* ── 居中梦境英雄图（四边渐隐遮罩 + 暗角叠加） ─────────────── */
     .gs-hero {
       position: relative; width: 100%; max-width: 760px;
       margin: 12px auto 0; flex-shrink: 0;
@@ -2260,8 +2260,19 @@
       display: block; width: 100%; height: 100%;
       object-fit: cover;
       /* 四周径向渐隐：让图片像从黑暗中浮现的梦境片段 */
-      -webkit-mask-image: radial-gradient(ellipse 78% 82% at center, #000 38%, transparent 100%);
-              mask-image: radial-gradient(ellipse 78% 82% at center, #000 38%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 74% at center, #000 18%, transparent 96%);
+              mask-image: radial-gradient(ellipse 70% 74% at center, #000 18%, transparent 96%);
+    }
+    /* 暗角叠层：进一步保证边缘与背景无缝融合 */
+    .gs-hero::after {
+      content: ''; position: absolute; inset: 0;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse 75% 78% at center,
+        transparent 28%,
+        rgba(13,17,23,0.45) 75%,
+        #0d1117 100%
+      );
     }
     /* 图片加载失败时的兜底 */
     .gs-hero-fallback-icon {
@@ -2279,12 +2290,13 @@
       padding: 18px 24px 6px;
     }
     .gs-series-name-zh {
-      font-size: 24px; font-weight: 700; color: #f1f5f9; letter-spacing: 2px;
+      font-size: 24px; font-weight: 700; color: #f1f5f9;
+      letter-spacing: 8px; padding-left: 8px; /* 视觉补偿末字间距 */
       font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
     }
     .gs-series-name-en {
-      font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 3px;
-      text-transform: uppercase; margin-top: 4px;
+      font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 4px;
+      text-transform: uppercase; margin-top: 6px;
     }
     .gs-series-progress { display: none; }
     .gs-complete-banner { display: none; }
@@ -2442,11 +2454,28 @@
       text-transform: uppercase;
       background: rgba(0,0,0,0.45);
       color: #ffffff;
-      border: 1px solid rgba(255,255,255,0.18);
     }
-    /* 仅 SSR 保留极轻微的金色暗示，其他全部统一为中性白 */
-    .gr-tier-n, .gr-tier-r, .gr-tier-sr { color: #ffffff; border-color: rgba(255,255,255,0.18); }
-    .gr-tier-ssr { color: #ffffff; border-color: rgba(230,194,122,0.4); text-shadow: 0 0 10px rgba(230,194,122,0.25); }
+    /* 等级呼吸光晕（边框+box-shadow 同频脉动） */
+    @keyframes tierBreathSilver {
+      0%,100% { box-shadow: 0 0 2px 0 rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); }
+      50%     { box-shadow: 0 0 12px 2px rgba(255,255,255,0.30); border-color: rgba(255,255,255,0.45); }
+    }
+    @keyframes tierBreathBlue {
+      0%,100% { box-shadow: 0 0 2px 0 rgba(147,197,253,0.15); border-color: rgba(147,197,253,0.25); }
+      50%     { box-shadow: 0 0 14px 2px rgba(147,197,253,0.45); border-color: rgba(147,197,253,0.65); }
+    }
+    @keyframes tierBreathPurple {
+      0%,100% { box-shadow: 0 0 3px 0 rgba(196,181,253,0.20); border-color: rgba(196,181,253,0.32); }
+      50%     { box-shadow: 0 0 16px 2px rgba(196,181,253,0.50); border-color: rgba(196,181,253,0.75); }
+    }
+    @keyframes tierBreathGold {
+      0%,100% { box-shadow: 0 0 3px 0 rgba(255,215,0,0.22); border-color: rgba(255,215,0,0.40); }
+      50%     { box-shadow: 0 0 18px 3px rgba(255,215,0,0.62); border-color: rgba(255,215,0,0.90); }
+    }
+    .gr-tier-n   { border: 1px solid rgba(255,255,255,0.18); animation: tierBreathSilver 4s ease-in-out infinite; }
+    .gr-tier-r   { border: 1px solid rgba(147,197,253,0.25); animation: tierBreathBlue   4s ease-in-out infinite; }
+    .gr-tier-sr  { border: 1px solid rgba(196,181,253,0.32); animation: tierBreathPurple 3.6s ease-in-out infinite; }
+    .gr-tier-ssr { border: 1px solid rgba(255,215,0,0.40);   animation: tierBreathGold   3.4s ease-in-out infinite; }
     .gr-img-wrap {
       width: 180px; height: 180px; border-radius: 14px;
       overflow: hidden; position: relative;
@@ -2520,6 +2549,23 @@
     @keyframes voicePulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.18); }
       50%      { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
+    }
+    /* 语音按键的稀有度呼吸光晕（覆盖默认白色脉动） */
+    @keyframes voiceBreathGold {
+      0%,100% { box-shadow: 0 0 4px 0 rgba(255,215,0,0.22); border-color: rgba(255,215,0,0.45); }
+      50%     { box-shadow: 0 0 22px 4px rgba(255,215,0,0.55); border-color: rgba(255,215,0,0.95); }
+    }
+    @keyframes voiceBreathPurple {
+      0%,100% { box-shadow: 0 0 4px 0 rgba(196,181,253,0.20); border-color: rgba(196,181,253,0.4); }
+      50%     { box-shadow: 0 0 20px 3px rgba(196,181,253,0.45); border-color: rgba(196,181,253,0.85); }
+    }
+    .gr-voice-btn.tier-breath-ssr, .gcb-voice-btn.tier-breath-ssr {
+      animation: voiceBreathGold 3.4s ease-in-out infinite;
+      color: #fff5d6;
+    }
+    .gr-voice-btn.tier-breath-sr,  .gcb-voice-btn.tier-breath-sr {
+      animation: voiceBreathPurple 3.6s ease-in-out infinite;
+      color: #f1edff;
     }
     .gr-voice-hint, .gcb-voice-hint {
       font-size: 11px; color: #6b7280; letter-spacing: 1.2px; text-transform: uppercase;
@@ -2739,6 +2785,13 @@
     .gcb-car-card img {
       width: 100%; height: 100%; object-fit: cover; display: block;
     }
+    /* 服装类卡片：完整展示（不裁切衣领/下摆），加 padding 与渐变底 */
+    .gcb-car-card.cc-outfit {
+      background: radial-gradient(120% 120% at 50% 30%, rgba(255,255,255,0.05), rgba(0,0,0,0.42));
+    }
+    .gcb-car-card.cc-outfit img {
+      object-fit: contain; padding: 14px;
+    }
     .gcb-car-card .gcb-car-emoji {
       position: absolute; inset: 0; display: flex;
       align-items: center; justify-content: center;
@@ -2891,10 +2944,11 @@
       align-self: flex-start;
       background: rgba(0,0,0,0.45);
       color: #ffffff;
-      border: 1px solid rgba(255,255,255,0.18);
     }
-    .gcb-detail-tier-n, .gcb-detail-tier-r, .gcb-detail-tier-sr { color: #ffffff; border-color: rgba(255,255,255,0.18); }
-    .gcb-detail-tier-ssr { color: #ffffff; border-color: rgba(230,194,122,0.4); text-shadow: 0 0 10px rgba(230,194,122,0.25); }
+    .gcb-detail-tier-n   { border: 1px solid rgba(255,255,255,0.18); animation: tierBreathSilver 4s ease-in-out infinite; }
+    .gcb-detail-tier-r   { border: 1px solid rgba(147,197,253,0.25); animation: tierBreathBlue   4s ease-in-out infinite; }
+    .gcb-detail-tier-sr  { border: 1px solid rgba(196,181,253,0.32); animation: tierBreathPurple 3.6s ease-in-out infinite; }
+    .gcb-detail-tier-ssr { border: 1px solid rgba(255,215,0,0.40);   animation: tierBreathGold   3.4s ease-in-out infinite; }
     .gcb-detail-img-wrap {
       width: 240px; height: 240px; border-radius: 22px;
       overflow: hidden; position: relative;
@@ -5551,22 +5605,35 @@
             '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
           '</div>' +
           '<div class="gs-topbar-shards" onclick="showTopbarTooltip(\'shard\',this)">' +
-            '<svg width="22" height="24" viewBox="0 0 22 24" fill="none" style="flex-shrink:0;overflow:visible">' +
-              // 透明水晶主体
-              '<polygon points="11,1 18,5 20,12 16,21 6,21 2,12 4,5"' +
-                ' fill="rgba(255,255,255,0.10)"' +
-                ' stroke="rgba(255,255,255,0.78)" stroke-width="0.85"/>' +
-              // 上方亮面
-              '<polygon points="11,1 18,5 11,11" fill="rgba(255,255,255,0.45)"/>' +
-              // 左下暗面
-              '<polygon points="11,11 6,21 2,12" fill="rgba(255,255,255,0.05)"/>' +
-              // 中线 + 尖锐边缘高光
-              '<line x1="11" y1="1" x2="11" y2="21" stroke="rgba(255,255,255,0.45)" stroke-width="0.6"/>' +
-              '<line x1="11" y1="1" x2="18" y2="5" stroke="rgba(255,255,255,0.95)" stroke-width="0.7"/>' +
-              // 四角星闪光（呼吸动画）
-              '<g class="gs-shard-sparkle" style="transform-origin:15px 5.5px">' +
-                '<path d="M15,3 L15.5,5 L17.5,5.5 L15.5,6 L15,8 L14.5,6 L12.5,5.5 L14.5,5 Z"' +
-                  ' fill="#ffffff" opacity="0.95"/>' +
+            '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" style="flex-shrink:0;overflow:visible">' +
+              '<defs>' +
+                '<linearGradient id="gsDiaGrad" x1="0" y1="0" x2="0" y2="22" gradientUnits="userSpaceOnUse">' +
+                  '<stop offset="0%" stop-color="#a7f3d0" stop-opacity="0.95"/>' +
+                  '<stop offset="50%" stop-color="#67e8f9" stop-opacity="0.85"/>' +
+                  '<stop offset="100%" stop-color="#22d3ee" stop-opacity="0.92"/>' +
+                '</linearGradient>' +
+              '</defs>' +
+              // 经典明亮式切工：上宽下尖
+              '<polygon points="11,3 17,8 11,20 5,8"' +
+                ' fill="url(#gsDiaGrad)"' +
+                ' stroke="rgba(220,255,250,0.85)" stroke-width="0.65"/>' +
+              // 上冠两个亮面
+              '<polygon points="11,3 17,8 11,8" fill="rgba(255,255,255,0.45)"/>' +
+              '<polygon points="11,3 5,8 11,8" fill="rgba(255,255,255,0.30)"/>' +
+              // 内部刻面线
+              '<line x1="11" y1="8" x2="11" y2="20" stroke="rgba(255,255,255,0.5)" stroke-width="0.4"/>' +
+              '<line x1="5" y1="8" x2="11" y2="20" stroke="rgba(255,255,255,0.32)" stroke-width="0.3"/>' +
+              '<line x1="17" y1="8" x2="11" y2="20" stroke="rgba(255,255,255,0.32)" stroke-width="0.3"/>' +
+              // 顶部锐边高光
+              '<line x1="11" y1="3" x2="17" y2="8" stroke="rgba(255,255,255,0.95)" stroke-width="0.55"/>' +
+              // 双星光呼吸闪烁（错相）
+              '<g class="gs-shard-sparkle" style="transform-origin:19px 5.5px">' +
+                '<path d="M19,4 L19.4,5.5 L21,5.9 L19.4,6.3 L19,7.8 L18.6,6.3 L17,5.9 L18.6,5.5 Z"' +
+                  ' fill="#ffffff"/>' +
+              '</g>' +
+              '<g class="gs-shard-sparkle" style="transform-origin:2.5px 13.5px;animation-delay:1.4s">' +
+                '<path d="M2.5,12 L2.85,13.15 L4,13.5 L2.85,13.85 L2.5,15 L2.15,13.85 L1,13.5 L2.15,13.15 Z"' +
+                  ' fill="#ffffff" opacity="0.9"/>' +
               '</g>' +
             '</svg>' +
             '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
@@ -6134,7 +6201,9 @@
                      'transform:translateX(' + tx + 'px);' +
                      'opacity:' + opac + ';' +
                      'z-index:' + (10 - absDiff) + ';';
-        var cls = 'gcb-car-card' + (i === _carouselIdx ? ' cc-active' : '');
+        var cls = 'gcb-car-card' +
+                  (i === _carouselIdx ? ' cc-active' : '') +
+                  (item.type === 'outfit' ? ' cc-outfit' : '');
         // Active owned card → show detail; else navigate to it
         var clickHandler = (i === _carouselIdx)
           ? (owned ? 'showItemDetail(\'' + item.id + '\')' : '')
@@ -6345,9 +6414,10 @@
       var paragraphs = (item.body || '').split(/\n\n+/).map(function(p) {
         return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
       }).join('');
+      var tierBreathCls = item.tier ? ' tier-breath-' + item.tier.toLowerCase() : '';
       return (
         '<div class="' + prefix + '-voice-player">' +
-          '<button class="' + prefix + '-voice-btn" id="' + btnId + '"' +
+          '<button class="' + prefix + '-voice-btn' + tierBreathCls + '" id="' + btnId + '"' +
                 ' onclick="toggleVoicePlayer(\'' + safeAudio + '\',\'' + btnId + '\',\'' + hintId + '\')">▶</button>' +
           '<span class="' + prefix + '-voice-hint" id="' + hintId + '">点击播放 · Play Voice Note</span>' +
           '<button class="' + prefix + '-voice-toggle"' +
