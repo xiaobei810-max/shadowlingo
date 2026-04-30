@@ -2222,16 +2222,16 @@
     }
     .gs-topbar-shards { margin-left: 4px; }
     .gs-coin-icon, .gs-shard-icon { font-size: 15px; line-height: 1; }
-    .gs-coin-num  { font-size: 18px; font-weight: 800; color: #1fcc66; }
-    .gs-shard-num { font-size: 18px; font-weight: 800; color: #b197fc; }
+    .gs-coin-num  { font-size: 16px; font-weight: 700; color: #22c55e; }
+    .gs-shard-num { font-size: 16px; font-weight: 700; color: #94a3b8; }
     .gs-coin-label, .gs-shard-label { font-size: 11px; color: #4b5563; }
 
     .gs-series-area {
       flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: 24px 20px 10px;
+      padding: 16px 20px 6px;
     }
     .gs-series-box {
-      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
       max-width: 480px; width: 100%;
     }
     .gs-series-cover-wrap {
@@ -2260,37 +2260,23 @@
     .gs-series-name-zh { font-size: 24px; font-weight: 700; color: #f1f5f9; letter-spacing: 2px;
                          font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; }
     .gs-series-name-en { font-size: 11px; color: #6b7280; font-weight: 400; margin-top: 0; letter-spacing: 3px; text-transform: uppercase; }
-    .gs-series-progress { font-size: 11px; color: #4b5563; margin-top: 2px; letter-spacing: 1.5px; }
-    .gs-complete-banner {
-      font-size: 13px; font-weight: 700; color: #1fcc66;
-      background: rgba(31,204,102,0.1); border: 1px solid rgba(31,204,102,0.25);
-      border-radius: 10px; padding: 6px 14px; margin-top: 4px;
-      text-align: center;
-    }
-
-    .gs-pity-row {
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      padding: 4px 20px 8px;
-    }
-    .gs-pity-item { font-size: 11px; color: #6b7280; }
-    .gs-pity-sep  { font-size: 10px; color: #2d333b; }
+    .gs-series-progress { display: none; }
+    .gs-complete-banner { display: none; }
+    .gs-pity-row        { display: none; }
 
     .gs-action-area { padding: 4px 24px 14px; }
     .gs-pull-btn {
-      width: 100%; padding: 16px; border: 1px solid rgba(200,167,102,0.4);
-      background: linear-gradient(135deg, #c8a766, #8c6e3a);
-      border-radius: 14px; color: #1a1410;
-      font-size: 15px; font-weight: 600; cursor: pointer;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset,
-                  0 8px 24px -8px rgba(200,167,102,0.4);
-      transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s, background 0.2s;
-      letter-spacing: 1px;
+      width: 100%; padding: 16px; border: none;
+      background: #22c55e;
+      border-radius: 14px; color: #0f172a;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 20px -4px rgba(34,197,94,0.45);
+      transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s;
+      letter-spacing: 0.5px;
     }
     .gs-pull-btn:hover:not(.gs-pull-disabled) {
       transform: translateY(-1px);
-      background: linear-gradient(135deg, #d6b577, #9c7d49);
-      box-shadow: 0 1px 0 rgba(255,255,255,0.22) inset,
-                  0 12px 32px -10px rgba(200,167,102,0.55);
+      box-shadow: 0 8px 28px -6px rgba(34,197,94,0.6);
     }
     .gs-pull-btn:active:not(.gs-pull-disabled) { transform: translateY(1px); }
     .gs-pull-disabled {
@@ -2307,21 +2293,21 @@
     }
     .gs-btn-shake { animation: gsShake 0.35s ease; }
 
-    .gs-secondary-row { display: flex; gap: 12px; padding: 0 24px 16px; }
+    .gs-secondary-row {
+      display: flex; gap: 32px; justify-content: center;
+      padding: 4px 24px 28px;
+    }
     .gs-sec-btn {
-      flex: 1; padding: 14px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.09); border-radius: 14px;
-      color: #9ca3af; font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      background: none; border: none;
+      color: #4b5563; font-size: 13px; font-weight: 500; cursor: pointer;
+      text-decoration: underline; text-decoration-color: rgba(75,85,99,0.4);
+      text-underline-offset: 3px;
+      transition: color 0.15s;
     }
-    .gs-sec-btn:hover { background: rgba(255,255,255,0.09); color: #e2e8f0; }
+    .gs-sec-btn:hover { color: #9ca3af; }
 
-    /* 物品预览格 */
-    .gs-preview-grid {
-      display: flex; flex-wrap: wrap; gap: 8px;
-      padding: 0 24px 32px; justify-content: center;
-    }
+    /* 物品预览格 — hidden per design */
+    .gs-preview-grid { display: none; }
     .gs-preview-item {
       width: 52px; height: 66px; border-radius: 10px;
       border: 2px solid rgba(255,255,255,0.10);
@@ -2379,10 +2365,15 @@
     }
     .gr-tier-badge {
       padding: 3px 11px; border-radius: 99px;
-      font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.85);
+      font-size: 10px; font-weight: 700;
       letter-spacing: 1px; align-self: flex-start;
       text-transform: uppercase;
+      background: rgba(0,0,0,0.35);
     }
+    .gr-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.35); }
+    .gr-tier-r   { color: #93c5fd; border: 1px solid rgba(147,197,253,0.4); }
+    .gr-tier-sr  { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.4); }
+    .gr-tier-ssr { color: #e6c27a; border: 1px solid rgba(230,194,122,0.5); text-shadow: 0 0 10px rgba(230,194,122,0.35); }
     .gr-img-wrap {
       width: 180px; height: 180px; border-radius: 14px;
       overflow: hidden; position: relative;
@@ -2418,10 +2409,10 @@
     .gr-btn-secondary { background: rgba(255,255,255,0.04); color: #b9bdc9; }
     .gr-btn-secondary:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.16); }
     .gr-btn-primary {
-      background: linear-gradient(135deg, #c8a766, #8c6e3a);
-      color: #1a1410; border-color: rgba(200,167,102,0.4);
+      background: rgba(34,197,94,0.12);
+      color: #22c55e; border-color: rgba(34,197,94,0.4);
     }
-    .gr-btn-primary:hover:not(:disabled) { background: linear-gradient(135deg, #d6b577, #9c7d49); }
+    .gr-btn-primary:hover:not(:disabled) { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.6); }
 
     /* ── 语音日记播放器 (SR voiceOnly) ────────────────────── */
     .gr-voice-player, .gcb-voice-player {
@@ -2630,36 +2621,32 @@
       .gcb-grid { grid-template-columns: repeat(4, 1fr); }
     }
     .gcb-item {
-      border-radius: 14px; border: 2px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.03);
+      border-radius: 14px; border: none;
+      background: transparent;
       display: flex; flex-direction: column; align-items: center;
       padding: 12px 8px 10px; gap: 8px;
       cursor: pointer; position: relative;
-      transition: transform 0.15s, border-color 0.15s;
+      transition: transform 0.15s;
       min-height: 110px;
     }
     .gcb-item:active { transform: scale(0.96); }
     .gcb-item.gcb-owned { cursor: pointer; }
     .gcb-item.gcb-owned:hover { transform: translateY(-2px); }
-    .gcb-item.gcb-unowned { cursor: default; opacity: 0.5; }
+    .gcb-item.gcb-unowned { cursor: default; opacity: 0.4; }
 
-    /* Tier border colors (owned only) */
-    .gcb-item.gcb-owned.gcb-n   { border-color: rgba(158,158,158,0.45); background: rgba(158,158,158,0.06); }
-    .gcb-item.gcb-owned.gcb-r   { border-color: rgba(77,171,247,0.45);  background: rgba(77,171,247,0.06); }
-    .gcb-item.gcb-owned.gcb-sr  { border-color: rgba(156,89,255,0.45);  background: rgba(156,89,255,0.06); }
-    .gcb-item.gcb-owned.gcb-ssr {
-      border-color: rgba(245,166,35,0.6);  background: rgba(245,166,35,0.08);
-      box-shadow: 0 0 14px rgba(245,166,35,0.18);
+    /* SSR: subtle gold glow only */
+    .gcb-item.gcb-owned.gcb-ssr .gcb-item-img-wrap {
+      box-shadow: 0 0 16px rgba(245,166,35,0.3);
     }
 
     .gcb-item-tier {
-      font-size: 9px; font-weight: 800; letter-spacing: 0.5px; line-height: 1;
-      align-self: flex-start;
+      font-size: 8px; font-weight: 800; letter-spacing: 0.5px; line-height: 1.2;
+      padding: 1px 6px; border-radius: 99px; align-self: flex-start;
     }
-    .gcb-n  .gcb-item-tier { color: #9e9e9e; }
-    .gcb-r  .gcb-item-tier { color: #4dabf7; }
-    .gcb-sr .gcb-item-tier { color: #9c59ff; }
-    .gcb-ssr .gcb-item-tier { color: #f5a623; }
+    .gcb-n  .gcb-item-tier { color: #9e9e9e; background: rgba(158,158,158,0.12); }
+    .gcb-r  .gcb-item-tier { color: #4dabf7; background: rgba(77,171,247,0.12); }
+    .gcb-sr .gcb-item-tier { color: #b197fc; background: rgba(156,89,255,0.14); }
+    .gcb-ssr .gcb-item-tier { color: #f5c842; background: rgba(245,166,35,0.16); text-shadow: 0 0 6px rgba(245,166,35,0.5); }
 
     .gcb-item-img-wrap {
       width: 52px; height: 52px; border-radius: 10px;
@@ -2672,7 +2659,7 @@
 
     .gcb-item-name {
       font-size: 10px; color: #9ca3af; text-align: center;
-      line-height: 1.3; word-break: break-all;
+      line-height: 1.3; word-break: keep-all;
     }
     .gcb-unowned .gcb-item-name { color: #2d333b; }
 
@@ -2718,11 +2705,16 @@
     }
     .gcb-detail-tier-badge {
       padding: 4px 12px; border-radius: 99px;
-      font-size: 11px; font-weight: 800; color: #000;
+      font-size: 11px; font-weight: 800;
       align-self: flex-start;
+      background: rgba(0,0,0,0.35);
     }
+    .gcb-detail-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.35); }
+    .gcb-detail-tier-r   { color: #93c5fd; border: 1px solid rgba(147,197,253,0.4); }
+    .gcb-detail-tier-sr  { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.4); }
+    .gcb-detail-tier-ssr { color: #e6c27a; border: 1px solid rgba(230,194,122,0.5); text-shadow: 0 0 10px rgba(230,194,122,0.35); }
     .gcb-detail-img-wrap {
-      width: 160px; height: 160px; border-radius: 18px;
+      width: 240px; height: 240px; border-radius: 22px;
       overflow: hidden; position: relative;
       background: linear-gradient(135deg, #1a1f2e, #2a3142);
       border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
@@ -2730,29 +2722,31 @@
     }
     .gcb-detail-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
     .gcb-detail-img-wrap.gcb-img-contain { background: radial-gradient(120% 120% at 50% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.4)); }
-    .gcb-detail-img-wrap.gcb-img-contain .gcb-detail-img { object-fit: contain; padding: 14px; }
-    .gcb-detail-img-emoji { font-size: 72px; line-height: 1; }
+    .gcb-detail-img-wrap.gcb-img-contain .gcb-detail-img { object-fit: contain; padding: 18px; }
+    .gcb-detail-img-emoji { font-size: 80px; line-height: 1; }
     .gcb-detail-name-zh { font-size: 22px; font-weight: 700; color: #f1f5f9; text-align: center;
-                          font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; letter-spacing: 1px; }
+                          font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; letter-spacing: 1px; word-break: keep-all; }
     .gcb-detail-name-en { font-size: 11px; color: #6b7280; text-align: center; margin-top: -6px; letter-spacing: 1.5px; }
     .gcb-detail-body {
-      font-size: 14px; color: #9ca3af; text-align: center; line-height: 1.6;
+      font-size: 14px; color: #9ca3af; text-align: center; line-height: 1.8;
       max-width: 300px; font-style: italic;
+      white-space: pre-line; word-break: keep-all;
     }
     .gcb-detail-count { font-size: 12px; color: #4b5563; }
     .gcb-detail-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 4px; }
     .gcb-equip-btn {
-      width: 100%; padding: 14px; border: none; border-radius: 14px;
+      width: 100%; padding: 14px; border-radius: 14px;
       font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
     }
     .gcb-equip-btn.equipped {
-      background: rgba(245,166,35,0.15); border: 1px solid rgba(245,166,35,0.4);
-      color: #f5a623;
+      background: rgba(230,194,122,0.08); border: 1px solid rgba(230,194,122,0.4);
+      color: #e6c27a;
     }
     .gcb-equip-btn.unequipped {
-      background: linear-gradient(135deg, #f5a623, #e0941c); color: #000;
+      background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.45);
+      color: #22c55e;
     }
-    .gcb-equip-btn:hover { opacity: 0.85; }
+    .gcb-equip-btn:hover { opacity: 0.82; }
     .gcb-audio-btn {
       width: 100%; padding: 14px; border: none; border-radius: 14px;
       background: rgba(156,89,255,0.15); border: 1px solid rgba(156,89,255,0.35);
@@ -2817,11 +2811,15 @@
     }
     .gss-tier-badge {
       padding: 4px 10px; border-radius: 99px;
-      font-size: 11px; font-weight: 800; color: #000;
-      flex-shrink: 0;
+      font-size: 11px; font-weight: 800;
+      flex-shrink: 0; background: rgba(0,0,0,0.3);
     }
+    .gss-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.35); }
+    .gss-tier-r   { color: #93c5fd; border: 1px solid rgba(147,197,253,0.4); }
+    .gss-tier-sr  { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.4); }
+    .gss-tier-ssr { color: #e6c27a; border: 1px solid rgba(230,194,122,0.5); text-shadow: 0 0 10px rgba(230,194,122,0.35); }
     .gss-row-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-    .gss-cost { font-size: 15px; font-weight: 700; color: #b197fc; }
+    .gss-cost { font-size: 15px; font-weight: 700; color: #94a3b8; }
     .gss-remaining { font-size: 11px; color: #4b5563; }
     .gss-remaining.all-owned { color: #374151; }
     .gss-exchange-btn {
@@ -5259,7 +5257,7 @@
     // ── 盲盒系统 M2: 商店页 UI ─────────────────────────────────
     // ════════════════════════════════════════════════════════════
 
-    var TIER_COLOR = { N: '#9e9e9e', R: '#4dabf7', SR: '#9c59ff', SSR: '#f5a623' };
+    var TIER_COLOR = { N: '#a8a8a8', R: '#93c5fd', SR: '#c4b5fd', SSR: '#e6c27a' };
     var TIER_LABEL = { N: 'N 普通',  R: 'R 稀有',  SR: 'SR 精选', SSR: 'SSR 至臻' };
 
     // ─ 5.4 入口逻辑 ─────────────────────────────────────────────
@@ -5328,27 +5326,25 @@
       var coins  = getCoins();
       var shards = state.shards;
       var canPull = coins >= cost;
-      var pity   = state.pity['nora-debut'] ||
-                   { sinceLastSrPlus: 0, sinceLastSsr: 0, totalPulls: 0 };
-      var srLeft  = Math.max(0, 10 - pity.sinceLastSrPlus);
-      var ssrLeft = Math.max(0, 30 - pity.sinceLastSsr);
-      var owned = 0;
-      series.items.forEach(function(it) { if (state.collection[it.id]) owned++; });
-      var total = series.items.length;
 
       container.innerHTML =
         // ── 顶部状态栏
         '<div class="gs-topbar">' +
           '<button class="gs-back-btn" onclick="closeGachaStore()">◀ 返回</button>' +
           '<div class="gs-topbar-coins">' +
-            '<span class="gs-coin-icon">🎵</span>' +
+            '<div class="echo-coin" style="width:22px;height:22px;flex-shrink:0">' +
+              '<svg width="10" height="10" viewBox="0 0 11 11" class="ec-svg">' +
+                '<rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/>' +
+                '<rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/>' +
+                '<rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/>' +
+                '<rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/>' +
+              '</svg>' +
+            '</div>' +
             '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
-            '<span class="gs-coin-label">回声币</span>' +
           '</div>' +
           '<div class="gs-topbar-shards">' +
-            '<span class="gs-shard-icon">💎</span>' +
+            '<span style="font-size:14px;opacity:0.7">◈</span>' +
             '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
-            '<span class="gs-shard-label">碎片</span>' +
           '</div>' +
         '</div>' +
         // ── 系列封面
@@ -5362,22 +5358,7 @@
             '</div>' +
             '<div class="gs-series-name-zh">' + series.nameZh + '</div>' +
             '<div class="gs-series-name-en">' + series.nameEn + '</div>' +
-            '<div class="gs-series-progress">' +
-              owned + ' / ' + total + ' 件' +
-              (owned > 0 ? ' · ' + Math.round(owned / total * 100) + '%' : '') +
-            '</div>' +
-            (owned === total
-              ? '<div class="gs-complete-banner">🎉 全部收集完成！继续抽可获得碎片</div>'
-              : '') +
           '</div>' +
-        '</div>' +
-        // ── 保底进度
-        '<div class="gs-pity-row">' +
-          '<span class="gs-pity-item" id="gs-pity-sr">SR+ 保底：' +
-            (srLeft > 0 ? srLeft + ' 抽内' : '本次必出') + '</span>' +
-          '<span class="gs-pity-sep">·</span>' +
-          '<span class="gs-pity-item" id="gs-pity-ssr">SSR 保底：' +
-            (ssrLeft > 0 ? ssrLeft + ' 抽内' : '本次必出') + '</span>' +
         '</div>' +
         // ── 抽卡按钮
         '<div class="gs-action-area">' +
@@ -5394,10 +5375,6 @@
         '<div class="gs-secondary-row">' +
           '<button class="gs-sec-btn" onclick="openCollectionBook()">📚 收集册</button>' +
           '<button class="gs-sec-btn" onclick="openShardShop()">💎 碎片商店</button>' +
-        '</div>' +
-        // ── 物品预览格
-        '<div class="gs-preview-grid" id="gs-preview-grid">' +
-          _renderPreviewGrid(series, state) +
         '</div>';
     }
 
@@ -5425,22 +5402,13 @@
       var shards  = state.shards;
       var cost    = getCurrentThreshold(state.flags.pullCount);
       var canPull = coins >= cost;
-      var pity    = state.pity['nora-debut'] ||
-                    { sinceLastSrPlus: 0, sinceLastSsr: 0 };
-      var srLeft  = Math.max(0, 10 - pity.sinceLastSrPlus);
-      var ssrLeft = Math.max(0, 30 - pity.sinceLastSsr);
 
       var numEl   = document.getElementById('gs-coin-num');
       var shdEl   = document.getElementById('gs-shard-num');
       var pullBtn = document.getElementById('gs-pull-btn');
-      var grid    = document.getElementById('gs-preview-grid');
-      var pitySr  = document.getElementById('gs-pity-sr');
-      var pitySsr = document.getElementById('gs-pity-ssr');
 
       if (numEl)   numEl.textContent = coins;
       if (shdEl)   shdEl.textContent = shards;
-      if (pitySr)  pitySr.textContent  = 'SR+ 保底：' + (srLeft  > 0 ? srLeft  + ' 抽内' : '本次必出');
-      if (pitySsr) pitySsr.textContent = 'SSR 保底：' + (ssrLeft > 0 ? ssrLeft + ' 抽内' : '本次必出');
       if (pullBtn) {
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
@@ -5448,7 +5416,6 @@
           ? '✨ 抽 1 次 &nbsp;·&nbsp; 消耗 <b>' + cost + '</b> 回声币'
           : '回声币不足（需 ' + cost + ' · 现有 ' + coins + '）';
       }
-      if (grid) grid.innerHTML = _renderPreviewGrid(GACHA_SERIES['nora-debut'], state);
     }
 
     function onGachaPullClick() {
@@ -5658,7 +5625,7 @@
       } else { bodyHtml = ''; }
       ov.innerHTML =
         '<div class="gr-card" style="--tier-color:' + color + '">' +
-          '<div class="gr-tier-badge" style="background:' + color + '">' + label + '</div>' +
+          '<div class="gr-tier-badge gr-tier-' + tier.toLowerCase() + '">' + label + '</div>' +
           '<div class="gr-img-wrap' + imgContainCls + '">' +
             '<img class="gr-img" src="' + item.img + '"' +
               ' onerror="this.style.display=\'none\'" alt="">' +
@@ -5797,7 +5764,9 @@
             '<div class="gcb-item-tier">' + item.tier + '</div>' +
             '<div class="gcb-item-img-wrap">' +
               (owned
-                ? '<img class="gcb-item-img" src="' + item.img + '" onerror="this.style.display=\'none\'" alt="">' +
+                ? '<img class="gcb-item-img" src="' + item.img + '"' +
+                  ' onerror="this.style.display=\'none\'"' +
+                  ' onload="var e=this.nextElementSibling;if(e)e.style.display=\'none\';" alt="">' +
                   '<span class="gcb-item-emoji" style="position:absolute">' + emoji + '</span>'
                 : '<span class="gcb-item-emoji">' + emoji + '</span>') +
             '</div>' +
@@ -5861,9 +5830,11 @@
       ov.innerHTML =
         '<div class="gcb-detail-card">' +
           '<div class="gcb-detail-handle"></div>' +
-          '<div class="gcb-detail-tier-badge" style="background:' + color + '">' + TIER_LABEL[tier] + '</div>' +
+          '<div class="gcb-detail-tier-badge gcb-detail-tier-' + tier.toLowerCase() + '">' + TIER_LABEL[tier] + '</div>' +
           '<div class="gcb-detail-img-wrap' + imgContainCls + '">' +
-            '<img class="gcb-detail-img" src="' + item.img + '" onerror="this.style.display=\'none\'" alt="">' +
+            '<img class="gcb-detail-img" src="' + item.img + '"' +
+            ' onerror="this.style.display=\'none\'"' +
+            ' onload="var e=this.nextElementSibling;if(e)e.style.display=\'none\';" alt="">' +
             '<span class="gcb-detail-img-emoji">' + emoji + '</span>' +
           '</div>' +
           '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
@@ -6070,7 +6041,7 @@
           : '已全部收集！';
         return (
           '<div class="gss-row">' +
-            '<div class="gss-tier-badge" style="background:' + color + '">' + tierNames[tier] + '</div>' +
+            '<div class="gss-tier-badge gss-tier-' + tier.toLowerCase() + '">' + tierNames[tier] + '</div>' +
             '<div class="gss-row-info">' +
               '<div class="gss-cost">💎 ' + cost + ' 碎片</div>' +
               '<div class="gss-remaining' + (unowned.length === 0 ? ' all-owned' : '') + '">' + remText + '</div>' +
