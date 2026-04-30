@@ -2218,13 +2218,28 @@
     }
     .gs-back-btn:hover { color: #e2e8f0; }
     .gs-topbar-coins, .gs-topbar-shards {
-      display: flex; align-items: center; gap: 4px;
+      display: flex; align-items: center; gap: 5px;
+      cursor: pointer; padding: 4px 8px; border-radius: 8px;
+      position: relative;
+      transition: background 0.15s;
     }
-    .gs-topbar-shards { margin-left: 4px; }
+    .gs-topbar-coins:hover, .gs-topbar-shards:hover { background: rgba(255,255,255,0.06); }
+    .gs-topbar-shards { margin-left: 2px; }
     .gs-coin-icon, .gs-shard-icon { font-size: 15px; line-height: 1; }
-    .gs-coin-num  { font-size: 16px; font-weight: 700; color: #22c55e; }
-    .gs-shard-num { font-size: 16px; font-weight: 700; color: #94a3b8; }
+    .gs-coin-num  { font-size: 15px; font-weight: 700; color: #22c55e; }
+    .gs-shard-num { font-size: 15px; font-weight: 700; color: #bae6fd; }
     .gs-coin-label, .gs-shard-label { font-size: 11px; color: #4b5563; }
+    /* 悬浮说明提示 */
+    .gs-topbar-tooltip {
+      position: absolute; top: calc(100% + 10px); left: 50%;
+      transform: translateX(-50%);
+      background: rgba(12,18,32,0.94); backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
+      padding: 10px 14px; font-size: 12px; color: #cbd5e1;
+      line-height: 1.6; white-space: pre-line;
+      z-index: 99999; pointer-events: none; min-width: 180px; text-align: center;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+    }
 
     .gs-series-area {
       flex: 1; display: flex; align-items: center; justify-content: center;
@@ -2264,19 +2279,26 @@
     .gs-complete-banner { display: none; }
     .gs-pity-row        { display: none; }
 
-    .gs-action-area { padding: 4px 24px 14px; }
+    .gs-action-area {
+      padding: 8px 24px 10px;
+      display: flex; justify-content: center;
+    }
     .gs-pull-btn {
-      width: 100%; padding: 16px; border: none;
+      padding: 13px 44px; border: none;
       background: #22c55e;
-      border-radius: 14px; color: #0f172a;
+      border-radius: 99px; color: #0f172a;
       font-size: 15px; font-weight: 700; cursor: pointer;
-      box-shadow: 0 4px 20px -4px rgba(34,197,94,0.45);
-      transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s;
-      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px -4px rgba(34,197,94,0.5);
+      transition: transform 0.12s, box-shadow 0.12s;
+      letter-spacing: 0.5px; display: flex; flex-direction: column;
+      align-items: center; gap: 2px;
+    }
+    .gs-pull-cost {
+      font-size: 10px; font-weight: 500; color: rgba(15,23,42,0.65); letter-spacing: 0.3px;
     }
     .gs-pull-btn:hover:not(.gs-pull-disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 8px 28px -6px rgba(34,197,94,0.6);
+      box-shadow: 0 8px 28px -6px rgba(34,197,94,0.65);
     }
     .gs-pull-btn:active:not(.gs-pull-disabled) { transform: translateY(1px); }
     .gs-pull-disabled {
@@ -2294,15 +2316,18 @@
     .gs-btn-shake { animation: gsShake 0.35s ease; }
 
     .gs-secondary-row {
-      display: flex; gap: 32px; justify-content: center;
-      padding: 4px 24px 28px;
+      display: flex; align-items: center; justify-content: center; gap: 0;
+      padding: 14px 24px 32px;
+    }
+    .gs-sec-divider {
+      width: 1px; height: 13px; background: rgba(255,255,255,0.12);
+      margin: 0 20px; flex-shrink: 0;
     }
     .gs-sec-btn {
       background: none; border: none;
       color: #4b5563; font-size: 13px; font-weight: 500; cursor: pointer;
-      text-decoration: underline; text-decoration-color: rgba(75,85,99,0.4);
-      text-underline-offset: 3px;
-      transition: color 0.15s;
+      letter-spacing: 0.5px;
+      transition: color 0.15s; padding: 4px 0;
     }
     .gs-sec-btn:hover { color: #9ca3af; }
 
@@ -2352,10 +2377,8 @@
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 22px; padding: 28px 24px 22px;
       width: 340px; max-width: 92vw;
-      box-shadow: 0 0 0 1px var(--tier-color, transparent) inset,
-                  0 1px 0 rgba(255,255,255,0.04) inset,
-                  0 32px 80px rgba(0,0,0,0.7),
-                  0 0 60px -10px var(--tier-color, transparent);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset,
+                  0 32px 80px rgba(0,0,0,0.8);
       display: flex; flex-direction: column; align-items: center; gap: 12px;
       animation: grSlideIn 0.32s cubic-bezier(.34,1.56,.64,1);
     }
@@ -2397,7 +2420,7 @@
       line-height: 1.7; max-width: 280px; font-style: italic;
       font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
     }
-    .gr-dup-hint { font-size: 12px; color: #8b80b5; text-align: center; letter-spacing: 0.5px; }
+    .gr-dup-hint { font-size: 12px; color: #64748b; text-align: center; letter-spacing: 0.5px; }
     .gr-new-hint { font-size: 11px; color: #6b7280; text-align: center; letter-spacing: 1.5px; text-transform: uppercase; }
     .gr-btn-row { display: flex; gap: 10px; width: 100%; margin-top: 6px; }
     .gr-btn {
@@ -5318,6 +5341,32 @@
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
     }
 
+    // ── 顶栏提示气泡 ──────────────────────────────────────────────
+    function showTopbarTooltip(type, anchorEl) {
+      hideTopbarTooltip();
+      var msg = type === 'coin'
+        ? '回声币\n完成课程后获得\n用于在道具商店抽取收集品'
+        : '碎片\n重复获得道具时自动转化\n可在碎片商店兑换稀有物品';
+      var tip = document.createElement('div');
+      tip.id = 'gs-topbar-tooltip';
+      tip.className = 'gs-topbar-tooltip';
+      tip.textContent = msg;
+      anchorEl.appendChild(tip);
+      function outsideClick(e) {
+        if (!anchorEl.contains(e.target)) {
+          hideTopbarTooltip();
+          document.removeEventListener('click', outsideClick, true);
+        }
+      }
+      setTimeout(function() {
+        document.addEventListener('click', outsideClick, true);
+      }, 10);
+    }
+    function hideTopbarTooltip() {
+      var el = document.getElementById('gs-topbar-tooltip');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+
     // ─ 5.5 商店页渲染 ───────────────────────────────────────────
     function _renderGachaStoreContent(container) {
       var state  = loadGachaState();
@@ -5331,7 +5380,7 @@
         // ── 顶部状态栏
         '<div class="gs-topbar">' +
           '<button class="gs-back-btn" onclick="closeGachaStore()">◀ 返回</button>' +
-          '<div class="gs-topbar-coins">' +
+          '<div class="gs-topbar-coins" onclick="showTopbarTooltip(\'coin\',this)">' +
             '<div class="echo-coin" style="width:22px;height:22px;flex-shrink:0">' +
               '<svg width="10" height="10" viewBox="0 0 11 11" class="ec-svg">' +
                 '<rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/>' +
@@ -5342,8 +5391,16 @@
             '</div>' +
             '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
           '</div>' +
-          '<div class="gs-topbar-shards">' +
-            '<span style="font-size:14px;opacity:0.7">◈</span>' +
+          '<div class="gs-topbar-shards" onclick="showTopbarTooltip(\'shard\',this)">' +
+            '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="flex-shrink:0">' +
+              '<polygon points="9,1 16,7 9,17 2,7" fill="rgba(186,230,255,0.12)" stroke="rgba(186,230,255,0.55)" stroke-width="0.7"/>' +
+              '<polygon points="9,1 2,7 9,7" fill="rgba(255,255,255,0.22)"/>' +
+              '<polygon points="9,1 16,7 9,7" fill="rgba(186,230,255,0.16)"/>' +
+              '<polygon points="2,7 9,7 9,17" fill="rgba(130,200,255,0.09)"/>' +
+              '<polygon points="16,7 9,7 9,17" fill="rgba(160,215,255,0.13)"/>' +
+              '<line x1="2" y1="7" x2="16" y2="7" stroke="rgba(186,230,255,0.22)" stroke-width="0.5"/>' +
+              '<circle cx="7" cy="5" r="0.9" fill="rgba(255,255,255,0.6)"/>' +
+            '</svg>' +
             '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
           '</div>' +
         '</div>' +
@@ -5367,14 +5424,15 @@
             ' onclick="onGachaPullClick()"' +
             (canPull ? '' : ' disabled') + '>' +
             (canPull
-              ? '✨ 抽 1 次 &nbsp;·&nbsp; 消耗 <b>' + cost + '</b> 回声币'
-              : '回声币不足（需 ' + cost + ' · 现有 ' + coins + '）') +
+              ? '抽盲盒<span class="gs-pull-cost">消耗 ' + cost + ' 回声币</span>'
+              : '回声币不足<span class="gs-pull-cost">需 ' + cost + ' · 现有 ' + coins + '</span>') +
           '</button>' +
         '</div>' +
         // ── 次级入口
         '<div class="gs-secondary-row">' +
-          '<button class="gs-sec-btn" onclick="openCollectionBook()">📚 收集册</button>' +
-          '<button class="gs-sec-btn" onclick="openShardShop()">💎 碎片商店</button>' +
+          '<button class="gs-sec-btn" onclick="openCollectionBook()">收集册</button>' +
+          '<div class="gs-sec-divider"></div>' +
+          '<button class="gs-sec-btn" onclick="openShardShop()">碎片商店</button>' +
         '</div>';
     }
 
@@ -5413,8 +5471,8 @@
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
         pullBtn.innerHTML = canPull
-          ? '✨ 抽 1 次 &nbsp;·&nbsp; 消耗 <b>' + cost + '</b> 回声币'
-          : '回声币不足（需 ' + cost + ' · 现有 ' + coins + '）';
+          ? '抽盲盒<span class="gs-pull-cost">消耗 ' + cost + ' 回声币</span>'
+          : '回声币不足<span class="gs-pull-cost">需 ' + cost + ' · 现有 ' + coins + '</span>';
       }
     }
 
