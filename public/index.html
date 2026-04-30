@@ -2227,8 +2227,16 @@
     .gs-topbar-shards { margin-left: 2px; }
     .gs-coin-icon, .gs-shard-icon { font-size: 15px; line-height: 1; }
     .gs-coin-num  { font-size: 15px; font-weight: 700; color: #22c55e; }
-    .gs-shard-num { font-size: 15px; font-weight: 700; color: #c4b5fd; }
+    .gs-shard-num { font-size: 15px; font-weight: 700; color: #f1f5f9; }
     .gs-coin-label, .gs-shard-label { font-size: 11px; color: #4b5563; }
+    /* 水晶四角星呼吸闪烁 */
+    @keyframes shardSparkle {
+      0%, 70%, 100% { opacity: 0.15; transform: scale(0.6); }
+      35%           { opacity: 1;    transform: scale(1.35); }
+    }
+    .gs-shard-sparkle {
+      animation: shardSparkle 2.6s ease-in-out infinite;
+    }
     /* 悬浮说明提示 */
     .gs-topbar-tooltip {
       position: absolute; top: calc(100% + 10px); left: 50%;
@@ -2241,27 +2249,27 @@
       box-shadow: 0 12px 32px rgba(0,0,0,0.55);
     }
 
-    /* ── 全幅英雄图 ─────────────────────────────── */
+    /* ── 居中梦境英雄图（四边渐隐遮罩） ─────────────────────── */
     .gs-hero {
-      position: relative; width: 100%; flex-shrink: 0;
-      background: linear-gradient(135deg, #1c212e, #2a3142);
-      aspect-ratio: 4/3; max-height: 52vh; overflow: hidden;
+      position: relative; width: 100%; max-width: 760px;
+      margin: 12px auto 0; flex-shrink: 0;
+      background: transparent;
+      aspect-ratio: 3/2; max-height: 48vh; overflow: hidden;
     }
     .gs-hero-img {
       display: block; width: 100%; height: 100%;
       object-fit: cover;
-    }
-    /* 底部渐变：图片融入页面底色 */
-    .gs-hero::after {
-      content: ''; position: absolute;
-      bottom: 0; left: 0; right: 0; height: 35%;
-      background: linear-gradient(to bottom, transparent, #0d1117);
-      pointer-events: none; z-index: 1;
+      /* 四周径向渐隐：让图片像从黑暗中浮现的梦境片段 */
+      -webkit-mask-image: radial-gradient(ellipse 78% 82% at center, #000 38%, transparent 100%);
+              mask-image: radial-gradient(ellipse 78% 82% at center, #000 38%, transparent 100%);
     }
     /* 图片加载失败时的兜底 */
     .gs-hero-fallback-icon {
       position: absolute; inset: 0; display: none;
       align-items: center; justify-content: center; font-size: 72px;
+    }
+    .gs-hero.gs-img-err {
+      background: linear-gradient(135deg, #1c212e, #2a3142);
     }
     .gs-hero.gs-img-err .gs-hero-img { display: none; }
     .gs-hero.gs-img-err .gs-hero-fallback-icon { display: flex; }
@@ -2311,17 +2319,34 @@
       cursor: pointer !important;
       box-shadow: none !important;
     }
-    /* -50 硬币飞离动效 */
+    /* -50 金币飞离动效 */
     @keyframes coinFlyOff {
-      0%   { opacity: 1; transform: translateY(0) scale(1); }
-      70%  { opacity: 0.7; transform: translateY(-70px) scale(0.85); }
-      100% { opacity: 0; transform: translateY(-110px) scale(0.5); }
+      0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+      18%  { opacity: 1; transform: translateY(-12px) scale(1.18); }
+      78%  { opacity: 0.85; transform: translateY(-90px) scale(0.95); }
+      100% { opacity: 0; transform: translateY(-140px) scale(0.55); }
     }
     .gs-flyoff {
       position: fixed; pointer-events: none; z-index: 99999;
-      color: #22c55e; font-size: 18px; font-weight: 800;
-      font-family: system-ui, sans-serif; letter-spacing: -0.5px;
-      animation: coinFlyOff 0.72s ease-out forwards;
+      color: #ffd700; font-size: 28px; font-weight: 900;
+      font-family: system-ui, sans-serif; letter-spacing: -1px;
+      text-shadow: 0 0 14px rgba(255,215,0,0.85),
+                   0 0 28px rgba(255,200,80,0.55),
+                   0 2px 8px rgba(0,0,0,0.5);
+      animation: coinFlyOff 0.85s cubic-bezier(.34,.6,.5,1) forwards;
+    }
+    /* 金色粒子四散（伴随 -50 弹出） */
+    @keyframes goldParticle {
+      0%   { opacity: 1; transform: translate(0,0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); }
+    }
+    .gs-gold-particle {
+      position: fixed; pointer-events: none; z-index: 99998;
+      width: 5px; height: 5px; border-radius: 50%;
+      background: #ffd700;
+      box-shadow: 0 0 8px rgba(255,215,0,0.9),
+                  0 0 14px rgba(255,200,80,0.55);
+      animation: goldParticle 0.65s cubic-bezier(.2,.6,.4,1) forwards;
     }
     /* 回声币不足时的红色闪烁 */
     @keyframes gsFlashRed {
@@ -2415,12 +2440,13 @@
       font-size: 10px; font-weight: 700;
       letter-spacing: 1px; align-self: flex-start;
       text-transform: uppercase;
-      background: rgba(0,0,0,0.35);
+      background: rgba(0,0,0,0.45);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.18);
     }
-    .gr-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.35); }
-    .gr-tier-r   { color: #93c5fd; border: 1px solid rgba(147,197,253,0.4); }
-    .gr-tier-sr  { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.4); }
-    .gr-tier-ssr { color: #e6c27a; border: 1px solid rgba(230,194,122,0.5); text-shadow: 0 0 10px rgba(230,194,122,0.35); }
+    /* 仅 SSR 保留极轻微的金色暗示，其他全部统一为中性白 */
+    .gr-tier-n, .gr-tier-r, .gr-tier-sr { color: #ffffff; border-color: rgba(255,255,255,0.18); }
+    .gr-tier-ssr { color: #ffffff; border-color: rgba(230,194,122,0.4); text-shadow: 0 0 10px rgba(230,194,122,0.25); }
     .gr-img-wrap {
       width: 180px; height: 180px; border-radius: 14px;
       overflow: hidden; position: relative;
@@ -2456,10 +2482,14 @@
     .gr-btn-secondary { background: rgba(255,255,255,0.04); color: #b9bdc9; }
     .gr-btn-secondary:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.16); }
     .gr-btn-primary {
-      background: rgba(34,197,94,0.12);
-      color: #22c55e; border-color: rgba(34,197,94,0.4);
+      background: rgba(34,197,94,0.22);
+      color: #4ade80; border-color: rgba(34,197,94,0.7);
+      font-weight: 700;
     }
-    .gr-btn-primary:hover:not(:disabled) { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.6); }
+    .gr-btn-primary:hover:not(:disabled) {
+      background: rgba(34,197,94,0.32); border-color: rgba(34,197,94,0.9);
+      color: #86efac;
+    }
 
     /* ── 语音日记播放器 (SR voiceOnly) ────────────────────── */
     .gr-voice-player, .gcb-voice-player {
@@ -2467,22 +2497,29 @@
       padding: 6px 0;
     }
     .gr-voice-btn, .gcb-voice-btn {
-      width: 56px; height: 56px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.16);
-      background: radial-gradient(circle at 30% 30%, rgba(200,167,102,0.18), rgba(0,0,0,0.4));
-      color: #d6b577; font-size: 20px; cursor: pointer;
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(6px);
+      color: #ffffff; font-size: 20px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all 0.2s;
-      box-shadow: 0 0 0 0 rgba(200,167,102,0.4);
+      box-shadow: 0 0 0 0 rgba(255,255,255,0.3);
       animation: voicePulse 2.4s ease-in-out infinite;
     }
     .gr-voice-btn:hover, .gcb-voice-btn:hover {
-      background: radial-gradient(circle at 30% 30%, rgba(200,167,102,0.3), rgba(0,0,0,0.4));
+      background: rgba(255,255,255,0.16);
+      border-color: rgba(255,255,255,0.45);
       transform: scale(1.05);
     }
-    .gr-voice-btn.playing, .gcb-voice-btn.playing { animation: none; background: radial-gradient(circle at 30% 30%, rgba(200,167,102,0.4), rgba(60,40,20,0.6)); }
+    .gr-voice-btn.playing, .gcb-voice-btn.playing {
+      animation: none;
+      background: rgba(255,255,255,0.22);
+      border-color: rgba(255,255,255,0.5);
+    }
     @keyframes voicePulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(200,167,102,0.25); }
-      50%      { box-shadow: 0 0 0 12px rgba(200,167,102,0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.18); }
+      50%      { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
     }
     .gr-voice-hint, .gcb-voice-hint {
       font-size: 11px; color: #6b7280; letter-spacing: 1.2px; text-transform: uppercase;
@@ -2492,7 +2529,7 @@
       letter-spacing: 1px; padding: 4px 0; text-decoration: underline; text-decoration-color: rgba(139,143,154,0.3);
       text-underline-offset: 4px;
     }
-    .gr-voice-toggle:hover, .gcb-voice-toggle:hover { color: #d6b577; }
+    .gr-voice-toggle:hover, .gcb-voice-toggle:hover { color: #ffffff; }
     .gr-voice-transcript, .gcb-voice-transcript {
       font-size: 13px; color: #b9bdc9; text-align: left; line-height: 1.85;
       font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; font-style: italic;
@@ -2679,7 +2716,7 @@
     /* 卡片轨道 */
     .gcb-car-track {
       position: relative; width: 100%; flex-shrink: 0;
-      height: 260px; z-index: 1;
+      height: 380px; z-index: 1;
       display: flex; align-items: center; justify-content: center;
       overflow: visible;
     }
@@ -2852,12 +2889,12 @@
       padding: 4px 12px; border-radius: 99px;
       font-size: 11px; font-weight: 800;
       align-self: flex-start;
-      background: rgba(0,0,0,0.35);
+      background: rgba(0,0,0,0.45);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.18);
     }
-    .gcb-detail-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.35); }
-    .gcb-detail-tier-r   { color: #93c5fd; border: 1px solid rgba(147,197,253,0.4); }
-    .gcb-detail-tier-sr  { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.4); }
-    .gcb-detail-tier-ssr { color: #e6c27a; border: 1px solid rgba(230,194,122,0.5); text-shadow: 0 0 10px rgba(230,194,122,0.35); }
+    .gcb-detail-tier-n, .gcb-detail-tier-r, .gcb-detail-tier-sr { color: #ffffff; border-color: rgba(255,255,255,0.18); }
+    .gcb-detail-tier-ssr { color: #ffffff; border-color: rgba(230,194,122,0.4); text-shadow: 0 0 10px rgba(230,194,122,0.25); }
     .gcb-detail-img-wrap {
       width: 240px; height: 240px; border-radius: 22px;
       overflow: hidden; position: relative;
@@ -5514,23 +5551,23 @@
             '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
           '</div>' +
           '<div class="gs-topbar-shards" onclick="showTopbarTooltip(\'shard\',this)">' +
-            '<svg width="20" height="22" viewBox="0 0 20 22" fill="none" style="flex-shrink:0">' +
-              '<defs>' +
-                '<linearGradient id="gsHoloGrad" x1="0" y1="0" x2="20" y2="22" gradientUnits="userSpaceOnUse">' +
-                  '<stop offset="0%" stop-color="#e0e7ff" stop-opacity="0.95"/>' +
-                  '<stop offset="30%" stop-color="#a78bfa" stop-opacity="0.85"/>' +
-                  '<stop offset="62%" stop-color="#22d3ee" stop-opacity="0.78"/>' +
-                  '<stop offset="100%" stop-color="#3b82f6" stop-opacity="0.92"/>' +
-                '</linearGradient>' +
-              '</defs>' +
-              '<polygon points="10,1 17,5 19,12 14,20 6,21 1,13 3,5"' +
-                ' fill="url(#gsHoloGrad)"' +
-                ' stroke="rgba(220,235,255,0.6)" stroke-width="0.7"/>' +
-              '<polygon points="10,1 17,5 10,11" fill="rgba(255,255,255,0.32)"/>' +
-              '<polygon points="10,11 6,21 1,13" fill="rgba(0,0,0,0.18)"/>' +
-              '<line x1="10" y1="1" x2="10" y2="21" stroke="rgba(255,255,255,0.20)" stroke-width="0.4"/>' +
-              '<circle cx="7" cy="4.5" r="1" fill="rgba(255,255,255,0.85)"/>' +
-              '<circle cx="13.5" cy="14.5" r="0.6" fill="rgba(255,255,255,0.55)"/>' +
+            '<svg width="22" height="24" viewBox="0 0 22 24" fill="none" style="flex-shrink:0;overflow:visible">' +
+              // 透明水晶主体
+              '<polygon points="11,1 18,5 20,12 16,21 6,21 2,12 4,5"' +
+                ' fill="rgba(255,255,255,0.10)"' +
+                ' stroke="rgba(255,255,255,0.78)" stroke-width="0.85"/>' +
+              // 上方亮面
+              '<polygon points="11,1 18,5 11,11" fill="rgba(255,255,255,0.45)"/>' +
+              // 左下暗面
+              '<polygon points="11,11 6,21 2,12" fill="rgba(255,255,255,0.05)"/>' +
+              // 中线 + 尖锐边缘高光
+              '<line x1="11" y1="1" x2="11" y2="21" stroke="rgba(255,255,255,0.45)" stroke-width="0.6"/>' +
+              '<line x1="11" y1="1" x2="18" y2="5" stroke="rgba(255,255,255,0.95)" stroke-width="0.7"/>' +
+              // 四角星闪光（呼吸动画）
+              '<g class="gs-shard-sparkle" style="transform-origin:15px 5.5px">' +
+                '<path d="M15,3 L15.5,5 L17.5,5.5 L15.5,6 L15,8 L14.5,6 L12.5,5.5 L14.5,5 Z"' +
+                  ' fill="#ffffff" opacity="0.95"/>' +
+              '</g>' +
             '</svg>' +
             '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
           '</div>' +
@@ -5606,13 +5643,40 @@
       var btn = document.getElementById('gs-pull-btn');
       if (!btn) return;
       var rect = btn.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+
+      // 1) 飞出的 -50 金色文字
       var el = document.createElement('div');
       el.className = 'gs-flyoff';
       el.textContent = '−' + cost;
-      el.style.left = Math.round(rect.left + rect.width / 2 - 18) + 'px';
-      el.style.top  = Math.round(rect.top - 6) + 'px';
+      el.style.left = Math.round(cx - 26) + 'px';
+      el.style.top  = Math.round(cy - 24) + 'px';
       document.body.appendChild(el);
-      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 760);
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 880);
+
+      // 2) 金色粒子四散爆发
+      spawnGoldParticles(cx, cy);
+    }
+
+    function spawnGoldParticles(cx, cy) {
+      var N = 14;
+      for (var i = 0; i < N; i++) {
+        var angle = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+        var dist  = 32 + Math.random() * 28;
+        var dx    = Math.cos(angle) * dist;
+        var dy    = Math.sin(angle) * dist - 8; // bias slightly upward
+        var p = document.createElement('div');
+        p.className = 'gs-gold-particle';
+        p.style.left = Math.round(cx - 2.5) + 'px';
+        p.style.top  = Math.round(cy - 2.5) + 'px';
+        p.style.setProperty('--dx', dx.toFixed(1) + 'px');
+        p.style.setProperty('--dy', dy.toFixed(1) + 'px');
+        document.body.appendChild(p);
+        (function(node) {
+          setTimeout(function() { if (node.parentNode) node.parentNode.removeChild(node); }, 700);
+        })(p);
+      }
     }
 
     function playChimeSound() {
@@ -6060,11 +6124,11 @@
         var diff = i - _carouselIdx;
         var absDiff = Math.abs(diff);
         var emoji = (ITEM_EMOJI[item.type] || {})[item.tier] || '📦';
-        // size: active=220, adj=148, far=100, beyond=0
-        var sizes  = [220, 148, 100];
+        // size: active=340, adj=180, far=110, beyond=0
+        var sizes  = [340, 180, 110];
         var sz     = sizes[Math.min(absDiff, 2)] || 0;
         var opac   = absDiff === 0 ? 1 : absDiff === 1 ? 0.52 : absDiff === 2 ? 0.22 : 0;
-        var tx     = diff * 196; // px gap between card centers
+        var tx     = diff * 270; // px gap between card centers
         if (absDiff > 3) { opac = 0; sz = 0; }
         var style  = 'width:' + sz + 'px;height:' + sz + 'px;' +
                      'transform:translateX(' + tx + 'px);' +
