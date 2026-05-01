@@ -2195,7 +2195,7 @@
     /* ── 商店页 Overlay ─────────────────────────────────────── */
     .gacha-store-overlay {
       position: fixed; inset: 0; z-index: 9200;
-      background: #0d1117;
+      background: linear-gradient(180deg, #0f1729 0%, #0a0f1c 100%);
       display: flex; flex-direction: column;
       transform: translateY(100%); opacity: 0;
       transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
@@ -2227,7 +2227,7 @@
     .gs-topbar-shards { margin-left: 2px; }
     .gs-coin-icon, .gs-shard-icon { font-size: 15px; line-height: 1; }
     .gs-coin-num  { font-size: 15px; font-weight: 700; color: #22c55e; }
-    .gs-shard-num { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+    .gs-shard-num { font-size: 15px; font-weight: 700; color: #67e8f9; }
     .gs-coin-label, .gs-shard-label { font-size: 11px; color: #4b5563; }
     /* 水晶四角星呼吸闪烁 */
     @keyframes shardSparkle {
@@ -2270,8 +2270,8 @@
       background: radial-gradient(
         ellipse 75% 78% at center,
         transparent 28%,
-        rgba(13,17,23,0.45) 75%,
-        #0d1117 100%
+        rgba(11,15,28,0.45) 75%,
+        #0a0f1c 100%
       );
     }
     /* 图片加载失败时的兜底 */
@@ -2290,13 +2290,13 @@
       padding: 18px 24px 6px;
     }
     .gs-series-name-zh {
-      font-size: 24px; font-weight: 700; color: #f1f5f9;
-      letter-spacing: 8px; padding-left: 8px; /* 视觉补偿末字间距 */
+      font-size: 30px; font-weight: 700; color: #f1f5f9;
+      letter-spacing: 12px; padding-left: 12px; /* 视觉补偿末字间距 */
       font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
     }
     .gs-series-name-en {
-      font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 4px;
-      text-transform: uppercase; margin-top: 6px;
+      font-size: 12px; color: rgba(255,255,255,0.42); letter-spacing: 5px;
+      text-transform: uppercase; margin-top: 10px;
     }
     .gs-series-progress { display: none; }
     .gs-complete-banner { display: none; }
@@ -2325,11 +2325,12 @@
     }
     .gs-pull-btn:active:not(.gs-pull-disabled) { transform: scale(0.96); }
     .gs-pull-disabled {
-      border-color: rgba(255,255,255,0.14) !important;
-      background: transparent !important;
-      color: rgba(255,255,255,0.32) !important;
+      border-color: rgba(255,255,255,0.28) !important;
+      background: rgba(255,255,255,0.04) !important;
+      color: rgba(255,255,255,0.6) !important;
       cursor: pointer !important;
-      box-shadow: none !important;
+      box-shadow: 0 0 16px -8px rgba(255,255,255,0.18) !important;
+      letter-spacing: 1.5px;
     }
     /* -50 金币飞离动效 */
     @keyframes coinFlyOff {
@@ -2498,6 +2499,7 @@
       font-size: 13px; color: #b9bdc9; text-align: center;
       line-height: 1.7; max-width: 280px; font-style: italic;
       font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+      white-space: pre-line; word-break: keep-all;
     }
     .gr-dup-hint { font-size: 12px; color: #64748b; text-align: center; letter-spacing: 0.5px; }
     .gr-new-hint { font-size: 11px; color: #6b7280; text-align: center; letter-spacing: 1.5px; text-transform: uppercase; }
@@ -2510,15 +2512,25 @@
     .gr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .gr-btn-secondary { background: rgba(255,255,255,0.04); color: #b9bdc9; }
     .gr-btn-secondary:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.16); }
-    .gr-btn-primary {
-      background: rgba(34,197,94,0.22);
-      color: #4ade80; border-color: rgba(34,197,94,0.7);
-      font-weight: 700;
+    .gr-btn-primary { font-weight: 700; }
+    /* 主按钮颜色随稀有度（再抽 / 装备） */
+    .gr-btn-primary.btn-tier-n {
+      background: rgba(255,255,255,0.10); color: #f1f5f9;
+      border-color: rgba(255,255,255,0.40);
     }
-    .gr-btn-primary:hover:not(:disabled) {
-      background: rgba(34,197,94,0.32); border-color: rgba(34,197,94,0.9);
-      color: #86efac;
+    .gr-btn-primary.btn-tier-r {
+      background: rgba(147,197,253,0.16); color: #93c5fd;
+      border-color: rgba(147,197,253,0.55);
     }
+    .gr-btn-primary.btn-tier-sr {
+      background: rgba(196,181,253,0.18); color: #c4b5fd;
+      border-color: rgba(196,181,253,0.6);
+    }
+    .gr-btn-primary.btn-tier-ssr {
+      background: rgba(255,215,0,0.16); color: #fcd34d;
+      border-color: rgba(255,215,0,0.65);
+    }
+    .gr-btn-primary:hover:not(:disabled) { filter: brightness(1.18); }
 
     /* ── 语音日记播放器 (SR voiceOnly) ────────────────────── */
     .gr-voice-player, .gcb-voice-player {
@@ -2532,6 +2544,7 @@
       backdrop-filter: blur(6px);
       color: #ffffff; font-size: 20px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      padding-left: 4px; /* 视觉居中：补偿三角形几何偏左 */
       transition: all 0.2s;
       box-shadow: 0 0 0 0 rgba(255,255,255,0.3);
       animation: voicePulse 2.4s ease-in-out infinite;
@@ -2567,9 +2580,7 @@
       animation: voiceBreathPurple 3.6s ease-in-out infinite;
       color: #f1edff;
     }
-    .gr-voice-hint, .gcb-voice-hint {
-      font-size: 11px; color: #6b7280; letter-spacing: 1.2px; text-transform: uppercase;
-    }
+    .gr-voice-hint, .gcb-voice-hint { display: none; }
     .gr-voice-toggle, .gcb-voice-toggle {
       font-size: 11px; color: #8b8f9a; background: none; border: none; cursor: pointer;
       letter-spacing: 1px; padding: 4px 0; text-decoration: underline; text-decoration-color: rgba(139,143,154,0.3);
@@ -2687,18 +2698,18 @@
 
     /* Wallet CTA 解锁状态 */
     .wp-cta-active {
-      background: linear-gradient(135deg, rgba(245,166,35,0.15), rgba(245,166,35,0.08)) !important;
-      border-color: rgba(245,166,35,0.4) !important;
-      color: #f5a623 !important; cursor: pointer !important;
+      background: linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.08)) !important;
+      border-color: rgba(34,197,94,0.5) !important;
+      color: #4ade80 !important; cursor: pointer !important;
     }
     .wp-cta-active:hover {
-      background: linear-gradient(135deg, rgba(245,166,35,0.22), rgba(245,166,35,0.12)) !important;
+      background: linear-gradient(135deg, rgba(34,197,94,0.24), rgba(34,197,94,0.14)) !important;
     }
 
     /* ── 收集册 Collection Book (M4) ───────────────────────── */
     .gacha-collection-overlay {
       position: fixed; inset: 0; z-index: 9300;
-      background: #0d1117;
+      background: linear-gradient(180deg, #0f1729 0%, #0a0f1c 100%);
       display: flex; flex-direction: column;
       transform: translateY(100%); opacity: 0;
       transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
@@ -2917,27 +2928,26 @@
     /* ── 物品详情 Modal (M4) ────────────────────────────────── */
     .gcb-detail-overlay {
       position: fixed; inset: 0; z-index: 9700;
-      background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
-      display: flex; align-items: flex-end; justify-content: center;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px;
       opacity: 0; transition: opacity 0.22s ease;
     }
     .gcb-detail-overlay.gcbd-visible { opacity: 1; }
     .gcb-detail-card {
-      background: #1c212e;
+      background: #15192b;
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 24px 24px 0 0;
-      padding: 28px 24px 48px;
-      width: 100%; max-width: 500px;
+      border-radius: 24px;
+      padding: 32px 28px 28px;
+      width: 100%; max-width: 460px;
       display: flex; flex-direction: column; align-items: center; gap: 14px;
-      transform: translateY(100%);
-      transition: transform 0.32s cubic-bezier(.22,.68,0,1.3);
-      max-height: 82vh; overflow-y: auto;
+      transform: scale(0.92) translateY(20px); opacity: 0;
+      transition: transform 0.32s cubic-bezier(.34,1.26,.64,1), opacity 0.22s ease;
+      max-height: 86vh; overflow-y: auto;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7);
     }
-    .gcb-detail-overlay.gcbd-visible .gcb-detail-card { transform: translateY(0); }
-    .gcb-detail-handle {
-      width: 36px; height: 4px; background: rgba(255,255,255,0.12);
-      border-radius: 99px; align-self: center; flex-shrink: 0;
-    }
+    .gcb-detail-overlay.gcbd-visible .gcb-detail-card { transform: scale(1) translateY(0); opacity: 1; }
+    .gcb-detail-handle { display: none; /* 不再是 bottom sheet */ }
     .gcb-detail-tier-badge {
       padding: 4px 12px; border-radius: 99px;
       font-size: 11px; font-weight: 800;
@@ -2972,17 +2982,30 @@
     .gcb-detail-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 4px; }
     .gcb-equip-btn {
       width: 100%; padding: 14px; border-radius: 14px;
-      font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: filter 0.15s, opacity 0.15s;
+      border: 1px solid rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.10); color: #f1f5f9;
     }
-    .gcb-equip-btn.equipped {
-      background: rgba(230,194,122,0.08); border: 1px solid rgba(230,194,122,0.4);
-      color: #e6c27a;
+    /* 装备按键颜色随服装稀有度 */
+    .gcb-equip-btn.btn-tier-n {
+      background: rgba(255,255,255,0.10); color: #f1f5f9;
+      border-color: rgba(255,255,255,0.4);
     }
-    .gcb-equip-btn.unequipped {
-      background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.45);
-      color: #22c55e;
+    .gcb-equip-btn.btn-tier-r {
+      background: rgba(147,197,253,0.16); color: #93c5fd;
+      border-color: rgba(147,197,253,0.55);
     }
-    .gcb-equip-btn:hover { opacity: 0.82; }
+    .gcb-equip-btn.btn-tier-sr {
+      background: rgba(196,181,253,0.18); color: #c4b5fd;
+      border-color: rgba(196,181,253,0.6);
+    }
+    .gcb-equip-btn.btn-tier-ssr {
+      background: rgba(255,215,0,0.16); color: #fcd34d;
+      border-color: rgba(255,215,0,0.65);
+    }
+    .gcb-equip-btn.equipped { opacity: 0.7; }
+    .gcb-equip-btn:hover { filter: brightness(1.15); }
     .gcb-audio-btn {
       width: 100%; padding: 14px; border: none; border-radius: 14px;
       background: rgba(156,89,255,0.15); border: 1px solid rgba(156,89,255,0.35);
@@ -5991,10 +6014,9 @@
             '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult()">返回商店</button>' +
             '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult();openCollectionBook(\'' + item.type + '\')">收集册</button>' +
             (nextCost
-              ? '<button class="gr-btn gr-btn-primary" onclick="closeGachaResult();onGachaPullClick()"' +
-                  (canAgain ? '' : ' disabled') + '>' +
-                  '再抽' + (canAgain ? '' : '（不足）') +
-                '</button>'
+              ? '<button class="gr-btn gr-btn-primary btn-tier-' + tier.toLowerCase() + '"' +
+                  ' onclick="closeGachaResult();onGachaPullClick()"' +
+                  (canAgain ? '' : ' disabled') + '>再抽</button>'
               : '') +
           '</div>' +
         '</div>';
@@ -6296,18 +6318,18 @@
 
       var btns = '';
       if (item.type === 'outfit') {
+        var tierCls = ' btn-tier-' + tier.toLowerCase();
         btns +=
-          '<button class="gcb-equip-btn ' + (isEquipped ? 'equipped' : 'unequipped') + '"' +
+          '<button class="gcb-equip-btn' + tierCls + (isEquipped ? ' equipped' : '') + '"' +
           ' id="gcb-equip-btn" onclick="toggleEquipOutfit(\'' + itemId + '\')">' +
-          (isEquipped ? '✓ 已装备 · 点击卸下' : '装备 Equip') + '</button>';
+          (isEquipped ? '✓ 已装备' : '装备') + '</button>';
       }
       // voiceOnly 已经在卡片中提供播放器，不再重复一个底部按钮；
       // 非 voiceOnly 的 audio 道具（未来可能存在）保留底部按钮
       if (item.audio && !item.voiceOnly) {
         btns +=
           '<button class="gcb-audio-btn" id="gcb-audio-btn"' +
-          ' onclick="toggleDetailAudio(\'' + item.audio + '\')">' +
-          '▶ 播放语音 Play Audio</button>';
+          ' onclick="toggleDetailAudio(\'' + item.audio + '\')">▶ 播放语音</button>';
       }
       btns += '<button class="gcb-close-btn" onclick="closeItemDetail()">关闭</button>';
 
@@ -6364,8 +6386,9 @@
       var btn = document.getElementById('gcb-equip-btn');
       if (btn) {
         var equipped = !already;
-        btn.className = 'gcb-equip-btn ' + (equipped ? 'equipped' : 'unequipped');
-        btn.textContent = equipped ? '✓ 已装备 · 点击卸下' : '装备 Equip';
+        var tierCls = ' btn-tier-' + item.tier.toLowerCase();
+        btn.className = 'gcb-equip-btn' + tierCls + (equipped ? ' equipped' : '');
+        btn.textContent = equipped ? '✓ 已装备' : '装备';
       }
       // 刷新收集册格子
       _renderCollectionGrid();
