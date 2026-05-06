@@ -1450,7 +1450,7 @@
     #prologue-page.show { display: flex; }
     #prologue-bg {
       position: absolute; inset: 0;
-      background: url('/assets/cg/lesson1_airport.png') center/cover no-repeat;
+      background: url('/assets/cg/lesson1_airport.png?v=20260505') center/cover no-repeat;
       filter: blur(20px) brightness(0.52);
       transform: scale(1.08); /* 防模糊白边 */
     }
@@ -2054,7 +2054,7 @@
 
     /* ─── Wallet Modal ───────────────────────────────────────── */
     .wallet-overlay {
-      position: fixed; inset: 0; z-index: 9000;
+      position: fixed; inset: 0; z-index: 9800;
       background: rgba(0,0,0,0.60);
       backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       display: flex; align-items: center; justify-content: center;
@@ -2195,24 +2195,31 @@
     /* ── 商店页 Overlay ─────────────────────────────────────── */
     .gacha-store-overlay {
       position: fixed; inset: 0; z-index: 9200;
-      background: linear-gradient(180deg, #0f1729 0%, #0a0f1c 100%);
+      background: #07090f;
       display: flex; flex-direction: column;
       transform: translateY(100%); opacity: 0;
       transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
-      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      overflow: hidden;
     }
-    /* 柔和聚光：英雄图后面打一束极淡蓝光，打破死黑 */
-    .gacha-store-overlay::before {
+    /* ── 共享模糊 CG 背景：所有 gacha 全屏/模态遮罩统一使用大巴 CG 图 ── */
+    .gacha-store-overlay::before,
+    .gacha-collection-overlay::before,
+    .gacha-result-overlay::before,
+    .gacha-unbox-overlay::before,
+    .gcb-detail-overlay::before,
+    .gacha-shard-shop-overlay::before {
       content: ''; position: absolute; pointer-events: none; z-index: 0;
-      top: 8%; left: 50%; transform: translateX(-50%);
-      width: 70%; height: 55%;
-      background: radial-gradient(ellipse at center,
-        rgba(120,170,230,0.10) 0%,
-        rgba(80,120,180,0.05) 35%,
-        transparent 75%);
+      inset: -12%;
+      background: url('/assets/cg/lesson2_bus.png?v=20260421') center/cover no-repeat;
+      filter: blur(38px) brightness(0.22) saturate(1.3);
     }
-    .gacha-store-overlay > * { position: relative; z-index: 1;
-    }
+    /* 所有直接子元素浮于 ::before 之上 */
+    .gacha-store-overlay > *,
+    .gacha-collection-overlay > *,
+    .gacha-result-overlay > *,
+    .gacha-unbox-overlay > *,
+    .gcb-detail-overlay > *,
+    .gacha-shard-shop-overlay > * { position: relative; z-index: 1; }
     .gacha-store-overlay.gs-visible { transform: translateY(0); opacity: 1; }
 
     .gs-topbar {
@@ -2238,6 +2245,8 @@
     .gs-topbar-coins:hover, .gs-topbar-shards:hover { background: rgba(255,255,255,0.06); }
     .gs-topbar-shards { margin-left: 2px; }
     .gs-coin-icon, .gs-shard-icon { font-size: 15px; line-height: 1; }
+    .gs-shard-emoji-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex-shrink: 0; }
+    .gs-shard-emoji { font-size: 17px; line-height: 1; display: block; }
     .gs-coin-num  { font-size: 15px; font-weight: 700; color: #22c55e; }
     .gs-shard-num { font-size: 15px; font-weight: 700; color: #67e8f9; }
     .gs-coin-label, .gs-shard-label { font-size: 11px; color: #4b5563; }
@@ -2438,9 +2447,13 @@
     }
     .gs-pi-tier { font-size: 9px; font-weight: 800; letter-spacing: 0.5px; line-height: 1; }
     .gs-pi-n   .gs-pi-tier { color: #9e9e9e; }
-    .gs-pi-r   .gs-pi-tier { color: #4dabf7; }
-    .gs-pi-sr  .gs-pi-tier { color: #9c59ff; }
-    .gs-pi-ssr .gs-pi-tier { color: #f5a623; }
+    .gs-pi-r   .gs-pi-tier { color: #c4b5fd; }
+    .gs-pi-sr  .gs-pi-tier { color: #e6c27a; }
+    .gs-pi-ssr .gs-pi-tier {
+      background: linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#60a5fa,#c084fc) text;
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      animation: gss-rainbow 4s linear infinite;
+    }
     .gs-pi-name {
       font-size: 8px; color: #9ca3af; text-align: center;
       padding: 0 3px; line-height: 1.3; max-width: 50px;
@@ -2451,15 +2464,15 @@
     /* ── 结果卡 Result Card ──────────────────────────────────── */
     .gacha-result-overlay {
       position: fixed; inset: 0; z-index: 9600;
-      background: rgba(0,0,0,0.82);
-      backdrop-filter: blur(6px);
+      background: #07090f;
       display: flex; align-items: center; justify-content: center;
       opacity: 0; transition: opacity 0.25s ease;
     }
     .gacha-result-overlay.gr-visible { opacity: 1; }
     .gr-card {
-      background: linear-gradient(180deg, rgba(28,33,46,0.96), rgba(20,24,34,0.96));
-      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(14, 18, 30, 0.60);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.11);
       border-radius: 22px; padding: 28px 24px 22px;
       width: 340px; max-width: 92vw;
       box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset,
@@ -2484,22 +2497,26 @@
       0%,100% { box-shadow: 0 0 2px 0 rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); }
       50%     { box-shadow: 0 0 12px 2px rgba(255,255,255,0.30); border-color: rgba(255,255,255,0.45); }
     }
-    @keyframes tierBreathBlue {
-      0%,100% { box-shadow: 0 0 2px 0 rgba(147,197,253,0.15); border-color: rgba(147,197,253,0.25); }
-      50%     { box-shadow: 0 0 14px 2px rgba(147,197,253,0.45); border-color: rgba(147,197,253,0.65); }
-    }
     @keyframes tierBreathPurple {
       0%,100% { box-shadow: 0 0 3px 0 rgba(196,181,253,0.20); border-color: rgba(196,181,253,0.32); }
       50%     { box-shadow: 0 0 16px 2px rgba(196,181,253,0.50); border-color: rgba(196,181,253,0.75); }
     }
     @keyframes tierBreathGold {
-      0%,100% { box-shadow: 0 0 3px 0 rgba(255,215,0,0.22); border-color: rgba(255,215,0,0.40); }
-      50%     { box-shadow: 0 0 18px 3px rgba(255,215,0,0.62); border-color: rgba(255,215,0,0.90); }
+      0%,100% { box-shadow: 0 0 3px 0 rgba(230,194,122,0.22); border-color: rgba(230,194,122,0.40); }
+      50%     { box-shadow: 0 0 18px 3px rgba(230,194,122,0.62); border-color: rgba(230,194,122,0.90); }
     }
-    .gr-tier-n   { border: 1px solid rgba(255,255,255,0.18); animation: tierBreathSilver 4s ease-in-out infinite; }
-    .gr-tier-r   { border: 1px solid rgba(147,197,253,0.25); animation: tierBreathBlue   4s ease-in-out infinite; }
-    .gr-tier-sr  { border: 1px solid rgba(196,181,253,0.32); animation: tierBreathPurple 3.6s ease-in-out infinite; }
-    .gr-tier-ssr { border: 1px solid rgba(255,215,0,0.40);   animation: tierBreathGold   3.4s ease-in-out infinite; }
+    @keyframes tierBreathRainbow {
+      0%   { box-shadow: 0 0 4px 1px rgba(248,113,113,0.45); border-color: rgba(248,113,113,0.60); }
+      20%  { box-shadow: 0 0 18px 3px rgba(251,191,36,0.55);  border-color: rgba(251,191,36,0.75);  }
+      40%  { box-shadow: 0 0 18px 3px rgba(74,222,128,0.50);  border-color: rgba(74,222,128,0.70);  }
+      60%  { box-shadow: 0 0 18px 3px rgba(96,165,250,0.50);  border-color: rgba(96,165,250,0.70);  }
+      80%  { box-shadow: 0 0 18px 3px rgba(192,132,252,0.55); border-color: rgba(192,132,252,0.75); }
+      100% { box-shadow: 0 0 4px 1px rgba(248,113,113,0.45); border-color: rgba(248,113,113,0.60); }
+    }
+    .gr-tier-n   { border: 1px solid rgba(255,255,255,0.18);  animation: tierBreathSilver  4.0s ease-in-out infinite; }
+    .gr-tier-r   { border: 1px solid rgba(196,181,253,0.32);  animation: tierBreathPurple  4.0s ease-in-out infinite; }
+    .gr-tier-sr  { border: 1px solid rgba(230,194,122,0.40);  animation: tierBreathGold    3.6s ease-in-out infinite; }
+    .gr-tier-ssr { border: 1px solid rgba(248,113,113,0.60);  animation: tierBreathRainbow 4.0s linear     infinite; }
     .gr-img-wrap {
       width: 180px; height: 180px; border-radius: 14px;
       overflow: hidden; position: relative;
@@ -2507,8 +2524,8 @@
       border: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
     }
     .gr-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
-    /* 服装类（SSR 等）需要完整展示，透明底融入卡片 */
-    .gr-img-wrap.gr-img-contain { background: transparent; border-color: transparent; }
+    /* 服装类（SSR 等）用纯深色底，防透明 PNG 透出背景暖光 */
+    .gr-img-wrap.gr-img-contain { background: rgba(8, 10, 18, 1); border-color: transparent; }
     .gr-img-wrap.gr-img-contain .gr-img { object-fit: contain; padding: 6px; }
     .gr-img-fallback {
       position: absolute; inset: 0;
@@ -2542,16 +2559,17 @@
       border-color: rgba(255,255,255,0.40);
     }
     .gr-btn-primary.btn-tier-r {
-      background: rgba(147,197,253,0.16); color: #93c5fd;
-      border-color: rgba(147,197,253,0.55);
+      background: rgba(196,181,253,0.16); color: #c4b5fd;
+      border-color: rgba(196,181,253,0.55);
     }
     .gr-btn-primary.btn-tier-sr {
-      background: rgba(196,181,253,0.18); color: #c4b5fd;
-      border-color: rgba(196,181,253,0.6);
+      background: rgba(230,194,122,0.18); color: #e6c27a;
+      border-color: rgba(230,194,122,0.60);
     }
     .gr-btn-primary.btn-tier-ssr {
-      background: rgba(255,215,0,0.16); color: #fcd34d;
-      border-color: rgba(255,215,0,0.65);
+      background: linear-gradient(90deg,rgba(248,113,113,0.18),rgba(251,191,36,0.18),rgba(74,222,128,0.18),rgba(96,165,250,0.18),rgba(192,132,252,0.18));
+      color: #fff; border-color: rgba(255,255,255,0.35);
+      animation: tierBreathRainbow 4s linear infinite;
     }
     .gr-btn-primary:hover:not(:disabled) { filter: brightness(1.18); }
 
@@ -2588,21 +2606,38 @@
       50%      { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
     }
     /* 语音按键的稀有度呼吸光晕（覆盖默认白色脉动） */
-    @keyframes voiceBreathGold {
-      0%,100% { box-shadow: 0 0 4px 0 rgba(255,215,0,0.22); border-color: rgba(255,215,0,0.45); }
-      50%     { box-shadow: 0 0 22px 4px rgba(255,215,0,0.55); border-color: rgba(255,215,0,0.95); }
-    }
     @keyframes voiceBreathPurple {
       0%,100% { box-shadow: 0 0 4px 0 rgba(196,181,253,0.20); border-color: rgba(196,181,253,0.4); }
-      50%     { box-shadow: 0 0 20px 3px rgba(196,181,253,0.45); border-color: rgba(196,181,253,0.85); }
+      50%     { box-shadow: 0 0 20px 3px rgba(196,181,253,0.50); border-color: rgba(196,181,253,0.85); }
     }
-    .gr-voice-btn.tier-breath-ssr, .gcb-voice-btn.tier-breath-ssr {
-      animation: voiceBreathGold 3.4s ease-in-out infinite;
-      color: #fff5d6;
+    @keyframes voiceBreathGold {
+      0%,100% { box-shadow: 0 0 4px 0 rgba(230,194,122,0.22); border-color: rgba(230,194,122,0.45); }
+      50%     { box-shadow: 0 0 22px 4px rgba(230,194,122,0.60); border-color: rgba(230,194,122,0.95); }
+    }
+    /* R = 紫, SR = 金, SSR = 镭射全息旋转光环 */
+    .gr-voice-btn.tier-breath-r,   .gcb-voice-btn.tier-breath-r {
+      animation: voiceBreathPurple 4.0s ease-in-out infinite;
+      color: #ede9fe;
     }
     .gr-voice-btn.tier-breath-sr,  .gcb-voice-btn.tier-breath-sr {
-      animation: voiceBreathPurple 3.6s ease-in-out infinite;
-      color: #f1edff;
+      animation: voiceBreathGold 3.6s ease-in-out infinite;
+      color: #fef3c7;
+    }
+    /* SSR：七彩光谱呼吸边框 — hue-rotate 循环 × 光晕同步呼吸 */
+    .gr-voice-btn.tier-breath-ssr, .gcb-voice-btn.tier-breath-ssr {
+      background: transparent;
+      border: 2px solid rgba(255,223,115,0.85);
+      color: #FFDF73;
+      animation: ssrSpectrumBreathe 4s linear infinite;
+    }
+    .gr-voice-btn.tier-breath-ssr::before,
+    .gcb-voice-btn.tier-breath-ssr::before { content: none; }
+    @keyframes ssrSpectrumBreathe {
+      0%   { filter: hue-rotate(0deg);   box-shadow: 0 0 5px rgba(255,220,110,0.30); }
+      25%  { filter: hue-rotate(90deg);  box-shadow: 0 0 16px rgba(255,220,110,0.70); }
+      50%  { filter: hue-rotate(180deg); box-shadow: 0 0 22px rgba(255,220,110,0.85), inset 0 0 8px rgba(255,220,110,0.18); }
+      75%  { filter: hue-rotate(270deg); box-shadow: 0 0 16px rgba(255,220,110,0.70); }
+      100% { filter: hue-rotate(360deg); box-shadow: 0 0 5px rgba(255,220,110,0.30); }
     }
     .gr-voice-hint, .gcb-voice-hint { display: none; }
     .gr-voice-toggle, .gcb-voice-toggle {
@@ -2619,16 +2654,183 @@
       opacity: 0; padding: 0 6px;
     }
     .gr-voice-transcript.expanded, .gcb-voice-transcript.expanded {
-      max-height: 600px; opacity: 1; padding: 6px;
+      max-height: 600px; opacity: 1; padding: 6px 6px 20px;
     }
-    .gr-voice-transcript p, .gcb-voice-transcript p { margin: 0 0 8px 0; }
+    .gr-voice-transcript p, .gcb-voice-transcript p { margin: 0 0 10px 0; }
     .gr-voice-transcript p:last-child, .gcb-voice-transcript p:last-child { margin: 0; }
+
+    /* ── Voice diary language toggle ────────────────────────────── */
+    .vt-lang-row { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 8px; }
+    .vt-lang-btn { background: none; border: none; cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 4px 10px; border-radius: 99px; color: #4b5563; transition: color 0.15s, background 0.15s; }
+    .vt-lang-btn.vt-lang-active { color: #d6b577; background: rgba(200,167,102,0.12); }
+    .vt-lang-sep { font-size: 10px; color: #4b5563; }
+    .vt-en-block p { font-style: italic; color: #7a8090; }
+
+    /* ── 第一章通关演出 Chapter-1 Cutscene ─────────────────────── */
+    .ch1-ov {
+      position: fixed; inset: 0; z-index: 19999;
+      background: #000; overflow: hidden;
+      opacity: 0; transition: opacity 0.7s ease;
+    }
+    .ch1-ov.ch1-in { opacity: 1; }
+
+    /* ── FRONT: 纯净 CG 正面 ── */
+    .ch1-front {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end;
+      transition: opacity 0.6s ease;
+    }
+    .ch1-front.ch1-hidden { opacity: 0; pointer-events: none; }
+    .ch1-cg {
+      position: absolute; inset: 0;
+      background: url('/assets/cg/lesson1_airport.png?v=20260505') center/cover no-repeat;
+      opacity: 0; transition: opacity 1.4s ease;
+    }
+    .ch1-cg.ch1-in { opacity: 1; }
+    /* 仅底部淡出，不遮人脸 */
+    .ch1-cg-grad {
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(to top,
+        rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.30) 22%, transparent 42%);
+    }
+    .ch1-front-body {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      padding-bottom: 52px; gap: 10px;
+    }
+    .ch1-tag {
+      font-size: 9px; letter-spacing: 4px; color: #e6c27a;
+      opacity: 0; transition: opacity 0.7s ease;
+    }
+    .ch1-tag.ch1-in { opacity: 1; }
+    .ch1-title {
+      font-size: 38px; font-weight: 800; color: #ffffff;
+      font-family: 'Noto Serif SC', 'Songti SC', serif;
+      letter-spacing: 10px; text-shadow: 0 2px 28px rgba(0,0,0,0.7);
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .ch1-title.ch1-in { opacity: 1; transform: none; }
+    .ch1-unlock-btn {
+      margin-top: 8px;
+      padding: 13px 32px; border-radius: 99px;
+      border: 1px solid rgba(230,194,122,0.55);
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(12px);
+      color: #e6c27a; font-size: 13px; font-weight: 600;
+      cursor: pointer; letter-spacing: 1.5px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.5s ease, transform 0.5s ease, background 0.2s;
+      box-shadow: 0 0 20px rgba(230,194,122,0.18);
+    }
+    .ch1-unlock-btn.ch1-in  { opacity: 1; transform: none; }
+    .ch1-unlock-btn:hover   { background: rgba(230,194,122,0.18); }
+
+    /* ── BACK: 模糊背景 + 日记面板 ── */
+    /* ── BACK: 无框电影字幕式 ── */
+    .ch1-back {
+      position: absolute; inset: 0;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+    .ch1-back.ch1-in { opacity: 1; pointer-events: auto; }
+    .ch1-blur-bg {
+      position: absolute; inset: 0;
+      background: url('/assets/cg/lesson1_airport.png?v=20260505') center/cover no-repeat;
+      filter: blur(9px) brightness(0.52) saturate(0.9);
+      transform: scale(1.06);
+    }
+    /* 全屏柔和遮罩，让人物隐约透出 */
+    .ch1-btm-grad {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.45) 100%),
+        linear-gradient(to top,
+          rgba(0,0,0,0.72) 0%,
+          rgba(0,0,0,0.38) 35%,
+          rgba(0,0,0,0.10) 65%,
+          transparent     100%);
+    }
+    /* 文字组 — 整体打包，下沉到画面下 1/3 */
+    .ch1-text-block {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 32px;
+      width: 100%; max-width: 480px;
+    }
+    .ch1-back-body {
+      display: flex; flex-direction: column; align-items: center;
+      width: 100%;
+      pointer-events: none;
+    }
+    /* 每行独白 — 字号增大、行距宽松 */
+    .ch1-line {
+      font-size: 19px; font-weight: 500; color: rgba(240,245,255,0.96);
+      font-family: 'Noto Serif SC', 'Songti SC', serif;
+      line-height: 2.0; text-align: center;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.85);
+      user-select: none; -webkit-user-select: none;
+      opacity: 0; transform: translateY(6px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      white-space: nowrap;
+    }
+    .ch1-line.en-line { font-style: italic; font-weight: 400; color: rgba(220,210,185,0.90); font-size: 17px; }
+    .ch1-line.ch1-in  { opacity: 1; transform: none; }
+    .ch1-line-gap     { height: 12px; }
+    /* 中/EN 紧贴台词下方 */
+    .ch1-lang-row {
+      margin-top: 20px;
+      display: flex; align-items: center; gap: 0;
+      opacity: 0; transition: opacity 0.5s ease;
+    }
+    .ch1-lang-row.ch1-in { opacity: 1; }
+    .ch1-lang-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      padding: 4px 10px; border-radius: 99px; color: rgba(255,255,255,0.40);
+      transition: color 0.15s, background 0.15s;
+    }
+    .ch1-lang-btn.active { color: #e6c27a; background: rgba(230,194,122,0.12); }
+    .ch1-lang-sep { font-size: 10px; color: rgba(255,255,255,0.25); }
+    /* 收下按钮 — 纯正香槟金 */
+    .ch1-fly-btn {
+      margin-top: 28px;
+      padding: 13px 40px; border-radius: 99px;
+      border: 1px solid rgba(212,175,55,0.75);
+      background: rgba(0,0,0,0.42);
+      backdrop-filter: blur(12px);
+      color: #D4AF37; font-size: 14px; font-weight: 600;
+      cursor: pointer; letter-spacing: 2px; white-space: nowrap;
+      box-shadow: 0 0 28px rgba(212,175,55,0.30), inset 0 0 0 0 transparent;
+      opacity: 0; transform: translateY(6px);
+      transition: opacity 0.5s ease, transform 0.5s ease, background 0.2s;
+    }
+    .ch1-fly-btn.ch1-in { opacity: 1; transform: none; }
+    .ch1-fly-btn:hover  { background: rgba(212,175,55,0.16); border-color: rgba(212,175,55,0.95); }
+
+    /* ── 飞入收藏册：缩小飞向角落 ── */
+    @keyframes ch1FlyCard {
+      0%   { transform: translate(-50%,-50%) scale(1);    opacity: 1; }
+      100% { transform: translate(var(--fx),var(--fy)) scale(0.04); opacity: 0; }
+    }
+    .ch1-flying-card {
+      position: fixed; z-index: 20000;
+      width: 140px; height: 90px; border-radius: 10px; overflow: hidden;
+      border: 1px solid rgba(230,194,122,0.6);
+      box-shadow: 0 0 32px rgba(230,194,122,0.4);
+      top: 50%; left: 50%;
+      animation: ch1FlyCard 0.9s cubic-bezier(.4,0,.6,1) forwards;
+    }
+    .ch1-flying-card img { width:100%; height:100%; object-fit:cover; }
 
     /* ── 拆盒动效  Unboxing Animation (M3) ─────────────────────── */
     .gacha-unbox-overlay {
       position: fixed; inset: 0; z-index: 9550;
-      background: rgba(0,0,0,0.88);
-      backdrop-filter: blur(6px);
+      background: #07090f;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; opacity: 0;
       transition: opacity 0.18s ease;
@@ -2733,7 +2935,7 @@
     /* ── 收集册 Collection Book (M4) ───────────────────────── */
     .gacha-collection-overlay {
       position: fixed; inset: 0; z-index: 9300;
-      background: linear-gradient(180deg, #0f1729 0%, #0a0f1c 100%);
+      background: #07090f;
       display: flex; flex-direction: column;
       transform: translateY(100%); opacity: 0;
       transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
@@ -2788,11 +2990,7 @@
     }
     /* 动态模糊背景 */
     .gcb-car-bg {
-      position: absolute; inset: -30px; z-index: 0;
-      background-size: cover; background-position: center;
-      filter: blur(55px) saturate(0.4) brightness(0.22);
-      transform: scale(1.1);
-      transition: background-image 0.5s ease;
+      display: none; /* 全局已有统一 CG 背景，不再需要局部动态背景 */
     }
     /* 卡片轨道 */
     .gcb-car-track {
@@ -2817,6 +3015,35 @@
       box-shadow: 0 22px 70px rgba(0,0,0,0.7),
                   0 0 32px rgba(255,255,255,0.08);
     }
+    /* 触屏按压反馈（手机端关键交互信号） */
+    .gcb-car-card:active {
+      filter: brightness(1.05);
+      transition: filter 0.08s;
+    }
+    /* 轮播激活卡片 = 可点开详情 → 用 tier 着色呼吸光环提示 */
+    .gcb-car-card.cc-active.cc-tier-ssr {
+      animation: carCardBreatheSSR 4.5s linear infinite;
+    }
+    @keyframes carCardBreatheSSR {
+      0%,100% { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 22px 4px rgba(248,113,113,0.45); }
+      25%     { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 32px 6px rgba(251,191,36,0.55); }
+      50%     { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 32px 6px rgba(96,165,250,0.55); }
+      75%     { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 32px 6px rgba(192,132,252,0.60); }
+    }
+    .gcb-car-card.cc-active.cc-tier-sr {
+      animation: carCardBreatheSR 3.6s ease-in-out infinite;
+    }
+    @keyframes carCardBreatheSR {
+      0%,100% { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 18px 3px rgba(230,194,122,0.40); }
+      50%     { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 30px 5px rgba(230,194,122,0.75); }
+    }
+    .gcb-car-card.cc-active.cc-tier-r {
+      animation: carCardBreatheR 4s ease-in-out infinite;
+    }
+    @keyframes carCardBreatheR {
+      0%,100% { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 18px 3px rgba(196,181,253,0.40); }
+      50%     { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 28px 5px rgba(196,181,253,0.70); }
+    }
     .gcb-car-card img {
       width: 100%; height: 100%; object-fit: cover; display: block;
     }
@@ -2828,6 +3055,8 @@
     .gcb-car-card.cc-outfit img {
       object-fit: contain; padding: 6px;
     }
+    /* CG 横图卡片：全覆盖，展示完整画面 */
+    .gcb-car-card.cc-cg img { object-fit: cover; border-radius: 12px; }
     .gcb-car-card .gcb-car-emoji {
       position: absolute; inset: 0; display: flex;
       align-items: center; justify-content: center;
@@ -2890,10 +3119,10 @@
     }
     .gcb-car-dot.active { transform: scale(1.4); }
     /* 激活圆点跟随当前卡片稀有度变色 */
-    .gcb-car-dot.active.dot-tier-n   { background: #f1f5f9; box-shadow: 0 0 6px rgba(255,255,255,0.5); }
-    .gcb-car-dot.active.dot-tier-r   { background: #93c5fd; box-shadow: 0 0 6px rgba(147,197,253,0.6); }
-    .gcb-car-dot.active.dot-tier-sr  { background: #c4b5fd; box-shadow: 0 0 6px rgba(196,181,253,0.6); }
-    .gcb-car-dot.active.dot-tier-ssr { background: #fcd34d; box-shadow: 0 0 8px rgba(255,215,0,0.65); }
+    .gcb-car-dot.active.dot-tier-n   { background: #d1d5db; box-shadow: 0 0 6px rgba(255,255,255,0.4); }
+    .gcb-car-dot.active.dot-tier-r   { background: #c4b5fd; box-shadow: 0 0 6px rgba(196,181,253,0.7); }
+    .gcb-car-dot.active.dot-tier-sr  { background: #e6c27a; box-shadow: 0 0 6px rgba(230,194,122,0.7); }
+    .gcb-car-dot.active.dot-tier-ssr { background: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.65); animation: tierBreathRainbow 4s linear infinite; }
     .gcb-item {
       border-radius: 14px; border: none;
       background: transparent;
@@ -2908,9 +3137,10 @@
     .gcb-item.gcb-owned:hover { transform: translateY(-2px); }
     .gcb-item.gcb-unowned { cursor: default; opacity: 0.4; }
 
-    /* SSR: subtle gold glow only */
+    /* SSR: subtle rainbow glow */
     .gcb-item.gcb-owned.gcb-ssr .gcb-item-img-wrap {
-      box-shadow: 0 0 16px rgba(245,166,35,0.3);
+      box-shadow: 0 0 16px rgba(192,132,252,0.35);
+      animation: tierBreathRainbow 4s linear infinite;
     }
 
     .gcb-item-tier {
@@ -2918,9 +3148,14 @@
       padding: 1px 6px; border-radius: 99px; align-self: flex-start;
     }
     .gcb-n  .gcb-item-tier { color: #9e9e9e; background: rgba(158,158,158,0.12); }
-    .gcb-r  .gcb-item-tier { color: #4dabf7; background: rgba(77,171,247,0.12); }
-    .gcb-sr .gcb-item-tier { color: #b197fc; background: rgba(156,89,255,0.14); }
-    .gcb-ssr .gcb-item-tier { color: #f5c842; background: rgba(245,166,35,0.16); text-shadow: 0 0 6px rgba(245,166,35,0.5); }
+    .gcb-r  .gcb-item-tier { color: #c4b5fd; background: rgba(196,181,253,0.14); }
+    .gcb-sr .gcb-item-tier { color: #e6c27a; background: rgba(230,194,122,0.14); text-shadow: 0 0 6px rgba(230,194,122,0.4); }
+    .gcb-ssr .gcb-item-tier {
+      background: linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#60a5fa,#c084fc) text;
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      background-color: rgba(255,255,255,0.06);
+      animation: gss-rainbow 4s linear infinite;
+    }
 
     .gcb-item-img-wrap {
       width: 52px; height: 52px; border-radius: 10px;
@@ -2956,15 +3191,16 @@
     /* ── 物品详情 Modal (M4) ────────────────────────────────── */
     .gcb-detail-overlay {
       position: fixed; inset: 0; z-index: 9700;
-      background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      background: #07090f;
       display: flex; align-items: center; justify-content: center;
       padding: 24px 16px;
       opacity: 0; transition: opacity 0.22s ease;
     }
     .gcb-detail-overlay.gcbd-visible { opacity: 1; }
     .gcb-detail-card {
-      background: #15192b;
-      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(14, 18, 30, 0.60);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.11);
       border-radius: 24px;
       padding: 32px 28px 28px;
       width: 100%; max-width: 460px;
@@ -2983,10 +3219,10 @@
       background: rgba(0,0,0,0.45);
       color: #ffffff;
     }
-    .gcb-detail-tier-n   { border: 1px solid rgba(255,255,255,0.18); animation: tierBreathSilver 4s ease-in-out infinite; }
-    .gcb-detail-tier-r   { border: 1px solid rgba(147,197,253,0.25); animation: tierBreathBlue   4s ease-in-out infinite; }
-    .gcb-detail-tier-sr  { border: 1px solid rgba(196,181,253,0.32); animation: tierBreathPurple 3.6s ease-in-out infinite; }
-    .gcb-detail-tier-ssr { border: 1px solid rgba(255,215,0,0.40);   animation: tierBreathGold   3.4s ease-in-out infinite; }
+    .gcb-detail-tier-n   { border: 1px solid rgba(255,255,255,0.18);  animation: tierBreathSilver  4.0s ease-in-out infinite; }
+    .gcb-detail-tier-r   { border: 1px solid rgba(196,181,253,0.32);  animation: tierBreathPurple  4.0s ease-in-out infinite; }
+    .gcb-detail-tier-sr  { border: 1px solid rgba(230,194,122,0.40);  animation: tierBreathGold    3.6s ease-in-out infinite; }
+    .gcb-detail-tier-ssr { border: 1px solid rgba(248,113,113,0.60);  animation: tierBreathRainbow 4.0s linear     infinite; }
     .gcb-detail-img-wrap {
       width: 240px; height: 240px; border-radius: 22px;
       overflow: hidden; position: relative;
@@ -2997,6 +3233,47 @@
     .gcb-detail-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
     .gcb-detail-img-wrap.gcb-img-contain { background: radial-gradient(120% 120% at 50% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.4)); }
     .gcb-detail-img-wrap.gcb-img-contain .gcb-detail-img { object-fit: contain; padding: 18px; }
+    /* CG 详情卡专属：加大尺寸让海报感爆棚 */
+    .gcb-detail-card.gcb-detail-card--cg {
+      max-width: min(680px, 92vw);
+    }
+    /* CG 卡隐藏 tier 小标签 —— 否则封面负边距上滑后，badge 的彩虹呼吸 box-shadow 会从左上角溢出 */
+    .gcb-detail-card.gcb-detail-card--cg .gcb-detail-tier-badge { display: none; }
+    /* CG 横图：全宽顶部展开，像电影海报 */
+    .gcb-detail-img-wrap.gcb-img-cg {
+      width: calc(100% + 56px); /* 2 × 28px 侧边 padding */
+      margin: -32px -28px 0 -28px; /* 抵消顶部 32px + 左右 28px */
+      height: min(420px, 50vh);
+      border-radius: 22px 22px 0 0;
+      border-bottom: none;
+    }
+    .gcb-detail-img-wrap.gcb-img-cg .gcb-detail-img {
+      object-fit: cover;
+      border-radius: 22px 22px 0 0;
+    }
+    .gcb-detail-img-wrap.gcb-img-cg .gcb-detail-img-emoji { display: none; }
+    /* 详情卡可点击缩略图：统一彩色内嵌呼吸光环（手机可见性信号） */
+    .gcb-detail-img-wrap.gcb-img-clickable {
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.18s ease;
+    }
+    .gcb-detail-img-wrap.gcb-img-clickable:active {
+      transform: scale(0.97);
+      transition: transform 0.08s;
+    }
+    /* 右上角全屏展开角标：极简、半透明暗金，融入背景不抢戏 */
+    .gcb-thumb-zoom-icon {
+      position: absolute;
+      top: 10px; right: 12px;
+      font-size: 18px;
+      font-weight: 300;
+      color: rgba(212,175,55,0.55);
+      pointer-events: none;
+      line-height: 1;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      z-index: 6;
+    }
     .gcb-detail-img-emoji { font-size: 80px; line-height: 1; }
     .gcb-detail-name-zh { font-size: 22px; font-weight: 700; color: #f1f5f9; text-align: center;
                           font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; letter-spacing: 1px; word-break: keep-all; }
@@ -3021,19 +3298,64 @@
       border-color: rgba(255,255,255,0.4);
     }
     .gcb-equip-btn.btn-tier-r {
-      background: rgba(147,197,253,0.16); color: #93c5fd;
-      border-color: rgba(147,197,253,0.55);
+      background: rgba(196,181,253,0.16); color: #c4b5fd;
+      border-color: rgba(196,181,253,0.55);
     }
     .gcb-equip-btn.btn-tier-sr {
-      background: rgba(196,181,253,0.18); color: #c4b5fd;
-      border-color: rgba(196,181,253,0.6);
+      background: rgba(230,194,122,0.18); color: #e6c27a;
+      border-color: rgba(230,194,122,0.60);
     }
     .gcb-equip-btn.btn-tier-ssr {
-      background: rgba(255,215,0,0.16); color: #fcd34d;
-      border-color: rgba(255,215,0,0.65);
+      background: linear-gradient(90deg,rgba(248,113,113,0.18),rgba(251,191,36,0.18),rgba(74,222,128,0.18),rgba(96,165,250,0.18),rgba(192,132,252,0.18));
+      color: #fff; border-color: rgba(255,255,255,0.35);
+      animation: tierBreathRainbow 4s linear infinite;
     }
-    .gcb-equip-btn.equipped { opacity: 0.7; }
+    /* 已换装状态：去除所有动效与发光，改为幽暗暗金色（已完成、次要操作） */
+    .gcb-equip-btn.equipped {
+      animation: none !important;
+      background: rgba(212,175,55,0.06) !important;
+      border-color: rgba(212,175,55,0.30) !important;
+      color: rgba(212,175,55,0.75) !important;
+      box-shadow: none !important;
+      opacity: 1;
+    }
     .gcb-equip-btn:hover { filter: brightness(1.15); }
+    .gcb-equip-btn.equipped:hover {
+      filter: none;
+      background: rgba(212,175,55,0.12) !important;
+      border-color: rgba(212,175,55,0.50) !important;
+      color: #D4AF37 !important;
+    }
+    /* 换装全身立绘预览 overlay */
+    .outfit-preview-overlay {
+      position: fixed; inset: 0; z-index: 30000;
+      background: rgba(6,8,16,0.78);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.35s ease;
+    }
+    .outfit-preview-overlay.op-visible { opacity: 1; }
+    .outfit-preview-card {
+      position: relative;
+      max-height: 90vh; max-width: 88vw;
+      opacity: 0; transform: translateY(22px) scale(0.96);
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(.34,1.26,.64,1);
+      filter: drop-shadow(0 0 32px rgba(212,175,55,0.55))
+              drop-shadow(0 0 8px  rgba(212,175,55,0.30));
+    }
+    .outfit-preview-overlay.op-visible .outfit-preview-card {
+      opacity: 1; transform: none;
+    }
+    .outfit-preview-card img {
+      max-height: 90vh; max-width: 88vw;
+      object-fit: contain; display: block;
+    }
+    /* 点击提示文字 */
+    .outfit-preview-hint {
+      position: absolute; bottom: -28px; left: 0; right: 0;
+      text-align: center; font-size: 11px; letter-spacing: 2px;
+      color: rgba(212,175,55,0.55);
+    }
     .gcb-audio-btn {
       width: 100%; padding: 14px; border: none; border-radius: 14px;
       background: rgba(156,89,255,0.15); border: 1px solid rgba(156,89,255,0.35);
@@ -3054,16 +3376,17 @@
     /* ── 碎片商店 Shard Shop (M5) ───────────────────────────── */
     .gacha-shard-shop-overlay {
       position: fixed; inset: 0; z-index: 9400;
-      background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+      background: #07090f;
       display: flex; align-items: center; justify-content: center;
       opacity: 0; transition: opacity 0.22s ease;
     }
     .gacha-shard-shop-overlay.gss-visible { opacity: 1; }
     .gss-card {
-      background: #1c212e;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 24px; padding: 0 0 8px;
-      width: 380px; max-width: 94vw;
+      background: rgba(14, 18, 30, 0.60);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: 24px; padding: 0 0 12px;
+      width: 560px; max-width: 94vw;
       box-shadow: 0 32px 80px rgba(0,0,0,0.85);
       transform: scale(0.92) translateY(16px); opacity: 0;
       transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
@@ -3077,10 +3400,100 @@
       padding: 20px 20px 16px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-    .gss-title { font-size: 17px; font-weight: 800; color: #f1f5f9; flex: 1; }
+    .gss-title {
+      font-size: 17px; font-weight: 800; color: #f1f5f9; flex: 1;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .gss-title.gss-title-clickable {
+      cursor: pointer;
+      animation: gssTitleBreath 3s ease-in-out infinite;
+      border-radius: 8px;
+      transition: transform 0.15s;
+    }
+    .gss-title.gss-title-clickable:active { transform: scale(0.97); }
+    @keyframes gssTitleBreath {
+      0%,100% { text-shadow: 0 0 6px rgba(230,194,122,0.30); }
+      50%     { text-shadow: 0 0 14px rgba(230,194,122,0.70), 0 0 24px rgba(230,194,122,0.32); }
+    }
+    .gss-info-icon {
+      font-size: 13px; color: #7dd3fc;
+      font-weight: 600;
+      text-shadow: 0 0 6px rgba(125,211,252,0.45);
+    }
+    /* 兑换规则展开块 */
+    .gss-rules {
+      max-height: 0; overflow: hidden;
+      padding: 0 20px;
+      font-size: 12.5px; color: #94a3b8; line-height: 1.65;
+      transition: max-height 0.35s ease, padding 0.35s ease, border-color 0.35s ease;
+      border-bottom: 1px solid transparent;
+    }
+    .gss-rules.gss-rules-visible {
+      max-height: 360px;
+      padding: 14px 20px 16px;
+      border-bottom-color: rgba(255,255,255,0.06);
+    }
+    .gss-rules-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; gap: 10px;
+    }
+    .gss-rules-title {
+      font-size: 12.5px; font-weight: 800; color: #e6c27a;
+      letter-spacing: 0.6px;
+      text-shadow: 0 0 8px rgba(230,194,122,0.30);
+    }
+    .gss-lang-switch {
+      display: inline-flex;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 99px; overflow: hidden;
+      flex-shrink: 0;
+    }
+    .gss-lang-btn {
+      background: transparent; border: none;
+      color: #6b7280; padding: 3px 11px;
+      font-size: 11px; cursor: pointer; letter-spacing: 0.5px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .gss-lang-btn:hover { color: #cbd5e1; }
+    .gss-lang-btn.active {
+      background: rgba(125,211,252,0.12);
+      color: #7dd3fc;
+    }
+    .gss-rules[data-lang="zh"] .gss-rules-en { display: none; }
+    .gss-rules[data-lang="en"] .gss-rules-zh { display: none; }
+    .gss-rules-title .gss-rt-en { display: none; }
+    .gss-rules[data-lang="en"] .gss-rules-title .gss-rt-zh { display: none; }
+    .gss-rules[data-lang="en"] .gss-rules-title .gss-rt-en { display: inline; }
+    .gss-rules-list { list-style: none; padding: 0; margin: 0; }
+    .gss-rules-list li {
+      position: relative;
+      padding: 6px 0 6px 14px;
+      line-height: 1.7;
+    }
+    .gss-rules-list li::before {
+      content: '';
+      position: absolute; left: 0; top: 14px;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: rgba(230,194,122,0.65);
+      box-shadow: 0 0 6px rgba(230,194,122,0.55);
+    }
+    .gss-rules-list b {
+      color: #e2e8f0; font-weight: 700;
+    }
+    .gss-rk-n   { color: #cbd5e1; font-weight: 700; }
+    .gss-rk-r   { color: #c4b5fd; font-weight: 700; }
+    .gss-rk-sr  { color: #e6c27a; font-weight: 700; }
+    .gss-rk-ssr {
+      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
     .gss-shard-bal {
       display: flex; align-items: center; gap: 6px;
-      font-size: 16px; font-weight: 700; color: #67e8f9;
+      font-size: 15px; font-weight: 700; color: #7dd3fc;
+      background: rgba(125,211,252,0.08);
+      border: 1px solid rgba(125,211,252,0.18);
+      border-radius: 99px; padding: 4px 12px 4px 8px;
     }
     .gss-close-btn {
       background: none; border: none; color: #4b5563;
@@ -3092,39 +3505,227 @@
       font-size: 12px; color: #4b5563; padding: 10px 20px 4px;
       line-height: 1.5;
     }
-    .gss-rows { display: flex; flex-direction: column; padding: 8px 16px 4px; gap: 8px; }
-    .gss-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px; border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.07);
-      background: rgba(255,255,255,0.03);
+    /* ── 2×2 网格 ── */
+    .gss-rows {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      padding: 16px 18px 14px;
     }
+    .gss-tile {
+      position: relative;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+      padding: 18px 14px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      overflow: hidden;
+      transition: transform 0.18s ease, border-color 0.25s, box-shadow 0.25s, opacity 0.25s;
+      aspect-ratio: 1 / 0.78;
+    }
+    /* lit 视觉（默认应用：可买 + 已集齐都点亮，只有"碎片不足"才暗） */
+    .gss-tile:not(.gss-disabled).gss-tile-n {
+      border-color: rgba(220,228,240,0.32);
+      box-shadow: 0 0 18px rgba(220,228,240,0.14);
+    }
+    .gss-tile:not(.gss-disabled).gss-tile-r {
+      border-color: rgba(196,181,253,0.42);
+      animation: gssTileBreathR 4s ease-in-out infinite;
+    }
+    .gss-tile:not(.gss-disabled).gss-tile-sr {
+      border-color: rgba(245,210,122,0.50);
+      animation: gssTileBreathSR 3.6s ease-in-out infinite;
+    }
+    .gss-tile:not(.gss-disabled).gss-tile-ssr {
+      border-color: rgba(255,223,115,0.55);
+      animation: gssTileBreathSSR 4.2s ease-in-out infinite;
+    }
+    /* 可点击：仅 buyable 给指针、悬停反馈 */
+    .gss-tile.gss-tile-buyable { cursor: pointer; }
+    .gss-tile.gss-tile-buyable:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255,255,255,0.22);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.50);
+    }
+    .gss-tile.gss-tile-buyable:hover .gss-crystal { transform: scale(1.10); }
+    .gss-tile.gss-tile-buyable:active { transform: translateY(-1px); }
+    .gss-tile.gss-disabled {
+      cursor: not-allowed;
+      opacity: 0.42;
+      filter: saturate(0.35);
+    }
+    @keyframes gssTileBreathR {
+      0%,100% { box-shadow: 0 0 14px rgba(167,139,250,0.18); }
+      50%     { box-shadow: 0 0 26px rgba(167,139,250,0.40); }
+    }
+    @keyframes gssTileBreathSR {
+      0%,100% { box-shadow: 0 0 14px rgba(245,210,122,0.20); }
+      50%     { box-shadow: 0 0 30px rgba(245,210,122,0.48); }
+    }
+    @keyframes gssTileBreathSSR {
+      0%,100% { box-shadow: 0 0 18px rgba(255,200,100,0.25); }
+      50%     { box-shadow: 0 0 36px rgba(255,200,100,0.50), 0 0 56px rgba(192,132,252,0.22); }
+    }
+
+    /* ── 💎 钻石（emoji + tier 光芒） ── */
+    .gss-crystal {
+      font-size: 52px; line-height: 1;
+      flex-shrink: 0;
+      transition: transform 0.22s ease;
+    }
+    .gss-crystal-n   { filter: saturate(0.25) brightness(1.15) drop-shadow(0 0 14px rgba(220,228,240,0.65)); }
+    .gss-crystal-r   { filter: hue-rotate(40deg) saturate(1.2)  drop-shadow(0 0 14px rgba(167,139,250,0.75)); }
+    .gss-crystal-sr  { filter: hue-rotate(170deg) saturate(1.4) drop-shadow(0 0 16px rgba(245,210,122,0.80)); }
+    .gss-crystal-ssr { animation: gssCrystalRainbow 5s linear infinite; }
+    @keyframes gssCrystalRainbow {
+      0%   { filter: hue-rotate(0deg)   saturate(1.4) drop-shadow(0 0 16px rgba(255,200,140,0.65)) drop-shadow(0 0 32px rgba(192,132,252,0.30)); }
+      100% { filter: hue-rotate(360deg) saturate(1.4) drop-shadow(0 0 16px rgba(255,200,140,0.65)) drop-shadow(0 0 32px rgba(192,132,252,0.30)); }
+    }
+
+    /* tile 内信息 */
+    .gss-tile-badge {
+      padding: 3px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 800;
+      background: rgba(0,0,0,0.30);
+      letter-spacing: 0.3px;
+    }
+    .gss-tile-badge.gss-tier-n   { color:#cbd5e1; border: 1px solid rgba(203,213,225,0.32); }
+    .gss-tile-badge.gss-tier-r   { color:#c4b5fd; border: 1px solid rgba(196,181,253,0.45); }
+    .gss-tile-badge.gss-tier-sr  { color:#e6c27a; border: 1px solid rgba(230,194,122,0.50); }
+    .gss-tile-badge.gss-tier-ssr {
+      border: 1px solid rgba(255,223,115,0.50);
+      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      animation: gss-rainbow 4s linear infinite;
+    }
+    .gss-tile-info { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .gss-tile-cost {
+      font-size: 15px; font-weight: 800; color: #e2e8f0;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .gss-cost-n   { color: #cbd5e1; }
+    .gss-cost-r   { color: #c4b5fd; }
+    .gss-cost-sr  { color: #e6c27a; }
+    .gss-cost-ssr {
+      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      animation: gss-rainbow 4s linear infinite;
+    }
+    .gss-tile-hint { font-size: 11px; color: #6b7280; letter-spacing: 0.2px; }
+
+    /* ── 兑换二次确认弹窗（仅 SR / SSR） ── */
+    .gss-confirm-overlay {
+      position: fixed; inset: 0; z-index: 9800;
+      background: rgba(7,9,15,0.55);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      opacity: 0; transition: opacity 0.22s ease;
+    }
+    .gss-confirm-overlay.gscv-visible { opacity: 1; }
+    .gss-confirm-card {
+      background: rgba(14, 18, 30, 0.85);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 28px 26px 22px;
+      width: 380px; max-width: 90vw;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+      transform: scale(0.92) translateY(8px); opacity: 0;
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
+    }
+    .gss-confirm-overlay.gscv-visible .gss-confirm-card {
+      transform: scale(1) translateY(0); opacity: 1;
+    }
+    .gss-confirm-icon {
+      font-size: 44px; line-height: 1; margin-bottom: 12px;
+    }
+    .gss-confirm-text {
+      font-size: 14.5px; color: #cbd5e1; line-height: 1.7;
+      margin-bottom: 22px;
+    }
+    .gss-confirm-text b { font-weight: 800; }
+    .gss-confirm-btns { display: flex; gap: 10px; }
+    .gss-confirm-btn {
+      flex: 1; padding: 11px 0;
+      border: none; border-radius: 12px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s, background 0.2s;
+    }
+    .gss-confirm-btn:active { transform: scale(0.97); }
+    .gss-confirm-cancel {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: #cbd5e1;
+    }
+    .gss-confirm-cancel:hover { background: rgba(255,255,255,0.10); }
+    .gss-confirm-ok { color: #1a0f00; border: 1px solid transparent; }
+    .gss-confirm-ok-sr {
+      background: linear-gradient(135deg, #f0d080, #c8930a);
+      box-shadow: 0 0 22px rgba(245,210,122,0.45);
+      animation: gssConfirmBreathSR 3s ease-in-out infinite;
+    }
+    .gss-confirm-ok-ssr {
+      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
+      color: #1a1a1a;
+      box-shadow: 0 0 24px rgba(255,200,140,0.55), 0 0 48px rgba(192,132,252,0.30);
+      animation: gss-rainbow 4s linear infinite;
+    }
+    @keyframes gssConfirmBreathSR {
+      0%,100% { box-shadow: 0 0 18px rgba(245,210,122,0.35); }
+      50%     { box-shadow: 0 0 30px rgba(245,210,122,0.65); }
+    }
+    .gss-confirm-ok:hover { opacity: 0.92; }
     .gss-tier-badge {
       padding: 4px 10px; border-radius: 99px;
       font-size: 11px; font-weight: 800;
-      flex-shrink: 0; background: rgba(0,0,0,0.3);
+      flex-shrink: 0; background: rgba(0,0,0,0.25);
     }
-    .gss-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.35); }
-    .gss-tier-r   { color: #93c5fd; border: 1px solid rgba(147,197,253,0.4); }
-    .gss-tier-sr  { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.4); }
-    .gss-tier-ssr { color: #e6c27a; border: 1px solid rgba(230,194,122,0.5); text-shadow: 0 0 10px rgba(230,194,122,0.35); }
+    .gss-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.30); }
+    .gss-tier-r   { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.50); }
+    .gss-tier-sr  { color: #e6c27a; border: 1px solid rgba(230,194,122,0.50); text-shadow: 0 0 10px rgba(230,194,122,0.50); }
+    .gss-tier-ssr {
+      border: 1px solid rgba(255,255,255,0.25);
+      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc) border-box;
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: none;
+    }
+    /* SSR rainbow keyframe */
+    @keyframes gss-rainbow { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
+    .gss-tier-ssr { animation: gss-rainbow 4s linear infinite; }
     .gss-row-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
     .gss-cost {
-      font-size: 15px; font-weight: 700; color: #67e8f9;
-      display: flex; align-items: center; gap: 6px;
+      font-size: 15px; font-weight: 700; color: #a8a8a8;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .gss-row-r   .gss-cost { color: #c4b5fd; }
+    .gss-row-sr  .gss-cost { color: #e6c27a; }
+    .gss-row-ssr .gss-cost {
+      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      animation: gss-rainbow 4s linear infinite;
     }
     .gss-remaining { font-size: 11px; color: #4b5563; }
-    .gss-remaining.all-owned { color: #374151; }
+    .gss-remaining.all-owned { color: #2d3748; }
+    /* ── tier-specific exchange buttons ── */
     .gss-exchange-btn {
-      padding: 10px 16px; border: none; border-radius: 10px;
+      padding: 10px 18px; border: none; border-radius: 10px;
       font-size: 13px; font-weight: 700; cursor: pointer;
-      background: linear-gradient(135deg, #b197fc, #9c59ff);
-      color: #fff; transition: opacity 0.15s; flex-shrink: 0;
-      white-space: nowrap;
+      color: #fff; transition: opacity 0.15s, transform 0.1s; flex-shrink: 0;
+      white-space: nowrap; background: linear-gradient(135deg, #b197fc, #9c59ff);
     }
-    .gss-exchange-btn:hover:not(:disabled) { opacity: 0.85; }
+    .gss-exchange-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    .gss-exchange-btn:active:not(:disabled) { transform: translateY(0); }
+    .gss-exchange-btn-n   { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+    .gss-exchange-btn-r   { background: linear-gradient(135deg, #b197fc, #9c59ff); }
+    .gss-exchange-btn-sr  { background: linear-gradient(135deg, #f0d080, #c8930a); color: #1a0f00; }
+    .gss-exchange-btn-ssr { background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc); color: #fff; animation: gss-rainbow 4s linear infinite; }
     .gss-exchange-btn:disabled {
-      background: rgba(255,255,255,0.07); color: #374151; cursor: not-allowed;
+      background: rgba(255,255,255,0.05); color: #2d3748;
+      cursor: not-allowed; transform: none;
+      border: 1px solid rgba(255,255,255,0.06);
     }
 
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
@@ -4536,8 +5137,8 @@
         id: "lesson-1",
         titleZh: "第一课：机场相遇", titleEn: "Lesson 1: Encounter at the Airport",
         newChars: ['nora', 'mingxuan'],
-        cgImage:   '/assets/cg/lesson1_airport.png',      // 完整CG（带角色）→ 故事CG + 全屏背景模糊
-        cardImage: '/assets/cg/lesson1_airport_card.jpg', // 空镜切片 → 章节卡片缩略图
+        cgImage:   '/assets/cg/lesson1_airport.png?v=20260505',      // 完整CG（带角色）→ 故事CG + 全屏背景模糊
+        cardImage: '/assets/cg/lesson1_airport_card.jpg?v=20260505', // 空镜切片 → 章节卡片缩略图
         coverScene: {
           zh: 'Nora 刚抵达机场，找不到接机人，<br>只好向路人询问去市区的路线。',
           en: "Nora has just arrived at the airport and can't find her pickup, so she asks a passerby for directions to the city center."
@@ -4878,8 +5479,8 @@
         id: "lesson-5",
         titleZh: "第五课：初见室友", titleEn: "Lesson 5: Meeting the Roommate",
         newChars: ['qiqi'],
-        cgImage:   '/assets/cg/lesson5_dorm.png',
-        cardImage: '/assets/cg/lesson5_dorm_card.jpg',
+        cgImage:   '/assets/cg/lesson5_dorm.png?v=20260505',
+        cardImage: '/assets/cg/lesson5_dorm_card.jpg?v=20260505',
         cgText:  '阳光、笑脸与新室友，这是大学生活最完美的开场白。',
         cgTextEn: 'Sunlight, smiling faces, and a new roommate — the perfect opening to university life.',
         coverScene: {
@@ -5293,6 +5894,14 @@
         cover: '/assets/gacha/nora-debut/series-cover.png',
         unlockRule: { type: 'always' },
         items: [
+          // ── 章节通关奖励 CG（强制获得，不参与随机池）─────────────
+          { id: 'nd_n_memory_airport', tier: 'SSR', type: 'cg',
+            nameZh: '人海中的擦肩', nameEn: 'Passing By in the Crowd',
+            img: '/assets/cg/lesson1_airport.png?v=20260505',
+            audio: '/assets/gacha/nora-debut/memory_airport_zh.mp3',
+            voiceOnly: true,
+            body: '今天在机场，我看到一个戴着耳机的男生。\n\n他走得很快，把笔记本落在了候机厅的椅子上。\n\n我喊了他，刚想追过去——\n\n却被叫住了……\n\n等我再转过头，他已经消失在人海里。',
+            bodyEn: 'Today at the airport, I saw a guy wearing headphones.\n\nHe was walking so fast — he left his notebook on a chair in the waiting hall.\n\nI called out to him, and just as I started to run over —\n\nI was stopped by someone...\n\nWhen I turned back around, he had already vanished into the crowd.' },
           // ── N (50%) ─────────────────────────────────────────
           { id: 'nd_n_card_keycard', tier: 'N', type: 'card',
             nameZh: '宿舍房卡·四零二', nameEn: 'Dorm Key Card 402',
@@ -5317,12 +5926,13 @@
             img: '/assets/gacha/nora-debut/diary_sr.png',
             audio: '/assets/gacha/nora-debut/diary_sr.mp3',
             voiceOnly: true,
-            body: '终于躺在床上了。今天……真的是漫长的一天。\n\n第一天到北京，我的大脑一直在"翻译"，感觉快要短路了。在机场的时候，我连大巴在哪儿都找不到，还差点付不了车费。还好……遇到了明轩学长。他真的很细心，帮我拿那个超级重的箱子。\n\n还有我的新室友七七！她一见面就问我"饿吗"，哈哈，特别可爱。\n\n虽然中文还说不太好……但是，感觉接下来的生活，会很有趣。\n\n晚安，京华大学。' },
+            body: '终于躺在床上了。今天……真的是漫长的一天。\n\n第一天到北京，我的大脑一直在"翻译"，感觉快要短路了。在机场的时候，我连大巴在哪儿都找不到，还差点付不了车费。还好……遇到了明轩学长。他真的很细心，帮我拿那个超级重的箱子。\n\n还有我的新室友七七！她一见面就问我"饿吗"，哈哈，特别可爱。\n\n虽然中文还说不太好……但是，感觉接下来的生活，会很有趣。\n\n晚安，京华大学。',
+            bodyEn: 'Finally in bed. Today... was really such a long day.\n\nMy first day in Beijing, my brain was in constant "translation mode" — I felt like it was about to short-circuit. At the airport I couldn\'t even find the bus stop, and I almost couldn\'t pay for the fare. Thankfully... I ran into senior Mingxuan. He\'s so thoughtful — he helped carry my impossibly heavy suitcase.\n\nAnd then there\'s my new roommate Qi Qi! The very first thing she asked was "are you hungry?" Haha, she\'s adorable.\n\nMy Chinese still isn\'t great... but somehow I feel like the life ahead is going to be really interesting.\n\nGood night, Jinghua University.' },
           // ── SSR (5%) ────────────────────────────────────────
           { id: 'nd_ssr_outfit_dress', tier: 'SSR', type: 'outfit',
             nameZh: '迎新夜·马面裙', nameEn: 'Welcome Night Hanfu',
             img: '/assets/gacha/nora-debut/outfit_dress_thumb.png',
-            outfitFull: '/assets/characters/nora/outfits/dress_full.png',
+            outfitFull: '/assets/characters/nora/outfits/nora_white shirt_black skirt.png',
             target: 'nora',
             flavor: '迎新晚会那晚，七七说"你穿这个，比我们更像北京人了。"' }
         ]
@@ -5550,7 +6160,7 @@
     // ── 盲盒系统 M2: 商店页 UI ─────────────────────────────────
     // ════════════════════════════════════════════════════════════
 
-    var TIER_COLOR = { N: '#a8a8a8', R: '#93c5fd', SR: '#c4b5fd', SSR: '#e6c27a' };
+    var TIER_COLOR = { N: '#a8a8a8', R: '#c4b5fd', SR: '#e6c27a', SSR: '#f87171' };
     var TIER_LABEL = { N: 'N 普通',  R: 'R 稀有',  SR: 'SR 精选', SSR: 'SSR 至臻' };
 
     // ─ 5.4 入口逻辑 ─────────────────────────────────────────────
@@ -5668,37 +6278,18 @@
             '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
           '</div>' +
           '<div class="gs-topbar-shards" onclick="showTopbarTooltip(\'shard\',this)">' +
-            '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" style="flex-shrink:0;overflow:visible">' +
-              '<defs>' +
-                '<linearGradient id="gsDiaGrad" x1="0" y1="0" x2="0" y2="22" gradientUnits="userSpaceOnUse">' +
-                  '<stop offset="0%" stop-color="#a7f3d0" stop-opacity="0.95"/>' +
-                  '<stop offset="50%" stop-color="#67e8f9" stop-opacity="0.85"/>' +
-                  '<stop offset="100%" stop-color="#22d3ee" stop-opacity="0.92"/>' +
-                '</linearGradient>' +
-              '</defs>' +
-              // 经典明亮式切工：上宽下尖
-              '<polygon points="11,3 17,8 11,20 5,8"' +
-                ' fill="url(#gsDiaGrad)"' +
-                ' stroke="rgba(220,255,250,0.85)" stroke-width="0.65"/>' +
-              // 上冠两个亮面
-              '<polygon points="11,3 17,8 11,8" fill="rgba(255,255,255,0.45)"/>' +
-              '<polygon points="11,3 5,8 11,8" fill="rgba(255,255,255,0.30)"/>' +
-              // 内部刻面线
-              '<line x1="11" y1="8" x2="11" y2="20" stroke="rgba(255,255,255,0.5)" stroke-width="0.4"/>' +
-              '<line x1="5" y1="8" x2="11" y2="20" stroke="rgba(255,255,255,0.32)" stroke-width="0.3"/>' +
-              '<line x1="17" y1="8" x2="11" y2="20" stroke="rgba(255,255,255,0.32)" stroke-width="0.3"/>' +
-              // 顶部锐边高光
-              '<line x1="11" y1="3" x2="17" y2="8" stroke="rgba(255,255,255,0.95)" stroke-width="0.55"/>' +
-              // 双星光呼吸闪烁（错相）
-              '<g class="gs-shard-sparkle" style="transform-origin:19px 5.5px">' +
-                '<path d="M19,4 L19.4,5.5 L21,5.9 L19.4,6.3 L19,7.8 L18.6,6.3 L17,5.9 L18.6,5.5 Z"' +
-                  ' fill="#ffffff"/>' +
-              '</g>' +
-              '<g class="gs-shard-sparkle" style="transform-origin:2.5px 13.5px;animation-delay:1.4s">' +
-                '<path d="M2.5,12 L2.85,13.15 L4,13.5 L2.85,13.85 L2.5,15 L2.15,13.85 L1,13.5 L2.15,13.15 Z"' +
-                  ' fill="#ffffff" opacity="0.9"/>' +
-              '</g>' +
-            '</svg>' +
+            '<span class="gs-shard-emoji-wrap">' +
+              '<span class="gs-shard-emoji">💎</span>' +
+              // 双星光呼吸闪烁（保留原动画）
+              '<svg class="gs-shard-sparkles" width="32" height="32" viewBox="0 0 32 32" fill="none" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;overflow:visible">' +
+                '<g class="gs-shard-sparkle" style="transform-origin:27px 7px">' +
+                  '<path d="M27,5.5 L27.5,7 L29,7.4 L27.5,7.8 L27,9.3 L26.5,7.8 L25,7.4 L26.5,7 Z" fill="#ffffff"/>' +
+                '</g>' +
+                '<g class="gs-shard-sparkle" style="transform-origin:5px 22px;animation-delay:1.4s">' +
+                  '<path d="M5,20.5 L5.4,21.7 L6.6,22 L5.4,22.3 L5,23.5 L4.6,22.3 L3.4,22 L4.6,21.7 Z" fill="#ffffff" opacity="0.9"/>' +
+                '</g>' +
+              '</svg>' +
+            '</span>' +
             '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
           '</div>' +
         '</div>' +
@@ -6041,7 +6632,9 @@
           '<div class="gr-tier-badge gr-tier-' + tier.toLowerCase() + '">' + label + '</div>' +
           '<div class="gr-img-wrap' + imgContainCls + '">' +
             '<img class="gr-img" src="' + item.img + '"' +
-              ' onerror="this.style.display=\'none\'" alt="">' +
+              ' onerror="this.style.display=\'none\'"' +
+              ' onload="this.nextElementSibling.style.display=\'none\'"' +
+              ' alt="">' +
             '<div class="gr-img-fallback">' + emoji + '</div>' +
           '</div>' +
           '<div class="gr-name-zh">' + item.nameZh + '</div>' +
@@ -6082,11 +6675,12 @@
     var _carouselIdx       = 0;       // 当前轮播索引
     var _carouselItems     = [];      // 当前轮播物品列表
 
-    var TAB_LABELS = { card: '📇 卡片', diary: '📖 日记', outfit: '👗 衣服' };
+    var TAB_LABELS = { card: '📇 卡片', diary: '📖 日记', outfit: '👗 衣服', cg: '🖼️ 回忆' };
     var ITEM_EMOJI = {
       card:   { N: '📮', R: '🎖️', SR: '🌟', SSR: '✨' },
       diary:  { N: '📄', R: '📔', SR: '📻', SSR: '📖' },
-      outfit: { N: '👕', R: '👗', SR: '💃', SSR: '✨' }
+      outfit: { N: '👕', R: '👗', SR: '💃', SSR: '✨' },
+      cg:     { N: '🖼️', R: '🖼️', SR: '🖼️', SSR: '🖼️' }
     };
 
     function openCollectionBook(tab) {
@@ -6158,7 +6752,7 @@
     function _renderTabs() {
       var tabsEl = document.getElementById('gcb-tabs');
       if (!tabsEl) return;
-      var tabs = ['card', 'diary', 'outfit'];
+      var tabs = ['card', 'diary', 'outfit', 'cg'];
       tabsEl.innerHTML = tabs.map(function(t) {
         return '<button class="gcb-tab' + (t === _collectionBookTab ? ' active' : '') + '"' +
           ' onclick="switchCollectionTab(\'' + t + '\')">' + TAB_LABELS[t] + '</button>';
@@ -6170,6 +6764,15 @@
       _carouselIdx = 0;
       _renderTabs();
       _renderCollectionCarousel();
+    }
+
+    // 根据装备状态返回展示图片：服装已装备 → 全身立绘；其他 → 默认 img
+    function getDisplayImage(item, state) {
+      if (item.type === 'outfit' && item.outfitFull
+          && state && state.equipped && state.equipped[item.target] === item.id) {
+        return item.outfitFull;
+      }
+      return item.img;
     }
 
     function _renderCollectionGrid() {
@@ -6206,14 +6809,14 @@
             '<div class="gcb-item-tier">' + item.tier + '</div>' +
             '<div class="gcb-item-img-wrap">' +
               (owned
-                ? '<img class="gcb-item-img" src="' + item.img + '"' +
+                ? '<img class="gcb-item-img" src="' + getDisplayImage(item, state) + '"' +
                   ' onerror="this.style.display=\'none\'"' +
                   ' onload="var e=this.nextElementSibling;if(e)e.style.display=\'none\';" alt="">' +
                   '<span class="gcb-item-emoji" style="position:absolute">' + emoji + '</span>'
                 : '<span class="gcb-item-emoji">' + emoji + '</span>') +
             '</div>' +
             '<div class="gcb-item-name">' + (owned ? item.nameZh : '?') + '</div>' +
-            (isEquipped ? '<div class="gcb-equipped-badge">已装备</div>' : '') +
+            (isEquipped ? '<div class="gcb-equipped-badge">已换装</div>' : '') +
             (count > 1 && !isEquipped ? '<div class="gcb-count-badge">×' + count + '</div>' : '') +
           '</div>'
         );
@@ -6244,7 +6847,7 @@
       var cur = items[_carouselIdx];
       var curRec = state.collection[cur.id];
       var curOwned = !!curRec;
-      var bgUrl = curOwned ? cur.img : '';
+      var bgUrl = curOwned ? getDisplayImage(cur, state) : '';
 
       // Build carousel cards
       var cardsHtml = items.map(function(item, i) {
@@ -6265,7 +6868,9 @@
                      'z-index:' + (10 - absDiff) + ';';
         var cls = 'gcb-car-card' +
                   (i === _carouselIdx ? ' cc-active' : '') +
-                  (item.type === 'outfit' ? ' cc-outfit' : '');
+                  (item.type === 'outfit' ? ' cc-outfit' : '') +
+                  (item.type === 'cg' ? ' cc-cg' : '') +
+                  (owned && item.tier ? ' cc-tier-' + item.tier.toLowerCase() : '');
         // Active owned card → show detail; else navigate to it
         var clickHandler = (i === _carouselIdx)
           ? (owned ? 'showItemDetail(\'' + item.id + '\')' : '')
@@ -6274,7 +6879,7 @@
           '<div class="' + cls + '" style="' + style + '"' +
             (clickHandler ? ' onclick="' + clickHandler + '"' : '') + '>' +
             (owned
-              ? '<img src="' + item.img + '"' +
+              ? '<img src="' + getDisplayImage(item, state) + '"' +
                 ' onerror="this.style.display=\'none\'"' +
                 ' onload="var e=this.nextSibling;if(e&&e.classList)e.style.display=\'none\';" alt="">'
               : '') +
@@ -6358,22 +6963,32 @@
       var btns = '';
       if (item.type === 'outfit') {
         var tierCls = ' btn-tier-' + tier.toLowerCase();
+        var equipTitle = isEquipped ? ' title="点击卸下"' : '';
         btns +=
           '<button class="gcb-equip-btn' + tierCls + (isEquipped ? ' equipped' : '') + '"' +
-          ' id="gcb-equip-btn" onclick="toggleEquipOutfit(\'' + itemId + '\')">' +
-          (isEquipped ? '✓ 已装备' : '装备') + '</button>';
+          ' id="gcb-equip-btn"' + equipTitle + ' onclick="toggleEquipOutfit(\'' + itemId + '\')">' +
+          (isEquipped ? '✓ 已换装' : '换装') + '</button>';
       }
       // voiceOnly 已经在卡片中提供播放器，不再重复一个底部按钮；
-      // 非 voiceOnly 的 audio 道具（未来可能存在）保留底部按钮
+      // CG 类型用"回放独白"；其它 audio 道具保留通用按钮
       if (item.audio && !item.voiceOnly) {
+        var audioLabel = (item.type === 'cg') ? '▶ 回放独白' : '▶ 播放语音';
         btns +=
           '<button class="gcb-audio-btn" id="gcb-audio-btn"' +
-          ' onclick="toggleDetailAudio(\'' + item.audio + '\')">▶ 播放语音</button>';
+          ' onclick="toggleDetailAudio(\'' + item.audio + '\')">' + audioLabel + '</button>';
       }
       btns += '<button class="gcb-close-btn" onclick="closeItemDetail()">关闭</button>';
 
-      // 服装类用 contain padding，避免顶天立地
-      var imgContainCls = (item.type === 'outfit') ? ' gcb-img-contain' : '';
+      // 服装类用 contain padding；CG 类用宽幅横图展示
+      var imgContainCls = (item.type === 'outfit') ? ' gcb-img-contain'
+                        : (item.type === 'cg')     ? ' gcb-img-cg' : '';
+      // 缩略图可点击全屏查看：仅 CG（服装的"穿着效果"已经直接显示在卡片图上了）
+      var fullSrc = (item.type === 'cg' && item.img) ? item.img : '';
+      var thumbClickable = !!fullSrc;
+      if (thumbClickable) imgContainCls += ' gcb-img-clickable';
+      var thumbOnClick = thumbClickable
+        ? ' onclick="showOutfitPreview(\'' + fullSrc.replace(/'/g, "\\'") + '\')"'
+        : '';
       // voiceOnly：用播放器替代 body 文字
       var bodyHtml = '';
       if (item.voiceOnly && item.audio) {
@@ -6383,15 +6998,17 @@
         if (item.body)   bodyHtml += '<div class="gcb-detail-body">' + item.body   + '</div>';
       }
 
+      var cardCls = 'gcb-detail-card' + (item.type === 'cg' ? ' gcb-detail-card--cg' : '');
       ov.innerHTML =
-        '<div class="gcb-detail-card">' +
+        '<div class="' + cardCls + '">' +
           '<div class="gcb-detail-handle"></div>' +
           '<div class="gcb-detail-tier-badge gcb-detail-tier-' + tier.toLowerCase() + '">' + TIER_LABEL[tier] + '</div>' +
-          '<div class="gcb-detail-img-wrap' + imgContainCls + '">' +
-            '<img class="gcb-detail-img" src="' + item.img + '"' +
+          '<div class="gcb-detail-img-wrap' + imgContainCls + '"' + thumbOnClick + '>' +
+            '<img class="gcb-detail-img" src="' + getDisplayImage(item, state) + '"' +
             ' onerror="this.style.display=\'none\'"' +
             ' onload="var e=this.nextElementSibling;if(e)e.style.display=\'none\';" alt="">' +
             '<span class="gcb-detail-img-emoji">' + emoji + '</span>' +
+            (thumbClickable ? '<span class="gcb-thumb-zoom-icon">⤢</span>' : '') +
           '</div>' +
           '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
           '<div class="gcb-detail-name-en">' + item.nameEn + '</div>' +
@@ -6421,16 +7038,58 @@
       var already = state.equipped[target] === itemId;
       state.equipped[target] = already ? null : itemId;
       saveGachaState(state);
-      // 更新按钮
+
+      var equipped = !already;
+      // 更新按钮（即时反馈）
       var btn = document.getElementById('gcb-equip-btn');
       if (btn) {
-        var equipped = !already;
         var tierCls = ' btn-tier-' + item.tier.toLowerCase();
         btn.className = 'gcb-equip-btn' + tierCls + (equipped ? ' equipped' : '');
-        btn.textContent = equipped ? '✓ 已装备' : '装备';
+        btn.textContent = equipped ? '✓ 已换装' : '换装';
+        if (equipped) btn.setAttribute('title', '点击卸下');
+        else btn.removeAttribute('title');
       }
-      // 刷新收集册格子
+      // 刷新收集册格子 & 轮播（让图片随装备状态切换）
       _renderCollectionGrid();
+      _renderCollectionCarousel();
+
+      // 换装成功 → 0.5s 反馈停顿 → 详情卡淡出 → 立绘登场
+      // 卸下时则保持详情卡不变，无立绘弹出
+      if (equipped && item.outfitFull) {
+        var fullSrc = item.outfitFull;
+        setTimeout(function() {
+          closeItemDetail();
+          // 等详情卡的关闭动画走完（280ms）再弹立绘
+          setTimeout(function() { showOutfitPreview(fullSrc); }, 300);
+        }, 500);
+      }
+    }
+
+    function showOutfitPreview(imgSrc) {
+      var existing = document.getElementById('outfit-preview-overlay');
+      if (existing) existing.parentNode.removeChild(existing);
+
+      var ov = document.createElement('div');
+      ov.id = 'outfit-preview-overlay';
+      ov.className = 'outfit-preview-overlay';
+      ov.innerHTML =
+        '<div class="outfit-preview-card">' +
+          '<img src="' + imgSrc + '" alt="outfit">' +
+          '<div class="outfit-preview-hint">点击任意处关闭</div>' +
+        '</div>';
+
+      ov.addEventListener('click', function() { closeOutfitPreview(); });
+      document.body.appendChild(ov);
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { ov.classList.add('op-visible'); });
+      });
+    }
+
+    function closeOutfitPreview() {
+      var ov = document.getElementById('outfit-preview-overlay');
+      if (!ov) return;
+      ov.classList.remove('op-visible');
+      setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 380);
     }
 
     // ─ 语音播放 ───────────────────────────────────────────────
@@ -6472,11 +7131,26 @@
       var btnId   = prefix + '-voice-btn';
       var hintId  = prefix + '-voice-hint';
       var transId = prefix + '-voice-transcript';
-      // 把 \n\n 拆成 <p>
-      var paragraphs = (item.body || '').split(/\n\n+/).map(function(p) {
-        return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
-      }).join('');
+      function toParagraphs(text) {
+        return (text || '').split(/\n\n+/).map(function(p) {
+          return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+        }).join('');
+      }
+      var hasEn = !!item.bodyEn;
       var tierBreathCls = item.tier ? ' tier-breath-' + item.tier.toLowerCase() : '';
+      // 语言切换行（仅有英文时显示）
+      var langRow = hasEn
+        ? '<div class="vt-lang-row">' +
+            '<button class="vt-lang-btn vt-lang-active" id="' + transId + '-zh"' +
+              ' onclick="switchVoiceLang(\'' + transId + '\',\'zh\')">中</button>' +
+            '<span class="vt-lang-sep">/</span>' +
+            '<button class="vt-lang-btn" id="' + transId + '-en"' +
+              ' onclick="switchVoiceLang(\'' + transId + '\',\'en\')">EN</button>' +
+          '</div>'
+        : '';
+      var transcriptBody =
+        '<div class="vt-zh-block">' + toParagraphs(item.body) + '</div>' +
+        (hasEn ? '<div class="vt-en-block" style="display:none">' + toParagraphs(item.bodyEn) + '</div>' : '');
       return (
         '<div class="' + prefix + '-voice-player">' +
           '<button class="' + prefix + '-voice-btn' + tierBreathCls + '" id="' + btnId + '"' +
@@ -6484,9 +7158,31 @@
           '<span class="' + prefix + '-voice-hint" id="' + hintId + '">点击播放 · Play Voice Note</span>' +
           '<button class="' + prefix + '-voice-toggle"' +
                 ' onclick="toggleVoiceTranscript(\'' + transId + '\', this)">显示文字 · Show Transcript</button>' +
-          '<div class="' + prefix + '-voice-transcript" id="' + transId + '">' + paragraphs + '</div>' +
+          '<div class="' + prefix + '-voice-transcript" id="' + transId + '">' +
+            langRow + transcriptBody +
+          '</div>' +
         '</div>'
       );
+    }
+
+    function switchVoiceLang(transId, lang) {
+      var el   = document.getElementById(transId);
+      if (!el) return;
+      var zh   = el.querySelector('.vt-zh-block');
+      var en   = el.querySelector('.vt-en-block');
+      var zhBtn = document.getElementById(transId + '-zh');
+      var enBtn = document.getElementById(transId + '-en');
+      if (lang === 'en') {
+        if (zh) zh.style.display = 'none';
+        if (en) en.style.display = '';
+        if (zhBtn) zhBtn.classList.remove('vt-lang-active');
+        if (enBtn) enBtn.classList.add('vt-lang-active');
+      } else {
+        if (zh) zh.style.display = '';
+        if (en) en.style.display = 'none';
+        if (zhBtn) zhBtn.classList.add('vt-lang-active');
+        if (enBtn) enBtn.classList.remove('vt-lang-active');
+      }
     }
 
     function toggleVoicePlayer(src, btnId, hintId) {
@@ -6562,34 +7258,73 @@
     }
 
     // 复用顶栏的水晶钻石 SVG（小尺寸）
+    // Returns a 💎 emoji sized to match surrounding text
     function _shardSvg(size) {
       var s = size || 16;
-      return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 22 22" fill="none" style="flex-shrink:0;display:inline-block;vertical-align:middle">' +
-        '<defs><linearGradient id="shdGrad' + s + '" x1="0" y1="0" x2="0" y2="22" gradientUnits="userSpaceOnUse">' +
-          '<stop offset="0%" stop-color="#a7f3d0" stop-opacity="0.95"/>' +
-          '<stop offset="50%" stop-color="#67e8f9" stop-opacity="0.85"/>' +
-          '<stop offset="100%" stop-color="#22d3ee" stop-opacity="0.92"/>' +
-        '</linearGradient></defs>' +
-        '<polygon points="11,3 17,8 11,20 5,8" fill="url(#shdGrad' + s + ')" stroke="rgba(220,255,250,0.85)" stroke-width="0.65"/>' +
-        '<polygon points="11,3 17,8 11,8" fill="rgba(255,255,255,0.45)"/>' +
-        '<polygon points="11,3 5,8 11,8" fill="rgba(255,255,255,0.30)"/>' +
-        '<line x1="11" y1="8" x2="11" y2="20" stroke="rgba(255,255,255,0.5)" stroke-width="0.4"/>' +
-      '</svg>';
+      var fs = Math.round(s * 0.95);
+      return '<span style="font-size:' + fs + 'px;line-height:1;vertical-align:middle;display:inline-block;flex-shrink:0">💎</span>';
     }
 
     function _buildShardShop(card) {
       var state = loadGachaState();
       card.innerHTML =
         '<div class="gss-topbar">' +
-          '<div class="gss-title">' + _shardSvg(18) + '&nbsp;碎片商店</div>' +
+          '<div class="gss-title gss-title-clickable" onclick="toggleShardRules()">' +
+            _shardSvg(18) + '&nbsp;碎片商店<span class="gss-info-icon">ⓘ</span>' +
+          '</div>' +
           '<div class="gss-shard-bal" id="gss-shard-bal">' +
             _shardSvg(16) + '<span id="gss-shard-num">' + state.shards + '</span> 碎片' +
           '</div>' +
           '<button class="gss-close-btn" onclick="closeShardShop()">✕</button>' +
         '</div>' +
-        '<div class="gss-desc">用碎片兑换随机未持有物品。重复抽到的物品自动转为碎片。</div>' +
+        '<div class="gss-rules" id="gss-rules" data-lang="zh">' +
+          '<div class="gss-rules-header">' +
+            '<div class="gss-rules-title">' +
+              '<span class="gss-rt-zh">碎片规则</span>' +
+              '<span class="gss-rt-en">Shard Rules</span>' +
+            '</div>' +
+            '<div class="gss-lang-switch">' +
+              '<button class="gss-lang-btn active" data-lang="zh" onclick="setShardRulesLang(\'zh\')">中</button>' +
+              '<button class="gss-lang-btn" data-lang="en" onclick="setShardRulesLang(\'en\')">EN</button>' +
+            '</div>' +
+          '</div>' +
+          '<ul class="gss-rules-list gss-rules-zh">' +
+            '<li><b>如何获取：</b>抽到重复物品时，会自动转化为碎片。稀有度越高，回收越多 —— ' +
+              '<span class="gss-rk-n">普通 +1</span>、' +
+              '<span class="gss-rk-r">稀有 +3</span>、' +
+              '<span class="gss-rk-sr">精选 +8</span>、' +
+              '<span class="gss-rk-ssr">至臻 +20</span>。</li>' +
+            '<li><b>如何使用：</b>消耗碎片，可在对应等级中随机兑换一件尚未拥有的物品。</li>' +
+            '<li><b>收集奖励：</b>万物皆可期 —— 将重复的际遇化作碎片，兑换那些尚未解锁的全新惊喜。</li>' +
+          '</ul>' +
+          '<ul class="gss-rules-list gss-rules-en">' +
+            '<li><b>How to earn:</b> Duplicate pulls are automatically converted into shards. The rarer the item, the more shards you get — ' +
+              '<span class="gss-rk-n">Common +1</span>, ' +
+              '<span class="gss-rk-r">Rare +3</span>, ' +
+              '<span class="gss-rk-sr">Epic +8</span>, ' +
+              '<span class="gss-rk-ssr">Legendary +20</span>.</li>' +
+            '<li><b>How to spend:</b> Spend shards to randomly redeem one item you don\'t yet own at the matching rarity.</li>' +
+            '<li><b>Collection reward:</b> All things in time — let duplicate encounters become shards, and trade them for surprises still waiting to be unlocked.</li>' +
+          '</ul>' +
+        '</div>' +
         '<div class="gss-rows" id="gss-rows"></div>';
       _renderShardShopRows();
+    }
+
+    function toggleShardRules() {
+      var el = document.getElementById('gss-rules');
+      if (el) el.classList.toggle('gss-rules-visible');
+    }
+    function setShardRulesLang(lang) {
+      var el = document.getElementById('gss-rules');
+      if (!el) return;
+      el.setAttribute('data-lang', lang);
+      var btns = el.querySelectorAll('.gss-lang-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-lang') === lang);
+      }
+      // 阻止冒泡到 .gss-title 的 toggleShardRules（点切换语言不应折叠面板）
+      if (window.event) window.event.stopPropagation();
     }
 
     function _renderShardShopRows() {
@@ -6606,30 +7341,116 @@
 
       rowsEl.innerHTML = tiers.map(function(tier) {
         var cost     = SHARD_PRICE[tier];
-        var color    = TIER_COLOR[tier]  || '#9e9e9e';
         var allItems = series.items.filter(function(it) { return it.tier === tier; });
         var unowned  = allItems.filter(function(it) { return !state.collection[it.id]; });
-        var canBuy   = shards >= cost && unowned.length > 0;
-        var remText  = unowned.length > 0
-          ? '剩余 ' + unowned.length + ' 件未获得'
-          : '已全部收集！';
-        return (
-          '<div class="gss-row">' +
-            '<div class="gss-tier-badge gss-tier-' + tier.toLowerCase() + '">' + tierNames[tier] + '</div>' +
-            '<div class="gss-row-info">' +
-              '<div class="gss-cost">' + _shardSvg(15) + cost + ' 碎片</div>' +
-              '<div class="gss-remaining' + (unowned.length === 0 ? ' all-owned' : '') + '">' + remText + '</div>' +
-            '</div>' +
-            '<button class="gss-exchange-btn" ' +
-              (canBuy ? 'onclick="exchangeByTier(\'' + tier + '\')"' : 'disabled') + '>' +
-              (unowned.length === 0 ? '已集齐' : shards < cost ? '碎片不足' : '兑换') +
-            '</button>' +
-          '</div>'
-        );
+        var allOwned   = unowned.length === 0;
+        var cantAfford = shards < cost;
+        var canBuy     = !allOwned && !cantAfford;
+        var tl         = tier.toLowerCase();
+
+        // 状态分配：
+        //  • canBuy   → buyable（亮 + 可点）
+        //  • cantAfford → disabled（暗 + 不可点）
+        //  • allOwned → 仅亮（无可点指针、无 onclick）
+        var stateCls  = '';
+        if (canBuy)          stateCls = ' gss-tile-buyable';
+        else if (cantAfford) stateCls = ' gss-disabled';
+        // 已集齐：亮着但点击给轻提示；碎片不足：灰着无反馈
+        var clickAttr = canBuy
+          ? ' onclick="confirmExchange(\'' + tier + '\')"'
+          : (allOwned ? ' onclick="showShardToast(\'该等级物品已全部收集 ✓\')"' : '');
+
+        // hint：可买显示剩余数；碎片不足显示提示；已集齐不显示文字
+        var hint = '';
+        if (canBuy)          hint = '剩余 ' + unowned.length + ' 件未获得';
+        else if (cantAfford) hint = '碎片不足';
+
+        return '<div class="gss-tile gss-tile-' + tl + stateCls + '"' + clickAttr + '>' +
+                 '<div class="gss-tile-badge gss-tier-' + tl + '">' + tierNames[tier] + '</div>' +
+                 '<div class="gss-crystal gss-crystal-' + tl + '">💎</div>' +
+                 '<div class="gss-tile-info">' +
+                   '<div class="gss-tile-cost gss-cost-' + tl + '">' + cost + ' 碎片</div>' +
+                   (hint ? '<div class="gss-tile-hint">' + hint + '</div>' : '') +
+                 '</div>' +
+               '</div>';
       }).join('');
     }
 
     // ─ 兑换逻辑 ─────────────────────────────────────────────────
+    // ── 轻提示 Toast ──────────────────────────────────────────
+    var _shardToastTimer = null;
+    function showShardToast(msg) {
+      var existing = document.getElementById('gss-toast');
+      if (existing) existing.parentNode.removeChild(existing);
+      if (_shardToastTimer) clearTimeout(_shardToastTimer);
+      var el = document.createElement('div');
+      el.id = 'gss-toast';
+      el.textContent = msg;
+      el.style.cssText =
+        'position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);' +
+        'background:rgba(14,18,30,0.88);backdrop-filter:blur(12px);' +
+        '-webkit-backdrop-filter:blur(12px);' +
+        'border:1px solid rgba(255,255,255,0.12);border-radius:12px;' +
+        'padding:10px 20px;font-size:13px;font-weight:600;color:#e2e8f0;' +
+        'white-space:nowrap;z-index:99999;pointer-events:none;' +
+        'opacity:0;transition:opacity 0.2s ease,transform 0.2s ease;';
+      document.body.appendChild(el);
+      requestAnimationFrame(function(){
+        el.style.opacity = '1';
+        el.style.transform = 'translateX(-50%) translateY(0)';
+      });
+      _shardToastTimer = setTimeout(function(){
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-50%) translateY(10px)';
+        setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 220);
+      }, 2000);
+    }
+
+    // ── 二次确认弹窗（SR / SSR）──────────────────────────────
+    var _gssConfirmEl = null;
+    function confirmExchange(tier) {
+      // 低成本档（N / R）直接兑换，不打扰
+      if (tier === 'N' || tier === 'R') { exchangeByTier(tier); return; }
+
+      var state = loadGachaState();
+      var cost  = SHARD_PRICE[tier];
+      if (state.shards < cost) return;
+
+      var tl = tier.toLowerCase();
+      var tierLabel = tier === 'SSR' ? '至臻 (SSR)' : '精选 (SR)';
+
+      // 已存在 → 不重复创建
+      if (_gssConfirmEl) closeExchangeConfirm();
+
+      var ov = document.createElement('div');
+      ov.className = 'gss-confirm-overlay';
+      ov.id = 'gss-confirm-overlay';
+      ov.onclick = function(e){ if (e.target === ov) closeExchangeConfirm(); };
+      ov.innerHTML =
+        '<div class="gss-confirm-card">' +
+          '<div class="gss-confirm-icon">💎</div>' +
+          '<div class="gss-confirm-text">是否消耗 ' +
+            '<b class="gss-rk-' + tl + '">' + cost + '</b> 时光碎片，<br>' +
+            '随机兑换一件未持有的 <b class="gss-rk-' + tl + '">' + tierLabel + '</b> 物品？' +
+          '</div>' +
+          '<div class="gss-confirm-btns">' +
+            '<button class="gss-confirm-btn gss-confirm-cancel" onclick="closeExchangeConfirm()">取消</button>' +
+            '<button class="gss-confirm-btn gss-confirm-ok gss-confirm-ok-' + tl + '" ' +
+              'onclick="closeExchangeConfirm(); exchangeByTier(\'' + tier + '\')">确认兑换</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(ov);
+      _gssConfirmEl = ov;
+      requestAnimationFrame(function(){ ov.classList.add('gscv-visible'); });
+    }
+    function closeExchangeConfirm() {
+      if (!_gssConfirmEl) return;
+      var el = _gssConfirmEl;
+      _gssConfirmEl = null;
+      el.classList.remove('gscv-visible');
+      setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 220);
+    }
+
     function exchangeByTier(tier) {
       var state   = loadGachaState();
       var cost    = SHARD_PRICE[tier];
@@ -6688,7 +7509,7 @@
       card.addEventListener('click', function(e) { e.stopPropagation(); });
       var ctaHtml = canOpen
         ? '<div class="wp-cta wp-cta-active" onclick="closeWallet();openGachaStore()" style="cursor:pointer">' +
-            '<span>🎁</span><span>盲盒商店 · 立即进入</span>' +
+            '<span>🎁</span><span>盲盒商店</span>' +
           '</div>'
         : '<div class="wp-cta">' +
             '<span>🔒</span><span>盲盒商店 Store (' + goal + ')</span>' +
@@ -6710,21 +7531,17 @@
         '<div class="wp-track-wrap">' +
           '<div class="wp-track-label">' +
             '<span class="wp-track-label-l">0</span>' +
-            '<span class="wp-track-label-r">' + goal + ' · 盲盒商店</span>' +
+            '<span class="wp-track-label-r">' + goal + '</span>' +
           '</div>' +
           '<div class="wp-track"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
         '</div>' +
-        (canOpen
+        (!canOpen
           ? '<div class="wp-hint">' +
-              '<span class="wp-hint-zh" style="color:#1fcc66">可以抽卡了！</span>' +
-              '<span class="wp-hint-sep">·</span>' +
-              '<span class="wp-hint-en" style="color:#1fcc66">Ready to pull!</span>' +
-            '</div>'
-          : '<div class="wp-hint">' +
               '<span class="wp-hint-zh">还需 ' + rem + ' 枚</span>' +
               '<span class="wp-hint-sep">·</span>' +
               '<span class="wp-hint-en">' + rem + ' more to unlock</span>' +
-            '</div>') +
+            '</div>'
+          : '') +
         ctaHtml;
       ov.appendChild(card);
       document.body.appendChild(ov);
@@ -10329,7 +11146,211 @@
       stopFireworks();
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
+
+      // ── 第一章通关演出（第5课完成后首次触发）──────────────────
+      var CH1_FLAG = 'sl_ch1_cutscene_shown';
+      if (lessonIdx === 4 && !localStorage.getItem(CH1_FLAG)) {
+        localStorage.setItem(CH1_FLAG, '1');
+        updateUI();
+        showChapter1Cutscene();
+        return;
+      }
       updateUI();
+    }
+
+    // ── 第一章通关演出 ───────────────────────────────────────────
+    // ── 第一章通关演出 ───────────────────────────────────────────
+    var _ch1ZhLines = [
+      '今天在机场，我看到一个戴着耳机的男生。',
+      '他走得很快，把笔记本落在了候机厅的椅子上。',
+      '我喊了他，刚想追过去——',
+      '却被叫住了……',
+      null, // 空行间距
+      '等我再转过头，',
+      '他已经消失在人海里。'
+    ];
+    var _ch1EnLines = [
+      'Today at the airport, I saw a guy with headphones.',
+      'He was walking so fast — he left his notebook on a chair.',
+      'I called out to him, started to run over —',
+      'but someone stopped me…',
+      null,
+      'When I turned back around,',
+      'he had already vanished into the crowd.'
+    ];
+    var _ch1Lang  = 'zh';
+    var _ch1Audio = null;
+    var _ch1LineTimers = [];
+
+    function showChapter1Cutscene() {
+      var ov = document.createElement('div');
+      ov.className = 'ch1-ov';
+      ov.id = 'ch1-ov';
+      ov.innerHTML =
+        // ── FRONT ──
+        '<div class="ch1-front" id="ch1-front">' +
+          '<div class="ch1-cg" id="ch1-cg"></div>' +
+          '<div class="ch1-cg-grad"></div>' +
+          '<div class="ch1-front-body">' +
+            '<div class="ch1-tag" id="ch1-tag">✦ 第一篇章完结 · CHAPTER ONE COMPLETE ✦</div>' +
+            '<div class="ch1-title" id="ch1-title">初 抵 京 华</div>' +
+            '<button class="ch1-unlock-btn" id="ch1-unlock-btn" onclick="chapter1Flip()">点击解锁</button>' +
+          '</div>' +
+        '</div>' +
+        // ── BACK ──
+        '<div class="ch1-back" id="ch1-back">' +
+          '<div class="ch1-blur-bg"></div>' +
+          '<div class="ch1-btm-grad"></div>' +
+          '<div class="ch1-text-block">' +
+            '<div class="ch1-back-body" id="ch1-lines-wrap"></div>' +
+            '<div class="ch1-lang-row" id="ch1-lang-row">' +
+              '<button class="ch1-lang-btn active" id="ch1-zh-btn" onclick="ch1SwitchLang(\'zh\')">中</button>' +
+              '<span class="ch1-lang-sep">/</span>' +
+              '<button class="ch1-lang-btn" id="ch1-en-btn" onclick="ch1SwitchLang(\'en\')">EN</button>' +
+            '</div>' +
+            '<button class="ch1-fly-btn" id="ch1-fly-btn" onclick="chapter1FlyToCollection()">收下这段回忆</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(ov);
+
+      // 卡片收录到 gacha state
+      var state = loadGachaState();
+      if (!state.collection['nd_n_memory_airport']) {
+        state.collection['nd_n_memory_airport'] = 1;
+        saveGachaState(state);
+      }
+
+      function show(id, delay) {
+        setTimeout(function() {
+          var el = document.getElementById(id);
+          if (el) el.classList.add('ch1-in');
+        }, delay);
+      }
+
+      requestAnimationFrame(function() {
+        ov.classList.add('ch1-in');
+        show('ch1-cg',          300);
+        show('ch1-tag',         900);
+        show('ch1-title',      1400);
+        show('ch1-unlock-btn', 2200);
+      });
+    }
+
+    function chapter1Flip() {
+      var front = document.getElementById('ch1-front');
+      var back  = document.getElementById('ch1-back');
+      if (!front || !back) return;
+
+      front.classList.add('ch1-hidden');
+
+      setTimeout(function() {
+        back.classList.add('ch1-in');
+        _ch1Lang = 'zh';
+        _ch1ShowLines(_ch1ZhLines, false);
+        _ch1PlayAudio();
+      }, 500);
+    }
+
+    function _ch1ShowLines(lines, isEn) {
+      var wrap = document.getElementById('ch1-lines-wrap');
+      if (!wrap) return;
+      // 清除旧行和计时器
+      _ch1LineTimers.forEach(clearTimeout); _ch1LineTimers = [];
+      wrap.innerHTML = '';
+
+      var delay = 0;
+      var lineEls = [];
+      lines.forEach(function(text) {
+        if (text === null) {
+          var gap = document.createElement('div');
+          gap.className = 'ch1-line-gap';
+          wrap.appendChild(gap);
+          return;
+        }
+        var div = document.createElement('div');
+        div.className = 'ch1-line' + (isEn ? ' en-line' : '');
+        div.textContent = text;
+        wrap.appendChild(div);
+        lineEls.push({ el: div, delay: delay });
+        delay += isEn ? 900 : 750;
+      });
+
+      // 逐行淡入
+      lineEls.forEach(function(item) {
+        var t = setTimeout(function() { item.el.classList.add('ch1-in'); }, item.delay + 400);
+        _ch1LineTimers.push(t);
+      });
+
+      // 最后一行结束后显示语言切换 + 按钮
+      var totalDelay = delay + 400 + 800;
+      _ch1LineTimers.push(setTimeout(function() {
+        var lr = document.getElementById('ch1-lang-row');
+        if (lr) lr.classList.add('ch1-in');
+        setTimeout(function() {
+          var btn = document.getElementById('ch1-fly-btn');
+          if (btn) btn.classList.add('ch1-in');
+        }, 400);
+      }, totalDelay));
+    }
+
+    function _ch1PlayAudio(lang) {
+      var audioSrc = '/assets/gacha/nora-debut/memory_airport_zh.mp3';
+      try {
+        if (_ch1Audio) { _ch1Audio.pause(); _ch1Audio = null; }
+        _ch1Audio = new Audio(audioSrc);
+        _ch1Audio.volume = 0.82;
+        _ch1Audio.play().catch(function(){});
+      } catch(e) {}
+    }
+
+    function ch1SwitchLang(lang) {
+      if (_ch1Lang === lang) return;
+      _ch1Lang = lang;
+      var zhBtn = document.getElementById('ch1-zh-btn');
+      var enBtn = document.getElementById('ch1-en-btn');
+      var lr    = document.getElementById('ch1-lang-row');
+      var btn   = document.getElementById('ch1-fly-btn');
+      if (zhBtn) zhBtn.classList.toggle('active', lang === 'zh');
+      if (enBtn) enBtn.classList.toggle('active', lang === 'en');
+      // 隐藏控件，让 _ch1ShowLines 重新触发淡入
+      if (lr)  lr.classList.remove('ch1-in');
+      if (btn) btn.classList.remove('ch1-in');
+      _ch1ShowLines(lang === 'zh' ? _ch1ZhLines : _ch1EnLines, lang === 'en');
+    }
+
+    function chapter1FlyToCollection() {
+      if (_ch1Audio) { _ch1Audio.pause(); _ch1Audio = null; }
+      _ch1LineTimers.forEach(clearTimeout); _ch1LineTimers = [];
+
+      // 创建飞行卡片（从屏幕中央飞向右上角收藏册图标位置）
+      var card = document.createElement('div');
+      card.className = 'ch1-flying-card';
+      var img = document.createElement('img');
+      img.src = '/assets/cg/lesson1_airport.png?v=20260505';
+      card.appendChild(img);
+      document.body.appendChild(card);
+
+      // 目标：右上角（收藏册图标附近）
+      var tx = (window.innerWidth  * 0.85 - window.innerWidth  * 0.5) + 'px';
+      var ty = (window.innerHeight * 0.08 - window.innerHeight * 0.5) + 'px';
+      card.style.setProperty('--fx', tx);
+      card.style.setProperty('--fy', ty);
+
+      // 背景淡出
+      var back = document.getElementById('ch1-back');
+      if (back) { back.style.transition = 'opacity 0.4s ease'; back.style.opacity = '0'; }
+
+      setTimeout(function() {
+        if (card.parentNode) card.parentNode.removeChild(card);
+        var ov = document.getElementById('ch1-ov');
+        if (ov) { ov.style.transition = 'opacity 0.6s ease'; ov.style.opacity = '0'; }
+        setTimeout(function() {
+          if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+          if (typeof showGachaUnlockToast === 'function') showGachaUnlockToast();
+          // 自动打开收集册到「回忆」标签，让玩家立即感受到收录
+          setTimeout(function() { openCollectionBook('cg'); }, 400);
+        }, 600);
+      }, 950);
     }
 
     // ── 动态填充并显示封面页 ──────────────────────────────────────
@@ -13131,6 +14152,7 @@
       document.addEventListener('keydown', function(e) {
         if (e.key !== 'Escape') return;
         // 按优先级从高到低关闭：结果卡 > 详情 > 碎片商店 > 收集册 > 商店
+        if (_gssConfirmEl)                                   { closeExchangeConfirm(); return; }
         if (document.getElementById('gacha-result-overlay')) { closeGachaResult(); return; }
         if (document.getElementById('gcb-detail-overlay'))   { closeItemDetail();  return; }
         if (document.getElementById('gacha-unbox-overlay'))  { if (_unboxOverlayEl) { var el=_unboxOverlayEl; _unboxClearAll(); _unboxOverlayEl=null; if(el.parentNode)el.parentNode.removeChild(el); } return; }
