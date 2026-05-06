@@ -6876,6 +6876,13 @@
       _carouselItems = items;
       _carouselIdx = Math.max(0, Math.min(_carouselIdx, items.length - 1));
 
+      // 若当前索引指向未拥有的卡片，自动跳到第一张已拥有的卡片，使其居中显示
+      if (!state.collection[items[_carouselIdx].id]) {
+        for (var oi = 0; oi < items.length; oi++) {
+          if (state.collection[items[oi].id]) { _carouselIdx = oi; break; }
+        }
+      }
+
       var cur = items[_carouselIdx];
       var curRec = state.collection[cur.id];
       var curOwned = !!curRec;
