@@ -6216,19 +6216,31 @@
       requestAnimationFrame(function() {
         requestAnimationFrame(function() { el.classList.add('gs-visible'); });
       });
-      // 钱包当前打开时：保持钱包遮罩可见 → 等商店滑入差不多了再优雅淡出
-      // （之前是先 closeWallet → 露出封面闪一下 → 商店再滑入）
+      // 钱包打开中：必须等商店 100% 滑到 translateY(0) 之后再开始淡出钱包。
+      // 任意时刻视窗都由「钱包 ∪ 商店」完全覆盖 → 零暴露 cover 页。
+      // 之前 180ms 启动淡出 → 商店刚滑到一半，钱包淡到 50% 时上半视窗会露出封面。
       if (_walletOpen && _walletEl) {
         var w = _walletEl;
         _walletEl = null; _walletOpen = false;
-        setTimeout(function() {
+        // 监听商店滑入完成（transitionend 比固定 setTimeout 更准确）
+        var done = false;
+        function fadeWallet() {
+          if (done) return;
+          done = true;
           if (!w.parentNode) return;
           w.style.transition = 'opacity 0.22s ease';
           w.style.opacity = '0';
           setTimeout(function() {
             if (w.parentNode) w.parentNode.removeChild(w);
           }, 240);
-        }, 180); // 商店滑入 ~180ms 后才开始淡出钱包，遮罩持续覆盖封面
+        }
+        el.addEventListener('transitionend', function onEnd(e) {
+          if (e.propertyName !== 'transform') return; // 只听 translate 完成
+          el.removeEventListener('transitionend', onEnd);
+          fadeWallet();
+        });
+        // 兜底：若 transitionend 因任何原因没触发（动画被打断等），400ms 后强制淡出
+        setTimeout(fadeWallet, 400);
       }
     }
 
