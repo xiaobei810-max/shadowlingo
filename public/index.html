@@ -6204,8 +6204,7 @@
     }
 
     function openGachaStore() {
-      closeWallet();
-      if (_gachaStoreEl && _gachaStoreEl.parentNode) return;
+      if (_gachaStoreEl && _gachaStoreEl.parentNode) { closeWallet(); return; }
       var el = document.createElement('div');
       el.id = 'gacha-store-overlay';
       el.className = 'gacha-store-overlay';
@@ -6217,6 +6216,20 @@
       requestAnimationFrame(function() {
         requestAnimationFrame(function() { el.classList.add('gs-visible'); });
       });
+      // 钱包当前打开时：保持钱包遮罩可见 → 等商店滑入差不多了再优雅淡出
+      // （之前是先 closeWallet → 露出封面闪一下 → 商店再滑入）
+      if (_walletOpen && _walletEl) {
+        var w = _walletEl;
+        _walletEl = null; _walletOpen = false;
+        setTimeout(function() {
+          if (!w.parentNode) return;
+          w.style.transition = 'opacity 0.22s ease';
+          w.style.opacity = '0';
+          setTimeout(function() {
+            if (w.parentNode) w.parentNode.removeChild(w);
+          }, 240);
+        }, 180); // 商店滑入 ~180ms 后才开始淡出钱包，遮罩持续覆盖封面
+      }
     }
 
     function closeGachaStore() {
@@ -7513,7 +7526,7 @@
       card.className = 'wallet-panel';
       card.addEventListener('click', function(e) { e.stopPropagation(); });
       var ctaHtml = canOpen
-        ? '<div class="wp-cta wp-cta-active" onclick="closeWallet();openGachaStore()" style="cursor:pointer">' +
+        ? '<div class="wp-cta wp-cta-active" onclick="openGachaStore()" style="cursor:pointer">' +
             '<span>🎁</span><span>盲盒商店</span>' +
           '</div>'
         : '<div class="wp-cta">' +
