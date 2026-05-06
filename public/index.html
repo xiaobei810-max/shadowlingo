@@ -6205,43 +6205,44 @@
 
     function openGachaStore() {
       if (_gachaStoreEl && _gachaStoreEl.parentNode) { closeWallet(); return; }
+
+      // ────────── 防漏遮罩 (Anti-flash Shield) ──────────
+      // 关键：在 closeWallet() 之前就先垫一块和钱包 backdrop 等价的全屏遮罩。
+      // 这样钱包消失的那一瞬间，下方已经有视觉等价的遮罩接住，
+      // cover 页一帧也不会露出来。商店滑到顶后再撤掉遮罩。
+      // (z-index 9100：低于商店 9200、低于钱包 9800，不影响其它层级)
+      var shield = document.createElement('div');
+      shield.id = 'gacha-anti-flash-shield';
+      shield.style.cssText =
+        'position:fixed;inset:0;z-index:9100;' +
+        'background:rgba(0,0,0,0.60);' +
+        '-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);' +
+        'pointer-events:none;';
+      document.body.appendChild(shield);
+
+      // 现在关钱包是安全的 —— shield 已垫好
+      closeWallet();
+
       var el = document.createElement('div');
       el.id = 'gacha-store-overlay';
       el.className = 'gacha-store-overlay';
       _gachaStoreEl = el;
       _renderGachaStoreContent(el);
       document.body.appendChild(el);
-      // 双层 rAF：第一帧让浏览器完成初始布局（translateY(100%)），
-      // 第二帧再添加 gs-visible 触发过渡，避免"跳一下"
       requestAnimationFrame(function() {
         requestAnimationFrame(function() { el.classList.add('gs-visible'); });
       });
-      // 钱包打开中：必须等商店 100% 滑到 translateY(0) 之后再开始淡出钱包。
-      // 任意时刻视窗都由「钱包 ∪ 商店」完全覆盖 → 零暴露 cover 页。
-      // 之前 180ms 启动淡出 → 商店刚滑到一半，钱包淡到 50% 时上半视窗会露出封面。
-      if (_walletOpen && _walletEl) {
-        var w = _walletEl;
-        _walletEl = null; _walletOpen = false;
-        // 监听商店滑入完成（transitionend 比固定 setTimeout 更准确）
-        var done = false;
-        function fadeWallet() {
-          if (done) return;
-          done = true;
-          if (!w.parentNode) return;
-          w.style.transition = 'opacity 0.22s ease';
-          w.style.opacity = '0';
-          setTimeout(function() {
-            if (w.parentNode) w.parentNode.removeChild(w);
-          }, 240);
-        }
-        el.addEventListener('transitionend', function onEnd(e) {
-          if (e.propertyName !== 'transform') return; // 只听 translate 完成
-          el.removeEventListener('transitionend', onEnd);
-          fadeWallet();
-        });
-        // 兜底：若 transitionend 因任何原因没触发（动画被打断等），400ms 后强制淡出
-        setTimeout(fadeWallet, 400);
+
+      // 商店完全到位后撤掉 shield
+      function removeShield() {
+        if (shield.parentNode) shield.parentNode.removeChild(shield);
       }
+      el.addEventListener('transitionend', function onEnd(e) {
+        if (e.propertyName !== 'transform') return;
+        el.removeEventListener('transitionend', onEnd);
+        removeShield();
+      });
+      setTimeout(removeShield, 500); // 兜底
     }
 
     function closeGachaStore() {
