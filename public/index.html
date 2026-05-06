@@ -3062,12 +3062,14 @@
     }
     /* CG 横图卡片：全覆盖，展示完整画面 */
     .gcb-car-card.cc-cg img { object-fit: cover; border-radius: 12px; }
-    /* 未拥有卡片：极简空白，去掉所有装饰 */
+    /* 未拥有卡片：完全不可见（仍占位，保证轮播布局正常） */
     .gcb-car-card.cc-empty {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
+      opacity: 0 !important;
+      pointer-events: none;
       box-shadow: none !important;
       animation: none !important;
+      border: none !important;
+      background: transparent !important;
     }
     .gcb-car-card .gcb-car-emoji {
       position: absolute; inset: 0; display: flex;
@@ -6210,7 +6212,11 @@
       _gachaStoreEl = el;
       _renderGachaStoreContent(el);
       document.body.appendChild(el);
-      requestAnimationFrame(function() { el.classList.add('gs-visible'); });
+      // 双层 rAF：第一帧让浏览器完成初始布局（translateY(100%)），
+      // 第二帧再添加 gs-visible 触发过渡，避免"跳一下"
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { el.classList.add('gs-visible'); });
+      });
     }
 
     function closeGachaStore() {
