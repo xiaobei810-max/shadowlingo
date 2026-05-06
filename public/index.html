@@ -2198,7 +2198,7 @@
       background: #07090f;
       display: flex; flex-direction: column;
       transform: translateY(100%); opacity: 0;
-      transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
+      transition: transform 0.32s cubic-bezier(.22,.68,.32,1), opacity 0.22s ease;
       overflow: hidden;
       will-change: transform, opacity;       /* GPU 合成层，避免滑入时主线程阻塞 */
     }
@@ -2943,7 +2943,7 @@
       background: #07090f;
       display: flex; flex-direction: column;
       transform: translateY(100%); opacity: 0;
-      transition: transform 0.32s cubic-bezier(.22,.68,0,1.3), opacity 0.22s ease;
+      transition: transform 0.32s cubic-bezier(.22,.68,.32,1), opacity 0.22s ease;
       overflow: hidden;
     }
     .gacha-collection-overlay.gcb-visible { transform: translateY(0); opacity: 1; }
