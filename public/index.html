@@ -12540,6 +12540,8 @@
           }
           if (dlpBadge)  dlpBadge.style.display  = 'none';
           if (dlpNameEl) dlpNameEl.textContent   = d.speaker || (d._sid === 'qiqi' ? '夏七七 · Xia Qiqi' : d._sid === 'david' ? '大卫 · David' : '赵明轩 · Zhao Mingxuan');
+          var dlpRoleTagEl = document.getElementById('dlp-roletag-local');
+          if (dlpRoleTagEl) dlpRoleTagEl.textContent = d._sid === 'david' ? 'Fellow · 英语母语留学生' : 'Local · 本地说话人';
           var dlpProfileBtn = document.getElementById('dlp-profile-btn-local');
           if (dlpProfileBtn) {
             dlpProfileBtn.setAttribute('onclick', "showCharProfile('" + (d._sid === 'qiqi' ? 'qiqi' : d._sid === 'david' ? 'david' : 'mingxuan') + "')");
@@ -13380,7 +13382,7 @@
           alt:      '大卫', cls: 'dw',
           imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:50% 42%;transform:scale(0.9);',
           name:     nd.speaker || '大卫 · David',
-          tag:      'Local · 本地说话人 Language Buddy',
+          tag:      'Fellow · 英语母语留学生',
           isStaff:  false
         };
       }
@@ -15001,7 +15003,7 @@
                 <div class="dlp-name"><span id="dlp-speaker-local">赵明轩 · Zhao Mingxuan</span>
                   <button class="char-profile-btn" id="dlp-profile-btn-local" onclick="showCharProfile('mingxuan')" title="查看角色档案">i</button>
                 </div>
-                <div class="dlp-role-tag">Local · 本地说话人</div>
+                <div class="dlp-role-tag" id="dlp-roletag-local">Local · 本地说话人</div>
               </div>
             </div>
             <div class="dlp-content">
