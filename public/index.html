@@ -13077,6 +13077,7 @@
 
     // 根据说话人数据返回头像 / 姓名配置
     function _isStaffSpeaker(s) {
+      // Returns true for any unnamed NPC (staff, cashier, etc.) — used for silhouette avatar
       return !!(s && (s === 'staff' || s.indexOf('Staff') !== -1 || s.indexOf('工作') !== -1
                    || s.indexOf('收银') !== -1 || s.indexOf('Cashier') !== -1));
     }
@@ -13085,9 +13086,13 @@
       var str = String(s);
       return str === 'qiqi' || /qiqi/i.test(str) || str.indexOf('七七') !== -1 || str.indexOf('夏七七') !== -1;
     }
+    function _isCashierSpeaker(s) {
+      return !!(s && (s.indexOf('收银') !== -1 || s.indexOf('Cashier') !== -1));
+    }
     function _speakerRole(speaker) {
-      if (_isStaffSpeaker(speaker)) return 'linyue';
-      if (_isQiqiSpeaker(speaker))  return 'qiqi';
+      if (_isCashierSpeaker(speaker)) return 'cashier';
+      if (_isStaffSpeaker(speaker))   return 'linyue';
+      if (_isQiqiSpeaker(speaker))    return 'qiqi';
       return 'local';
     }
     function getDialogRoundCount() {

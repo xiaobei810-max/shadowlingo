@@ -58,6 +58,13 @@ const VOICES = {
     rateScale: 1.08,
     pitchAdj:  '+5%',
   },
+  // 收银员等一次性 NPC：YunyangNeural — 标准男播音腔，与明轩（YunxiNeural）明显区分
+  cashier: {
+    name:      'zh-CN-YunyangNeural',
+    lang:      'zh-CN',
+    rateScale: 1.0,
+    pitchAdj:  '0%',
+  },
 };
 
 function escapeXml(s) {

@@ -22,6 +22,7 @@ VOICE_MAP = {
     "Linwan":   "male-qn-jingying-jingpin",
     "Qiqi":     "Arrogant_Miss",
     "Staff":    "Chinese (Mandarin)_Gentle_Senior",   # 行政人员用温和女声
+    "Cashier":  "presenter_male",                     # 收银员用播报男声（区别于明轩）
     "Huijie":   "Japanese_CalmLady",
     "David":    "English_Diligent_Man",
 }
@@ -98,9 +99,9 @@ SCRIPT = [
     {"lesson": "07", "line": "03", "role": "Nora",     "text": "我需要买毛巾和牙膏。"},
     {"lesson": "07", "line": "04", "role": "Qiqi",     "text": "在那边，我帮你找。"},
     {"lesson": "07", "line": "05", "role": "Nora",     "text": "你好，我要结账。"},
-    {"lesson": "07", "line": "06", "role": "Staff",    "text": "一共二十八块。"},
+    {"lesson": "07", "line": "06", "role": "Cashier",  "text": "一共二十八块。"},
     {"lesson": "07", "line": "07", "role": "Nora",     "text": "我只有现金，给您五十。"},
-    {"lesson": "07", "line": "08", "role": "Staff",    "text": "好的，找您二十二块。"},
+    {"lesson": "07", "line": "08", "role": "Cashier",  "text": "好的，找您二十二块。"},
     # 第七课 生词
     {"lesson": "07", "line": "v1", "role": "Qiqi",     "text": "生活用品"},
     {"lesson": "07", "line": "v2", "role": "Qiqi",     "text": "超市"},
