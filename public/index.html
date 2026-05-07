@@ -5894,7 +5894,7 @@
             zh: "你是想说，「我明天去报名」？",
             pinyin: "Nǐ shì xiǎng shuō, 「wǒ míng tiān qù bào míng」?",
             en: "You mean to say, \"I'll sign up tomorrow\"?",
-            contextBelow: { speaker: "大卫 · David", zh: "Nora，我去明天报名摄影社，你去吗？", pinyin: "Nuò lā, wǒ qù míng tiān bào míng shè yǐng shè, nǐ qù ma?", en: "Nora, I go tomorrow sign up for photography club, are you going?" },
+            contextBelow: { speaker: "大卫 · David", zh: "诺拉，我去明天报名摄影社，你去吗？", pinyin: "Nuò lā, wǒ qù míng tiān bào míng shè yǐng shè, nǐ qù ma?", en: "Nora, I go tomorrow sign up for photography club, are you going?" },
             role: "learner",
             start: 0, end: 0,
             praise: "✏️ 纠错超专业！Great grammar fix!",
@@ -5964,7 +5964,9 @@
           { zh: '社团', py: 'shè tuán',  en: 'Student club / society' }
         ],
         insiderTip: {
-          textbook: { zh: '我去明天报名。❌', en: '❌ Wrong — 去 comes before 明天 (English word-order mistake)' },
+          textbookLabel: '❌ 错句 · Wrong',
+          streetLabel:   '✅ 正确 · Correct',
+          textbook: { zh: '我去明天报名。', en: '' },
           street:   { zh: '我明天去报名。', pinyin: 'Wǒ míng tiān qù bào míng.' },
           langTip: {
             zh: '英文习惯把时间放在句子最后，但中文的"时间词"必须放在动词前面！记住公式：<b class="tip-hl">主语 + 时间 + 动词</b>（我 + 明天 + 去）。千万别像大卫一样说反了。',
@@ -6215,7 +6217,7 @@
         title: "摄影社的传闻",
         scene: "几天后，大卫拿着一张报名表，来找诺拉和七七帮忙。",
         dialogue: [
-          { speaker: "大卫 · David",     role: "local",   zh: "Nora，我去明天报名摄影社，你去吗？",  pinyin: "Nuò lā, wǒ qù míng tiān bào míng shè yǐng shè, nǐ qù ma?", en: "Nora, I go tomorrow sign up for photography club, are you going?" },
+          { speaker: "大卫 · David",     role: "local",   zh: "诺拉，我去明天报名摄影社，你去吗？",  pinyin: "Nuò lā, wǒ qù míng tiān bào míng shè yǐng shè, nǐ qù ma?", en: "Nora, I go tomorrow sign up for photography club, are you going?" },
           { speaker: "诺拉",             role: "learner", zh: "你是想说，「我明天去报名」？",         pinyin: "Nǐ shì xiǎng shuō, 「wǒ míng tiān qù bào míng」?",          en: "You mean to say, \"I'll sign up tomorrow\"?" },
           { speaker: "大卫 · David",     role: "local",   zh: "对！中文的时间词太难记了。",           pinyin: "Duì! Zhōng wén de shí jiān cí tài nán jì le.",              en: "Yes! Chinese time words are too hard to remember." },
           { speaker: "诺拉",             role: "learner", zh: "我也想参加。摄影社很难进吗？",         pinyin: "Wǒ yě xiǎng cān jiā. Shè yǐng shè hěn nán jìn ma?",        en: "I want to join too. Is the photography club hard to get into?" },
@@ -11721,13 +11723,13 @@
         var compareHtml =
           "<div class='tip-compare'>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag'>📖 书面语 · Textbook</div>" +
+              "<div class='tip-tag'>" + (tip.textbookLabel || '📖 书面语 · Textbook') + "</div>" +
               "<div class='tip-zh-big'>" + tip.textbook.zh + "</div>" +
-              "<div class='tip-en-sm'>" + tip.textbook.en + "</div>" +
+              (tip.textbook.en ? "<div class='tip-en-sm'>" + tip.textbook.en + "</div>" : "") +
               "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.textbook.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
             "</div>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag street'>🗣 口语 · Real Street</div>" +
+              "<div class='tip-tag street'>" + (tip.streetLabel || '🗣 口语 · Real Street') + "</div>" +
               "<div class='tip-zh-big'>" + tip.street.zh + "</div>" +
               (tip.street.pinyin ? "<div class='tip-py'>" + tip.street.pinyin + "</div>" : "") +
               "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.street.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
@@ -12657,7 +12659,7 @@
             dlpAvatarWrap.style.display = '';
             if (d._sid === 'qiqi') {
               dlpAvatarWrap.className = 'avatar-wrap qiqi';
-              dlpAvatarWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png?v=2" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 5%;transform:scale(1.25);">';
+              dlpAvatarWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png?v=2" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 15%;transform:scale(0.85);">';
             } else if (d._sid === 'david') {
               dlpAvatarWrap.className = 'avatar-wrap dw';
               dlpAvatarWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png?v=4" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 42%;transform:scale(0.9);">';
@@ -13154,7 +13156,7 @@
             bWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
           } else if (line._sid === 'qiqi') {
             bWrap.className = 'avatar-wrap qiqi';
-            bWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png?v=2" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 5%;transform:scale(1.25);">';
+            bWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png?v=2" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 15%;transform:scale(0.85);">';
           } else if (line._sid === 'david') {
             bWrap.className = 'avatar-wrap dw';
             bWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png?v=4" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 42%;transform:scale(0.9);">';
@@ -13220,7 +13222,7 @@
             panelAvWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
           } else if (line._sid === 'qiqi') {
             panelAvWrap.className = 'avatar-wrap qiqi glow';
-            panelAvWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png?v=2" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 5%;transform:scale(1.25);">';
+            panelAvWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png?v=2" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 15%;transform:scale(0.85);">';
           } else {
             panelAvWrap.className = 'avatar-wrap nora glow';
             panelAvWrap.innerHTML = '<img src="/assets/characters/nora/nora_head.png" alt="Nora" style="width:100%;height:100%;object-fit:cover;transform-origin:52% 22%;transform:scale(2.2);">';
