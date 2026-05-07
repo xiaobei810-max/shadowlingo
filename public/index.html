@@ -933,11 +933,11 @@
     .ctx-zh.kara-reflow-3 .ctx-krt { font-size: 10px !important; }
     .ctx-zh.kara-reflow-4 .ctx-kchar { min-width: 1.05em !important; font-size: 17px !important; }
 
-    .dlp-kara.kara-reflow-1 { gap: 16px 3px !important; }
-    .dlp-kara.kara-reflow-2 { gap: 16px 2px !important; }
-    .dlp-kara.kara-reflow-3 { gap: 16px 1px !important; }
+    .dlp-kara.kara-reflow-1 { gap: 12px 3px !important; }
+    .dlp-kara.kara-reflow-2 { gap: 12px 2px !important; }
+    .dlp-kara.kara-reflow-3 { gap: 12px 1px !important; }
     .dlp-kara.kara-reflow-3 .dlp-kchar .dlp-hz { font-size: 20px !important; }
-    .dlp-kara.kara-reflow-4 { gap: 16px 4px !important; }
+    .dlp-kara.kara-reflow-4 { gap: 12px 4px !important; }
     /* 不缩小字号：避免对话聆听页上下面板字号不一致 */
 
     /* Punctuation fix: group wraps kchar + trailing punct as one flex item */
@@ -4278,7 +4278,7 @@
     .dlp-name { font-size: 14px; font-weight: 700; color: var(--text); }
     .dlp-role-tag { font-size: 11px; color: #94a3b8; margin-top: 2px; }
     .dlp-content { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-height: 0; }
-    .dlp-kara { display: flex; flex-wrap: wrap; gap: 16px 4px; align-items: flex-end; line-height: 1; }
+    .dlp-kara { display: flex; flex-wrap: wrap; gap: 12px 4px; align-items: flex-end; line-height: 1; }
     .dlp-kchar { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.12s; color: #e2e8f0; }
     .dlp-kchar .dlp-py {
       font-size: 10px; font-weight: 400; line-height: 1.4; color: #94a3b8;
@@ -5770,7 +5770,7 @@
       {
         id: "lesson-8",
         titleZh: "第八课：大厅的初见", titleEn: "Lesson 8: Meeting in the Lobby",
-        newChars: [],
+        newChars: ['david'],
         cgImage:   '/assets/cg/lesson8_lobby.png?v=20260507',
         cardImage: '/assets/cg/lesson8_lobby_card.jpg?v=20260507',
         cgText:  '笨拙的语序，真诚的笑脸。原来在这场攻克中文的冒险里，没有人是一座孤岛。',
@@ -12468,7 +12468,7 @@
               dlpAvatarWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% -13%;transform:scale(1.65);">';
             } else if (d._sid === 'david') {
               dlpAvatarWrap.className = 'avatar-wrap dw';
-              dlpAvatarWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 38%;transform:scale(2.0);">';
+              dlpAvatarWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 40%;transform:scale(1.3);">';
             } else {
               dlpAvatarWrap.className = 'avatar-wrap mx';
               dlpAvatarWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
@@ -12648,6 +12648,12 @@
           }
           _currentAudio = sAu;
           var _sMeta = false;
+          var _onplayCalled = false;  // one-shot guard: fire onplay(duration) exactly once
+          function _fireOnplay() {
+            if (_onplayCalled || !onplay) return;
+            _onplayCalled = true;
+            onplay(sAu.duration);
+          }
           // Guard: onerror and play().catch can both fire for the same failure;
           // also prevents fallback TTS from starting while sAu is already playing
           // (race that caused echo on lessons with static audio files).
@@ -12665,9 +12671,9 @@
           }
           sAu.onloadedmetadata = function () {
             _sMeta = true;
-            if (isFinite(sAu.duration) && onplay) onplay(sAu.duration);
+            if (isFinite(sAu.duration)) _fireOnplay();
           };
-          sAu.onplay = function () { if (_sMeta && onplay) onplay(sAu.duration); };
+          sAu.onplay = function () { if (_sMeta) _fireOnplay(); };
           sAu.onended = function () {
             if (_currentAudio === sAu) _currentAudio = null;
             if (onend) onend();
@@ -12935,7 +12941,7 @@
             } else if (line._sid === 'david') {
               aImg.src = '/assets/characters/dawei/dawei_head.png';
               aImg.alt = '大卫';
-              aImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:50% 38%;transform:scale(2.0);';
+              aImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:50% 40%;transform:scale(1.3);';
             } else {
               aImg.src = '/assets/characters/mingxuan/mingxuan_head.png';
               aImg.alt = '明轩';
@@ -12957,7 +12963,7 @@
             bWrap.innerHTML = '<img src="/assets/characters/qiqi/qiqi_head.png" alt="七七" style="width:100%;height:100%;object-fit:cover;transform-origin:50% -13%;transform:scale(1.65);">';
           } else if (line._sid === 'david') {
             bWrap.className = 'avatar-wrap dw';
-            bWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 38%;transform:scale(2.0);">';
+            bWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 40%;transform:scale(1.3);">';
           } else {
             bWrap.className = 'avatar-wrap mx';
             bWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
@@ -13308,7 +13314,7 @@
         return {
           img:      '/assets/characters/dawei/dawei_head.png',
           alt:      '大卫', cls: 'dw',
-          imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:50% 38%;transform:scale(2.0);',
+          imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:50% 40%;transform:scale(1.3);',
           name:     nd.speaker || '大卫 · David',
           tag:      'Local · 本地说话人 Language Buddy',
           isStaff:  false
