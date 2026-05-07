@@ -52,5 +52,19 @@
     "6": "/audio/lesson05/L05_06_Mingxuan.mp3",
     "7": "/audio/lesson05/L05_07_Qiqi.mp3",
     "8": "/audio/lesson05/L05_08_Nora.mp3"
+  },
+  "lesson06": {
+    "1": "/audio/lesson06/L06_01_Qiqi.mp3",
+    "2": "/audio/lesson06/L06_02_Nora.mp3",
+    "3": "/audio/lesson06/L06_03_Qiqi.mp3",
+    "4": "/audio/lesson06/L06_04_Nora.mp3",
+    "5": "/audio/lesson06/L06_05_Qiqi.mp3",
+    "6": "/audio/lesson06/L06_06_Nora.mp3",
+    "7": "/audio/lesson06/L06_07_Qiqi.mp3",
+    "8": "/audio/lesson06/L06_08_Nora.mp3",
+    "v1": "/audio/lesson06/L06_v1_Qiqi.mp3",
+    "v2": "/audio/lesson06/L06_v2_Qiqi.mp3",
+    "v3": "/audio/lesson06/L06_v3_Qiqi.mp3",
+    "v4": "/audio/lesson06/L06_v4_Qiqi.mp3"
   }
 }

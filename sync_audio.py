@@ -78,6 +78,20 @@ SCRIPT = [
     {"lesson": "05", "line": "06", "role": "Mingxuan", "text": "不客气。你好好休息。"},
     {"lesson": "05", "line": "07", "role": "Qiqi",     "text": "学长再见！诺拉，你饿吗？"},
     {"lesson": "05", "line": "08", "role": "Nora",     "text": "有一点。我们去吃饭吧。"},
+    # 第六课
+    {"lesson": "06", "line": "01", "role": "Qiqi",     "text": "食堂到了。你想吃什么？"},
+    {"lesson": "06", "line": "02", "role": "Nora",     "text": "我想吃面条。在哪里买？"},
+    {"lesson": "06", "line": "03", "role": "Qiqi",     "text": "前面那个窗口。你有校园卡吗？"},
+    {"lesson": "06", "line": "04", "role": "Nora",     "text": "还没有。可以用现金吗？"},
+    {"lesson": "06", "line": "05", "role": "Qiqi",     "text": "食堂不能用现金。我帮你刷卡吧。"},
+    {"lesson": "06", "line": "06", "role": "Nora",     "text": "太谢谢了。我回头还给你。"},
+    {"lesson": "06", "line": "07", "role": "Qiqi",     "text": "没事，不着急。我们去那边坐吧。"},
+    {"lesson": "06", "line": "08", "role": "Nora",     "text": "好的。这个面条闻起来真香！"},
+    # 第六课 生词
+    {"lesson": "06", "line": "v1", "role": "Qiqi",     "text": "食堂"},
+    {"lesson": "06", "line": "v2", "role": "Qiqi",     "text": "面条"},
+    {"lesson": "06", "line": "v3", "role": "Qiqi",     "text": "刷卡"},
+    {"lesson": "06", "line": "v4", "role": "Qiqi",     "text": "还"},
 ]
 
 # ── 音频合成核心函数 ────────────────────────────────────────────────────
