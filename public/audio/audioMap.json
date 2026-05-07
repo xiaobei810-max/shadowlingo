@@ -108,5 +108,19 @@
     "v2": "/audio/lesson09/L09_v2_Nora.mp3",
     "v3": "/audio/lesson09/L09_v3_Nora.mp3",
     "v4": "/audio/lesson09/L09_v4_Nora.mp3"
+  },
+  "lesson10": {
+    "1": "/audio/lesson10/L10_01_Nora.mp3",
+    "2": "/audio/lesson10/L10_02_Qiqi.mp3",
+    "3": "/audio/lesson10/L10_03_Nora.mp3",
+    "4": "/audio/lesson10/L10_04_Qiqi.mp3",
+    "5": "/audio/lesson10/L10_05_Nora.mp3",
+    "6": "/audio/lesson10/L10_06_Qiqi.mp3",
+    "7": "/audio/lesson10/L10_07_Nora.mp3",
+    "8": "/audio/lesson10/L10_08_Qiqi.mp3",
+    "v1": "/audio/lesson10/L10_v1_Qiqi.mp3",
+    "v2": "/audio/lesson10/L10_v2_Qiqi.mp3",
+    "v3": "/audio/lesson10/L10_v3_Qiqi.mp3",
+    "v4": "/audio/lesson10/L10_v4_Qiqi.mp3"
   }
 }
