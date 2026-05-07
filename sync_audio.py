@@ -102,10 +102,10 @@ SCRIPT = [
     {"lesson": "07", "line": "07", "role": "Nora",     "text": "我只有现金，给您五十。"},
     {"lesson": "07", "line": "08", "role": "Staff",    "text": "好的，找您二十二块。"},
     # 第七课 生词
-    {"lesson": "07", "line": "v1", "role": "Qiqi",     "text": "超市"},
-    {"lesson": "07", "line": "v2", "role": "Qiqi",     "text": "牙膏"},
-    {"lesson": "07", "line": "v3", "role": "Qiqi",     "text": "结账"},
-    {"lesson": "07", "line": "v4", "role": "Qiqi",     "text": "找"},
+    {"lesson": "07", "line": "v1", "role": "Qiqi",     "text": "生活用品"},
+    {"lesson": "07", "line": "v2", "role": "Qiqi",     "text": "超市"},
+    {"lesson": "07", "line": "v3", "role": "Qiqi",     "text": "牙膏"},
+    {"lesson": "07", "line": "v4", "role": "Qiqi",     "text": "结账"},
 ]
 
 # ── 音频合成核心函数 ────────────────────────────────────────────────────
