@@ -1,11 +1,17 @@
 {
-  "version": "0.0.1",
-  "configurations": [
-    {
-      "name": "shadowlingo",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "public", "-p", "3456"],
-      "port": 3456
-    }
-  ]
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "name": "shadowlingo",
+            "runtimeExecutable": "python3",
+            "runtimeArgs": [
+                "-m",
+                "http.server",
+                "3456",
+                "--directory",
+                "/Users/zxb/shadowlingo/public"
+            ],
+            "port": 3456
+        }
+    ]
 }

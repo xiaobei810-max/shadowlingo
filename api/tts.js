@@ -65,6 +65,13 @@ const VOICES = {
     rateScale: 1.0,
     pitchAdj:  '0%',
   },
+  // 大卫：英语母语男声读中文 → 带外国口音，与 Nora 同技术路线
+  david: {
+    name:      'en-US-AndrewMultilingualNeural',
+    lang:      'zh-CN',
+    rateScale: 0.88,
+    pitchAdj:  '+3%',
+  },
 };
 
 function escapeXml(s) {

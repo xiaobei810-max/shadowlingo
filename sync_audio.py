@@ -107,6 +107,20 @@ SCRIPT = [
     {"lesson": "07", "line": "v2", "role": "Qiqi",     "text": "超市"},
     {"lesson": "07", "line": "v3", "role": "Qiqi",     "text": "牙膏"},
     {"lesson": "07", "line": "v4", "role": "Qiqi",     "text": "结账"},
+    # 第八课
+    {"lesson": "08", "line": "01", "role": "David", "text": "你好，打扰一下。我可以有 Wi-Fi 密码吗？"},
+    {"lesson": "08", "line": "02", "role": "Nora",  "text": "你是想问密码多少，对吧？是八个八。"},
+    {"lesson": "08", "line": "03", "role": "David", "text": "对，密码多少！我的中文真是太糟糕了。"},
+    {"lesson": "08", "line": "04", "role": "Nora",  "text": "没关系，慢慢来。我是 Nora，昨天刚到。"},
+    {"lesson": "08", "line": "05", "role": "David", "text": "我是大卫。你的发音听起来很自然。"},
+    {"lesson": "08", "line": "06", "role": "Nora",  "text": "谢谢。其实我的词汇量还不够。"},
+    {"lesson": "08", "line": "07", "role": "David", "text": "太好了，以后我们可以在这里一起练习吗？"},
+    {"lesson": "08", "line": "08", "role": "Nora",  "text": "当然可以，随时欢迎。"},
+    # 第八课 生词
+    {"lesson": "08", "line": "v1", "role": "David", "text": "打扰"},
+    {"lesson": "08", "line": "v2", "role": "David", "text": "密码"},
+    {"lesson": "08", "line": "v3", "role": "David", "text": "糟糕"},
+    {"lesson": "08", "line": "v4", "role": "David", "text": "练习"},
 ]
 
 # ── 音频合成核心函数 ────────────────────────────────────────────────────
