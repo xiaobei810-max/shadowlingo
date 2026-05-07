@@ -92,6 +92,20 @@ SCRIPT = [
     {"lesson": "06", "line": "v2", "role": "Qiqi",     "text": "面条"},
     {"lesson": "06", "line": "v3", "role": "Qiqi",     "text": "刷卡"},
     {"lesson": "06", "line": "v4", "role": "Qiqi",     "text": "回头"},
+    # 第七课
+    {"lesson": "07", "line": "01", "role": "Nora",     "text": "七七，我想买一些生活用品。"},
+    {"lesson": "07", "line": "02", "role": "Qiqi",     "text": "超市里都有，你需要什么？"},
+    {"lesson": "07", "line": "03", "role": "Nora",     "text": "我需要买毛巾和牙膏。"},
+    {"lesson": "07", "line": "04", "role": "Qiqi",     "text": "在那边，我帮你找。"},
+    {"lesson": "07", "line": "05", "role": "Nora",     "text": "你好，我要结账。"},
+    {"lesson": "07", "line": "06", "role": "Staff",    "text": "一共二十八块。"},
+    {"lesson": "07", "line": "07", "role": "Nora",     "text": "我只有现金，给您五十。"},
+    {"lesson": "07", "line": "08", "role": "Staff",    "text": "好的，找您二十二块。"},
+    # 第七课 生词
+    {"lesson": "07", "line": "v1", "role": "Qiqi",     "text": "超市"},
+    {"lesson": "07", "line": "v2", "role": "Qiqi",     "text": "牙膏"},
+    {"lesson": "07", "line": "v3", "role": "Qiqi",     "text": "结账"},
+    {"lesson": "07", "line": "v4", "role": "Qiqi",     "text": "找"},
 ]
 
 # ── 音频合成核心函数 ────────────────────────────────────────────────────
