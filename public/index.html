@@ -1050,9 +1050,10 @@
     }
     #sandhi-tip.show { display: block; }
 
-    /* Punctuation mirrors hanzi state */
-    .kchar.active + .kpunct { color: var(--green); }
-    .kchar.done   + .kpunct { color: var(--green); }
+    /* Punctuation mirrors hanzi state — use ~ (general sibling) so multiple
+       consecutive punct marks (e.g. ，「) all turn green together */
+    .kchar.active ~ .kpunct { color: var(--green); }
+    .kchar.done   ~ .kpunct { color: var(--green); }
 
     /* Karaoke progress bar */
     .kara-bar {
@@ -4294,9 +4295,9 @@
     .dlp-kchar.dlp-active .dlp-hz { color: var(--green); }
     .dlp-kchar.dlp-done   .dlp-py { color: #94a3b8; opacity: 0.8; } /* pinyin resets */
     .dlp-kchar.dlp-done   .dlp-hz { color: var(--green); }           /* hanzi stays green */
-    /* Punctuation mirrors hanzi state */
-    .dlp-kchar.dlp-active + .kpunct { color: var(--green); }
-    .dlp-kchar.dlp-done   + .kpunct { color: var(--green); }
+    /* Punctuation mirrors hanzi state — ~ selector covers consecutive puncts */
+    .dlp-kchar.dlp-active ~ .kpunct { color: var(--green); }
+    .dlp-kchar.dlp-done   ~ .kpunct { color: var(--green); }
     .dlp-bar { height: 2px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; flex-shrink: 0; }
     .dlp-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.05s linear; }
     /* ── Page-turn fade-in: masks data-swap flicker on prev/next ── */
@@ -4476,8 +4477,8 @@
     .ctx-kchar.ctx-active .ctx-krt { color: var(--green); }
     .ctx-kchar.ctx-done            { color: var(--green); }
     .ctx-kchar.ctx-done   .ctx-krt { color: #94a3b8; }  /* pinyin resets */
-    .ctx-kchar.ctx-active + .kpunct { color: var(--green); }
-    .ctx-kchar.ctx-done   + .kpunct { color: var(--green); }
+    .ctx-kchar.ctx-active ~ .kpunct { color: var(--green); }
+    .ctx-kchar.ctx-done   ~ .kpunct { color: var(--green); }
     .ctx-zh .kpunct {
       font-size: 18px;
       font-weight: 700;
@@ -5777,7 +5778,7 @@
         cgText:  '笨拙的语序，真诚的笑脸。原来在这场攻克中文的冒险里，没有人是一座孤岛。',
         cgTextEn: 'Clumsy grammar, a sincere smile. In this adventure of conquering Chinese, no one is an island.',
         coverScene: {
-          zh: 'Nora 在宿舍大厅刷手机，<br>大卫走过来向她询问网络密码。',
+          zh: 'Nora 在休息室刷手机，<br>大卫走过来向她询问网络密码。',
           en: "Nora is on her phone in the lobby when David walks over to ask about the Wi-Fi password."
         },
         audio: "",
@@ -6084,7 +6085,7 @@
       {
         id: 8,
         title: "大厅的初见",
-        scene: "Nora 在宿舍大厅刷手机，大卫走过来向她询问网络密码。",
+        scene: "Nora 在休息室刷手机，大卫走过来向她询问网络密码。",
         dialogue: [
           { speaker: "大卫 · David", role: "local",   zh: "你好，打扰一下。我可以有 Wi-Fi 密码吗？", pinyin: "Nǐ hǎo, dǎ rǎo yí xià. Wǒ kě yǐ yǒu Wi-Fi mì mǎ ma?",       en: "Hello, excuse me. Can I have the Wi-Fi password?" },
           { speaker: "Nora",         role: "learner", zh: "你是想问「密码多少」，对吧？是八个八。",   pinyin: "Nǐ shì xiǎng wèn 「mì mǎ duō shao」, duì ba? Shì bā ge bā.", en: "You mean to ask \"what's the password\", right? It's eight 8s." },
