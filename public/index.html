@@ -10059,6 +10059,14 @@
     }
     // ─────────────────────────────────────────────────────────
 
+    // 录音失败统一重置：还原按钮状态，显示可见错误提示
+    function _recError(msg) {
+      busy = false; phase = 'idle';
+      var bn = document.getElementById('bn');
+      if (bn) { bn.textContent = '🎤 录音 Record'; bn.classList.remove('active'); bn.disabled = false; }
+      showShardToast(msg || '⚠️ 录音失败，请重试');
+    }
+
     function startRecording() {
       stopMediaRecorderIfRunning(); // cancel any previous recording/countdown
       clearTimers();
@@ -10070,9 +10078,21 @@
       document.getElementById('bn').classList.remove('active');
       setStatus('准备录音中...');
 
+      // 检查浏览器是否支持麦克风 API（非 HTTPS 或旧浏览器下可能缺失）
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        _recError('⚠️ 当前浏览器或网络不支持录音');
+        return;
+      }
+
       function _go(stream, warmupMs) {
         micStream = stream;
-        _createFreshRecorder();
+        try {
+          _createFreshRecorder();
+        } catch (e) {
+          console.error('[Rec] _createFreshRecorder failed:', e);
+          _recError('⚠️ 麦克风初始化失败，请刷新重试');
+          return;
+        }
         _startCountdown(warmupMs);
       }
 
@@ -10080,11 +10100,13 @@
         _go(micStream, 0);          // stream already warm → start immediately
       } else {
         navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (s) { _go(s, 2000); }) // cold start: 2 s countdown overlay; overlay shows "2→1"
-          .catch(function () {
-            setStatus('⚠️ 麦克风权限被拒绝');
-            busy = false; phase = 'idle';
-            document.getElementById('bn').textContent = '🎤 录音 Record';
+          .then(function (s) { _go(s, 2000); }) // cold start: 2 s countdown; overlay shows "2→1"
+          .catch(function (err) {
+            console.warn('[Rec] getUserMedia failed:', err && err.name);
+            var msg = (err && err.name === 'NotAllowedError')
+              ? '⚠️ 麦克风权限被拒绝，请在浏览器设置中允许'
+              : '⚠️ 无法访问麦克风，请检查设备';
+            _recError(msg);
           });
       }
     }
@@ -10107,7 +10129,7 @@
       bn.classList.remove('active');
       bn.disabled = true;
       document.getElementById('speech-indicator').classList.remove('active');
-      if (!_isCapturing) { bn.disabled = false; setStatus('准备好了 Ready'); busy = false; return; }
+      if (!_isCapturing) { bn.disabled = false; setStatus('准备好了 Ready'); busy = false; phase = 'idle'; return; }
 
       phase = 'scored';
       setStatus('⌛ 处理中...');
