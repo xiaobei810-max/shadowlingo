@@ -5647,7 +5647,7 @@
           { zh: '食堂', py: 'shí táng', en: 'Cafeteria' },
           { zh: '面条', py: 'miàn tiáo', en: 'Noodles' },
           { zh: '刷卡', py: 'shuā kǎ',  en: 'Swipe card' },
-          { zh: '还',   py: 'huán',     en: 'Pay back / Return' }
+          { zh: '回头', py: 'huí tóu',  en: 'Later / In a bit' }
         ],
         insiderTip: {
           textbook: { zh: '我以后把钱还给你。', en: 'I will return the money to you later.' },
@@ -9931,6 +9931,8 @@
       idx = 0;
       sessionScores = []; _sessionCoinsEarned = 0;
       setupAudio(LESSONS[lessonIdx].audio);
+      // 切换课时时立即预热新课音频，消除首次播放延迟
+      _preloadLessonAudio(LESSONS[lessonIdx].id);
       updateUI();
       saveState();
     }
@@ -12270,6 +12272,25 @@
     //   { "lesson01": { "1": "/audio/lesson01/L01_01_Nora.mp3", ... } }
     // Internally we index by lesson id ("lesson-1") + zh text for fast lookup.
     var _audioMap = {};
+    // ── 静态音频预热 ──────────────────────────────────────────────
+    // 通过 fetch() 把 MP3 拉进浏览器 HTTP 缓存，消除首次播放的网络延迟。
+    // 每个课时最多预热 16 条（8 句对话 + 4 生词 + 4 备用），不阻塞主线程。
+    var _preloadedLessons = {};
+    function _preloadLessonAudio(lessonId) {
+      if (!lessonId || _preloadedLessons[lessonId]) return;
+      var urls = _audioMap[lessonId];
+      if (!urls) return;
+      _preloadedLessons[lessonId] = true;
+      var list = Object.values(urls).slice(0, 16);
+      // 错开 80ms 间隔分批请求，避免同时打开大量连接阻塞关键资源
+      list.forEach(function(url, i) {
+        setTimeout(function() {
+          fetch(url, { method: 'GET' }).catch(function(){});
+        }, i * 80);
+      });
+      console.log('[Audio] Preloading', list.length, 'files for', lessonId);
+    }
+
     function _loadAudioMap() {
       fetch('/audio/audioMap.json')
         .then(function (r) { return r.ok ? r.json() : null; })
@@ -12298,6 +12319,9 @@
             }
           });
           console.log('[Audio] Static map loaded:', Object.keys(_audioMap));
+          // Map 加载完成后立即预热当前课时音频
+          var curLesson = LESSONS[lessonIdx];
+          if (curLesson) _preloadLessonAudio(curLesson.id);
         })
         .catch(function () { console.log('[Audio] No audioMap.json — using TTS API'); });
     }

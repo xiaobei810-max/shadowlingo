@@ -91,7 +91,7 @@ SCRIPT = [
     {"lesson": "06", "line": "v1", "role": "Qiqi",     "text": "食堂"},
     {"lesson": "06", "line": "v2", "role": "Qiqi",     "text": "面条"},
     {"lesson": "06", "line": "v3", "role": "Qiqi",     "text": "刷卡"},
-    {"lesson": "06", "line": "v4", "role": "Qiqi",     "text": "还"},
+    {"lesson": "06", "line": "v4", "role": "Qiqi",     "text": "回头"},
 ]
 
 # ── 音频合成核心函数 ────────────────────────────────────────────────────
