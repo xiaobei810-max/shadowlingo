@@ -2323,40 +2323,66 @@
     }
     .gs-hero.gs-img-err .gs-hero-img { display: none; }
     .gs-hero.gs-img-err .gs-hero-fallback-icon { display: flex; }
-    /* ── 商店系列切换选项卡 ─────────────────────────────────── */
-    .gs-series-switcher {
-      display: flex; gap: 8px; padding: 14px 20px 6px;
-      flex-shrink: 0;
+    /* ── 商店系列滑动轮播 ────────────────────────────────────── */
+    .gs-sc-wrap {
+      flex-shrink: 0; width: 100%; overflow: hidden;
+      padding: 20px 0 10px; cursor: grab; user-select: none;
+      position: relative; z-index: 1;
     }
-    .gs-ss-btn {
-      flex: 1; padding: 8px 0;
-      border: 1.5px solid rgba(255,255,255,0.15); border-radius: 20px;
-      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55);
-      font-size: 13px; font-weight: 600; letter-spacing: 2px;
-      cursor: pointer; transition: all 0.18s;
+    .gs-sc-wrap:active { cursor: grabbing; }
+    .gs-sc-track {
+      display: flex; gap: 16px; align-items: center;
+      will-change: transform; padding: 10px 0;
+      transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94);
     }
-    .gs-ss-btn:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
-    .gs-ss-btn.gs-ss-active {
-      background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.5);
-      color: #f1f5f9;
+    .gs-sc-track.no-anim { transition: none; }
+    .gs-sc-card {
+      flex-shrink: 0; width: 240px; height: 270px;
+      border-radius: 18px; overflow: hidden; cursor: pointer;
+      position: relative;
+      transform: scale(0.86); opacity: 0.5;
+      transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94),
+                  opacity 0.42s ease, box-shadow 0.42s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
     }
-
-    /* ── 收集册系列切换选项卡 ───────────────────────────────── */
-    .gcb-series-switcher {
-      display: flex; gap: 6px; padding: 8px 16px 2px;
-      flex-shrink: 0;
+    .gs-sc-card.gs-sc-active {
+      transform: scale(1); opacity: 1;
+      box-shadow: 0 14px 48px rgba(0,0,0,0.65),
+                  0 0 0 1.5px rgba(255,255,255,0.22);
     }
-    .gcb-ss-btn {
-      flex: 1; padding: 6px 0;
-      border: 1.5px solid rgba(255,255,255,0.12); border-radius: 16px;
-      background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.45);
-      font-size: 12px; font-weight: 600; letter-spacing: 1.5px;
-      cursor: pointer; transition: all 0.18s;
+    .gs-sc-card-bg {
+      position: absolute; inset: 0;
+      background: #1a2540 center/cover no-repeat;
     }
-    .gcb-ss-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); }
-    .gcb-ss-btn.gcb-ss-active {
-      background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4);
-      color: #f1f5f9;
+    .gs-sc-card-grad {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top,
+        rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.38) 45%, transparent 75%);
+    }
+    .gs-sc-card-info {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0 14px 16px; z-index: 2;
+    }
+    .gs-sc-card-name {
+      font-family: 'Noto Serif SC','Songti SC',serif;
+      font-size: 1.15rem; font-weight: 700; color: #fff;
+      letter-spacing: 6px; text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+    }
+    .gs-sc-card-en {
+      font-size: 0.68rem; color: rgba(226,232,240,0.55);
+      letter-spacing: 0.22em; text-transform: uppercase; margin-top: 4px;
+    }
+    .gs-sc-dots {
+      display: flex; justify-content: center; gap: 6px;
+      padding: 4px 0 0; flex-shrink: 0;
+    }
+    .gs-sc-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,0.22);
+      transition: background 0.25s, transform 0.25s;
+    }
+    .gs-sc-dot.active {
+      background: rgba(255,255,255,0.85); transform: scale(1.25);
     }
 
     /* 系列标题：放在图片下方的纯黑区 */
@@ -7021,6 +7047,10 @@
       var shards = state.shards;
       var canPull = coins >= cost;
 
+      // 同步 _gsSeriesActiveIdx 和 _currentGachaSeriesId
+      var _seriesKeys = Object.keys(GACHA_SERIES);
+      _gsSeriesActiveIdx = Math.max(0, _seriesKeys.indexOf(_currentGachaSeriesId));
+
       container.innerHTML =
         // ── 顶部状态栏
         '<div class="gs-topbar">' +
@@ -7039,7 +7069,6 @@
           '<div class="gs-topbar-shards" onclick="showTopbarTooltip(\'shard\',this)">' +
             '<span class="gs-shard-emoji-wrap">' +
               '<span class="gs-shard-emoji">💎</span>' +
-              // 双星光呼吸闪烁（保留原动画）
               '<svg class="gs-shard-sparkles" width="32" height="32" viewBox="0 0 32 32" fill="none" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;overflow:visible">' +
                 '<g class="gs-shard-sparkle" style="transform-origin:27px 7px">' +
                   '<path d="M27,5.5 L27.5,7 L29,7.4 L27.5,7.8 L27,9.3 L26.5,7.8 L25,7.4 L26.5,7 Z" fill="#ffffff"/>' +
@@ -7052,27 +7081,15 @@
             '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
           '</div>' +
         '</div>' +
-        // ── 系列切换选项卡
-        (Object.keys(GACHA_SERIES).length > 1
-          ? '<div class="gs-series-switcher">' +
-              Object.keys(GACHA_SERIES).map(function(sid) {
-                var s = GACHA_SERIES[sid];
-                return '<button class="gs-ss-btn' + (sid === _currentGachaSeriesId ? ' gs-ss-active' : '') + '"' +
-                  ' onclick="switchGachaSeries(\'' + sid + '\')">' + s.nameZh + '</button>';
-              }).join('') +
-            '</div>'
-          : '') +
-        // ── 全幅英雄图
-        '<div class="gs-hero" id="gs-hero">' +
-          '<img class="gs-hero-img" src="' + series.cover + '"' +
-            ' onerror="document.getElementById(\'gs-hero\').classList.add(\'gs-img-err\')"' +
-            ' alt="' + series.nameZh + '">' +
-          '<div class="gs-hero-fallback-icon">🎁</div>' +
+        // ── 系列封面轮播
+        '<div class="gs-sc-wrap" id="gs-sc-wrap">' +
+          '<div class="gs-sc-track" id="gs-sc-track"></div>' +
         '</div>' +
-        // ── 系列标题（在图片下方暗区）
-        '<div class="gs-series-title">' +
-          '<div class="gs-series-name-zh">' + series.nameZh + '</div>' +
-          '<div class="gs-series-name-en">' + series.nameEn + '</div>' +
+        '<div class="gs-sc-dots" id="gs-sc-dots"></div>' +
+        // ── 系列标题
+        '<div class="gs-series-title" id="gs-series-title">' +
+          '<div class="gs-series-name-zh" id="gs-series-name-zh">' + series.nameZh + '</div>' +
+          '<div class="gs-series-name-en" id="gs-series-name-en">' + series.nameEn + '</div>' +
         '</div>' +
         // ── 抽卡按钮
         '<div class="gs-action-area">' +
@@ -7085,10 +7102,12 @@
         '</div>' +
         // ── 次级入口
         '<div class="gs-secondary-row">' +
-          '<button class="gs-sec-btn" onclick="openCollectionBook()">收集册</button>' +
+          '<button class="gs-sec-btn" onclick="openCollectionBook(null, _currentGachaSeriesId)">收集册</button>' +
           '<div class="gs-sec-divider"></div>' +
           '<button class="gs-sec-btn" onclick="openShardShop()">碎片商店</button>' +
         '</div>';
+
+      requestAnimationFrame(function() { _gsInitSeriesCarousel(); });
     }
 
     function _renderPreviewGrid(series, state) {
@@ -7455,7 +7474,8 @@
       cg:     { N: '🖼️', R: '🖼️', SR: '🖼️', SSR: '🖼️' }
     };
 
-    function openCollectionBook(tab) {
+    function openCollectionBook(tab, seriesId) {
+      if (seriesId && GACHA_SERIES[seriesId]) { _collectionSeriesId = seriesId; }
       if (tab && tab !== _collectionBookTab) { _carouselIdx = 0; }
       _collectionBookTab = tab || 'card';
       if (_collectionBookEl && _collectionBookEl.parentNode) {
@@ -7481,23 +7501,13 @@
     }
 
     function _buildCollectionBook(container) {
-      var seriesKeys = Object.keys(GACHA_SERIES);
-      var seriesSwitcher = seriesKeys.length > 1
-        ? '<div class="gcb-series-switcher" id="gcb-series-switcher">' +
-            seriesKeys.map(function(sid) {
-              var s = GACHA_SERIES[sid];
-              return '<button class="gcb-ss-btn' + (sid === _collectionSeriesId ? ' gcb-ss-active' : '') + '"' +
-                ' onclick="switchCollectionSeries(\'' + sid + '\')">' + s.nameZh + '</button>';
-            }).join('') +
-          '</div>'
-        : '';
+      var s = GACHA_SERIES[_collectionSeriesId];
       container.innerHTML =
         '<div class="gcb-topbar">' +
           '<button class="gcb-back-btn" onclick="closeCollectionBook()">◀ 返回</button>' +
-          '<div class="gcb-title">收集册</div>' +
+          '<div class="gcb-title">' + (s ? s.nameZh : '收集册') + '</div>' +
           '<div class="gcb-progress" id="gcb-progress-text"></div>' +
         '</div>' +
-        seriesSwitcher +
         '<div class="gcb-tabs" id="gcb-tabs"></div>' +
         '<div class="gcb-body" id="gcb-body">' +
           '<div id="gcb-carousel-root"></div>' +
@@ -7564,11 +7574,157 @@
       _renderCollectionCarousel();
     }
 
+    // ── 系列轮播常量和状态 ─────────────────────────────────────
+    var GS_SC_CARD_W   = 240;
+    var GS_SC_GAP      = 16;
+    var _gsSeriesActiveIdx = 0;
+    var _gsScTouchX    = 0;
+    var _gsScDragging  = false;
+    var _gsScMouseX    = 0;
+
+    function _gsInitSeriesCarousel() {
+      var track    = document.getElementById('gs-sc-track');
+      var dotsEl   = document.getElementById('gs-sc-dots');
+      var wrap     = document.getElementById('gs-sc-wrap');
+      if (!track) return;
+
+      var seriesKeys = Object.keys(GACHA_SERIES);
+      track.innerHTML = '';
+      seriesKeys.forEach(function(sid, i) {
+        var s    = GACHA_SERIES[sid];
+        var card = document.createElement('div');
+        card.className = 'gs-sc-card' + (i === _gsSeriesActiveIdx ? ' gs-sc-active' : '');
+        card.dataset.gsScIdx = i;
+        card.innerHTML =
+          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\')"></div>' +
+          '<div class="gs-sc-card-grad"></div>' +
+          '<div class="gs-sc-card-info">' +
+            '<div class="gs-sc-card-name">' + s.nameZh + '</div>' +
+            '<div class="gs-sc-card-en">' + s.nameEn + '</div>' +
+          '</div>';
+        card.addEventListener('click', function() {
+          var ci = parseInt(this.dataset.gsScIdx);
+          _gsSetActiveSeries(ci);
+        });
+        track.appendChild(card);
+      });
+
+      // dots
+      if (dotsEl) {
+        dotsEl.innerHTML = seriesKeys.map(function(_, i) {
+          return '<div class="gs-sc-dot' + (i === _gsSeriesActiveIdx ? ' active' : '') + '"></div>';
+        }).join('');
+      }
+
+      _gsUpdateSeriesTrack(false);
+      _gsInitSeriesTouch(wrap);
+    }
+
+    function _gsSetActiveSeries(idx) {
+      var seriesKeys = Object.keys(GACHA_SERIES);
+      if (idx < 0 || idx >= seriesKeys.length) return;
+      _gsSeriesActiveIdx = idx;
+      _currentGachaSeriesId = seriesKeys[idx];
+
+      // 更新卡片高亮
+      document.querySelectorAll('#gs-sc-track .gs-sc-card').forEach(function(c, i) {
+        c.classList.toggle('gs-sc-active', i === _gsSeriesActiveIdx);
+      });
+      _gsUpdateSeriesTrack(true);
+
+      // 更新 dots
+      document.querySelectorAll('#gs-sc-dots .gs-sc-dot').forEach(function(d, i) {
+        d.classList.toggle('active', i === _gsSeriesActiveIdx);
+      });
+
+      // 更新标题（淡出再淡入）
+      var titleEl = document.getElementById('gs-series-title');
+      if (titleEl) {
+        titleEl.style.opacity = '0';
+        setTimeout(function() {
+          var s = GACHA_SERIES[_currentGachaSeriesId];
+          var zhEl = document.getElementById('gs-series-name-zh');
+          var enEl = document.getElementById('gs-series-name-en');
+          if (zhEl) zhEl.textContent = s.nameZh;
+          if (enEl) enEl.textContent = s.nameEn;
+          titleEl.style.opacity = '1';
+        }, 160);
+      }
+
+      // 更新抽卡按钮
+      var cost    = getCurrentThreshold(loadGachaState().flags.pullCount);
+      var canPull = getCoins() >= cost;
+      var btn     = document.getElementById('gs-pull-btn');
+      if (btn) {
+        btn.disabled  = !canPull;
+        btn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
+        btn.innerHTML = canPull ? '抽盲盒' : '回声币不足';
+      }
+    }
+
+    function _gsUpdateSeriesTrack(animate) {
+      var track = document.getElementById('gs-sc-track');
+      var wrap  = document.getElementById('gs-sc-wrap');
+      if (!track || !wrap) return;
+      if (!animate) track.classList.add('no-anim');
+      var vw     = window.innerWidth || wrap.offsetWidth || 375;
+      var offset = (vw / 2) - (GS_SC_CARD_W / 2) - _gsSeriesActiveIdx * (GS_SC_CARD_W + GS_SC_GAP);
+      track.style.transform = 'translateX(' + Math.round(offset) + 'px)';
+      if (!animate) {
+        void track.offsetHeight;
+        track.classList.remove('no-anim');
+      }
+    }
+
+    function _gsInitSeriesTouch(wrap) {
+      if (!wrap || wrap._gsScTouch) return;
+      wrap._gsScTouch = true;
+
+      wrap.addEventListener('touchstart', function(e) {
+        _gsScTouchX = e.touches[0].clientX;
+      }, {passive: true});
+      wrap.addEventListener('touchend', function(e) {
+        var dx = e.changedTouches[0].clientX - _gsScTouchX;
+        if (Math.abs(dx) > 38) {
+          _gsSetActiveSeries(_gsSeriesActiveIdx + (dx < 0 ? 1 : -1));
+        }
+      }, {passive: true});
+
+      wrap.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        _gsScMouseX   = e.clientX;
+        _gsScDragging = true;
+        wrap.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (!_gsScDragging) return;
+        var track = document.getElementById('gs-sc-track');
+        if (!track) { _gsScDragging = false; return; }
+        var vw   = window.innerWidth || 375;
+        var base = (vw / 2) - (GS_SC_CARD_W / 2) - _gsSeriesActiveIdx * (GS_SC_CARD_W + GS_SC_GAP);
+        track.classList.add('no-anim');
+        track.style.transform = 'translateX(' + Math.round(base + (e.clientX - _gsScMouseX)) + 'px)';
+      });
+      document.addEventListener('mouseup', function(e) {
+        if (!_gsScDragging) return;
+        _gsScDragging = false;
+        if (wrap) wrap.style.cursor = '';
+        var dx = e.clientX - _gsScMouseX;
+        var track = document.getElementById('gs-sc-track');
+        if (track) track.classList.remove('no-anim');
+        if (Math.abs(dx) > 50) {
+          _gsSetActiveSeries(_gsSeriesActiveIdx + (dx < 0 ? 1 : -1));
+        } else {
+          _gsUpdateSeriesTrack(true);
+        }
+      });
+    }
+
     function switchGachaSeries(sid) {
-      if (!GACHA_SERIES[sid]) return;
-      _currentGachaSeriesId = sid;
-      var gsEl = document.getElementById('gacha-store-overlay');
-      if (gsEl) _renderGachaStoreContent(gsEl);
+      var keys = Object.keys(GACHA_SERIES);
+      var idx  = keys.indexOf(sid);
+      if (idx >= 0) _gsSetActiveSeries(idx);
     }
 
     // 根据装备状态返回展示图片：服装已装备 → 全身立绘；其他 → 默认 img
