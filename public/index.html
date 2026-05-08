@@ -7602,14 +7602,8 @@
         card.className = 'gs-sc-card' + (i === _gsSeriesActiveIdx ? ' gs-sc-active' : '');
         card.dataset.gsScIdx = i;
         var focusPos = s.imageFocus || 'center center';
-        var bgSize = s.imageSize || 'cover';
         card.innerHTML =
-          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\');background-position:' + focusPos + ';background-size:' + bgSize + '"></div>' +
-          '<div class="gs-sc-card-grad"></div>' +
-          '<div class="gs-sc-card-info">' +
-            '<div class="gs-sc-card-name">' + s.nameZh + '</div>' +
-            '<div class="gs-sc-card-en">' + s.nameEn + '</div>' +
-          '</div>';
+          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\');background-position:' + focusPos + '"></div>';
         card.addEventListener('click', function() {
           var ci = parseInt(this.dataset.gsScIdx);
           _gsSetActiveSeries(ci);
