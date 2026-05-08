@@ -2323,6 +2323,42 @@
     }
     .gs-hero.gs-img-err .gs-hero-img { display: none; }
     .gs-hero.gs-img-err .gs-hero-fallback-icon { display: flex; }
+    /* ── 商店系列切换选项卡 ─────────────────────────────────── */
+    .gs-series-switcher {
+      display: flex; gap: 8px; padding: 14px 20px 6px;
+      flex-shrink: 0;
+    }
+    .gs-ss-btn {
+      flex: 1; padding: 8px 0;
+      border: 1.5px solid rgba(255,255,255,0.15); border-radius: 20px;
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55);
+      font-size: 13px; font-weight: 600; letter-spacing: 2px;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .gs-ss-btn:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+    .gs-ss-btn.gs-ss-active {
+      background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.5);
+      color: #f1f5f9;
+    }
+
+    /* ── 收集册系列切换选项卡 ───────────────────────────────── */
+    .gcb-series-switcher {
+      display: flex; gap: 6px; padding: 8px 16px 2px;
+      flex-shrink: 0;
+    }
+    .gcb-ss-btn {
+      flex: 1; padding: 6px 0;
+      border: 1.5px solid rgba(255,255,255,0.12); border-radius: 16px;
+      background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.45);
+      font-size: 12px; font-weight: 600; letter-spacing: 1.5px;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .gcb-ss-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); }
+    .gcb-ss-btn.gcb-ss-active {
+      background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4);
+      color: #f1f5f9;
+    }
+
     /* 系列标题：放在图片下方的纯黑区 */
     .gs-series-title {
       flex-shrink: 0; text-align: center;
@@ -6586,6 +6622,49 @@
             target: 'nora',
             flavor: '迎新晚会那晚，七七说"你穿这个，比我们更像北京人了。"' }
         ]
+      },
+      'explore-begin': {
+        id: 'explore-begin',
+        nameZh: '开始探索',
+        nameEn: 'Into the City',
+        cover: '/assets/gacha/explore-begin/series-cover.png',
+        unlockRule: { type: 'always' },
+        items: [
+          // ── 章节通关奖励 CG ─────────────────────────────────────
+          { id: 'eb_ssr_cg_weekend', tier: 'SSR', type: 'cg',
+            nameZh: '第一个周末的街角', nameEn: 'A Corner on the First Weekend',
+            img: '/assets/gacha/explore-begin/memory_02.png',
+            body: '那天是我在北京的第一个周末。\n\n七七说要带我去"真正的北京"——不是旅游景点，是那种藏在胡同里的小馆子。\n\n我拿着手机拍了很多照片，走了好几条街，迷了两次路。\n\n但是……每次迷路，又像是发现了什么新的地方。\n\n也许，探索本身，就是一种旅行。',
+            bodyEn: 'That day was my first weekend in Beijing.\n\nQi Qi said she\'d show me "the real Beijing" — not tourist spots, but those tiny restaurants hidden in the hutongs.\n\nI took so many photos, walked down so many streets, got lost twice.\n\nBut somehow... every time I got lost, it felt like I\'d found something new.\n\nMaybe getting lost is a kind of journey in itself.' },
+          // ── N (50%) ─────────────────────────────────────────
+          { id: 'eb_n_card_bag', tier: 'N', type: 'card',
+            nameZh: '菜市口的购物袋', nameEn: 'Market Street Tote',
+            img: '/assets/gacha/explore-begin/card_bag.png',
+            flavor: '七七说，这里的袋子结实，装得下半条街的零食。' },
+          { id: 'eb_n_card_noodle', tier: 'N', type: 'card',
+            nameZh: '老北京炸酱面', nameEn: 'Beijing Zhajiang Noodles',
+            img: '/assets/gacha/explore-begin/card_noodle.png',
+            flavor: '第一口就明白了，为什么北京人叫它"家的味道"。' },
+          // ── R (30%) ─────────────────────────────────────────
+          { id: 'eb_r_card_wifi', tier: 'R', type: 'card',
+            nameZh: '咖啡馆Wi-Fi密码', nameEn: 'Café Wi-Fi Password',
+            img: '/assets/gacha/explore-begin/card_wifi.jpg',
+            flavor: 'jinghua2024——七七说，学校附近每家咖啡馆密码都差不多。' },
+          { id: 'eb_r_card_campus', tier: 'R', type: 'card',
+            nameZh: '校园一卡通', nameEn: 'Campus Card',
+            img: '/assets/gacha/explore-begin/card_campus.jpg',
+            flavor: '这张小卡片，能进图书馆、打饭、坐校车——北京生活的通行证。' },
+          // ── SR (15%) ────────────────────────────────────────
+          { id: 'eb_sr_diary_receipt', tier: 'SR', type: 'diary',
+            nameZh: '第一张现金收据', nameEn: 'First Cash Receipt',
+            img: '/assets/gacha/explore-begin/diary_receipt.png',
+            body: '在那家胡同小店，老板不收手机付款。\n\n我翻了半天包，找出仅剩的二十块现金，买了一个糖葫芦和一袋炒栗子。\n\n找回来的几块零钱，我一直揣在口袋里，舍不得花。\n\n不知道为什么，这张皱巴巴的收据，比任何照片都更像一张纪念品。' },
+          // ── SSR (5%) ────────────────────────────────────────
+          { id: 'eb_ssr_diary_form', tier: 'SSR', type: 'diary',
+            nameZh: '社团报名申请表', nameEn: 'Club Registration Form',
+            img: '/assets/gacha/explore-begin/diary_form.png',
+            body: '路过社团招募摊位的时候，我本来只是想随便看看。\n\n但摊位上的同学看到我，立刻用英文说"Join us！"然后把表格塞到我手里。\n\n我在"语言交流社"的表格上，歪歪扭扭地写下了自己的名字。\n\n回来七七看了，笑着说："诺拉，你终于开始像个大学生了。"' }
+        ]
       }
     };
 
@@ -6748,7 +6827,7 @@
     //   __gacha.reset()         // 清空盲盒数据
     //   __gacha.simulate(30)    // 模拟连抽 30 次（金币要够）
     window.__gacha = {
-      pull:      function() { var r = pullGacha('nora-debut'); console.log('[gacha pull]', r); return r; },
+      pull:      function() { var r = pullGacha(_currentGachaSeriesId); console.log('[gacha pull]', r); return r; },
       state:     function() { var s = loadGachaState(); console.log('[gacha state]', s); return s; },
       threshold: function() { return getCurrentThreshold(loadGachaState().flags.pullCount); },
       reset:     function() { localStorage.removeItem(GACHA_STATE_KEY); console.log('[gacha] gacha state reset'); },
@@ -6780,7 +6859,7 @@
         n = n || 10;
         var results = { pulls: 0, byTier: { N:0, R:0, SR:0, SSR:0 }, items: {}, dupShards: 0 };
         for (var i = 0; i < n; i++) {
-          var r = pullGacha('nora-debut');
+          var r = pullGacha(_currentGachaSeriesId);
           if (!r.ok) { console.log('[sim stop]', r); break; }
           results.pulls++;
           results.byTier[r.tier]++;
@@ -6936,7 +7015,7 @@
     // ─ 5.5 商店页渲染 ───────────────────────────────────────────
     function _renderGachaStoreContent(container) {
       var state  = loadGachaState();
-      var series = GACHA_SERIES['nora-debut'];
+      var series = GACHA_SERIES[_currentGachaSeriesId];
       var cost   = getCurrentThreshold(state.flags.pullCount);
       var coins  = getCoins();
       var shards = state.shards;
@@ -6973,6 +7052,16 @@
             '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
           '</div>' +
         '</div>' +
+        // ── 系列切换选项卡
+        (Object.keys(GACHA_SERIES).length > 1
+          ? '<div class="gs-series-switcher">' +
+              Object.keys(GACHA_SERIES).map(function(sid) {
+                var s = GACHA_SERIES[sid];
+                return '<button class="gs-ss-btn' + (sid === _currentGachaSeriesId ? ' gs-ss-active' : '') + '"' +
+                  ' onclick="switchGachaSeries(\'' + sid + '\')">' + s.nameZh + '</button>';
+              }).join('') +
+            '</div>'
+          : '') +
         // ── 全幅英雄图
         '<div class="gs-hero" id="gs-hero">' +
           '<img class="gs-hero-img" src="' + series.cover + '"' +
@@ -7110,7 +7199,7 @@
       }
       triggerCoinFlyOff(cost);
       playChimeSound();
-      var result = pullGacha('nora-debut');
+      var result = pullGacha(_currentGachaSeriesId);
       if (!result.ok) return;
       refreshCoinDisplay();
       _refreshGachaStoreUI();
@@ -7349,6 +7438,9 @@
     // ── 盲盒系统 M4: 收集册 Collection Book ───────────────────
     // ════════════════════════════════════════════════════════════
 
+    var _currentGachaSeriesId  = 'nora-debut';
+    var _collectionSeriesId    = 'nora-debut';
+
     var _collectionBookEl  = null;
     var _collectionBookTab = 'card';  // 'card' | 'diary' | 'outfit'
     var _detailAudio       = null;    // 当前播放的 Audio 对象
@@ -7389,12 +7481,23 @@
     }
 
     function _buildCollectionBook(container) {
+      var seriesKeys = Object.keys(GACHA_SERIES);
+      var seriesSwitcher = seriesKeys.length > 1
+        ? '<div class="gcb-series-switcher" id="gcb-series-switcher">' +
+            seriesKeys.map(function(sid) {
+              var s = GACHA_SERIES[sid];
+              return '<button class="gcb-ss-btn' + (sid === _collectionSeriesId ? ' gcb-ss-active' : '') + '"' +
+                ' onclick="switchCollectionSeries(\'' + sid + '\')">' + s.nameZh + '</button>';
+            }).join('') +
+          '</div>'
+        : '';
       container.innerHTML =
         '<div class="gcb-topbar">' +
           '<button class="gcb-back-btn" onclick="closeCollectionBook()">◀ 返回</button>' +
           '<div class="gcb-title">收集册</div>' +
           '<div class="gcb-progress" id="gcb-progress-text"></div>' +
         '</div>' +
+        seriesSwitcher +
         '<div class="gcb-tabs" id="gcb-tabs"></div>' +
         '<div class="gcb-body" id="gcb-body">' +
           '<div id="gcb-carousel-root"></div>' +
@@ -7446,6 +7549,28 @@
       _renderCollectionCarousel();
     }
 
+    function switchCollectionSeries(sid) {
+      if (!GACHA_SERIES[sid]) return;
+      _collectionSeriesId = sid;
+      _carouselIdx = 0;
+      // 更新系列选项卡高亮
+      var switcher = document.getElementById('gcb-series-switcher');
+      if (switcher) {
+        switcher.querySelectorAll('.gcb-ss-btn').forEach(function(btn) {
+          btn.classList.toggle('gcb-ss-active', btn.textContent === GACHA_SERIES[sid].nameZh);
+        });
+      }
+      _renderTabs();
+      _renderCollectionCarousel();
+    }
+
+    function switchGachaSeries(sid) {
+      if (!GACHA_SERIES[sid]) return;
+      _currentGachaSeriesId = sid;
+      var gsEl = document.getElementById('gacha-store-overlay');
+      if (gsEl) _renderGachaStoreContent(gsEl);
+    }
+
     // 根据装备状态返回展示图片：服装已装备 → 全身立绘；其他 → 默认 img
     function getDisplayImage(item, state) {
       if (item.type === 'outfit' && item.outfitFull
@@ -7457,7 +7582,7 @@
 
     function _renderCollectionGrid() {
       var state  = loadGachaState();
-      var series = GACHA_SERIES['nora-debut'];
+      var series = GACHA_SERIES[_collectionSeriesId];
       var items  = series.items.filter(function(it) { return it.type === _collectionBookTab; });
       var grid   = document.getElementById('gcb-grid');
       var prog   = document.getElementById('gcb-progress-text');
@@ -7506,7 +7631,7 @@
     // ── 收集册轮播 ────────────────────────────────────────────
     function _renderCollectionCarousel() {
       var state  = loadGachaState();
-      var series = GACHA_SERIES['nora-debut'];
+      var series = GACHA_SERIES[_collectionSeriesId];
       var items  = series.items.filter(function(it) { return it.type === _collectionBookTab; });
       var root   = document.getElementById('gcb-carousel-root');
       var prog   = document.getElementById('gcb-progress-text');
@@ -8021,7 +8146,7 @@
       var shards  = state.shards;
       if (shdNumEl) shdNumEl.textContent = shards;
 
-      var series  = GACHA_SERIES['nora-debut'];
+      var series  = GACHA_SERIES[_currentGachaSeriesId];
       var tiers   = ['N', 'R', 'SR', 'SSR'];
       var tierNames = { N: 'N 普通', R: 'R 稀有', SR: 'SR 精选', SSR: 'SSR 至臻' };
 
@@ -8142,7 +8267,7 @@
       var cost    = SHARD_PRICE[tier];
       if (state.shards < cost) return;
 
-      var series  = GACHA_SERIES['nora-debut'];
+      var series  = GACHA_SERIES[_currentGachaSeriesId];
       var unowned = series.items.filter(function(it) {
         return it.tier === tier && !state.collection[it.id];
       });
