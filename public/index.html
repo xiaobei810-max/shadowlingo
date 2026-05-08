@@ -6608,6 +6608,7 @@
         nameEn: "Nora's Debut",
         cover: '/assets/gacha/nora-debut/series-cover.png',
         imageFocus: '80% center',
+        imageSize: 'auto 76%',
         unlockRule: { type: 'always' },
         items: [
           // ── 章节通关奖励 CG（强制获得，不参与随机池）─────────────
@@ -7601,8 +7602,9 @@
         card.className = 'gs-sc-card' + (i === _gsSeriesActiveIdx ? ' gs-sc-active' : '');
         card.dataset.gsScIdx = i;
         var focusPos = s.imageFocus || 'center center';
+        var bgSize = s.imageSize || 'cover';
         card.innerHTML =
-          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\');background-position:' + focusPos + '"></div>' +
+          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\');background-position:' + focusPos + ';background-size:' + bgSize + '"></div>' +
           '<div class="gs-sc-card-grad"></div>' +
           '<div class="gs-sc-card-info">' +
             '<div class="gs-sc-card-name">' + s.nameZh + '</div>' +
