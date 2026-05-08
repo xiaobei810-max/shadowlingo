@@ -2202,7 +2202,7 @@
       transform: translateY(100%); opacity: 0;
       transition: transform 0.32s cubic-bezier(.22,.68,.32,1), opacity 0.22s ease;
       overflow: hidden;
-      will-change: transform, opacity;       /* GPU 合成层，避免滑入时主线程阻塞 */
+      will-change: transform, opacity;
     }
     /* ── 共享背景氛围层：用 CSS 渐变模拟原本 blur(38px) 的暗色调 ──
        原方案加载 lesson2_bus.png (~1.5MB) + 38px 高斯模糊，每次开盲盒/收集册/结果卡都触发昂贵的位图模糊绘制，
@@ -2326,29 +2326,31 @@
     /* ── 商店系列滑动轮播 ────────────────────────────────────── */
     .gs-sc-wrap {
       flex-shrink: 0; width: 100%; overflow: hidden;
-      padding: 10px 0 6px; cursor: grab; user-select: none;
+      padding: 6px 0 2px; cursor: grab; user-select: none;
       position: relative; z-index: 1;
+      margin-top: auto;   /* 把轮播+以下内容整体下沉 */
     }
     .gs-sc-wrap:active { cursor: grabbing; }
     .gs-sc-track {
       display: flex; gap: 16px; align-items: center;
-      will-change: transform; padding: 12px 0;
+      will-change: transform; padding: 14px 0 10px;
       transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94);
     }
     .gs-sc-track.no-anim { transition: none; }
     .gs-sc-card {
-      flex-shrink: 0; width: 300px; height: 360px;
-      border-radius: 20px; overflow: hidden; cursor: pointer;
+      flex-shrink: 0; width: 310px; height: 420px;
+      border-radius: 22px; overflow: hidden; cursor: pointer;
       position: relative;
-      transform: scale(0.84); opacity: 0.45;
+      transform: scale(0.82); opacity: 0.42;
       transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94),
                   opacity 0.42s ease, box-shadow 0.42s ease;
       box-shadow: 0 4px 24px rgba(0,0,0,0.4);
     }
     .gs-sc-card.gs-sc-active {
       transform: scale(1); opacity: 1;
-      box-shadow: 0 14px 48px rgba(0,0,0,0.65),
-                  0 0 0 1.5px rgba(255,255,255,0.22);
+      box-shadow: 0 18px 56px rgba(0,0,0,0.7),
+                  0 0 0 1.5px rgba(255,255,255,0.25),
+                  0 0 32px -8px rgba(255,255,255,0.1);
     }
     .gs-sc-card-bg {
       position: absolute; inset: 0;
@@ -2374,7 +2376,7 @@
     }
     .gs-sc-dots {
       display: flex; justify-content: center; gap: 6px;
-      padding: 2px 0 0; flex-shrink: 0;
+      padding: 0; flex-shrink: 0;
     }
     .gs-sc-dot {
       width: 5px; height: 5px; border-radius: 50%;
@@ -2388,7 +2390,7 @@
     /* 系列标题：放在图片下方的纯黑区 */
     .gs-series-title {
       flex-shrink: 0; text-align: center;
-      padding: 10px 24px 4px;
+      padding: 8px 24px 2px;
       transition: opacity 0.18s;
     }
     .gs-series-name-zh {
@@ -2398,14 +2400,14 @@
     }
     .gs-series-name-en {
       font-size: 11px; color: rgba(255,255,255,0.42); letter-spacing: 5px;
-      text-transform: uppercase; margin-top: 6px;
+      text-transform: uppercase; margin-top: 5px;
     }
     .gs-series-progress { display: none; }
     .gs-complete-banner { display: none; }
     .gs-pity-row        { display: none; }
 
     .gs-action-area {
-      flex-shrink: 0; padding: 16px 24px 10px;
+      flex-shrink: 0; padding: 14px 24px 8px;
       display: flex; align-items: center; justify-content: center;
     }
     .gs-pull-btn {
@@ -2481,7 +2483,7 @@
     .gs-secondary-row {
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center; gap: 0;
-      padding: 10px 24px 28px;
+      padding: 8px 24px 32px;
     }
     .gs-sec-divider {
       width: 1px; height: 14px; background: rgba(255,255,255,0.22);
@@ -6605,6 +6607,7 @@
         nameZh: '初见诺拉',
         nameEn: "Nora's Debut",
         cover: '/assets/gacha/nora-debut/series-cover.png',
+        imageFocus: '80% center',
         unlockRule: { type: 'always' },
         items: [
           // ── 章节通关奖励 CG（强制获得，不参与随机池）─────────────
@@ -6655,6 +6658,7 @@
         nameZh: '开始探索',
         nameEn: 'Into the City',
         cover: '/assets/gacha/explore-begin/series-cover.png',
+        imageFocus: 'center center',
         unlockRule: { type: 'always' },
         items: [
           // ── 章节通关奖励 CG ─────────────────────────────────────
@@ -7576,7 +7580,7 @@
     }
 
     // ── 系列轮播常量和状态 ─────────────────────────────────────
-    var GS_SC_CARD_W   = 300;
+    var GS_SC_CARD_W   = 310;
     var GS_SC_GAP      = 16;
     var _gsSeriesActiveIdx = 0;
     var _gsScTouchX    = 0;
@@ -7596,8 +7600,9 @@
         var card = document.createElement('div');
         card.className = 'gs-sc-card' + (i === _gsSeriesActiveIdx ? ' gs-sc-active' : '');
         card.dataset.gsScIdx = i;
+        var focusPos = s.imageFocus || 'center center';
         card.innerHTML =
-          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\')"></div>' +
+          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\');background-position:' + focusPos + '"></div>' +
           '<div class="gs-sc-card-grad"></div>' +
           '<div class="gs-sc-card-info">' +
             '<div class="gs-sc-card-name">' + s.nameZh + '</div>' +
