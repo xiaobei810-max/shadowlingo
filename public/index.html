@@ -3129,6 +3129,8 @@
     }
     /* CG 横图卡片：全覆盖，展示完整画面 */
     .gcb-car-card.cc-cg img { object-fit: cover; border-radius: 12px; }
+    /* 普通卡片：contain + 内边距，完整展示物品图 */
+    .gcb-car-card.cc-card img { object-fit: contain; padding: 14px; }
     /* 未拥有卡片：完全不可见（仍占位，保证轮播布局正常） */
     .gcb-car-card.cc-empty {
       opacity: 0 !important;
@@ -6665,6 +6667,8 @@
           { id: 'eb_ssr_cg_linwan', tier: 'SSR', type: 'cg',
             nameZh: '原来是他', nameEn: 'So It Was Him',
             img: '/assets/gacha/explore-begin/memory-card-02.png',
+            audio: '/assets/gacha/explore-begin/memory_linwan.mp3',
+            voiceOnly: true,
             body: '"他叫林晚，是我们学校的计算机学神。"\n\n当七七在讨论摄影社那个严格的副社长时……\n听到这个名字，我忽然愣住了。\n\n林晚？\n\n我回到房间，拿出了那天在机场捡到的笔记本。\n翻开第一页，上面隐约写着一个名字。\n\n我的脑海里，再次闪过那个戴着耳机、走得很快的男生背影。\n\n真的会是他吗？',
             bodyEn: '"His name is Lin Wan, he\'s our school\'s computer science study god."\n\nWhen Qiqi was talking about the strict vice president of the photography club...\nHearing this name, I suddenly froze.\n\nLin Wan?\n\nI went back to my room and took out the notebook I picked up at the airport that day.\nOpening the first page, a name was faintly written on it.\n\nIn my mind, the back of that boy wearing headphones, walking very fast, flashed again.\n\nCould it really be him?' },
           // ── N (50%) ─────────────────────────────────────────
@@ -7839,6 +7843,7 @@
                   (i === _carouselIdx ? ' cc-active' : '') +
                   (item.type === 'outfit' ? ' cc-outfit' : '') +
                   (item.type === 'cg' ? ' cc-cg' : '') +
+                  (item.type === 'card' ? ' cc-card' : '') +
                   (owned && item.tier ? ' cc-tier-' + item.tier.toLowerCase() : '');
         // Active owned card → show detail; else navigate to it
         var clickHandler = (i === _carouselIdx)
