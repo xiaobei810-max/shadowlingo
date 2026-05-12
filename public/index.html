@@ -2356,6 +2356,21 @@
       position: absolute; inset: 0;
       background: #1a2540 center/cover no-repeat;
     }
+    .gs-sc-card-blur {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: blur(18px);
+      opacity: 0.55;
+      transform: scale(1.12);
+    }
+    .gs-sc-card-img {
+      position: absolute; inset: 0;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
     .gs-sc-card-grad {
       position: absolute; inset: 0;
       background: linear-gradient(to top,
@@ -7601,10 +7616,10 @@
         var card = document.createElement('div');
         card.className = 'gs-sc-card' + (i === _gsSeriesActiveIdx ? ' gs-sc-active' : '');
         card.dataset.gsScIdx = i;
-        var focusPos = s.imageFocus || 'center center';
-        var bgSize = s.imageSize || 'cover';
+        var imgUrl = 'url(\'' + s.cover + '\')';
         card.innerHTML =
-          '<div class="gs-sc-card-bg" style="background-image:url(\'' + s.cover + '\');background-position:' + focusPos + ';background-size:' + bgSize + '"></div>';
+          '<div class="gs-sc-card-blur" style="background-image:' + imgUrl + '"></div>' +
+          '<div class="gs-sc-card-img" style="background-image:' + imgUrl + '"></div>';
         card.addEventListener('click', function() {
           var ci = parseInt(this.dataset.gsScIdx);
           _gsSetActiveSeries(ci);
