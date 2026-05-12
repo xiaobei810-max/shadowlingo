@@ -10918,23 +10918,8 @@
       var ctxPanel = document.getElementById('context-panel');
       if (ctxPanel) ctxPanel.style.display = 'none';
 
-      var ctxBelowPanel = document.getElementById('context-panel-below');
-      if (ctxBelowPanel) {
-        if (s.contextBelow) {
-          ctxBelowPanel.style.display = 'block';
-          var cbSpeaker = document.getElementById('ctx-speaker-below');
-          var cbZh      = document.getElementById('ctx-zh-below');
-          var cbEn      = document.getElementById('ctx-en-below');
-          var cbBtn     = document.getElementById('ctx-play-btn-below');
-          if (cbSpeaker) cbSpeaker.textContent = s.contextBelow.speaker;
-          buildCtxKara(cbZh, s.contextBelow.zh, s.contextBelow.pinyin);
-          scheduleReflowKaraAvoidOrphan(cbZh, '.ctx-kchar');
-          if (cbEn) cbEn.textContent = s.contextBelow.en;
-          if (cbBtn) { cbBtn.textContent = '▶ 播放 Play'; cbBtn.classList.remove('playing'); }
-        } else {
-          ctxBelowPanel.style.display = 'none';
-        }
-      }
+      // 下方配对面板：通过 _normD 规范化再渲染，确保头像、声音随说话人（店员/明轩/七七等）正确更新
+      _renderContextPanel('below', s.contextBelow ? _normD(s.contextBelow) : null);
 
       if (el("pinyin")) el("pinyin").textContent = s.pinyin;
       if (el("en")) el("en").textContent = s.en;
@@ -12023,7 +12008,7 @@
         if (!s || !s.contextBelow) return;
         zh     = s.contextBelow.zh;
         pinyin = s.contextBelow.pinyin;
-        role   = 'local';
+        role   = _speakerRole(_normD(s.contextBelow)._sid || s.contextBelow.speaker);
       }
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
