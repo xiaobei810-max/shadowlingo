@@ -7779,7 +7779,7 @@
             '</div>' +
             '<div class="gcb-item-name">' + (owned ? item.nameZh : '?') + '</div>' +
             (isEquipped ? '<div class="gcb-equipped-badge">已换装</div>' : '') +
-            (count > 1 && !isEquipped ? '<div class="gcb-count-badge">×' + count + '</div>' : '') +
+            (count > 1 && !isEquipped && item.type !== 'outfit' ? '<div class="gcb-count-badge">×' + count + '</div>' : '') +
           '</div>'
         );
       }).join('');
@@ -7891,7 +7891,7 @@
         '<div class="gcb-car-tier gcb-detail-tier-' + tier.toLowerCase() + '">' + TIER_LABEL[tier] + '</div>' +
         '<div class="gcb-car-name-zh">' + item.nameZh + '</div>' +
         '<div class="gcb-car-name-en">' + item.nameEn + '</div>' +
-        (rec && rec.count > 1 ? '<div class="gcb-car-count">×' + rec.count + '</div>' : '')
+        (rec && rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-car-count">×' + rec.count + '</div>' : '')
       );
     }
 
@@ -7981,7 +7981,7 @@
           '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
           '<div class="gcb-detail-name-en">' + item.nameEn + '</div>' +
           bodyHtml +
-          (rec.count > 1 ? '<div class="gcb-detail-count">已获得 ' + rec.count + ' 份</div>' : '') +
+          (rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-detail-count">已获得 ' + rec.count + ' 份</div>' : '') +
           '<div class="gcb-detail-btns">' + btns + '</div>' +
         '</div>';
 
