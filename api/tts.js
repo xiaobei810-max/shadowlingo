@@ -88,12 +88,12 @@ const VOICES = {
     rateScale: 1.13,
     pitchAdj:  '+2%',
   },
-  // 林晚：YunhaoNeural — 成熟有力的男声，"极简主义" 计算机学神人设
-  // 语速略慢、音调自然低沉，营造"克制 / 冷静 / 一句一个重点" 的气质
+  // 林晚：YunyangNeural — 标准播音腔男声，语速放慢营造"克制冷静" 气质
+  // 与收银员（YunyangNeural rateScale:1.0）同底声，但明显更慢，听感有区分
   linwan: {
-    name:      'zh-CN-YunhaoNeural',
+    name:      'zh-CN-YunyangNeural',
     lang:      'zh-CN',
-    rateScale: 0.93,
+    rateScale: 0.88,
     pitchAdj:  '0%',
   },
 };
