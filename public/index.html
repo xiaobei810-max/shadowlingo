@@ -6242,9 +6242,9 @@
         ],
         vocab: [
           { zh: '空位', py: 'kòng wèi',  en: 'Empty seat' },
-          { zh: '排队', py: 'pái duì',   en: 'To queue / line up' },
+          { zh: '请问', py: 'qǐng wèn',  en: 'Excuse me / May I ask' },
           { zh: '菜单', py: 'cài dān',   en: 'Menu' },
-          { zh: '侧身', py: 'cè shēn',   en: 'To turn sideways / step aside' }
+          { zh: '点单', py: 'diǎn dān',  en: 'To order (food/drinks)' }
         ],
         insiderTip: {
           textbook: { zh: '对不起，让一下。', en: 'Sorry, let me through.' },
@@ -12333,7 +12333,13 @@
         showChapter1Cutscene();
         return;
       }
-      updateUI();
+      // 对话模式：重回第2步，保持「NPC 在上、学员在下」的正确布局（适配 L11 等店员先开口的课程）
+      if (dialogMode && dialogRounds && dialogRounds.length) {
+        dialogRoundIdx = 0;
+        enterDialogStep2();
+      } else {
+        updateUI();
+      }
     }
 
     // ── 第一章通关演出 ───────────────────────────────────────────
