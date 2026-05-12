@@ -7429,10 +7429,9 @@
           '<div class="gr-tier-badge gr-tier-' + tier.toLowerCase() + '">' + label + '</div>' +
           '<div class="gr-img-wrap' + imgContainCls + '">' +
             '<img class="gr-img" src="' + item.img + '"' +
-              ' onerror="this.style.display=\'none\'"' +
-              ' onload="this.nextElementSibling.style.display=\'none\'"' +
+              ' onerror="this.style.display=\'none\';var e=this.nextElementSibling;if(e)e.style.display=\'\';"' +
               ' alt="">' +
-            '<div class="gr-img-fallback">' + emoji + '</div>' +
+            '<div class="gr-img-fallback" style="display:none">' + emoji + '</div>' +
           '</div>' +
           '<div class="gr-name-zh">' + item.nameZh + '</div>' +
           '<div class="gr-name-en">' + item.nameEn + '</div>' +
@@ -7776,9 +7775,8 @@
             '<div class="gcb-item-img-wrap">' +
               (owned
                 ? '<img class="gcb-item-img" src="' + getDisplayImage(item, state) + '"' +
-                  ' onerror="this.style.display=\'none\'"' +
-                  ' onload="var e=this.nextElementSibling;if(e)e.style.display=\'none\';" alt="">' +
-                  '<span class="gcb-item-emoji" style="position:absolute">' + emoji + '</span>'
+                  ' onerror="this.style.display=\'none\';var e=this.nextElementSibling;if(e)e.style.display=\'\';" alt="">' +
+                  '<span class="gcb-item-emoji" style="position:absolute;display:none">' + emoji + '</span>'
                 : '<span class="gcb-item-emoji">' + emoji + '</span>') +
             '</div>' +
             '<div class="gcb-item-name">' + (owned ? item.nameZh : '?') + '</div>' +
@@ -7854,9 +7852,8 @@
             (clickHandler ? ' onclick="' + clickHandler + '"' : '') + '>' +
             (owned
               ? '<img src="' + getDisplayImage(item, state) + '"' +
-                ' onerror="this.style.display=\'none\'"' +
-                ' onload="var e=this.nextSibling;if(e&&e.classList)e.style.display=\'none\';" alt="">' +
-                '<span class="gcb-car-emoji">' + emoji + '</span>'
+                ' onerror="this.style.display=\'none\';var e=this.nextSibling;if(e&&e.classList)e.style.display=\'\';" alt="">' +
+                '<span class="gcb-car-emoji" style="display:none">' + emoji + '</span>'
               : (item.type === 'cg' && item.img
                 ? '<img src="' + item.img + '" style="filter:blur(6px) brightness(0.45)" alt="">' +
                   '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;">🔒</div>'
@@ -7981,9 +7978,8 @@
           '<div class="gcb-detail-tier-badge gcb-detail-tier-' + tier.toLowerCase() + '">' + TIER_LABEL[tier] + '</div>' +
           '<div class="gcb-detail-img-wrap' + imgContainCls + '"' + thumbOnClick + '>' +
             '<img class="gcb-detail-img" src="' + getDisplayImage(item, state) + '"' +
-            ' onerror="this.style.display=\'none\'"' +
-            ' onload="var e=this.nextElementSibling;if(e)e.style.display=\'none\';" alt="">' +
-            '<span class="gcb-detail-img-emoji">' + emoji + '</span>' +
+            ' onerror="this.style.display=\'none\';var e=this.nextElementSibling;if(e)e.style.display=\'\';" alt="">' +
+            '<span class="gcb-detail-img-emoji" style="display:none">' + emoji + '</span>' +
             (thumbClickable ? '<span class="gcb-thumb-zoom-icon">⤢</span>' : '') +
           '</div>' +
           '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
