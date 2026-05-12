@@ -1,11 +1,18 @@
 /**
- * api/tts.js — 语音合成（Edge TTS 免费 WebSocket，替代过期的 Azure）
+ * api/tts.js — 语音合成（Edge TTS 免费 WebSocket）
  *
  * 支持角色：
- *   local   → 明轩（中文男声，zh-CN-YunxiNeural）
- *   learner → Nora（带外国口音的女声，en-US-AvaMultilingualNeural 读中文）
- *   linyue  → 林欣悦（中文女声，zh-CN-XiaoxiaoNeural）
- *   qiqi    → 夏七七（活力大学生女声，zh-CN-XiaochenNeural，语速 +5%）
+ *   local          → 明轩（zh-CN-YunxiNeural）
+ *   learner        → Nora（en-US-AvaMultilingualNeural 读中文）
+ *   linyue         → 林欣悦（zh-CN-XiaoxiaoNeural）
+ *   qiqi           → 夏七七（zh-CN-XiaoxiaoNeural，语速 +8%）
+ *   cashier        → 收银员（zh-CN-YunyangNeural）
+ *   david          → 大卫（en-US-AndrewMultilingualNeural 读中文）
+ *   cafestaff      → 咖啡馆店员（zh-CN-YunjianNeural）
+ *   cafestaff_fast → 咖啡馆店员快速版（zh-CN-YunjianNeural，+13%）
+ *   linwan         → 林晚运行时回退（YunjianNeural 压低音调）
+ *                    ★ 林晚台词优先从预生成静态 MP3 播放（audioMap.json），
+ *                      仅当静态文件不存在时才走此 Edge TTS 回退
  */
 
 const WebSocket = require('ws');
@@ -16,80 +23,69 @@ const TRUSTED_CLIENT_TOKEN  = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
 const CHROMIUM_FULL_VERSION = '143.0.3650.75';
 const CHROMIUM_MAJOR        = CHROMIUM_FULL_VERSION.split('.')[0];
 const SEC_MS_GEC_VERSION    = `1-${CHROMIUM_FULL_VERSION}`;
-const WIN_EPOCH             = 11644473600; // 1601→1970 秒偏移
+const WIN_EPOCH             = 11644473600;
 
 function generateSecMsGec() {
   let ticks = Math.floor(Date.now() / 1000);
   ticks += WIN_EPOCH;
-  ticks -= ticks % 300;   // 先在秒级对齐到 5 分钟
-  ticks = ticks * 1e7;    // 再转换为 100ns 单位
+  ticks -= ticks % 300;
+  ticks = ticks * 1e7;
   const str = `${ticks.toFixed(0)}${TRUSTED_CLIENT_TOKEN}`;
   return crypto.createHash('sha256').update(str, 'ascii').digest('hex').toUpperCase();
 }
 
 // ── 角色 → 声音配置 ─────────────────────────────────────────────
 const VOICES = {
-  // 明轩：中文男声，稳重亲切
   local: {
     name:      'zh-CN-YunxiNeural',
     lang:      'zh-CN',
     rateScale: 1.02,
     pitchAdj:  '+2%',
   },
-  // Nora：英语多语言女声读中文 → 带外国口音
   learner: {
     name:      'en-US-AvaMultilingualNeural',
     lang:      'zh-CN',
     rateScale: 0.82,
     pitchAdj:  '+6%',
   },
-  // 林欣悦：中文女声，清脆亲切
   linyue: {
     name:      'zh-CN-XiaoxiaoNeural',
     lang:      'zh-CN',
     rateScale: 1.0,
     pitchAdj:  '+4%',
   },
-  // 夏七七：活力大学生女声 — 与林欣悦同基底（XiaoxiaoNeural，Edge TTS 稳定支持），
-  // 通过 +8% 语速 + +5% 音高让七七听起来更年轻活泼，避免"声音不响"问题
   qiqi: {
     name:      'zh-CN-XiaoxiaoNeural',
     lang:      'zh-CN',
     rateScale: 1.08,
     pitchAdj:  '+5%',
   },
-  // 收银员等一次性 NPC：YunyangNeural — 标准男播音腔，与明轩（YunxiNeural）明显区分
   cashier: {
     name:      'zh-CN-YunyangNeural',
     lang:      'zh-CN',
     rateScale: 1.0,
     pitchAdj:  '0%',
   },
-  // 大卫：英语母语男声读中文 → 带外国口音，与 Nora 同技术路线
   david: {
     name:      'en-US-AndrewMultilingualNeural',
     lang:      'zh-CN',
     rateScale: 0.88,
     pitchAdj:  '+3%',
   },
-  // 咖啡馆店员：YunjianNeural — 清亮年轻男声，与明轩(YunxiNeural)/收银员(YunyangNeural)
-  // 区分明显，适合咖啡馆这种节奏快、服务感强的场景
   cafestaff: {
     name:      'zh-CN-YunjianNeural',
     lang:      'zh-CN',
     rateScale: 1.0,
     pitchAdj:  '0%',
   },
-  // 咖啡馆店员（快语速变体）— 与 cafestaff 同声音演员，但语速更快，
-  // 用于 L12「点单卡壳」场景：店员连珠炮发问，让学员体验真实世界的反应压力
   cafestaff_fast: {
     name:      'zh-CN-YunjianNeural',
     lang:      'zh-CN',
     rateScale: 1.13,
     pitchAdj:  '+2%',
   },
-  // 林晚：YunjianNeural 压低音调版 — 同底声转为低沉冷感
-  // rate -5%（稍慢，体现克制）+ pitch -10%（压低音调，去除年轻活泼感）
+  // 林晚运行时回退：台词有静态 MP3 时不会走到这里
+  // 仅用于静态文件尚未生成的新台词（如开发阶段）
   linwan: {
     name:      'zh-CN-YunjianNeural',
     lang:      'zh-CN',
@@ -108,9 +104,9 @@ function escapeXml(s) {
 }
 
 function buildSSML(text, role, rate) {
-  const v        = VOICES[role] || VOICES.local;
+  const v         = VOICES[role] || VOICES.local;
   const finalRate = `${Math.round(((rate || 1.0) * v.rateScale - 1) * 100)}%`;
-  const escaped  = escapeXml(text);
+  const escaped   = escapeXml(text);
   return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${v.lang}'>` +
          `<voice name='${v.name}'>` +
          `<prosody rate='${finalRate}' pitch='${v.pitchAdj}'>${escaped}</prosody>` +
@@ -129,7 +125,7 @@ function synthesize(ssml) {
                    `&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}` +
                    `&ConnectionId=${connId}`;
 
-    const ws     = new WebSocket(url, {
+    const ws = new WebSocket(url, {
       headers: {
         'Pragma':           'no-cache',
         'Cache-Control':    'no-cache',
@@ -159,7 +155,6 @@ function synthesize(ssml) {
     );
 
     ws.on('open', () => {
-      // 1) speech.config
       ws.send(
         `Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n` +
         JSON.stringify({ context: { synthesis: { audio: {
@@ -167,7 +162,6 @@ function synthesize(ssml) {
           outputFormat: 'audio-24khz-96kbitrate-mono-mp3'
         }}}})
       );
-      // 2) SSML
       ws.send(
         `X-RequestId:${reqId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n${ssml}`
       );
@@ -176,15 +170,13 @@ function synthesize(ssml) {
     ws.on('message', (data, isBinary) => {
       if (done) return;
       if (isBinary) {
-        // 每帧头部 2 字节是元数据长度，跳过
         const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
         if (buf.length > 2) {
           const headerLen = buf.readUInt16BE(0);
           chunks.push(buf.slice(2 + headerLen));
         }
       } else {
-        const text = data.toString();
-        if (text.includes('Path:turn.end')) {
+        if (data.toString().includes('Path:turn.end')) {
           finish(null, Buffer.concat(chunks));
         }
       }
