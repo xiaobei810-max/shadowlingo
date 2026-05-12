@@ -72,6 +72,14 @@ const VOICES = {
     rateScale: 0.88,
     pitchAdj:  '+3%',
   },
+  // 咖啡馆店员：YunjianNeural — 清亮年轻男声，与明轩(YunxiNeural)/收银员(YunyangNeural)
+  // 区分明显，适合咖啡馆这种节奏快、服务感强的场景
+  cafestaff: {
+    name:      'zh-CN-YunjianNeural',
+    lang:      'zh-CN',
+    rateScale: 1.0,
+    pitchAdj:  '0%',
+  },
 };
 
 function escapeXml(s) {
