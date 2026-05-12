@@ -6151,6 +6151,113 @@
             en: 'Nearly every Chinese university has a "<b class="tip-hl">商业街</b>" (commercial street) right outside the gate — packed with snack stalls, milk tea shops, and cafes. It\'s the go-to weekend escape for college students. You\'ll see crowds of students streaming out the gate on weekends, switching into "off-campus adventure mode."'
           }
         }
+      },
+
+      // ── 第十一课 ─────────────────────────────────────────────────
+      {
+        id: "lesson-11",
+        titleZh: "第十一课：慧姐咖啡馆", titleEn: "Lesson 11: Sister Hui's Cafe",
+        newChars: [],
+        cgImage:   '/assets/cg/lesson11_coffee-shop.png',
+        cardImage: '/assets/cg/lesson11_coffee-shop_card.jpg',
+        cgText:  '深吸一口气，在这醇厚的咖啡香中，开启第一场全中文的点单挑战。',
+        cgTextEn: 'Take a deep breath — in this rich coffee aroma, your first all-Chinese ordering challenge begins.',
+        coverScene: {
+          zh: '周末下午，诺拉找到了七七<br>推荐的咖啡馆，推门进去，<br>店内坐满了人。',
+          en: "On a weekend afternoon, Nora finds the cafe Qiqi recommended; she pushes the door open, and the place is packed."
+        },
+        audio: "",
+        sentences: [
+          /* Page 1 — 店员 在 top（contextBelow），Nora 在 bottom */
+          {
+            zh: "请问，还有空位吗？",
+            pinyin: "Qǐng wèn, hái yǒu kòng wèi ma?",
+            en: "Excuse me, are there any empty seats?",
+            contextBelow: { speaker: "店员 · Cafe Staff", zh: "欢迎光临！", pinyin: "Huān yíng guāng lín!", en: "Welcome!" },
+            role: "learner",
+            start: 0, end: 0,
+            praise: "☕ 开场提问超自然！Natural opener!",
+            hint: "【请问，还有……吗？】= 'Excuse me, is there still …?' — 还 emphasizes \"any left,\" perfect when a place looks full · 空位 = vacant seat",
+            chars: [
+              { c: "请", p: "qing3" }, { c: "问", p: "wen4" },
+              { c: "还", p: "hai2" }, { c: "有", p: "you3" },
+              { c: "空", p: "kong4" }, { c: "位", p: "wei4" },
+              { c: "吗", p: "ma5" }
+            ]
+          },
+          /* Page 2 — 店员 在 top，Nora 在 bottom */
+          {
+            zh: "好的。请问有英文菜单吗？",
+            pinyin: "Hǎo de. Qǐng wèn yǒu Yīng wén cài dān ma?",
+            en: "Okay. Excuse me, do you have an English menu?",
+            contextBelow: { speaker: "店员 · Cafe Staff", zh: "二楼还有座位。您先在这边点单。", pinyin: "Èr lóu hái yǒu zuò wèi. Nín xiān zài zhè biān diǎn dān.", en: "There are still seats on the second floor. Please order here first." },
+            role: "learner",
+            start: 0, end: 0,
+            praise: "📖 询问菜单很实用！Useful menu ask!",
+            hint: "【请问有……吗？】是询问商家是否提供某物的万能句式 · 菜单 (cài dān) = menu, 英文菜单 = English menu",
+            chars: [
+              { c: "好", p: "hao3" }, { c: "的", p: "de5" },
+              { c: "请", p: "qing3" }, { c: "问", p: "wen4" },
+              { c: "有", p: "you3" },
+              { c: "英", p: "ying1" }, { c: "文", p: "wen2" },
+              { c: "菜", p: "cai4" }, { c: "单", p: "dan1" },
+              { c: "吗", p: "ma5" }
+            ]
+          },
+          /* Page 3 — 店员 在 top，Nora 在 bottom */
+          {
+            zh: "这样啊，我看不太懂中文。",
+            pinyin: "Zhè yàng a, wǒ kàn bú tài dǒng Zhōng wén.",
+            en: "I see — I can't really read Chinese very well.",
+            contextBelow: { speaker: "店员 · Cafe Staff", zh: "不好意思，我们只有中文菜单。", pinyin: "Bù hǎo yì si, wǒ men zhǐ yǒu Zhōng wén cài dān.", en: "Sorry, we only have a Chinese menu." },
+            role: "learner",
+            start: 0, end: 0,
+            praise: "💬 委婉表达局限性！Nicely softened!",
+            hint: "【这样啊】是接收新信息后的语气词，相当于 'I see / oh' · 【看不太懂】= 'can't really read/understand', 太……不 软化否定，比"看不懂"更礼貌",
+            chars: [
+              { c: "这", p: "zhe4" }, { c: "样", p: "yang4" }, { c: "啊", p: "a5" },
+              { c: "我", p: "wo3" },
+              { c: "看", p: "kan4" }, { c: "不", p: "bu4" },
+              { c: "太", p: "tai4" }, { c: "懂", p: "dong3" },
+              { c: "中", p: "zhong1" }, { c: "文", p: "wen2" }
+            ]
+          },
+          /* Page 4 — 店员 在 top，Nora 在 bottom */
+          {
+            zh: "哦，好的，不好意思，您先点。",
+            pinyin: "O, hǎo de, bù hǎo yì si, nín xiān diǎn.",
+            en: "Oh, okay, sorry about that, you order first.",
+            contextBelow: { speaker: "店员 · Cafe Staff", zh: "没关系，您慢慢看，要么让后面的客人先点。", pinyin: "Méi guān xi, nín màn man kàn, yào me ràng hòu miàn de kè rén xiān diǎn.", en: "It's okay, take your time, or perhaps let the customers behind you order first." },
+            role: "learner",
+            start: 0, end: 0,
+            praise: "🙌 让位说得超得体！Graceful yield!",
+            hint: "【不好意思】= 'Sorry / Excuse me' — 比"对不起"更日常、更轻盈 · 【您先点】主动让位，礼貌且地道",
+            chars: [
+              { c: "哦", p: "o2" },
+              { c: "好", p: "hao3" }, { c: "的", p: "de5" },
+              { c: "不", p: "bu4" }, { c: "好", p: "hao3" }, { c: "意", p: "yi4" }, { c: "思", p: "si5" },
+              { c: "您", p: "nin2" }, { c: "先", p: "xian1" }, { c: "点", p: "dian3" }
+            ]
+          }
+        ],
+        vocab: [
+          { zh: '空位', py: 'kòng wèi',  en: 'Empty seat' },
+          { zh: '排队', py: 'pái duì',   en: 'To queue / line up' },
+          { zh: '菜单', py: 'cài dān',   en: 'Menu' },
+          { zh: '侧身', py: 'cè shēn',   en: 'To turn sideways / step aside' }
+        ],
+        insiderTip: {
+          textbook: { zh: '对不起，让一下。', en: 'Sorry, let me through.' },
+          street:   { zh: '不好意思，您先点。', pinyin: 'Bù hǎo yì si, nín xiān diǎn.' },
+          langTip: {
+            zh: '当你需要占用别人时间，或感到轻微抱歉时，最实用的开场白就是「<b class="tip-hl">不好意思 (bù hǎo yì si)</b>」——它比"对不起"更日常、更轻盈，几乎适用于所有需要打扰他人的场合。而诺拉说的「<b class="tip-hl">您先点</b>」是非常礼貌且地道的让步表达：主动让位永远比被人催促优雅。',
+            en: 'When you need to take up someone\'s time or feel slightly apologetic, the most practical opener is "<b class="tip-hl">不好意思 (bù hǎo yì si)</b>" — lighter and more everyday than "对不起", and it works for almost any situation where you need to interrupt. Saying "<b class="tip-hl">您先点</b>" — "you go first" — is a very polite, authentic way to yield: stepping aside voluntarily always feels more graceful than being rushed.'
+          },
+          cultureTip: {
+            zh: '中国的<b class="tip-hl">咖啡馆和奶茶店</b>节奏通常很快。当你还在犹豫菜单时，店员往往会礼貌地建议你让出位置，让后面排队的顾客先点单——这并非催促，而是为了保证<b class="tip-hl">队伍的流动效率</b>。学会从容地"侧身让一下"，是在中国都市生活的一项隐藏技能。',
+            en: 'Chinese <b class="tip-hl">cafes and milk-tea shops</b> usually move at a brisk pace. When you\'re still browsing the menu, staff will often politely suggest you step aside to let the customer behind you order — not to rush you, but to keep the <b class="tip-hl">queue flowing efficiently</b>. Learning to gracefully sidestep is a hidden survival skill of life in urban China.'
+          }
+        }
       }
     ];
 
@@ -6432,6 +6539,30 @@
             note: "口语首选：「往」比「向」更口语化，这是中国人指路时说的真实用语。" },
           { type: "culture", zh: "校门外的商业街",
             desc: "中国大学的校门外通常有一条商业街（shāng yè jiē），充满小吃摊、奶茶店和咖啡馆，是大学生周末放松的核心地带。" }
+        ]
+      },
+      // ── 第十一课 ──────────────────────────────────────────────────
+      {
+        id: "lesson-11",
+        title: "慧姐咖啡馆",
+        scene: "周末下午，诺拉找到了七七推荐的咖啡馆，推门进去，店内坐满了人。",
+        dialogue: [
+          { speaker: "店员 · Cafe Staff", role: "local",   zh: "欢迎光临！",                                          pinyin: "Huān yíng guāng lín!",                                                             en: "Welcome!" },
+          { speaker: "诺拉",              role: "learner", zh: "请问，还有空位吗？",                                  pinyin: "Qǐng wèn, hái yǒu kòng wèi ma?",                                                   en: "Excuse me, are there any empty seats?" },
+          { speaker: "店员 · Cafe Staff", role: "local",   zh: "二楼还有座位。您先在这边点单。",                      pinyin: "Èr lóu hái yǒu zuò wèi. Nín xiān zài zhè biān diǎn dān.",                          en: "There are still seats on the second floor. Please order here first." },
+          { speaker: "诺拉",              role: "learner", zh: "好的。请问有英文菜单吗？",                            pinyin: "Hǎo de. Qǐng wèn yǒu Yīng wén cài dān ma?",                                        en: "Okay. Excuse me, do you have an English menu?" },
+          { speaker: "店员 · Cafe Staff", role: "local",   zh: "不好意思，我们只有中文菜单。",                        pinyin: "Bù hǎo yì si, wǒ men zhǐ yǒu Zhōng wén cài dān.",                                  en: "Sorry, we only have a Chinese menu." },
+          { speaker: "诺拉",              role: "learner", zh: "这样啊，我看不太懂中文。",                            pinyin: "Zhè yàng a, wǒ kàn bú tài dǒng Zhōng wén.",                                        en: "I see, I can't really read Chinese very well." },
+          { speaker: "店员 · Cafe Staff", role: "local",   zh: "没关系，您慢慢看，要么让后面的客人先点。",            pinyin: "Méi guān xi, nín màn man kàn, yào me ràng hòu miàn de kè rén xiān diǎn.",          en: "It's okay, take your time to look, or perhaps let the customers behind you order first." },
+          { speaker: "诺拉",              role: "learner", zh: "哦，好的，不好意思，您先点。",                        pinyin: "O, hǎo de, bù hǎo yì si, nín xiān diǎn.",                                          en: "Oh, okay, sorry about that, you order first." }
+        ],
+        correct: [
+          { zh: "对不起，让一下。", pinyin: "Duì bu qǐ, ràng yí xià.", en: "Sorry, let me through (textbook).",
+            note: "教材式道歉，略显生硬；日常更多用「不好意思」。" },
+          { zh: "不好意思，您先点。", pinyin: "Bù hǎo yì si, nín xiān diǎn.", en: "Sorry, you order first (natural). ✅",
+            note: "口语首选：「不好意思」比「对不起」更日常、更轻盈；主动让位「您先点」礼貌得体。" },
+          { type: "culture", zh: "咖啡馆的「动线管理」",
+            desc: "中国咖啡馆/奶茶店节奏很快，店员会礼貌建议你让出位置，让后面的客人先点——这是为了维持队伍流动，并非催促你。" }
         ]
       }
     ];
@@ -10896,9 +11027,13 @@
       if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
       resetKara();
 
-      // 【核心修复】：动态映射声音角色（staff→linyue, qiqi→qiqi, nora/learner→learner, others→local）
-      var currentRole = (s._sid === 'staff') ? 'linyue'
-                      : (s._sid === 'qiqi')  ? 'qiqi'
+      // 【核心修复】：动态映射声音角色（staff→linyue, cashier→cashier, cafestaff→cafestaff,
+      //                                 qiqi→qiqi, david→david, nora/learner→learner, others→local）
+      var currentRole = (s._sid === 'staff')     ? 'linyue'
+                      : (s._sid === 'cashier')   ? 'cashier'
+                      : (s._sid === 'cafestaff') ? 'cafestaff'
+                      : (s._sid === 'qiqi')      ? 'qiqi'
+                      : (s._sid === 'david')     ? 'david'
                       : (s._sid === 'nora' || s.role === 'learner') ? 'learner'
                       : 'local';
 
@@ -11952,8 +12087,11 @@
       stopCtxTTS();
       var s = currentSentenceForEval;
       if (!s) return;
-      var role = (s._sid === 'qiqi') ? 'qiqi'
-               : (s._sid === 'staff') ? 'linyue'
+      var role = (s._sid === 'qiqi')      ? 'qiqi'
+               : (s._sid === 'staff')     ? 'linyue'
+               : (s._sid === 'cashier')   ? 'cashier'
+               : (s._sid === 'cafestaff') ? 'cafestaff'
+               : (s._sid === 'david')     ? 'david'
                : 'local';
       ctxPlayingId = 'top';
       resetKara();
@@ -13838,9 +13976,12 @@
 
     // 根据说话人数据返回头像 / 姓名配置
     function _isStaffSpeaker(s) {
-      // Returns true for any unnamed NPC (staff, cashier, etc.) — used for silhouette avatar
-      return !!(s && (s === 'staff' || s.indexOf('Staff') !== -1 || s.indexOf('工作') !== -1
-                   || s.indexOf('收银') !== -1 || s.indexOf('Cashier') !== -1));
+      // Returns true for any unnamed NPC (staff, cashier, cafe staff, etc.) — used for silhouette avatar
+      return !!(s && (s === 'staff' || s === 'cafestaff'
+                   || s.indexOf('Staff') !== -1 || s.indexOf('工作') !== -1
+                   || s.indexOf('收银') !== -1 || s.indexOf('Cashier') !== -1
+                   || s.indexOf('店员') !== -1 || s.indexOf('店員') !== -1
+                   || s.indexOf('Cafe Staff') !== -1));
     }
     function _isQiqiSpeaker(s) {
       if (!s) return false;
@@ -13850,16 +13991,23 @@
     function _isCashierSpeaker(s) {
       return !!(s && (s.indexOf('收银') !== -1 || s.indexOf('Cashier') !== -1));
     }
+    function _isCafeStaffSpeaker(s) {
+      if (!s) return false;
+      var str = String(s);
+      return str === 'cafestaff' || str.indexOf('店员') !== -1 || str.indexOf('店員') !== -1
+          || str.indexOf('Cafe Staff') !== -1;
+    }
     function _isDavidSpeaker(s) {
       if (!s) return false;
       var str = String(s);
       return str === 'david' || /david/i.test(str) || str.indexOf('大卫') !== -1;
     }
     function _speakerRole(speaker) {
-      if (_isCashierSpeaker(speaker)) return 'cashier';
-      if (_isStaffSpeaker(speaker))   return 'linyue';
-      if (_isQiqiSpeaker(speaker))    return 'qiqi';
-      if (_isDavidSpeaker(speaker))   return 'david';
+      if (_isCashierSpeaker(speaker))   return 'cashier';
+      if (_isCafeStaffSpeaker(speaker)) return 'cafestaff';
+      if (_isStaffSpeaker(speaker))     return 'linyue';
+      if (_isQiqiSpeaker(speaker))      return 'qiqi';
+      if (_isDavidSpeaker(speaker))     return 'david';
       return 'local';
     }
     function getDialogRoundCount() {
@@ -13888,6 +14036,10 @@
       var spkStr = String(d.speaker || '');
       if (role === 'learner' || /nora/i.test(spkStr)) {
         sid = 'nora';
+      } else if (_isCashierSpeaker(spkStr)) {
+        sid = 'cashier';
+      } else if (_isCafeStaffSpeaker(spkStr)) {
+        sid = 'cafestaff';
       } else if (_isStaffSpeaker(spkStr)) {
         sid = 'staff';
       } else if (_isQiqiSpeaker(spkStr)) {
