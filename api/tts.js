@@ -88,6 +88,14 @@ const VOICES = {
     rateScale: 1.13,
     pitchAdj:  '+2%',
   },
+  // 林晚：YunzeNeural — 成熟低沉的男声，"极简主义" 计算机学神人设
+  // 语速略慢、音调略低，营造"克制 / 冷静 / 一句一个重点" 的气质
+  linwan: {
+    name:      'zh-CN-YunzeNeural',
+    lang:      'zh-CN',
+    rateScale: 0.95,
+    pitchAdj:  '-3%',
+  },
 };
 
 function escapeXml(s) {
