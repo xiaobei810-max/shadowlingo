@@ -80,6 +80,14 @@ const VOICES = {
     rateScale: 1.0,
     pitchAdj:  '0%',
   },
+  // 咖啡馆店员（快语速变体）— 与 cafestaff 同声音演员，但语速更快，
+  // 用于 L12「点单卡壳」场景：店员连珠炮发问，让学员体验真实世界的反应压力
+  cafestaff_fast: {
+    name:      'zh-CN-YunjianNeural',
+    lang:      'zh-CN',
+    rateScale: 1.13,
+    pitchAdj:  '+2%',
+  },
 };
 
 function escapeXml(s) {
