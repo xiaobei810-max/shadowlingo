@@ -7852,7 +7852,10 @@
                 ' onerror="this.style.display=\'none\'"' +
                 ' onload="var e=this.nextSibling;if(e&&e.classList)e.style.display=\'none\';" alt="">' +
                 '<span class="gcb-car-emoji">' + emoji + '</span>'
-              : '' /* 未拥有：完全空白，不显示锁/emoji/文字 */) +
+              : (item.type === 'cg' && item.img
+                ? '<img src="' + item.img + '" style="filter:blur(6px) brightness(0.45)" alt="">' +
+                  '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;">🔒</div>'
+                : '') /* 其他未拥有：完全空白 */) +
           '</div>'
         );
       }).join('');
