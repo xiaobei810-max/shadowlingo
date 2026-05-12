@@ -3332,6 +3332,7 @@
     }
     .gcb-detail-img-wrap.gcb-img-cg .gcb-detail-img {
       object-fit: cover;
+      object-position: center 15%;
       border-radius: 22px 22px 0 0;
     }
     .gcb-detail-img-wrap.gcb-img-cg .gcb-detail-img-emoji { display: none; }
@@ -7953,8 +7954,8 @@
       btns += '<button class="gcb-close-btn" onclick="closeItemDetail()">关闭</button>';
 
       // 服装类用 contain padding；CG 类用宽幅横图展示
-      var imgContainCls = (item.type === 'outfit') ? ' gcb-img-contain'
-                        : (item.type === 'cg')     ? ' gcb-img-cg' : '';
+      var imgContainCls = (item.type === 'outfit')                    ? ' gcb-img-contain'
+                        : (item.type === 'cg' || item.type === 'diary') ? ' gcb-img-cg' : '';
       // 缩略图可点击全屏查看：仅 CG（服装的"穿着效果"已经直接显示在卡片图上了）
       var fullSrc = (item.type === 'cg' && item.img) ? item.img : '';
       var thumbClickable = !!fullSrc;
@@ -7971,7 +7972,7 @@
         if (item.body)   bodyHtml += '<div class="gcb-detail-body">' + item.body   + '</div>';
       }
 
-      var cardCls = 'gcb-detail-card' + (item.type === 'cg' ? ' gcb-detail-card--cg' : '');
+      var cardCls = 'gcb-detail-card' + ((item.type === 'cg' || item.type === 'diary') ? ' gcb-detail-card--cg' : '');
       ov.innerHTML =
         '<div class="' + cardCls + '">' +
           '<div class="gcb-detail-handle"></div>' +
