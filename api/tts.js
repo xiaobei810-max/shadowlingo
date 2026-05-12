@@ -88,13 +88,13 @@ const VOICES = {
     rateScale: 1.13,
     pitchAdj:  '+2%',
   },
-  // 林晚：YunyangNeural — 标准播音腔男声，语速放慢营造"克制冷静" 气质
-  // 与收银员（YunyangNeural rateScale:1.0）同底声，但明显更慢，听感有区分
+  // 林晚：YunjianNeural 压低音调版 — 同底声转为低沉冷感
+  // rate -5%（稍慢，体现克制）+ pitch -10%（压低音调，去除年轻活泼感）
   linwan: {
-    name:      'zh-CN-YunyangNeural',
+    name:      'zh-CN-YunjianNeural',
     lang:      'zh-CN',
-    rateScale: 0.88,
-    pitchAdj:  '0%',
+    rateScale: 0.95,
+    pitchAdj:  '-10%',
   },
 };
 
