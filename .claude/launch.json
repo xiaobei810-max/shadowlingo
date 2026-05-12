@@ -9,7 +9,7 @@
                 "http.server",
                 "3456",
                 "--directory",
-                "/Users/zxb/shadowlingo/public"
+                "/Users/zxb/shadowlingo/.claude/worktrees/hungry-cray-55fcfe/public"
             ],
             "port": 3456
         }
