@@ -13517,7 +13517,7 @@
               dlpAvatarWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png?v=4" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 42%;transform:scale(0.9);">';
             } else if (d._sid === 'linwan') {
               dlpAvatarWrap.className = 'avatar-wrap lw';
-              dlpAvatarWrap.innerHTML = '<img src="/assets/characters/linwan/linwan_head.png" alt="林晚" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 30%;transform:scale(1.0);">';
+              dlpAvatarWrap.innerHTML = '<img src="/assets/characters/linwan/linwan_head.png" alt="林晚" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 20%;transform:scale(2.0);">';
             } else {
               dlpAvatarWrap.className = 'avatar-wrap mx';
               dlpAvatarWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
@@ -13762,6 +13762,7 @@
           }
         };
         audio.onended = function () {
+          if (_handled) return; // guard: onerror fired first (fallback already handles onend)
           if (_currentAudio === audio) _currentAudio = null;
           if (onend) onend();
         };
@@ -13812,9 +13813,10 @@
       var utter = new SpeechSynthesisUtterance(text);
       _applyVoice(utter, role, rate);
       var estSec = Math.max(2.0, text.replace(/[，。！？,.!?]/g, '').length * 0.28 / (rate || 1));
+      var _fbDone = false; // one-shot guard: fire onend exactly once even if both onend+onerror fire
       utter.onstart = function () { if (onplay) onplay(estSec); };
-      utter.onend   = function () { if (onend) onend(); };
-      utter.onerror = function () { if (onend) onend(); };
+      utter.onend   = function () { if (!_fbDone) { _fbDone = true; if (onend) onend(); } };
+      utter.onerror = function () { if (!_fbDone) { _fbDone = true; if (onend) onend(); } };
       setTimeout(function () { window.speechSynthesis.speak(utter); }, 50);
     }
 
@@ -13997,7 +13999,7 @@
             } else if (line._sid === 'linwan') {
               aImg.src = '/assets/characters/linwan/linwan_head.png';
               aImg.alt = '林晚';
-              aImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:50% 30%;transform:scale(1.0);';
+              aImg.style.cssText = 'width:100%;height:100%;object-fit:cover;transform-origin:50% 20%;transform:scale(2.0);';
             } else {
               aImg.src = '/assets/characters/mingxuan/mingxuan_head.png';
               aImg.alt = '明轩';
@@ -14022,7 +14024,7 @@
             bWrap.innerHTML = '<img src="/assets/characters/dawei/dawei_head.png?v=4" alt="大卫" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 42%;transform:scale(0.9);">';
           } else if (line._sid === 'linwan') {
             bWrap.className = 'avatar-wrap lw';
-            bWrap.innerHTML = '<img src="/assets/characters/linwan/linwan_head.png" alt="林晚" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 30%;transform:scale(1.0);">';
+            bWrap.innerHTML = '<img src="/assets/characters/linwan/linwan_head.png" alt="林晚" style="width:100%;height:100%;object-fit:cover;transform-origin:50% 20%;transform:scale(2.0);">';
           } else {
             bWrap.className = 'avatar-wrap mx';
             bWrap.innerHTML = '<img src="/assets/characters/mingxuan/mingxuan_head.png" alt="明轩" style="width:100%;height:100%;object-fit:cover;transform-origin:49% 25%;transform:scale(3.5);">';
@@ -14231,7 +14233,8 @@
       for (var _pi = 0; _pi < preloadCount; _pi++) {
         (function(item) {
           if (getStaticAudioUrl(item.zh)) return; // 有本地静态音频，无需预取TTS
-          var role = item.role === 'learner' ? 'learner' : 'local';
+          var _pnd = _normD(item);
+          var role = (_pnd.role === 'learner') ? 'learner' : _speakerRole(_pnd._sid || item.speaker || item.name);
           var key  = role + ':1.00:' + item.zh;
           if (_ttsCache[key]) return; // 已缓存，跳过
           fetch('/api/tts', {
@@ -14409,7 +14412,7 @@
         return {
           img:      '/assets/characters/linwan/linwan_head.png',
           alt:      '林晚', cls: 'lw',
-          imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:50% 30%;transform:scale(1.0);',
+          imgStyle: 'width:100%;height:100%;object-fit:cover;transform-origin:50% 20%;transform:scale(2.0);',
           name:     nd.speaker || '林晚 · Lin Wan',
           tag:      'Local · 本地说话人 Native Speaker',
           isStaff:  false
