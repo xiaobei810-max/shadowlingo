@@ -14685,6 +14685,7 @@
         pills: ['计算机系学神', '极简主义', '细节杀手'],
         greeting: '如果不知道怎么选，点"正常"就可以。',
         greetingAudio: '/audio/linwan/linwan_greeting.mp3',
+        quoteAudio: '/audio/linwan/linwan_quote.mp3',
         greetingRole: 'linwan',
         greetingRate: 0.95,
         btnText: '继续 Continue ➔',
@@ -14832,11 +14833,12 @@
           var escapedVal = r.val.replace(/'/g, "\\'");
           var role = c.greetingRole || 'local';
           var rate = c.greetingRate || 1.0;
+          var quoteAudioUrl = c.quoteAudio ? '\'' + c.quoteAudio + '\'' : 'null';
           return '<div class="char-profile-row char-profile-row-quote">' +
             '<div class="char-profile-quote-header">' +
               '<span class="char-profile-icon">' + (r.icon || '💬') + '</span>' +
               (r.label ? '<span class="char-profile-quote-label">' + r.label + ' &middot; ' + (r.labelEn || 'Catchphrase') + '</span>' : '') +
-              '<button class="char-profile-quote-play" onclick="charProfilePlayQuote(\'' + escapedVal + '\',\'' + role + '\',' + rate + ')" title="播放">' +
+              '<button class="char-profile-quote-play" onclick="charProfilePlayQuote(\'' + escapedVal + '\',\'' + role + '\',' + rate + ',' + quoteAudioUrl + ')" title="播放">' +
                 '<svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#22c55e"/></svg>' +
               '</button>' +
             '</div>' +
@@ -14916,7 +14918,7 @@
       }
     }
 
-    function charProfilePlayQuote(text, role, rate) {
+    function charProfilePlayQuote(text, role, rate, staticUrl) {
       // 如果问候语在播放，先停掉并重置问候语按钮
       if (window._charIntroAudio && window._charIntroAudioSrc === 'greeting') {
         window._charIntroAudio.pause();
@@ -14937,32 +14939,40 @@
         return;
       }
 
-      // 首次点击：获取 TTS 并播放（加 loading 状态给用户视觉反馈）
+      // 首次点击：静态文件优先，无静态文件才调 TTS API
       var qBtn = document.querySelector('.char-profile-quote-play');
-      if (qBtn) { qBtn.classList.add('loading'); qBtn.innerHTML = ''; }
-      fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text, role: role || 'local', rate: rate || 1.0 })
-      }).then(function(r) { return r.ok ? r.blob() : Promise.reject('tts-err'); })
-        .then(function(blob) {
-          if (qBtn) qBtn.classList.remove('loading');
-          var url = URL.createObjectURL(blob);
-          var audio = new Audio(url);
-          window._charIntroAudio = audio;
-          window._charIntroAudioSrc = 'quote';
-          _setQuoteBtnIcon(true);
-          audio.onended = function() {
-            window._charIntroAudio = null;
-            window._charIntroAudioSrc = null;
-            URL.revokeObjectURL(url);
-            _setQuoteBtnIcon(false);
-          };
-          audio.play().catch(function() { _setQuoteBtnIcon(false); });
-        }).catch(function() {
-          if (qBtn) { qBtn.classList.remove('loading'); }
+
+      function _playQuoteUrl(url, isBlob) {
+        if (qBtn) qBtn.classList.remove('loading');
+        var audio = new Audio(url);
+        window._charIntroAudio = audio;
+        window._charIntroAudioSrc = 'quote';
+        _setQuoteBtnIcon(true);
+        audio.onended = function() {
+          window._charIntroAudio = null;
+          window._charIntroAudioSrc = null;
+          if (isBlob) URL.revokeObjectURL(url);
           _setQuoteBtnIcon(false);
-        });
+        };
+        audio.play().catch(function() { _setQuoteBtnIcon(false); });
+      }
+
+      if (staticUrl) {
+        _playQuoteUrl(staticUrl, false);
+      } else {
+        if (qBtn) { qBtn.classList.add('loading'); qBtn.innerHTML = ''; }
+        fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, role: role || 'local', rate: rate || 1.0 })
+        }).then(function(r) { return r.ok ? r.blob() : Promise.reject('tts-err'); })
+          .then(function(blob) {
+            _playQuoteUrl(URL.createObjectURL(blob), true);
+          }).catch(function() {
+            if (qBtn) { qBtn.classList.remove('loading'); }
+            _setQuoteBtnIcon(false);
+          });
+      }
     }
 
     function charIntroToggleProfile() {
