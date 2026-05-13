@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 """
-sync_audio.py — MiniMax TTS 批量合成脚本
+sync_audio.py — 批量音频预生成脚本
 用法: python sync_audio.py
-生成 public/audio/lesson01-05 的 MP3 文件，并更新 public/audio/audioMap.json
+
+• 第 1-10 课：MiniMax TTS（已有）
+• 林晚（Linwan）台词：Azure 官方 TTS（zh-CN-YunhaoNeural，年轻随性男声）
+
+Azure 配置（运行脚本前设置环境变量）：
+  export AZURE_SPEECH_KEY="你的 Azure Key"
+  export AZURE_SPEECH_REGION="eastasia"   # 或 eastus / japaneast 等
+
+Azure 免费额度：F0 套餐每月 50 万字符，完全够用。
+注册地址：https://portal.azure.com → 搜索"Speech Services" → 创建（选 F0 免费层）
 """
 
 import os
@@ -10,24 +19,32 @@ import json
 import time
 import requests
 
-# ── API 配置 ──────────────────────────────────────────────────────────
-API_KEY  = "sk-api-k0C134YCrEhkh7dQGQFhVK4B2gUxcdLIKbNrTZklQSMyG5ulacGpftRrzhL-RD2mc3qOySPXRdhCjVjfIR6ITzlm7xJrLUoDoF8Bdcqig47m0v37zwCrOxM"
-API_URL  = "https://api.minimaxi.chat/v1/t2a_v2"
-MODEL    = "speech-01-hd-2.8"
+# ── MiniMax API 配置 ──────────────────────────────────────────────
+MINIMAX_API_KEY = "sk-api-k0C134YCrEhkh7dQGQFhVK4B2gUxcdLIKbNrTZklQSMyG5ulacGpftRrzhL-RD2mc3qOySPXRdhCjVjfIR6ITzlm7xJrLUoDoF8Bdcqig47m0v37zwCrOxM"
+MINIMAX_API_URL = "https://api.minimaxi.chat/v1/t2a_v2"
+MINIMAX_MODEL   = "speech-01-hd-2.8"
 
-# ── 角色 → 声音 ID 映射 ────────────────────────────────────────────────
-VOICE_MAP = {
+# ── Azure TTS 配置（从环境变量读取）──────────────────────────────
+AZURE_KEY    = os.environ.get("AZURE_SPEECH_KEY", "")
+AZURE_REGION = os.environ.get("AZURE_SPEECH_REGION", "eastasia")
+
+# ── 角色 → MiniMax 声音 ID ────────────────────────────────────────
+MINIMAX_VOICE_MAP = {
     "Nora":     "Chinese (Mandarin)_Gentle_Senior",
     "Mingxuan": "Chinese (Mandarin)_Gentleman",
-    "Linwan":   "male-qn-jingying-jingpin",
     "Qiqi":     "Arrogant_Miss",
-    "Staff":    "Chinese (Mandarin)_Gentle_Senior",   # 行政人员用温和女声
-    "Cashier":  "presenter_male",                     # 收银员用播报男声（区别于明轩）
+    "Staff":    "Chinese (Mandarin)_Gentle_Senior",
+    "Cashier":  "presenter_male",
     "Huijie":   "Japanese_CalmLady",
     "David":    "English_Diligent_Man",
 }
 
-# ── 台词数据（1-5 课，每课 8 句）────────────────────────────────────────
+# ── 林晚 Azure TTS 参数（与 api/tts.js linwan 配置一致）────────────
+LINWAN_VOICE  = "zh-CN-YunhaoNeural"
+LINWAN_RATE   = "-5%"    # rateScale 0.95 → (0.95-1)*100 = -5%
+LINWAN_PITCH  = "0%"
+
+# ── 台词数据（1-10 课，MiniMax 合成）────────────────────────────────
 SCRIPT = [
     # 第一课
     {"lesson": "01", "line": "01", "role": "Nora",     "text": "你好，请问去市区怎么走？"},
@@ -47,7 +64,6 @@ SCRIPT = [
     {"lesson": "02", "line": "06", "role": "Mingxuan", "text": "二十块。不用急。"},
     {"lesson": "02", "line": "07", "role": "Nora",     "text": "机场离学校远吗？"},
     {"lesson": "02", "line": "08", "role": "Mingxuan", "text": "有点远，要一个小时。"},
-    # 第二课 生词（line key 以 "v" 开头，区别于对话行）
     {"lesson": "02", "line": "v1", "role": "Mingxuan", "text": "买票"},
     {"lesson": "02", "line": "v2", "role": "Mingxuan", "text": "扫码"},
     {"lesson": "02", "line": "v3", "role": "Mingxuan", "text": "现金"},
@@ -88,7 +104,6 @@ SCRIPT = [
     {"lesson": "06", "line": "06", "role": "Nora",     "text": "太谢谢了。我回头还给你。"},
     {"lesson": "06", "line": "07", "role": "Qiqi",     "text": "没事，不着急。我们去那边坐吧。"},
     {"lesson": "06", "line": "08", "role": "Nora",     "text": "好的。这个面条闻起来真香！"},
-    # 第六课 生词
     {"lesson": "06", "line": "v1", "role": "Qiqi",     "text": "食堂"},
     {"lesson": "06", "line": "v2", "role": "Qiqi",     "text": "面条"},
     {"lesson": "06", "line": "v3", "role": "Qiqi",     "text": "刷卡"},
@@ -102,7 +117,6 @@ SCRIPT = [
     {"lesson": "07", "line": "06", "role": "Cashier",  "text": "一共二十八块。"},
     {"lesson": "07", "line": "07", "role": "Nora",     "text": "我只有现金，给您五十。"},
     {"lesson": "07", "line": "08", "role": "Cashier",  "text": "好的，找您二十二块。"},
-    # 第七课 生词
     {"lesson": "07", "line": "v1", "role": "Qiqi",     "text": "生活用品"},
     {"lesson": "07", "line": "v2", "role": "Qiqi",     "text": "超市"},
     {"lesson": "07", "line": "v3", "role": "Qiqi",     "text": "牙膏"},
@@ -116,21 +130,52 @@ SCRIPT = [
     {"lesson": "08", "line": "06", "role": "Nora",  "text": "谢谢。其实我的词汇量还不够。"},
     {"lesson": "08", "line": "07", "role": "David", "text": "太好了，以后我们可以在这里一起练习吗？"},
     {"lesson": "08", "line": "08", "role": "Nora",  "text": "当然可以，随时欢迎。"},
-    # 第八课 生词
     {"lesson": "08", "line": "v1", "role": "David", "text": "打扰"},
     {"lesson": "08", "line": "v2", "role": "David", "text": "密码"},
     {"lesson": "08", "line": "v3", "role": "David", "text": "糟糕"},
     {"lesson": "08", "line": "v4", "role": "David", "text": "练习"},
 ]
 
-# ── 音频合成核心函数 ────────────────────────────────────────────────────
-def synthesize(text: str, voice_id: str, retries: int = 3) -> bytes:
+# ── 林晚台词（Azure TTS，YunhaoNeural）───────────────────────────
+# 包含：第13课对话台词 + 角色介绍问候语
+# lesson_key: audioMap.json 里的 lesson key（"lesson13"）
+# line_key:   对话行号（"1"/"7"）或 "greeting"（问候语）
+LINWAN_SCRIPT = [
+    # ── 第 13 课对话台词 ──────────────────────────────────────────
+    # 对应 LESSONS_META[12].dialogue[0]（audioMap key "1"）
+    {
+        "lesson_key": "lesson13",
+        "line_key":   "1",
+        "filename":   "L13_01_Linwan.mp3",
+        "text":       "如果不知道怎么选，一般可以点「正常冰、正常糖」。",
+    },
+    # 对应 LESSONS_META[12].dialogue[6]（audioMap key "7"）
+    {
+        "lesson_key": "lesson13",
+        "line_key":   "7",
+        "filename":   "L13_07_Linwan.mp3",
+        "text":       "没关系。对刚来的留学生来说，中文菜单确实有点难。",
+    },
+    # ── 角色介绍问候语（非对话，独立文件）──────────────────────────
+    # 对应 CHARACTER_DB.linwan.greeting，由 charIntroPlayGreeting() 读取
+    {
+        "lesson_key": None,           # 不注册到 lesson audioMap
+        "line_key":   None,
+        "filename":   "linwan_greeting.mp3",
+        "subdir":     "linwan",       # 存到 /public/audio/linwan/
+        "text":       "如果不知道怎么选，点「正常」就可以。",
+    },
+]
+
+
+# ── MiniMax 合成函数 ─────────────────────────────────────────────
+def synthesize_minimax(text: str, voice_id: str, retries: int = 3) -> bytes:
     headers = {
-        "Authorization": f"Bearer {API_KEY}",
+        "Authorization": f"Bearer {MINIMAX_API_KEY}",
         "Content-Type":  "application/json",
     }
     payload = {
-        "model": MODEL,
+        "model": MINIMAX_MODEL,
         "text":  text,
         "stream": False,
         "voice_setting": {
@@ -146,97 +191,179 @@ def synthesize(text: str, voice_id: str, retries: int = 3) -> bytes:
             "channel":     1,
         },
     }
-
     for attempt in range(1, retries + 1):
         try:
-            r = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+            r = requests.post(MINIMAX_API_URL, headers=headers, json=payload, timeout=60)
             r.raise_for_status()
             data = r.json()
-
             base_resp = data.get("base_resp", {})
             if base_resp.get("status_code") != 0:
                 raise RuntimeError(f"API 错误: {base_resp.get('status_msg')}")
-
-            audio_hex = data["data"]["audio"]
-            return bytes.fromhex(audio_hex)
-
+            return bytes.fromhex(data["data"]["audio"])
         except Exception as e:
             print(f"  ⚠ 第 {attempt} 次尝试失败: {e}")
             if attempt < retries:
-                time.sleep(2 ** attempt)   # 指数退避
+                time.sleep(2 ** attempt)
             else:
                 raise
 
-# ── 主流程 ─────────────────────────────────────────────────────────────
+
+# ── Azure TTS 合成函数 ───────────────────────────────────────────
+def synthesize_azure(text: str, voice: str = LINWAN_VOICE,
+                     rate: str = LINWAN_RATE, pitch: str = LINWAN_PITCH,
+                     retries: int = 3) -> bytes:
+    """调用 Azure 官方 TTS REST API，返回 MP3 字节"""
+    if not AZURE_KEY:
+        raise RuntimeError(
+            "未设置 AZURE_SPEECH_KEY 环境变量。\n"
+            "请先执行：export AZURE_SPEECH_KEY=\"你的Key\"\n"
+            "注册地址：https://portal.azure.com → Speech Services → 创建（F0 免费层）"
+        )
+
+    ssml = (
+        f"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'>"
+        f"<voice name='{voice}'>"
+        f"<prosody rate='{rate}' pitch='{pitch}'>{text}</prosody>"
+        f"</voice></speak>"
+    )
+    url = f"https://{AZURE_REGION}.tts.speech.microsoft.com/cognitiveservices/v1"
+    headers = {
+        "Ocp-Apim-Subscription-Key": AZURE_KEY,
+        "Content-Type":              "application/ssml+xml",
+        "X-Microsoft-OutputFormat":  "audio-24khz-96kbitrate-mono-mp3",
+        "User-Agent":                "EchoChinese/1.0",
+    }
+    for attempt in range(1, retries + 1):
+        try:
+            r = requests.post(url, headers=headers,
+                              data=ssml.encode("utf-8"), timeout=30)
+            if r.status_code == 401:
+                raise RuntimeError("Azure Key 无效或已过期，请检查 AZURE_SPEECH_KEY")
+            if r.status_code == 400:
+                raise RuntimeError(f"Azure SSML 格式错误: {r.text[:200]}")
+            r.raise_for_status()
+            return r.content
+        except RuntimeError:
+            raise
+        except Exception as e:
+            print(f"  ⚠ 第 {attempt} 次尝试失败: {e}")
+            if attempt < retries:
+                time.sleep(2 ** attempt)
+            else:
+                raise
+
+
+# ── 主流程 ─────────────────────────────────────────────────────────
 def main():
-    # 确定输出根目录（相对脚本位置）
-    script_dir  = os.path.dirname(os.path.abspath(__file__))
-    audio_root  = os.path.join(script_dir, "public", "audio")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    audio_root = os.path.join(script_dir, "public", "audio")
     os.makedirs(audio_root, exist_ok=True)
 
-    audio_map   = {}   # { "lesson01": { "1": "/audio/lesson01/L01_01_Nora.mp3", ... } }
-    total       = len(SCRIPT)
-    success     = 0
-    skipped     = 0
+    # 读取已有的 audioMap（增量写入，不破坏已有数据）
+    map_path  = os.path.join(audio_root, "audioMap.json")
+    audio_map = {}
+    if os.path.exists(map_path):
+        with open(map_path, encoding="utf-8") as f:
+            audio_map = json.load(f)
 
-    print(f"🎙  MiniMax TTS 批量合成  —  共 {total} 条台词\n")
+    # ── 第一阶段：MiniMax 批量合成（1-10 课）──────────────────────
+    total   = len(SCRIPT)
+    success = skipped = 0
+    print(f"🎙  MiniMax TTS — 共 {total} 条台词\n")
 
     for entry in SCRIPT:
-        lesson  = entry["lesson"]       # "01"
-        line    = entry["line"]         # "01"
-        role    = entry["role"]         # "Nora"
-        text    = entry["text"]
+        lesson   = entry["lesson"]
+        line     = entry["line"]
+        role     = entry["role"]
+        text     = entry["text"]
 
-        # 文件路径
-        folder    = os.path.join(audio_root, f"lesson{lesson}")
+        folder   = os.path.join(audio_root, f"lesson{lesson}")
         os.makedirs(folder, exist_ok=True)
-        filename  = f"L{lesson}_{line}_{role}.mp3"
-        filepath  = os.path.join(folder, filename)
-        url_path  = f"/audio/lesson{lesson}/{filename}"
+        filename = f"L{lesson}_{line}_{role}.mp3"
+        filepath = os.path.join(folder, filename)
+        url_path = f"/audio/lesson{lesson}/{filename}"
 
-        # 更新映射表
-        map_key   = f"lesson{lesson}"
-        if map_key not in audio_map:
-            audio_map[map_key] = {}
-        # 对话行: "01"→"1"；生词行: "v1"→"v1"（保持原样）
-        map_line_key = line if line.startswith("v") else str(int(line))
-        audio_map[map_key][map_line_key] = url_path
+        map_key      = f"lesson{lesson}"
+        line_key     = line if line.startswith("v") else str(int(line))
+        audio_map.setdefault(map_key, {})[line_key] = url_path
 
-        # 跳过已存在的文件
         if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:
             print(f"  ✓ 跳过（已存在）  L{lesson}_{line}_{role}")
             skipped += 1
             continue
 
-        # 获取声音 ID
-        voice_id = VOICE_MAP.get(role)
+        voice_id = MINIMAX_VOICE_MAP.get(role)
         if not voice_id:
             print(f"  ⚠ 未知角色 '{role}'，跳过")
             continue
 
-        print(f"  🔊 合成  L{lesson}_{line}_{role}  │  {text[:20]}…" if len(text) > 20 else
-              f"  🔊 合成  L{lesson}_{line}_{role}  │  {text}")
-
+        label = text[:20] + "…" if len(text) > 20 else text
+        print(f"  🔊 合成  L{lesson}_{line}_{role}  │  {label}")
         try:
-            audio_bytes = synthesize(text, voice_id)
+            audio_bytes = synthesize_minimax(text, voice_id)
             with open(filepath, "wb") as f:
                 f.write(audio_bytes)
-            size_kb = len(audio_bytes) // 1024
-            print(f"      → 保存成功  {filename}  ({size_kb} KB)")
+            print(f"      → 保存  {filename}  ({len(audio_bytes)//1024} KB)")
             success += 1
         except Exception as e:
             print(f"      ✗ 失败: {e}")
-
-        # 礼貌延迟，避免触发限速（约 2 req/s）
         time.sleep(0.6)
 
-    # ── 写入 audioMap.json ─────────────────────────────────────────────
-    map_path = os.path.join(audio_root, "audioMap.json")
+    print(f"\n✅ MiniMax 完成  成功 {success} / 跳过 {skipped} / 共 {total}\n")
+
+    # ── 第二阶段：Azure TTS（林晚台词）────────────────────────────
+    linwan_total   = len(LINWAN_SCRIPT)
+    linwan_success = linwan_skipped = 0
+
+    print(f"🎙  Azure TTS（林晚 YunhaoNeural）— 共 {linwan_total} 条\n")
+
+    for entry in LINWAN_SCRIPT:
+        subdir   = entry.get("subdir", f"lesson{entry.get('lesson_key','')[-2:]}" if entry.get("lesson_key") else "linwan")
+        folder   = os.path.join(audio_root, subdir if not entry.get("lesson_key") else entry["lesson_key"].replace("lesson", "lesson"))
+        # 规范化路径
+        if entry.get("lesson_key"):
+            folder = os.path.join(audio_root, entry["lesson_key"].replace("lesson", "lesson"))
+        else:
+            folder = os.path.join(audio_root, entry.get("subdir", "linwan"))
+
+        os.makedirs(folder, exist_ok=True)
+        filename = entry["filename"]
+        filepath = os.path.join(folder, filename)
+        text     = entry["text"]
+
+        # 注册到 audioMap（对话台词；问候语不注册，由前端直接引用路径）
+        if entry.get("lesson_key") and entry.get("line_key"):
+            url_path = f"/audio/{entry['lesson_key']}/{filename}"
+            audio_map.setdefault(entry["lesson_key"], {})[entry["line_key"]] = url_path
+
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:
+            print(f"  ✓ 跳过（已存在）  {filename}")
+            linwan_skipped += 1
+            continue
+
+        label = text[:25] + "…" if len(text) > 25 else text
+        print(f"  🔊 合成  {filename}  │  {label}")
+        try:
+            audio_bytes = synthesize_azure(text)
+            with open(filepath, "wb") as f:
+                f.write(audio_bytes)
+            print(f"      → 保存  {filename}  ({len(audio_bytes)//1024} KB)")
+            linwan_success += 1
+        except Exception as e:
+            print(f"      ✗ 失败: {e}")
+            if "AZURE_SPEECH_KEY" in str(e):
+                print("\n⚠  请先设置环境变量再运行：")
+                print("   export AZURE_SPEECH_KEY=\"你的Key\"")
+                print("   export AZURE_SPEECH_REGION=\"eastasia\"")
+                break
+        time.sleep(0.3)
+
+    print(f"\n✅ Azure 完成  成功 {linwan_success} / 跳过 {linwan_skipped} / 共 {linwan_total}\n")
+
+    # ── 写入 audioMap.json ─────────────────────────────────────────
     with open(map_path, "w", encoding="utf-8") as f:
         json.dump(audio_map, f, ensure_ascii=False, indent=2)
-
-    print(f"\n✅ 完成！  成功 {success} / 跳过 {skipped} / 共 {total}")
-    print(f"📄 映射表已写入: {map_path}")
+    print(f"📄 audioMap.json 已更新：{map_path}")
 
 
 if __name__ == "__main__":
