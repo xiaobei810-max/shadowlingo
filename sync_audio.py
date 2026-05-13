@@ -185,6 +185,35 @@ LINWAN_SCRIPT = [
         "filename":   "L14_08_Linwan.mp3",
         "text":       "你怎么知道我是摄影社的？",
     },
+    # ── 第 15 课对话台词（交换联系方式）──────────────────────────────
+    # 对应 LESSONS_META[14].dialogue[1]（audioMap key "2"）
+    {
+        "lesson_key": "lesson15",
+        "line_key":   "2",
+        "filename":   "L15_02_Linwan.mp3",
+        "text":       "原来是夏七七。怪不得。",
+    },
+    # 对应 LESSONS_META[14].dialogue[3]（audioMap key "4"）
+    {
+        "lesson_key": "lesson15",
+        "line_key":   "4",
+        "filename":   "L15_04_Linwan.mp3",
+        "text":       "摄影社确实看重作品。你为什么想加入摄影社？",
+    },
+    # 对应 LESSONS_META[14].dialogue[5]（audioMap key "6"）
+    {
+        "lesson_key": "lesson15",
+        "line_key":   "6",
+        "filename":   "L15_06_Linwan.mp3",
+        "text":       "我们加个微信吧，我把报名的具体要求发给你。",
+    },
+    # 对应 LESSONS_META[14].dialogue[7]（audioMap key "8"）
+    {
+        "lesson_key": "lesson15",
+        "line_key":   "8",
+        "filename":   "L15_08_Linwan.mp3",
+        "text":       "好了。面试的时候，记得带上你的作品和我的笔记本。",
+    },
     # ── 角色介绍问候语（非对话，独立文件）──────────────────────────
     # 对应 CHARACTER_DB.linwan.greeting，由 charIntroPlayGreeting() 读取
     {
