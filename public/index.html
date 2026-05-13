@@ -4735,7 +4735,8 @@
       line-height: 1;
       color: var(--chs-typo-accent, rgba(255,255,255,0.92));
       letter-spacing: 0.04em;
-      text-shadow: 0 4px 24px rgba(0,0,0,0.45);
+      font-variant-numeric: lining-nums tabular-nums;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 4px 28px rgba(0,0,0,0.5), 0 0 48px rgba(255,255,255,0.07);
     }
     .chs-typo-divider {
       width: 36px; height: 1px;
@@ -16235,12 +16236,6 @@
                 '<div class="chs-lock-label">LOCKED</div>';
               card.appendChild(lockOv);
             }
-            if (completed) {
-              var doneTag = document.createElement('div');
-              doneTag.className = 'chs-done-tag';
-              doneTag.textContent = '已完成 · Completed';
-              card.appendChild(doneTag);
-            }
           } else {
             // ── 课程卡片：保留原 CG 缩略图 + 标题排版 ──
             var lIdx = UNITS[chsActiveUnitIdx].lessons[i];
@@ -16275,13 +16270,6 @@
                 '<div class="chs-lock-label">LOCKED</div>';
               card.appendChild(lockOv2);
             }
-            if (completed) {
-              var doneTag2 = document.createElement('div');
-              doneTag2.className = 'chs-done-tag';
-              doneTag2.textContent = '已完成 · Completed';
-              card.appendChild(doneTag2);
-            }
-
             var info = document.createElement('div');
             info.className = 'chs-card-info';
             info.innerHTML =
