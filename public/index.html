@@ -4756,7 +4756,7 @@
     /* Dots */
     .chs-dots {
       flex-shrink: 0; display: flex; gap: 8px;
-      align-items: center; padding: 4px 0 12px;
+      align-items: center; padding: 12px 0 60px;   /* 底部 60px 留白，替代原按钮区的呼吸空间 */
       position: relative; z-index: 1;
     }
     .chs-dot {
@@ -4794,6 +4794,36 @@
       border: 1px solid rgba(255,255,255,0.10);
       color: rgba(255,255,255,0.28); cursor: default;
       font-size: 0.83rem; letter-spacing: 0.04em;
+    }
+
+    /* ── 锁定反馈：抖动动画 + 浮动 toast ── */
+    @keyframes chsShake {
+      0%, 100% { transform: scale(1) translateX(0); }
+      18%      { transform: scale(1) translateX(-8px); }
+      36%      { transform: scale(1) translateX(7px); }
+      54%      { transform: scale(1) translateX(-5px); }
+      72%      { transform: scale(1) translateX(3px); }
+      90%      { transform: scale(1) translateX(-1px); }
+    }
+    .chs-card.chs-shake { animation: chsShake 0.42s ease-out; }
+
+    .chs-locked-toast {
+      position: absolute; bottom: 92px; left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: rgba(8, 12, 22, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.86);
+      padding: 10px 18px; border-radius: 999px;
+      font-size: 12px; letter-spacing: 0.06em;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      z-index: 5; white-space: nowrap;
+    }
+    .chs-locked-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
     /* ── 返回单元按钮（仅在课程视图显示）── */
@@ -15896,6 +15926,9 @@
     // ── 章节选择 Chapter Select (Cover Flow Carousel) ────────────
     // ══════════════════════════════════════════════════════════════
 
+    // ⚠️ 测试阶段开关：true = 启用单元/课程渐进解锁；false = 全开（便于调试）
+    var CHS_LOCKING_ENABLED = false;
+
     // 视图状态：'units' = 单元总览, 'lessons' = 某单元内的 5 课
     var chsView         = 'units';
     var chsActiveUnitIdx = 0;   // 当前所在/最近浏览的单元下标
@@ -15917,6 +15950,7 @@
     }
     // 单元解锁：第一个单元永远解锁；后续单元需上一单元全部课程完成
     function isUnitUnlocked(uIdx) {
+      if (!CHS_LOCKING_ENABLED) return true;
       if (uIdx <= 0) return true;
       var prev = UNITS[uIdx - 1];
       if (!prev) return false;
@@ -15930,6 +15964,7 @@
     }
     // 课程解锁：所属单元已解锁，且单元内前一课已完成（或本身是单元第一课）
     function isLessonUnlocked(lIdx) {
+      if (!CHS_LOCKING_ENABLED) return true;
       var uIdx = _unitOfLesson(lIdx);
       if (uIdx < 0) return false;
       if (!isUnitUnlocked(uIdx)) return false;
@@ -16175,49 +16210,47 @@
       }
     }
 
-    function chsUpdateStartBtn() {
-      var btn = document.getElementById('chs-start-btn');
-      if (!btn) return;
-      if (chsView === 'units') {
-        var unlocked = isUnitUnlocked(chsActiveIdx);
-        btn.textContent = unlocked ? '进入单元 · Enter Unit →' : '🔒 完成上一单元后解锁 · Complete previous unit';
-        btn.className   = unlocked ? 'chs-start-btn' : 'chs-start-btn chs-locked-state';
-        btn.disabled    = !unlocked;
-      } else {
-        var lIdx = _chsCurrentLessonIdx();
-        var unlocked = isLessonUnlocked(lIdx);
-        btn.textContent = unlocked ? '开始 · Start →' : '🔒 完成上一课后解锁 · Complete previous chapter';
-        btn.className   = unlocked ? 'chs-start-btn' : 'chs-start-btn chs-locked-state';
-        btn.disabled    = !unlocked;
-      }
-    }
+    // 卡片即按钮：原启动按钮已移除，本函数保留为 no-op 以兼容旧调用栈
+    function chsUpdateStartBtn() { /* no-op (DOM removed) */ }
 
-    function chsUpdateScene() {
-      var el = document.getElementById('chs-scene-text');
-      if (!el) return;
-      var zh = '', en = '';
-      if (chsView === 'units') {
-        var u = UNITS[chsActiveIdx];
-        if (u && u.coverScene) { zh = (u.coverScene.zh || '').replace(/<[^>]+>/g, ''); en = u.coverScene.en || ''; }
-      } else {
-        var L = LESSONS[_chsCurrentLessonIdx()];
-        if (L && L.coverScene) { zh = (L.coverScene.zh || '').replace(/<[^>]+>/g, ''); en = L.coverScene.en || ''; }
+    // 场景描述 DOM 已移除；保留 no-op 防止旧调用栈崩溃
+    function chsUpdateScene() { /* no-op (DOM removed) */ }
+
+    // ── 锁定反馈：抖动当前卡 + 浮 toast 1.8s ──
+    function _chsTriggerLockedFeedback(msg) {
+      var card = document.querySelector('#chs-track .chs-card.chs-active');
+      if (card) {
+        card.classList.remove('chs-shake');
+        void card.offsetWidth;  // 强制 reflow 重启动画
+        card.classList.add('chs-shake');
+        setTimeout(function() { card.classList.remove('chs-shake'); }, 480);
       }
-      el.style.opacity = '0';
-      setTimeout(function() {
-        el.innerHTML =
-          '<div class="chs-scene-zh">' + zh + '</div>' +
-          (en ? '<div class="chs-scene-en">' + en + '</div>' : '');
-        el.style.opacity = '1';
-      }, 180);
+      var toast = document.getElementById('chs-locked-toast');
+      if (!toast) return;
+      toast.textContent = '🔒 ' + msg;
+      toast.classList.remove('show');
+      void toast.offsetWidth;
+      toast.classList.add('show');
+      if (toast._hideTimer) clearTimeout(toast._hideTimer);
+      toast._hideTimer = setTimeout(function() {
+        toast.classList.remove('show');
+      }, 1800);
     }
 
     // ── 主动作：单元视图 → 进入该单元；课程视图 → 开始该课 ──
     function chsPrimaryAction() {
       if (chsView === 'units') {
-        if (!isUnitUnlocked(chsActiveIdx)) return;
+        if (!isUnitUnlocked(chsActiveIdx)) {
+          _chsTriggerLockedFeedback('完成上一单元后解锁 · Complete previous unit');
+          return;
+        }
         chsEnterUnit(chsActiveIdx);
       } else {
+        var lIdx = _chsCurrentLessonIdx();
+        if (!isLessonUnlocked(lIdx)) {
+          _chsTriggerLockedFeedback('完成上一课后解锁 · Complete previous chapter');
+          return;
+        }
         chsStartCurrentLesson();
       }
     }
@@ -16412,15 +16445,9 @@
         <!-- Cards rendered by JS -->
       </div>
     </div>
-    <div class="chs-scene-wrap">
-      <div class="chs-scene-text" id="chs-scene-text"></div>
-    </div>
     <div class="chs-dots" id="chs-dots"></div>
-    <div class="chs-actions">
-      <button class="chs-start-btn" id="chs-start-btn" onclick="chsPrimaryAction()">
-        进入单元 · Enter Unit →
-      </button>
-    </div>
+    <!-- 锁定反馈 toast（点击锁定卡片时浮现，1.8s 后自动消失） -->
+    <div class="chs-locked-toast" id="chs-locked-toast"></div>
   </div>
 
   <!-- 课程封面 Lesson Cover -->
