@@ -156,6 +156,35 @@ LINWAN_SCRIPT = [
         "filename":   "L13_07_Linwan.mp3",
         "text":       "没关系。对刚来的留学生来说，中文菜单确实有点难。",
     },
+    # ── 第 14 课对话台词（找到失主）─────────────────────────────────
+    # 对应 LESSONS_META[13].dialogue[1]（audioMap key "2"）
+    {
+        "lesson_key": "lesson14",
+        "line_key":   "2",
+        "filename":   "L14_02_Linwan.mp3",
+        "text":       "机场？那有可能，上周我刚从外地坐飞机回来。",
+    },
+    # 对应 LESSONS_META[13].dialogue[3]（audioMap key "4"）
+    {
+        "lesson_key": "lesson14",
+        "line_key":   "4",
+        "filename":   "L14_04_Linwan.mp3",
+        "text":       "对，我一直找不到那个笔记本。",
+    },
+    # 对应 LESSONS_META[13].dialogue[5]（audioMap key "6"）
+    {
+        "lesson_key": "lesson14",
+        "line_key":   "6",
+        "filename":   "L14_06_Linwan.mp3",
+        "text":       "那太好了，我什么时候方便去拿？",
+    },
+    # 对应 LESSONS_META[13].dialogue[7]（audioMap key "8"）
+    {
+        "lesson_key": "lesson14",
+        "line_key":   "8",
+        "filename":   "L14_08_Linwan.mp3",
+        "text":       "你怎么知道我是摄影社的？",
+    },
     # ── 角色介绍问候语（非对话，独立文件）──────────────────────────
     # 对应 CHARACTER_DB.linwan.greeting，由 charIntroPlayGreeting() 读取
     {

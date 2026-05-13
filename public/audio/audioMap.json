@@ -126,5 +126,11 @@
   "lesson13": {
     "1": "/audio/lesson13/L13_01_Linwan.mp3",
     "7": "/audio/lesson13/L13_07_Linwan.mp3"
+  },
+  "lesson14": {
+    "2": "/audio/lesson14/L14_02_Linwan.mp3",
+    "4": "/audio/lesson14/L14_04_Linwan.mp3",
+    "6": "/audio/lesson14/L14_06_Linwan.mp3",
+    "8": "/audio/lesson14/L14_08_Linwan.mp3"
   }
 }
