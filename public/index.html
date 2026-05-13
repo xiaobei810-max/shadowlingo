@@ -13614,14 +13614,24 @@
         .then(function (data) {
           if (!data) return;
           // Cross-reference with LESSONS_META to build zh-text keyed lookup.
-          // Iterate over LESSONS_META (authoritative lesson list) so lessons
-          // that only appear in LESSONS_META (e.g. lesson-13) are also indexed.
-          // "lesson01" → LESSONS_META[0].id; line "1" → dialogue[0].zh
+          // LESSONS_META[0-8] use numeric id (1-9); LESSONS uses "lesson-N".
+          // We resolve the canonical id from LESSONS when possible, so the key
+          // matches what getStaticAudioUrl() reads from LESSONS[lessonIdx].id.
           LESSONS_META.forEach(function (meta, li) {
             var mapKey = 'lesson' + String(li + 1).padStart(2, '0'); // "lesson01"
             var lineMap = data[mapKey];
             if (!lineMap) return;
-            var lid = meta.id;
+            // Resolve canonical lesson id: find matching LESSONS entry first
+            var lid = null;
+            for (var k = 0; k < LESSONS.length; k++) {
+              var l = LESSONS[k];
+              // LESSONS_META id may be a number (1-9) or string ("lesson-10"+)
+              if (l.id === meta.id || l.id === 'lesson-' + meta.id) {
+                lid = l.id; break;
+              }
+            }
+            // Lesson only in LESSONS_META (e.g. lesson-13): derive from meta.id
+            if (!lid) lid = (typeof meta.id === 'string') ? meta.id : 'lesson-' + (li + 1);
             _audioMap[lid] = {};
             // Index dialogue lines ("1", "2", ...)
             meta.dialogue.forEach(function (d, di) {
