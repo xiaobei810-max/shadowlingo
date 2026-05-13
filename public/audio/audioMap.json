@@ -122,5 +122,9 @@
     "v2": "/audio/lesson10/L10_v2_Qiqi.mp3",
     "v3": "/audio/lesson10/L10_v3_Qiqi.mp3",
     "v4": "/audio/lesson10/L10_v4_Qiqi.mp3"
+  },
+  "lesson13": {
+    "1": "/audio/lesson13/L13_01_Linwan.mp3",
+    "7": "/audio/lesson13/L13_07_Linwan.mp3"
   }
 }
