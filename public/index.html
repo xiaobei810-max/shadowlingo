@@ -2611,7 +2611,7 @@
       font-size: 13px; color: #b9bdc9; text-align: center;
       line-height: 1.7; max-width: 280px; font-style: italic;
       font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
-      white-space: pre-line; word-break: keep-all;
+      white-space: pre-line; word-break: break-all; overflow-wrap: break-word;
     }
     .gr-dup-hint { font-size: 12px; color: #64748b; text-align: center; letter-spacing: 0.5px; }
     .gr-new-hint { font-size: 11px; color: #6b7280; text-align: center; letter-spacing: 1.5px; text-transform: uppercase; }
@@ -6915,7 +6915,7 @@
       },
       {
         id: 2, numLabel: '02',
-        titleZh: '初识室友',  titleEn: 'Roommate Days',
+        titleZh: '校园探索',  titleEn: 'Campus Life',
         eyebrowZh: '第二单元', eyebrowEn: 'Unit 2',
         motif: '宿舍 · 食堂 · 超市 · 大堂',
         // 暖琥珀 —— 宿舍灯光、木地板、午后阳光
@@ -6930,7 +6930,7 @@
       },
       {
         id: 3, numLabel: '03',
-        titleZh: '咖啡馆之遇', titleEn: 'Café Encounters',
+        titleZh: '咖啡点单',  titleEn: 'Coffee Order',
         eyebrowZh: '第三单元', eyebrowEn: 'Unit 3',
         motif: '咖啡 · 林晚 · 摄影社',
         // 咖啡奶油 —— 深焙、铜灯、雨后窗
@@ -7518,8 +7518,8 @@
     var GACHA_SERIES = {
       'nora-debut': {
         id: 'nora-debut',
-        nameZh: '初见诺拉',
-        nameEn: "Nora's Debut",
+        nameZh: '初来乍到',
+        nameEn: 'New Arrival',
         cover: '/assets/gacha/nora-debut/series-cover.png',
         imageFocus: 'center center',
         unlockRule: { type: 'always' },
@@ -7569,8 +7569,8 @@
       },
       'explore-begin': {
         id: 'explore-begin',
-        nameZh: '开始探索',
-        nameEn: 'Into the City',
+        nameZh: '校园探索',
+        nameEn: 'Campus Life',
         cover: '/assets/gacha/explore-begin/series-cover.png',
         imageFocus: '70% center',
         unlockRule: { type: 'always' },
@@ -7615,8 +7615,8 @@
       },
       'cafe-encounter': {
         id: 'cafe-encounter',
-        nameZh: '咖啡馆之遇',
-        nameEn: 'Café Encounters',
+        nameZh: '咖啡点单',
+        nameEn: 'Coffee Order',
         cover: '/assets/gacha/cafe-encounter/series-cover.png',
         imageFocus: 'center center',
         unlockRule: { type: 'always' },
@@ -7633,11 +7633,11 @@
           { id: 'ce_n_card_cup', tier: 'N', type: 'card',
             nameZh: '精美咖啡杯', nameEn: 'Artisan Coffee Cup',
             img: '/assets/gacha/cafe-encounter/card_cup.png',
-            flavor: '少冰、半糖——林晚说，"第一次就别喝太浓。"' },
+            flavor: '在点单台前卡壳的时候，多亏了他那句"正常冰，正常糖"解围。\n或许"正常"，就是最能让人安心的选项吧。' },
           { id: 'ce_n_card_bag', tier: 'N', type: 'card',
             nameZh: '复古棕色邮差包', nameEn: 'Vintage Brown Messenger Bag',
             img: '/assets/gacha/cafe-encounter/card_bag.png',
-            flavor: '那本失而复得的笔记本，就藏在这只邮差包的最深处。' },
+            flavor: '容量刚刚好的一只包。\n装得下校园卡、手机和一点点初到异国他乡的期待，\n陪我走过了在京华大学的最初几天。' },
           // ── R (30%) ─────────────────────────────────────────
           { id: 'ce_r_diary_01', tier: 'R', type: 'diary',
             nameZh: '慧姐咖啡馆·打卡成功', nameEn: 'Checked In at Sister Hui\'s Café',
@@ -7646,7 +7646,7 @@
           { id: 'ce_r_diary_02', tier: 'R', type: 'diary',
             nameZh: '加上了他的微信', nameEn: 'Added Him on WeChat',
             img: '/assets/gacha/cafe-encounter/diary_02.png',
-            body: '扫码加上了他的微信，头像和名字都和他本人一样，简洁到了极致。' },
+            body: '扫码加上了他的微信，头像、名字都和他本人一样，简洁到了极致。' },
           // ── SR (15%) ────────────────────────────────────────
           { id: 'ce_sr_diary_audio', tier: 'SR', type: 'diary',
             nameZh: '湖边晚风独白', nameEn: 'Lakeside Evening Monologue',
@@ -7660,7 +7660,7 @@
             img: '/assets/gacha/cafe-encounter/outfit_brown_thumb.png',
             outfitFull: '/assets/characters/linwan/outfits/linwan_brown-shirt.png',
             target: 'linwan',
-            flavor: '咖啡馆遇见他的那个下午——米棕色衬衫，袖口随手挽到手肘。' }
+            flavor: '告别了深色外套和黑框眼镜，换上这件米棕色衬衫的他，\n少了一分平日里的疏离感，多了一丝属于这个年纪的温和。' }
         ]
       }
     };
