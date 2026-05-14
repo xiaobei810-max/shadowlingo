@@ -3393,9 +3393,10 @@
       margin: 0 0 0.6em 0; text-indent: 2em;
     }
     .gcb-detail-body p:last-child { margin-bottom: 0; }
-    /* 台词（flavor）：短句居中显示 */
+    /* 台词（flavor）：短句居中显示，撑满父容器宽度让 text-align:center 生效 */
     .gcb-detail-flavor {
       text-align: center !important; text-align-last: center !important;
+      max-width: 100% !important; width: 100%;
       white-space: pre-line;
     }
     .gcb-detail-count { font-size: 12px; color: #4b5563; }
