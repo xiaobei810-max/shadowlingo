@@ -8865,7 +8865,6 @@
                 ? '<img src="' + item.img + '" style="filter:blur(6px) brightness(0.45)" alt="">' +
                   '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;">🔒</div>'
                 : '') /* 其他未拥有：完全空白 */) +
-            (item.tier ? '<div class="gcb-car-tier-tag gcb-car-tier-tag-' + item.tier.toLowerCase() + '">' + TIER_LABEL[item.tier] + '</div>' : '') +
           '</div>'
         );
       }).join('');
