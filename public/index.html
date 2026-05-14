@@ -7503,7 +7503,7 @@
     //         无 UI，可通过 window.__gacha 在控制台测试
 
     // ─ 配置层 ───────────────────────────────────────────────────
-    var GACHA_THRESHOLDS = [10, 25, 50];                       // 渐进门槛
+    var GACHA_THRESHOLDS = [10, 20, 30];                       // 渐进门槛
     // 各角色封面默认立绘路径（M8 替换为正式全身立绘）
     var DEFAULT_COVER = {
       nora:     '/assets/clothes/nora_clothes.png',
@@ -7588,15 +7588,19 @@
             nameZh: '好吃的牛肉面', nameEn: 'Delicious Beef Noodles',
             img: '/assets/gacha/explore-begin/noodles.png',
             flavor: '食堂窗口排了好长的队。七七说："这家牛肉面，值得等。"' },
-          // ── R (30%) ─────────────────────────────────────────
-          { id: 'eb_r_card_receipt', tier: 'R', type: 'card',
+          { id: 'eb_n_card_receipt', tier: 'N', type: 'card',
             nameZh: '超市小票与零钱', nameEn: 'Supermarket Receipt & Change',
             img: '/assets/gacha/explore-begin/receipt-and-change.png',
             flavor: '收银员找了好半天的零钱。看来，学会用手机支付是我的第一要务。' },
-          { id: 'eb_r_card_wifi', tier: 'R', type: 'card',
+          { id: 'eb_n_card_wifi', tier: 'N', type: 'card',
             nameZh: '"八个八"的密码牌', nameEn: 'The "Eight 8s" Wi-Fi Sign',
             img: '/assets/gacha/explore-begin/wifi.jpg',
             flavor: '"密码是八个八。" 大卫就是因为这句话，跟我搭上了话。' },
+          // ── R (30%) ─────────────────────────────────────────
+          { id: 'eb_r_diary_qiqi_list', tier: 'R', type: 'diary',
+            nameZh: '七七的必备清单', nameEn: "Qiqi's Starter Kit",
+            img: '/assets/gacha/explore-begin/diary_qiqi_list.png',
+            body: '七七撕下笔记本上的一页，飞快地写下一串字："洗衣液、毛巾、电热水壶、牙膏……对了还有拖鞋！"\n\n她把单子塞进我手里——"留学生第一周不买齐这些，可活不下去哦。"\n\n我盯着这张字迹潦草的清单，忽然觉得，比起一个人在超市里发呆，有这样一份"清单"，心里踏实多了。' },
           // ── SR (15%) ────────────────────────────────────────
           { id: 'eb_sr_diary', tier: 'SR', type: 'diary',
             nameZh: '周末前夕的休息室', nameEn: 'Lounge on the Eve of the Weekend',
@@ -7605,7 +7609,8 @@
             voiceOnly: true,
             body: '坐在宿舍大厅的沙发上，我翻开了日记本。这几天发生了很多事，感觉自己每天都在解锁新的"生存技能"。\n\n比如，这里的食堂不能用现金，必须刷卡。去超市买毛巾和牙膏时，我掏出五十块现金"结账"，收银员找零找了半天。看来，学会用手机支付是我的第一要务！这几天多亏了七七帮我垫付，我都记在账上了，准备回头还给她。\n\n对了，昨天就在我现在坐的这个大厅里，我认识了新朋友大卫。我们因为Wi-Fi密码"八个八"聊了起来。他的中文语序总是弄错，但我们约好了以后经常在这里一起练习。\n\n明天就是周末了。七七推荐我出东门"一直往前走"，去逛逛那边的街道。很期待呢......',
             bodyEn: 'Sitting on the sofa in the dorm lounge, I opened my diary. A lot has happened these past few days, and I feel like I\'m unlocking new "survival skills" every day.\n\nFor example, you can\'t use cash in the cafeteria here; you have to swipe a card. When I went to the supermarket to buy a towel and toothpaste, I pulled out fifty yuan in cash to "check out," and the cashier had to dig around for change. It seems learning to use mobile payments is my top priority! Thanks to Qiqi for covering me these days; I\'ve kept a record and plan to pay her back later.\n\nOh, and yesterday, right in this very lobby where I\'m sitting, I made a new friend named David. We started talking over the Wi-Fi password, "eight 8s." He always messes up his Chinese word order, but we agreed to practice together here often.\n\nTomorrow is the weekend. Qiqi recommended I go out the East Gate and "keep walking straight" to stroll around the streets there. Looking forward to it......' },
-          { id: 'eb_sr_outfit_qiqi', tier: 'SR', type: 'outfit',
+          // ── SSR (5%) ────────────────────────────────────────
+          { id: 'eb_ssr_outfit_qiqi', tier: 'SSR', type: 'outfit',
             nameZh: '七七的绿色帽衫', nameEn: "Qiqi's Green Hoodie",
             img: '/assets/gacha/explore-begin/green-hoddy.png',
             outfitFull: '/assets/characters/qiqi/outfits/qiqi_green-hoddy.png',
@@ -7655,7 +7660,8 @@
             voiceOnly: true,
             body: '湖边的晚风真的很凉快，吹走了白天的燥热。\n\n今天第一次去东门外的商业街逛了逛，北京终于不再只是地图上的名字，而是热闹的橱窗、飘着香味的小吃摊，还有那种充满活力的生活气息。\n\n在咖啡馆点单确实是个不小的挑战，那些关于糖分和冰块的选项，比课本上的语法难多了。还好遇到了林晚，帮我解决了点单的小尴尬。\n\n回宿舍后得开始整理相册了。既然决定报名摄影社，就要拿出最好的作品。虽然听说面试会很严格，但我还是想去试试看，希望能通过。',
             bodyEn: 'The evening breeze by the lake was so cool — it carried away all the heat the day had left behind.\n\nToday I went to the commercial street outside the East Gate for the first time. Beijing is finally no longer just a name on a map — it\'s bright shop windows, fragrant little food stalls, and that vibrant pulse of everyday life.\n\nOrdering at the café really was a challenge. All those options about sugar levels and ice — they\'re harder than any grammar in my textbook. Lucky for me, Lin Wan was there to rescue me from the awkwardness at the counter.\n\nBack at the dorm, I need to start sorting through my photos. Since I\'ve decided to apply for the photography club, I want to bring my best work. I hear the interview is strict, but I still want to try. I really hope I make it.' },
-          { id: 'ce_sr_outfit_linwan', tier: 'SR', type: 'outfit',
+          // ── SSR (5%) ────────────────────────────────────────
+          { id: 'ce_ssr_outfit_linwan', tier: 'SSR', type: 'outfit',
             nameZh: '米棕色衬衫', nameEn: 'Tan Brown Shirt',
             img: '/assets/clothes/linwan_brown-shirt.png',
             outfitFull: '/assets/gacha/cafe-encounter/outfit_brown_thumb.png',
@@ -7750,9 +7756,31 @@
     }
 
     function pickItemByTier(items, tier) {
-      var pool = items.filter(function(it) { return it.tier === tier; });
+      // CG 类不入随机池（作为单元通关赠送）
+      var pool = items.filter(function(it) { return it.tier === tier && it.type !== 'cg'; });
       if (!pool.length) return null;
       return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // 单元 -> 系列 映射（用于通关赠送 CG）
+    var UNIT_SERIES_MAP = ['nora-debut', 'explore-begin', 'cafe-encounter'];
+
+    // 单元全部 5 课完成时，赠送该系列的 SSR CG（如果还没拥有）
+    function grantUnitCompletionCg(uIdx) {
+      var seriesId = UNIT_SERIES_MAP[uIdx];
+      if (!seriesId) return null;
+      var series = GACHA_SERIES[seriesId];
+      if (!series) return null;
+      var cgItem = null;
+      for (var i = 0; i < series.items.length; i++) {
+        if (series.items[i].type === 'cg') { cgItem = series.items[i]; break; }
+      }
+      if (!cgItem) return null;
+      var state = loadGachaState();
+      if (state.collection[cgItem.id]) return null;  // 已拥有
+      state.collection[cgItem.id] = { count: 1, firstAt: Date.now() };
+      saveGachaState(state);
+      return cgItem;
     }
 
     function updatePity(pity, tier) {
@@ -16092,6 +16120,15 @@
     }
     function markLessonCompleted(idx) {
       try { localStorage.setItem('sl_completed_' + idx, '1'); } catch(e) {}
+      // 单元通关赠送 CG：找出该课程所属单元，若 5 课全完成则赠送 CG
+      try {
+        for (var ui = 0; ui < UNITS.length; ui++) {
+          if (UNITS[ui].lessons.indexOf(idx) !== -1) {
+            if (isUnitCompleted(ui)) grantUnitCompletionCg(ui);
+            break;
+          }
+        }
+      } catch(e) {}
     }
     // 单元解锁：第一个单元永远解锁；后续单元需上一单元全部课程完成
     function isUnitUnlocked(uIdx) {
