@@ -3122,7 +3122,9 @@
     /* 服装类卡片：完整展示（不裁切衣领/下摆），透明底直接融入页面 */
     .gcb-car-card.cc-outfit {
       background: transparent;
-      box-shadow: none !important;
+    }
+    .gcb-car-card.cc-outfit:not(.cc-active) {
+      box-shadow: none;
     }
     .gcb-car-card.cc-outfit img {
       object-fit: contain; padding: 6px;
