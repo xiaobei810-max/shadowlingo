@@ -3129,8 +3129,8 @@
     .gcb-car-card.cc-outfit img {
       object-fit: contain; padding: 6px;
     }
-    /* 单件服装图（留白较多）→ scale 放大并上移 */
-    .gcb-car-card[data-item-id="eb_sr_outfit_qiqi"] img {
+    /* 单件服装图（留白较多）→ scale 放大并上移；全身穿着图不动 */
+    .gcb-car-card[data-item-id="eb_sr_outfit_qiqi"] img[src*="explore-begin/green-hoddy"] {
       object-fit: contain; transform: scale(1.5) translateY(-12%);
     }
     /* CG 横图卡片：全覆盖，展示完整画面 */
@@ -3334,8 +3334,8 @@
     .gcb-detail-img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
     .gcb-detail-img-wrap.gcb-img-contain { background: radial-gradient(120% 120% at 50% 30%, rgba(255,255,255,0.06), rgba(0,0,0,0.4)); width: 280px; height: 280px; }
     .gcb-detail-img-wrap.gcb-img-contain .gcb-detail-img { object-fit: contain; padding: 8px; }
-    /* 绿色帽衫特殊偏移（图片底部留白） */
-    .gcb-detail-img-wrap.gcb-img-contain .gcb-detail-img[data-item-id="eb_sr_outfit_qiqi"] {
+    /* 绿色帽衫特殊偏移（图片底部留白）；全身穿着图不动 */
+    .gcb-detail-img-wrap.gcb-img-contain .gcb-detail-img[data-item-id="eb_sr_outfit_qiqi"][src*="explore-begin/green-hoddy"] {
       transform: scale(1.2) translateY(-8%);
     }
     /* CG 详情卡专属：加大尺寸让海报感爆棚 */
