@@ -3150,6 +3150,18 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 28px; z-index: 2;
     }
+    /* 卡片等级角标 */
+    .gcb-car-card .gcb-car-tier-tag {
+      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      padding: 2px 9px; border-radius: 99px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.05em;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+      color: #fff; z-index: 5; pointer-events: none; white-space: nowrap;
+    }
+    .gcb-car-tier-tag-n   { border: 1px solid rgba(255,255,255,0.28); color: #cbd5e1; }
+    .gcb-car-tier-tag-r   { border: 1px solid rgba(196,181,253,0.55); color: #c4b5fd; }
+    .gcb-car-tier-tag-sr  { border: 1px solid rgba(230,194,122,0.55); color: #e6c27a; }
+    .gcb-car-tier-tag-ssr { border: 1px solid rgba(251,191,36,0.55);  color: #fbbf24; }
     /* 导航箭头 */
     .gcb-car-arrow {
       position: absolute; top: 50%; transform: translateY(-50%);
@@ -8850,6 +8862,7 @@
                 ? '<img src="' + item.img + '" style="filter:blur(6px) brightness(0.45)" alt="">' +
                   '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;">🔒</div>'
                 : '') /* 其他未拥有：完全空白 */) +
+            (item.tier ? '<div class="gcb-car-tier-tag gcb-car-tier-tag-' + item.tier.toLowerCase() + '">' + TIER_LABEL[item.tier] + '</div>' : '') +
           '</div>'
         );
       }).join('');
