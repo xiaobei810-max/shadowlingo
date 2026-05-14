@@ -8995,8 +8995,15 @@
             return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
           }).join('');
         }
+        function _renderBody(text) {
+          // 单句短文（无段落分隔）→ 居中显示，不缩进
+          if (!/\n\n/.test(text)) {
+            return '<div class="gcb-detail-body gcb-detail-flavor">' + text + '</div>';
+          }
+          return '<div class="gcb-detail-body">' + _bodyToParagraphs(text) + '</div>';
+        }
         if (item.flavor) bodyHtml += '<div class="gcb-detail-body gcb-detail-flavor">' + item.flavor + '</div>';
-        if (item.body)   bodyHtml += '<div class="gcb-detail-body">' + _bodyToParagraphs(item.body)   + '</div>';
+        if (item.body)   bodyHtml += _renderBody(item.body);
       }
 
       var cardCls = 'gcb-detail-card' + ((item.type === 'cg' || item.type === 'diary') ? ' gcb-detail-card--cg' : '');
