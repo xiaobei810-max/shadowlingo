@@ -7636,7 +7636,7 @@
             flavor: '在点单台前卡壳的时候，多亏了他那句"正常冰，正常糖"解围。\n或许"正常"，就是最能让人安心的选项吧。' },
           { id: 'ce_n_card_bag', tier: 'N', type: 'card',
             nameZh: '复古棕色邮差包', nameEn: 'Vintage Brown Messenger Bag',
-            img: '/assets/gacha/cafe-encounter/card_bag.png',
+            img: '/assets/gacha/cafe-encounter/card_bag.jpg',
             flavor: '容量刚刚好的一只包。\n装得下校园卡、手机和一点点初到异国他乡的期待，\n陪我走过了在京华大学的最初几天。' },
           // ── R (30%) ─────────────────────────────────────────
           { id: 'ce_r_diary_01', tier: 'R', type: 'diary',
@@ -8381,6 +8381,8 @@
       var bodyHtml;
       if (item.voiceOnly && item.audio) {
         bodyHtml = renderVoicePlayerHtml(item, 'gr');
+      } else if (item.type === 'card') {
+        bodyHtml = '';  // 卡片类只展示图片+名称，无 flavor
       } else if (item.flavor) {
         bodyHtml = '<div class="gr-flavor">' + item.flavor + '</div>';
       } else if (item.body) {
@@ -8805,9 +8807,9 @@
                   (item.type === 'cg' ? ' cc-cg' : '') +
                   (item.type === 'card' ? ' cc-card' : '') +
                   (owned && item.tier ? ' cc-tier-' + item.tier.toLowerCase() : '');
-        // Active owned card → show detail; else navigate to it
+        // Active owned card → show detail（card 类型不可点击）; else navigate to it
         var clickHandler = (i === _carouselIdx)
-          ? (owned ? 'showItemDetail(\'' + item.id + '\')' : '')
+          ? (owned && item.type !== 'card' ? 'showItemDetail(\'' + item.id + '\')' : '')
           : 'navCarouselTo(' + i + ')';
         return (
           '<div class="' + cls + (!owned ? ' cc-empty' : '') + '" style="' + style + '"' +
