@@ -3129,6 +3129,10 @@
     .gcb-car-card.cc-outfit img {
       object-fit: contain; padding: 6px;
     }
+    /* 单件服装图（留白较多）→ cover 缩放填满卡片 */
+    .gcb-car-card[data-item-id="eb_sr_outfit_qiqi"] img {
+      object-fit: cover;
+    }
     /* CG 横图卡片：全覆盖，展示完整画面 */
     .gcb-car-card.cc-cg img { object-fit: cover; border-radius: 12px; }
     /* 普通卡片：contain + 内边距，完整展示物品图 */
@@ -8858,6 +8862,7 @@
           : 'navCarouselTo(' + i + ')';
         return (
           '<div class="' + cls + (!owned ? ' cc-empty' : '') + '" style="' + style + '"' +
+            ' data-item-id="' + item.id + '"' +
             (clickHandler ? ' onclick="' + clickHandler + '"' : '') + '>' +
             (owned
               ? '<img src="' + getDisplayImage(item, state) + '"' +
