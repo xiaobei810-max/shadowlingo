@@ -7272,392 +7272,47 @@
     let slowSpeed = 0.7;
     var _evalGeneration = 0;  // 每次新录音递增；旧评测回调发现版本不匹配时静默丢弃
 
-    // ── Dialogue meta（内嵌，不依赖 fetch） ──────────────────────
-    const LESSONS_META = [
-      {
-        id: 1,
-        title: "机场相遇",
-        scene: "诺拉刚想去追一个遗落笔记本的男生，突然听到有人喊她的名字。",
-        dialogue: [
-          /* Page 1 — 明轩开口，诺拉回应 */
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
-            zh: "请问，你是京华大学的留学生，诺拉吗？",
-            pinyin: "Qǐng wèn, nǐ shì Jīng huá dà xué de liú xué shēng, Nuò lā ma?",
-            en: "Excuse me, are you Jinghua University's international student, Nora?" },
-          { speaker: "诺拉 · Nora", role: "learner",
-            zh: "对，我是诺拉。你是？",
-            pinyin: "Duì, wǒ shì Nuò lā. Nǐ shì?",
-            en: "Yes, I'm Nora. And you are?" },
-          /* Page 2 */
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
-            zh: "太好了！我叫明轩，是来接你的。",
-            pinyin: "Tài hǎo le! Wǒ jiào Míng xuān, shì lái jiē nǐ de.",
-            en: "Great! My name is Mingxuan, I'm here to pick you up." },
-          { speaker: "诺拉 · Nora", role: "learner",
-            zh: "太感谢了，我刚才没看到你。",
-            pinyin: "Tài gǎn xiè le, wǒ gāng cái méi kàn dào nǐ.",
-            en: "Thank you so much, I didn't see you just now." },
-          /* Page 3 */
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
-            zh: "没事。行李给我吧。",
-            pinyin: "Méi shì. Xíng li gěi wǒ ba.",
-            en: "No problem. Give me your luggage." },
-          { speaker: "诺拉 · Nora", role: "learner",
-            zh: "谢谢，我们去哪里坐车？",
-            pinyin: "Xiè xie, wǒ men qù nǎ lǐ zuò chē?",
-            en: "Thank you, where do we go to take the bus?" },
-          /* Page 4 */
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",
-            zh: "往前走，右拐坐大巴。",
-            pinyin: "Wǎng qián zǒu, yòu guǎi zuò dà bā.",
-            en: "Walk straight ahead, turn right to take the bus." },
-          { speaker: "诺拉 · Nora", role: "learner",
-            zh: "好的，我们走吧。",
-            pinyin: "Hǎo de, wǒ men zǒu ba.",
-            en: "Okay, let's go." }
-        ],
-        correct: [
-          { zh: "往右拐", pinyin: "Wǎng yòu guǎi", en: "Turn right", note: "口语问路用【拐】不用【转】，更自然。" },
-          { zh: "向右转", pinyin: "Xiàng yòu zhuǎn", en: "Please turn right (textbook)", note: "书面语，日常口语极少使用。" }
-        ]
-      },
-      // ── 第二课 ──────────────────────────────────────────────────
-      {
-        id: 2,
-        title: "坐大巴",
-        scene: "Nora 和明轩上了机场大巴，但 Nora 还没有开通手机支付。",
-        dialogue: [
-          { speaker: "Nora",                    role: "learner", zh: "我们需要买票吗？",     pinyin: "Wǒ men xū yào mǎi piào ma?",      en: "Do we need to buy tickets?" },
-          { speaker: "赵明轩 · Zhao Mingxuan",  role: "local",   zh: "不用，上车扫码。",     pinyin: "Bú yòng, shàng chē sǎo mǎ.",      en: "No need, just scan the code on the bus." },
-          { speaker: "Nora",                    role: "learner", zh: "我还没有微信。",       pinyin: "Wǒ hái méi yǒu Wēi xìn.",         en: "I don't have WeChat yet." },
-          { speaker: "赵明轩 · Zhao Mingxuan",  role: "local",   zh: "没事，我帮你付。",     pinyin: "Méi shì, wǒ bāng nǐ fù.",         en: "It's okay, I'll pay for you." },
-          { speaker: "Nora",                    role: "learner", zh: "多少钱？我给你现金。", pinyin: "Duō shǎo qián? Wǒ gěi nǐ xiàn jīn.", en: "How much? I'll give you cash." },
-          { speaker: "赵明轩 · Zhao Mingxuan",  role: "local",   zh: "二十块。不用急。",     pinyin: "Èr shí kuài. Bú yòng jí.",        en: "Twenty yuan. No rush." },
-          { speaker: "Nora",                    role: "learner", zh: "机场离学校远吗？",     pinyin: "Jī chǎng lí xué xiào yuǎn ma?",   en: "Is the airport far from the school?" },
-          { speaker: "赵明轩 · Zhao Mingxuan",  role: "local",   zh: "有点远，要一个小时。", pinyin: "Yǒu diǎn yuǎn, yào yī gè xiǎo shí.", en: "A bit far, it takes an hour." }
-        ],
-        correct: [
-          { zh: "没事",   pinyin: "Méi shì",     en: "No worries (casual)",    note: '口语中最地道的回应，比"没关系"更高频。' },
-          { zh: "没关系", pinyin: "Méi guān xi", en: "It doesn't matter (textbook)", note: "书面语，年轻人日常少用。" }
-        ]
-      },
-      // ── 第三课 ──────────────────────────────────────────────────
-      {
-        id: 3,
-        title: "新生报到",
-        scene: "明轩带 Nora 来到留学生办公室，Nora 递上护照，开启了她的留学生活。",
-        dialogue: [
-          { speaker: "mingxuan", name: "赵明轩 · Zhao Mingxuan", text: "我们到了。先去报到。",         pinyin: "Wǒ men dào le. Xiān qù bào dào.",           en: "We're here. Let's go register first." },
-          { speaker: "nora",     name: "诺拉 · Nora",             text: "好。需要什么东西？",           pinyin: "Hǎo. Xū yào shén me dōng xi?",              en: "Okay. What do we need?" },
-          { speaker: "mingxuan", name: "赵明轩 · Zhao Mingxuan", text: "你的护照和照片。",             pinyin: "Nǐ de hù zhào hé zhào piàn.",               en: "Your passport and photos." },
-          { speaker: "nora",     name: "诺拉 · Nora",             text: "我已经准备好了，都在这儿。",  pinyin: "Wǒ yǐ jīng zhǔn bèi hǎo le, dōu zài zhèr.", en: "I'm all set, everything's right here." },
-          { speaker: "staff",    name: "工作人员 · Staff",         text: "诺拉是吗？这是房卡。",        pinyin: "Nuò lā shì ma? Zhè shì fáng kǎ.",           en: "Nora, right? This is your room card." },
-          { speaker: "nora",     name: "诺拉 · Nora",             text: "谢谢。我的宿舍在哪儿？",      pinyin: "Xiè xie. Wǒ de sù shè zài nǎr?",           en: "Thank you. Where is my dorm?" },
-          { speaker: "staff",    name: "工作人员 · Staff",         text: "三号楼，四零二。",            pinyin: "Sān hào lóu, sì líng èr.",                  en: "Building 3, room 402." },
-          { speaker: "mingxuan", name: "赵明轩 · Zhao Mingxuan", text: "我知道在哪，带你过去吧。",    pinyin: "Wǒ zhī dào zài nǎ, dài nǐ guò qù ba.",     en: "I know where it is, let me walk you over." }
-        ],
-        correct: [
-          { zh: "给",   pinyin: "Gěi",    tag: "口语 (Real Street)",
-            desc: "在日常生活中递给别人东西时，中国人经常省略宾语，只说一个单音节的「给 (Gěi)」。这听起来非常干练、自然。" },
-          { zh: "给你", pinyin: "Gěi nǐ", tag: "书面语 (Textbook) — Here you go.",
-            desc: "书本上的标准说法，但在实际口语递东西时，年轻人更倾向于直接说「给」。" },
-          { type: "culture", zh: "门牌号的读法",
-            desc: "在读房号、电话号码或公交路线时，中国人习惯把数字一个个分开读。比如 402 读作「四-零-二 (sì líng èr)」，绝不会读成「四百零二」。" }
-        ]
-      },
-      // ── 第四课 ──────────────────────────────────────────────────
-      {
-        id: 4,
-        title: "找宿舍",
-        scene: "拿到房卡后，明轩帮 Nora 推着沉重的行李，一起去寻找三号楼。",
-        dialogue: [
-          { speaker: "Nora",                   role: "learner", zh: "三号楼离这儿远吗？",                pinyin: "Sān hào lóu lí zhèr yuǎn ma?",                  en: "Is Building 3 far from here?" },
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "不远，就在超市旁边。",              pinyin: "Bù yuǎn, jiù zài chāo shì páng biān.",          en: "Not far, right next to the supermarket." },
-          { speaker: "Nora",                   role: "learner", zh: "真是辛苦你了，这箱子挺沉的吧？",   pinyin: "Zhēn shì xīn kǔ nǐ le, zhè xiāng zi tǐng chén de ba?", en: "Thanks so much for the trouble — this suitcase is pretty heavy, isn't it?" },
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "没事。前面有电梯。",                 pinyin: "Méi shì. Qián miàn yǒu diàn tī.",               en: "It's fine. There's an elevator ahead." },
-          { speaker: "Nora",                   role: "learner", zh: "我们去四层，对吧？",                pinyin: "Wǒ men qù sì céng, duì ba?",                    en: "We're going to the 4th floor, right?" },
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "对。四零二。",                       pinyin: "Duì. Sì líng èr.",                              en: "Yes. 402." },
-          { speaker: "Nora",                   role: "learner", zh: "到了。就是这间。",                  pinyin: "Dào le. Jiù shì zhè jiān.",                     en: "We're here. It's this room." },
-          { speaker: "赵明轩 · Zhao Mingxuan", role: "local",   zh: "你开门，我拿行李。",                pinyin: "Nǐ kāi mén, wǒ ná xíng li.",                    en: "You open the door, I'll get the luggage." }
-        ],
-        correct: [
-          { zh: "这箱子挺沉的", pinyin: "Zhè xiāng zi tǐng chén de", en: "This suitcase is pretty heavy (street)",
-            note: "口语描述行李/包/书等的重量，中国人更爱用「沉」，听起来比「很重」地道得多。" },
-          { zh: "这箱子很重",   pinyin: "Zhè xiāng zi hěn zhòng",    en: "This suitcase is heavy (textbook)",
-            note: "书面语，日常口语极少使用，听起来略显生硬。" },
-          { type: "culture", zh: "「辛苦你了」的力量",
-            desc: "当别人帮了你忙（哪怕只是举手之劳），说一句「辛苦你了」远胜过单纯的「谢谢」。它认可了对方的付出与劳动，是建立良好人际关系的第一步。" }
-        ]
-      },
-      // ── 第五课 ──────────────────────────────────────────────────
-      {
-        id: 5,
-        title: "初见室友",
-        scene: "诺拉打开 402 宿舍的门，见到了她未来的中国室友夏七七。",
-        dialogue: [
-          { speaker: "夏七七 · Xia Qiqi",       role: "local",   zh: "你好！你是我的新室友？",                           pinyin: "Nǐ hǎo! Nǐ shì wǒ de xīn shì yǒu?",                                                          en: "Hello! Are you my new roommate?" },
-          { speaker: "诺拉 · Nora",              role: "learner", zh: "你好，我是诺拉。以后请多指教。",                   pinyin: "Nǐ hǎo, wǒ shì Nuò lā. Yǐ hòu qǐng duō zhǐ jiào.",                                           en: "Hello, I'm Nora. Please take care of me from now on." },
-          { speaker: "夏七七 · Xia Qiqi",       role: "local",   zh: "快进来！我叫夏七七，你可以叫我七七。",             pinyin: "Kuài jìn lái! Wǒ jiào Xià Qī qī, nǐ kě yǐ jiào wǒ Qī qī.",                                  en: "Come in! My name is Xia Qiqi, you can call me Qiqi." },
-          { speaker: "赵明轩 · Zhao Mingxuan",  role: "local",   zh: "诺拉，行李放这儿了。我就先走了。",                 pinyin: "Nuò lā, xíng li fàng zhèr le. Wǒ jiù xiān zǒu le.",                                          en: "Nora, I've put the luggage here. I'll be on my way." },
-          { speaker: "诺拉 · Nora",              role: "learner", zh: "今天真的太谢谢你了。",                             pinyin: "Jīn tiān zhēn de tài xiè xie nǐ le.",                                                         en: "Thank you so much for today." },
-          { speaker: "赵明轩 · Zhao Mingxuan",  role: "local",   zh: "不客气。你们俩好好休息吧。",                       pinyin: "Bú kè qi. Nǐ men liǎ hǎo hǎo xiū xi ba.",                                                    en: "You're welcome. Both of you get a good rest." },
-          { speaker: "诺拉 · Nora",              role: "learner", zh: "好的，学长再见。",                                 pinyin: "Hǎo de, xué zhǎng zài jiàn.",                                                                 en: "Okay, goodbye senior." },
-          { speaker: "夏七七 · Xia Qiqi",       role: "local",   zh: "学长再见！诺拉，你一定饿了吧？我们去食堂吃饭！",   pinyin: "Xué zhǎng zài jiàn! Nuò lā, nǐ yí dìng è le ba? Wǒ men qù shí táng chī fàn!",               en: "Bye, senior! Nora, you must be hungry, right? Let's eat at the cafeteria!" }
-        ],
-        correct: [
-          { zh: "我就先走了", pinyin: "Wǒ jiù xiān zǒu le", en: "I'll be on my way (street)",
-            note: "加「就」字缓冲离开的突兀感，比单说「我先走了」更柔和自然，礼貌又轻松。" },
-          { zh: "我离开了", pinyin: "Wǒ lí kāi le",     en: "I am leaving (textbook)",
-            note: "书面语，听起来像演话剧，日常对话里几乎不用。" },
-          { type: "culture", zh: "「学长」的称呼",
-            desc: "在中国大学里，称呼比自己高年级的男生为「学长」，比直呼其名既礼貌又显亲切，是融入中国校园社交圈的第一把钥匙。" }
-        ]
-      },
-      // ── 第六课 ──────────────────────────────────────────────────
-      {
-        id: 6,
-        title: "食堂的晚餐",
-        scene: "七七带 Nora 来到学校食堂吃晚饭。",
-        dialogue: [
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "食堂到了。你想吃什么？",         pinyin: "Shí táng dào le. Nǐ xiǎng chī shén me?",               en: "We're at the cafeteria. What do you want to eat?" },
-          { speaker: "Nora",              role: "learner", zh: "我想吃面条。在哪里买？",           pinyin: "Wǒ xiǎng chī miàn tiáo. Zài nǎ lǐ mǎi?",              en: "I want to eat noodles. Where do I buy them?" },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "前面那个窗口。你有校园卡吗？",   pinyin: "Qián mian nà ge chuāng kǒu. Nǐ yǒu xiào yuán kǎ ma?",  en: "That window ahead. Do you have a campus card?" },
-          { speaker: "Nora",              role: "learner", zh: "还没有。可以用现金吗？",           pinyin: "Hái méi yǒu. Kě yǐ yòng xiàn jīn ma?",                en: "Not yet. Can I use cash?" },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "食堂不能用现金。我帮你刷卡吧。", pinyin: "Shí táng bù néng yòng xiàn jīn. Wǒ bāng nǐ shuā kǎ ba.", en: "The cafeteria doesn't accept cash. Let me swipe my card for you." },
-          { speaker: "Nora",              role: "learner", zh: "太谢谢了。我回头还给你。",         pinyin: "Tài xiè xie le. Wǒ huí tóu huán gěi nǐ.",              en: "Thank you so much. I'll pay you back later." },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "没事，不着急。我们去那边坐吧。", pinyin: "Méi shì, bù zháo jí. Wǒ men qù nà biān zuò ba.",       en: "It's fine, no rush. Let's go sit over there." },
-          { speaker: "Nora",              role: "learner", zh: "好的。这个面条闻起来真香！",       pinyin: "Hǎo de. Zhè ge miàn tiáo wén qǐ lái zhēn xiāng!",     en: "Okay. These noodles smell really good!" }
-        ],
-        correct: [
-          { zh: "我回头还给你", pinyin: "Wǒ huí tóu huán gěi nǐ", en: "I'll pay you back later (street)",
-            note: "最地道的口语承诺，「回头」字面是转头，在口语里表示「稍后/过几天」，比「以后」更轻巧自然。" },
-          { zh: "我以后把钱还给你", pinyin: "Wǒ yǐ hòu bǎ qián huán gěi nǐ", en: "I will return the money later (textbook)",
-            note: "书面表达，日常口语中年轻人几乎不会这样说，显得过于正式。" },
-          { type: "culture", zh: "垫付与微信转账",
-            desc: "朋友间帮忙「垫付 (diàn fù)」很常见，对方说「不着急」是真的把你当朋友。事后在微信发红包或转账还钱，比当面数钱更自然，也不会让气氛变得尴尬。" }
-        ]
-      },
-
-      // ── 第七课 ──────────────────────────────────────────────────
-      {
-        id: 7,
-        title: "逛校园超市",
-        scene: "七七带 Nora 去校园超市购置生活用品。",
-        dialogue: [
-          { speaker: "Nora",              role: "learner", zh: "七七，我想买一些生活用品。",   pinyin: "Qī qi, wǒ xiǎng mǎi yì xiē shēng huó yòng pǐn.",  en: "Qiqi, I'd like to buy some daily necessities." },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "超市里都有，你需要什么？",     pinyin: "Chāo shì lǐ dōu yǒu, nǐ xū yào shén me?",         en: "The supermarket has everything. What do you need?" },
-          { speaker: "Nora",              role: "learner", zh: "我需要买毛巾和牙膏。",         pinyin: "Wǒ xū yào mǎi máo jīn hé yá gāo.",                en: "I need to buy a towel and toothpaste." },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "在那边，我帮你找。",           pinyin: "Zài nà biān, wǒ bāng nǐ zhǎo.",                   en: "Over there — let me help you find them." },
-          { speaker: "Nora",              role: "learner", zh: "你好，我要结账。",             pinyin: "Nǐ hǎo, wǒ yào jié zhàng.",                       en: "Hi, I'd like to check out." },
-          { speaker: "收银员 · Cashier",  role: "local",   zh: "一共二十八块。",               pinyin: "Yī gòng èr shí bā kuài.",                         en: "That's 28 yuan in total." },
-          { speaker: "Nora",              role: "learner", zh: "我只有现金，给您五十。",       pinyin: "Wǒ zhǐ yǒu xiàn jīn, gěi nín wǔ shí.",           en: "I only have cash — here's fifty yuan." },
-          { speaker: "收银员 · Cashier",  role: "local",   zh: "好的，找您二十二块。",         pinyin: "Hǎo de, zhǎo nín èr shí èr kuài.",                en: "Sure, here's 22 yuan in change." }
-        ],
-        correct: [
-          { zh: "我要结账", pinyin: "Wǒ yào jié zhàng", en: "I'd like to check out (street)",
-            note: "超市最自然的结账用语。餐厅里改喊「买单！」，两种场合都不说「付款」——那是书面语。" },
-          { zh: "我想付款", pinyin: "Wǒ xiǎng fù kuǎn", en: "I'd like to make a payment (textbook)",
-            note: "教材常见写法，但日常口语几乎不用，显得书面且生硬。" },
-          { type: "culture", zh: "找零与无现金社会",
-            desc: "收银员说「找您 X 块」，这里「找」是找零的意思，不是「寻找」。中国已近乎无现金：微信支付、支付宝遍布街边小摊和校园超市，建议尽早绑定银行卡开通移动支付。" }
-        ]
-      },
-
-      // ── 第八课 ──────────────────────────────────────────────────
-      {
-        id: 8,
-        title: "大厅的初见",
-        scene: "Nora 在休息室刷手机，大卫走过来向她询问网络密码。",
-        dialogue: [
-          { speaker: "大卫 · David", role: "local",   zh: "你好，打扰一下。我可以有 Wi-Fi 密码吗？", pinyin: "Nǐ hǎo, dǎ rǎo yí xià. Wǒ kě yǐ yǒu Wi-Fi mì mǎ ma?",       en: "Hello, excuse me. Can I have the Wi-Fi password?" },
-          { speaker: "Nora",         role: "learner", zh: "你是想问「密码多少」，对吧？是八个八。",   pinyin: "Nǐ shì xiǎng wèn 「mì mǎ duō shao」, duì ba? Shì bā ge bā.", en: "You mean to ask \"what's the password\", right? It's eight 8s." },
-          { speaker: "大卫 · David", role: "local",   zh: "对，「密码多少」！我的中文真是太糟糕了。",pinyin: "Duì, 「mì mǎ duō shao」! Wǒ de Zhōng wén zhēn shì tài zāo gāo le.", en: "Right, \"what's the password\"! My Chinese is really terrible." },
-          { speaker: "Nora",         role: "learner", zh: "没关系，慢慢来。我是诺拉，昨天刚到。",   pinyin: "Méi guān xi, màn man lái. Wǒ shì Nuò lā, zuó tiān gāng dào.",  en: "It's okay, take your time. I'm Nora, I just arrived yesterday." },
-          { speaker: "大卫 · David", role: "local",   zh: "我是大卫。你的发音听起来很自然。",         pinyin: "Wǒ shì Dà wèi. Nǐ de fā yīn tīng qǐ lái hěn zì rán.",        en: "I'm David. Your pronunciation sounds very natural." },
-          { speaker: "Nora",         role: "learner", zh: "谢谢。其实我的词汇量还不够。",             pinyin: "Xiè xie. Qí shí wǒ de cí huì liàng hái bú gòu.",            en: "Thank you. Actually, my vocabulary is still not enough." },
-          { speaker: "大卫 · David", role: "local",   zh: "太好了，以后我们可以在这里一起练习吗？",  pinyin: "Tài hǎo le, yǐ hòu wǒ men kě yǐ zài zhè lǐ yì qǐ liàn xí ma?", en: "Great, can we practice here together in the future?" },
-          { speaker: "Nora",         role: "learner", zh: "当然可以，随时欢迎。",                     pinyin: "Dāng rán kě yǐ, suí shí huān yíng.",                          en: "Of course, you're welcome anytime." }
-        ],
-        correct: [
-          { zh: "密码多少？", pinyin: "Mì mǎ duō shao?", en: "What's the password? (street)",
-            note: "最地道的问法，直接简洁。中国人很少说「请问密码是什么」，那听起来太正式。" },
-          { zh: "请问密码是什么？", pinyin: "Qǐng wèn mì mǎ shì shén me?", en: "May I ask what the password is? (textbook)",
-            note: "教材标准写法，实际口语中几乎不用，显得过于书面。" },
-          { type: "culture", zh: "八个八的秘密",
-            desc: "Wi-Fi 密码「88888888」因为 8 的发音近似「发(fā)——发财」而大受欢迎，象征好运和财富。宿舍、小店、餐馆默认密码多半都是连排的 8，记住这个规律能省不少力气。" }
-        ]
-      },
-
-      // ── 第九课 ──────────────────────────────────────────────────
-      {
-        id: 9,
-        title: "摄影社的传闻",
-        scene: "大卫拿着一张报名表，来找诺拉和七七帮忙。",
-        dialogue: [
-          { speaker: "大卫 · David",     role: "local",   zh: "诺拉，我去明天报名摄影社，你去吗？",  pinyin: "Nuò lā, wǒ qù míng tiān bào míng shè yǐng shè, nǐ qù ma?", en: "Nora, I go tomorrow sign up for photography club, are you going?" },
-          { speaker: "诺拉",             role: "learner", zh: "你是想说，「我明天去报名」？",         pinyin: "Nǐ shì xiǎng shuō, 「wǒ míng tiān qù bào míng」?",          en: "You mean to say, \"I'll sign up tomorrow\"?" },
-          { speaker: "大卫 · David",     role: "local",   zh: "对！中文的时间词太难记了。",           pinyin: "Duì! Zhōng wén de shí jiān cí tài nán jì le.",              en: "Yes! Chinese time words are too hard to remember." },
-          { speaker: "诺拉",             role: "learner", zh: "我也想参加。摄影社很难进吗？",         pinyin: "Wǒ yě xiǎng cān jiā. Shè yǐng shè hěn nán jìn ma?",        en: "I want to join too. Is the photography club hard to get into?" },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",  zh: "很难进。他们的副社长特别严格。",       pinyin: "Hěn nán jìn. Tā men de fù shè zhǎng tè bié yán gé.",       en: "Very hard to get into. Their vice president is extremely strict." },
-          { speaker: "诺拉",             role: "learner", zh: "真的吗？他叫什么名字？",               pinyin: "Zhēn de ma? Tā jiào shén me míng zi?",                      en: "Really? What is his name?" },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",  zh: "他叫林晚，是我们学校的计算机学神。", pinyin: "Tā jiào Lín Wǎn, shì wǒ men xué xiào de jì suàn jī xué shén.", en: "His name is Lin Wan, he's our school's computer science study god." },
-          { speaker: "诺拉",             role: "learner", zh: "听起来很有意思，我们试试吧。",         pinyin: "Tīng qǐ lái hěn yǒu yì si, wǒ men shì shì ba.",             en: "Sounds interesting, let's give it a try." }
-        ],
-        correct: [
-          { zh: "我明天去报名。", pinyin: "Wǒ míng tiān qù bào míng.", en: "I'll go sign up tomorrow. ✅ correct word order",
-            note: "时间词在动词前：主语 + 时间 + 动词。大卫的错误是把「去」放在了「明天」前面。" },
-          { zh: "我去明天报名。❌", pinyin: "", en: "Wrong — 去 cannot come before 明天 in Chinese.",
-            note: "英语语序陷阱：英语可以说 'I go sign up tomorrow'，但中文时间词必须在动词前。" },
-          { type: "culture", zh: "社团招新季",
-            desc: "大学开学第一个月是社团招新季，越热门的社团（摄影社、街舞社）面试越严格。学长们会根据实力决定录取，是体验真实校园文化的绝佳机会。" }
-        ]
-      },
-
-      // ── 第十课 ──────────────────────────────────────────────────
-      {
-        id: "lesson-10",
-        title: "周末去哪儿逛",
-        scene: "周末到了，诺拉想一个人出去探索，向七七打听校园周边的好去处。",
-        dialogue: [
-          { speaker: "诺拉",              role: "learner", zh: "七七，周末学校附近有什么好玩的地方？", pinyin: "Qī qī, zhōu mò xué xiào fù jìn yǒu shén me hǎo wán de dì fang?", en: "Qiqi, what fun places are near the school on weekends?" },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "东门外有一条街，很热闹。",             pinyin: "Dōng mén wài yǒu yì tiáo jiē, hěn rè nào.",                    en: "There is a street outside the East Gate, it's very lively." },
-          { speaker: "诺拉",              role: "learner", zh: "那里有喝咖啡的地方吗？",               pinyin: "Nà li yǒu hē kā fēi de dì fang ma?",                          en: "Is there a place to drink coffee there?" },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "有一家「慧姐咖啡」，环境很好。",       pinyin: "Yǒu yì jiā 「Huì jiě kā fēi」, huán jìng hěn hǎo.",           en: "There is a \"Sister Hui's Cafe,\" the atmosphere is very nice." },
-          { speaker: "诺拉",              role: "learner", zh: "听起来不错，怎么走？",                 pinyin: "Tīng qǐ lái bú cuò, zěn me zǒu?",                            en: "Sounds good, how do I get there?" },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "出东门，一直往前走就到了。",           pinyin: "Chū dōng mén, yì zhí wǎng qián zǒu jiù dào le.",             en: "Go out the East Gate, keep walking straight and you'll be there." },
-          { speaker: "诺拉",              role: "learner", zh: "谢谢，我下午就去看看。",               pinyin: "Xiè xie, wǒ xià wǔ jiù qù kàn kan.",                         en: "Thank you, I'll go check it out this afternoon." },
-          { speaker: "夏七七 · Xia Qiqi", role: "local",   zh: "玩开心点啊，别迷路了！",               pinyin: "Wán kāi xīn diǎn a, bié mí lù le!",                          en: "Have fun out there, don't get lost!" }
-        ],
-        correct: [
-          { zh: "一直向前走。", pinyin: "Yì zhí xiàng qián zǒu.", en: "Walk straight ahead (textbook).",
-            note: "教材标准写法，书面感较强，口语中几乎不用。" },
-          { zh: "一直往前走。", pinyin: "Yì zhí wǎng qián zǒu.", en: "Keep walking straight (natural spoken Chinese). ✅",
-            note: "口语首选：「往」比「向」更口语化，这是中国人指路时说的真实用语。" },
-          { type: "culture", zh: "校门外的商业街",
-            desc: "中国大学的校门外通常有一条商业街（shāng yè jiē），充满小吃摊、奶茶店和咖啡馆，是大学生周末放松的核心地带。" }
-        ]
-      },
-      // ── 第十一课 ──────────────────────────────────────────────────
-      {
-        id: "lesson-11",
-        title: "慧姐咖啡馆",
-        scene: "周末下午，诺拉找到了七七推荐的咖啡馆，推门进去，店内坐满了人。",
-        dialogue: [
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "欢迎光临！",                                          pinyin: "Huān yíng guāng lín!",                                                             en: "Welcome!" },
-          { speaker: "诺拉",              role: "learner", zh: "请问，还有空位吗？",                                  pinyin: "Qǐng wèn, hái yǒu kòng wèi ma?",                                                   en: "Excuse me, are there any empty seats?" },
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "二楼还有座位。您先在这边点单。",                      pinyin: "Èr lóu hái yǒu zuò wèi. Nín xiān zài zhè biān diǎn dān.",                          en: "There are still seats on the second floor. Please order here first." },
-          { speaker: "诺拉",              role: "learner", zh: "好的。请问有英文菜单吗？",                            pinyin: "Hǎo de. Qǐng wèn yǒu Yīng wén cài dān ma?",                                        en: "Okay. Excuse me, do you have an English menu?" },
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "不好意思，我们只有中文菜单。",                        pinyin: "Bù hǎo yì si, wǒ men zhǐ yǒu Zhōng wén cài dān.",                                  en: "Sorry, we only have a Chinese menu." },
-          { speaker: "诺拉",              role: "learner", zh: "这样啊，我看不太懂中文。",                            pinyin: "Zhè yàng a, wǒ kàn bú tài dǒng Zhōng wén.",                                        en: "I see, I can't really read Chinese very well." },
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "没关系，您慢慢看，要么让后面的客人先点。",            pinyin: "Méi guān xi, nín màn man kàn, yào me ràng hòu miàn de kè rén xiān diǎn.",          en: "It's okay, take your time to look, or perhaps let the customers behind you order first." },
-          { speaker: "诺拉",              role: "learner", zh: "哦，好的，不好意思，您先点。",                        pinyin: "O, hǎo de, bù hǎo yì si, nín xiān diǎn.",                                          en: "Oh, okay, sorry about that, you order first." }
-        ],
-        correct: [
-          { zh: "对不起，让一下。", pinyin: "Duì bu qǐ, ràng yí xià.", en: "Sorry, let me through (textbook).",
-            note: "教材式道歉，略显生硬；日常更多用「不好意思」。" },
-          { zh: "不好意思，您先点。", pinyin: "Bù hǎo yì si, nín xiān diǎn.", en: "Sorry, you order first (natural). ✅",
-            note: "口语首选：「不好意思」比「对不起」更日常、更轻盈；主动让位「您先点」礼貌得体。" },
-          { type: "culture", zh: "咖啡馆的「动线管理」",
-            desc: "中国咖啡馆/奶茶店节奏很快，店员会礼貌建议你让出位置，让后面的客人先点——这是为了维持队伍流动，并非催促你。" }
-        ]
-      },
-      // ── 第十二课 ──────────────────────────────────────────────────
-      {
-        id: "lesson-12",
-        title: "点单卡壳",
-        scene: "诺拉看了一会儿菜单，终于选择好咖啡，重新向店员走去。",
-        dialogue: [
-          { speaker: "诺拉",              role: "learner", zh: "你好，我看好菜单了。麻烦给我一杯拿铁。",                                pinyin: "Nǐ hǎo, wǒ kàn hǎo cài dān le. Má fan gěi wǒ yì bēi ná tiě.",                          en: "Hello, I've looked at the menu. Please give me a latte." },
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "好的，请问要大杯还是中杯？",                                              pinyin: "Hǎo de, qǐng wèn yào dà bēi hái shì zhōng bēi?",                                       en: "Okay, large or medium?" },
-          { speaker: "诺拉",              role: "learner", zh: "中杯就可以了，谢谢。",                                                    pinyin: "Zhōng bēi jiù kě yǐ le, xiè xie.",                                                     en: "Medium is fine, thank you." },
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "好的，中杯。那要冰的还是热的？要几分甜？",                                pinyin: "Hǎo de, zhōng bēi. Nà yào bīng de hái shì rè de? Yào jǐ fēn tián?",                    en: "Okay, medium. Iced or hot? How much sweetness?" },
-          { speaker: "诺拉",              role: "learner", zh: "冰的。呃……不好意思，你刚才说的「几分甜」是什么意思？",                    pinyin: "Bīng de. È... bù hǎo yì si, nǐ gāng cái shuō de \"jǐ fēn tián\" shì shén me yì si?",   en: "Iced. Uh... excuse me, what did you mean by 'how much sweetness' just now?" },
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "就是需要加多少糖？全糖、半糖还是少糖？",                                  pinyin: "Jiù shì xū yào jiā duō shao táng? Quán táng, bàn táng hái shì shǎo táng?",             en: "It means how much sugar you need added? Full, half, or less?" },
-          { speaker: "诺拉",              role: "learner", zh: "原来是这样，太复杂了，我一下子不知道该怎么选了。",                        pinyin: "Yuán lái shì zhè yàng, tài fù zá le, wǒ yí xià zi bù zhī dào gāi zěn me xuǎn le.",     en: "So that's how it is — it's too complicated, I suddenly don't know what to choose." },
-          { speaker: "店员 · Cafe Staff", role: "local",   zh: "那您再想想，不用着急。",                                                  pinyin: "Nà nín zài xiǎng xiǎng, bú yòng zháo jí.",                                             en: "Then think about it a bit more, no need to hurry." }
-        ],
-        correct: [
-          { zh: "我要一杯拿铁。", pinyin: "Wǒ yào yì bēi ná tiě.", en: "I want a latte (textbook).",
-            note: "教材式点单，直接但略显生硬。" },
-          { zh: "麻烦给我一杯拿铁。", pinyin: "Má fan gěi wǒ yì bēi ná tiě.", en: "Could I please have a latte (natural). ✅",
-            note: "口语首选：「麻烦给我……」是点单/求助的高频礼貌句式，听起来轻盈、地道。" },
-          { type: "culture", zh: "饮品店的「几分甜」",
-            desc: "中国饮品店极其注重定制化，店员会快速追问「冰/热」「几分甜」。常见甜度：全糖（默认）、七分甜/少糖、半糖、无糖。" }
-        ]
-      },
-      // ── 第十三课 ──────────────────────────────────────────────────
-      {
-        id: "lesson-13",
-        title: "林晚解围",
-        scene: "就在诺拉感到窘迫时，排在她身后的男生突然开口，给了诺拉一个建议。",
-        dialogue: [
-          { speaker: "林晚 · Lin Wan",     role: "local",   zh: "如果不知道怎么选，一般可以点「正常冰、正常糖」。",                       pinyin: "Rú guǒ bù zhī dào zěn me xuǎn, yì bān kě yǐ diǎn \"zhèng cháng bīng, zhèng cháng táng\".",   en: "If you don't know how to choose, you can generally order \"regular ice, regular sugar\"." },
-          { speaker: "诺拉",                role: "learner", zh: "太好了！那我就要正常冰、正常糖，谢谢你。",                               pinyin: "Tài hǎo le! Nà wǒ jiù yào zhèng cháng bīng, zhèng cháng táng, xiè xie nǐ.",                    en: "That's great! Then I'll have regular ice and regular sugar, thank you." },
-          { speaker: "店员 · Cafe Staff",  role: "local",   zh: "好的，一共十五块。",                                                      pinyin: "Hǎo de, yí gòng shí wǔ kuài.",                                                                    en: "Okay, fifteen yuan in total." },
-          { speaker: "诺拉",                role: "learner", zh: "我没有现金，可以用微信支付吗？",                                          pinyin: "Wǒ méi yǒu xiàn jīn, kě yǐ yòng Wēi xìn zhī fù ma?",                                            en: "I don't have cash, can I pay with WeChat?" },
-          { speaker: "店员 · Cafe Staff",  role: "local",   zh: "可以的，您直接在这儿扫码就行。",                                          pinyin: "Kě yǐ de, nín zhí jiē zài zhèr sǎo mǎ jiù xíng.",                                              en: "Yes you can, just scan the code right here." },
-          { speaker: "诺拉",                role: "learner", zh: "刚才真的谢谢你帮我解围。不然我都不知道该怎么办。",                        pinyin: "Gāng cái zhēn de xiè xie nǐ bāng wǒ jiě wéi. Bù rán wǒ dōu bù zhī dào gāi zěn me bàn.",        en: "Thank you so much for helping me out just now. I wouldn't have known what to do." },
-          { speaker: "林晚 · Lin Wan",     role: "local",   zh: "没关系。对刚来的留学生来说，中文菜单确实有点难。",                        pinyin: "Méi guān xi. Duì gāng lái de liú xué shēng lái shuō, Zhōng wén cài dān què shí yǒu diǎn nán.", en: "It's nothing. For newly arrived international students, Chinese menus are indeed a bit difficult." },
-          { speaker: "诺拉",                role: "learner", zh: "对了，我觉得你看起来很面熟。我们是不是在哪里见过？",                      pinyin: "Duì le, wǒ jué de nǐ kàn qǐ lái hěn miàn shú. Wǒ men shì bu shì zài nǎ lǐ jiàn guò?",          en: "By the way, I think you look very familiar. Have we met somewhere before?" }
-        ],
-        correct: [
-          { zh: "你是谁？我们认识吗？", pinyin: "Nǐ shì shéi? Wǒ men rèn shi ma?", en: "Who are you? Do we know each other? (textbook)",
-            note: "教材式问句，过于直接、略显冒犯。" },
-          { zh: "你看起来很面熟，我们是不是在哪里见过？", pinyin: "Nǐ kàn qǐ lái hěn miàn shú, wǒ men shì bu shì zài nǎ lǐ jiàn guò?", en: "You look familiar, have we met before? (natural). ✅",
-            note: "口语首选：「面熟」+ 「是不是在哪见过」是经典破冰句，委婉自然且自带一点悬念。" },
-          { type: "culture", zh: "万能救场词「正常」+ 扫码支付",
-            desc: "不知道甜度/冰量时，「正常」一句话跳过所有定制选项；扫码支付几乎渗透中国生活每个角落，出门可以不带现金。" }
-        ]
-      },
-      // ── 第十四课 ──────────────────────────────────────────────────
-      {
-        id: "lesson-14",
-        title: "找到失主",
-        scene: "两人站在取餐区等咖啡，诺拉仔细看着男生的脸，突然想起了什么。",
-        dialogue: [
-          { speaker: "诺拉",              role: "learner", zh: "我想起来了！我们上周是不是在机场见过？",                                       pinyin: "Wǒ xiǎng qǐ lái le! Wǒ men shàng zhōu shì bu shì zài jī chǎng jiàn guò?",                                  en: "I remember now! Did we see each other at the airport last week?" },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "机场？那有可能，上周我刚从外地坐飞机回来。",                                     pinyin: "Jī chǎng? Nà yǒu kě néng, shàng zhōu wǒ gāng cóng wài dì zuò fēi jī huí lái.",                              en: "Airport? That's possible. I just flew back from out of town last week." },
-          { speaker: "诺拉",              role: "learner", zh: "那你是不是丢了一个黑色的笔记本？",                                                pinyin: "Nà nǐ shì bu shì diū le yí gè hēi sè de bǐ jì běn?",                                                        en: "Then did you lose a black notebook?" },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "对，我一直找不到那个笔记本。",                                                    pinyin: "Duì, wǒ yì zhí zhǎo bú dào nà ge bǐ jì běn.",                                                              en: "Yes, I haven't been able to find that notebook." },
-          { speaker: "诺拉",              role: "learner", zh: "太巧了，那个笔记本被我捡到了，放在我的宿舍里。",                                 pinyin: "Tài qiǎo le, nà ge bǐ jì běn bèi wǒ jiǎn dào le, fàng zài wǒ de sù shè lǐ.",                                en: "What a coincidence — I picked up that notebook, it's in my dorm." },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "那太好了，我什么时候方便去拿？",                                                   pinyin: "Nà tài hǎo le, wǒ shén me shí hou fāng biàn qù ná?",                                                        en: "That's great. When would it be convenient for me to pick it up?" },
-          { speaker: "诺拉",              role: "learner", zh: "你是摄影社的吧，我正好要去摄影社报名，下次顺便带给你。",                          pinyin: "Nǐ shì shè yǐng shè de ba, wǒ zhèng hǎo yào qù shè yǐng shè bào míng, xià cì shùn biàn dài gěi nǐ.",      en: "You're in the photography club, right? I happen to be going there to sign up — I'll bring it to you in passing next time." },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "你怎么知道我是摄影社的？",                                                          pinyin: "Nǐ zěn me zhī dào wǒ shì shè yǐng shè de?",                                                                  en: "How do you know I'm in the photography club?" }
-        ],
-        correct: [
-          { zh: "下次我会专门给你送过去。", pinyin: "Xià cì wǒ huì zhuān mén gěi nǐ sòng guò qù.", en: "I'll make a special trip to bring it to you next time. (textbook)",
-            note: "教材式承诺，听起来郑重但也带着「为你跑一趟」的分量，年轻人之间用反而显得见外。" },
-          { zh: "下次顺便带给你。", pinyin: "Xià cì shùn biàn dài gěi nǐ.", en: "I'll bring it to you in passing next time. ✅ (natural)",
-            note: "口语首选：「顺便」一词把「专门跑一趟」的分量瞬间卸掉，听起来轻盈、不让对方有亏欠感。" },
-          { type: "culture", zh: "社团：意外相遇的纽带",
-            desc: "大学里的「社团 (shè tuán)」是学生建立社交圈的重要纽带。很多意想不到的相遇——比如这本失而复得的笔记本——都是通过社团的共同话题被串起来的。" }
-        ]
-      },
-      // ── 第十五课 ──────────────────────────────────────────────────
-      {
-        id: "lesson-15",
-        title: "交换联系方式",
-        scene: "听到林晚的疑问，诺拉笑了笑，提到了她的室友。",
-        dialogue: [
-          { speaker: "诺拉",              role: "learner", zh: "我的室友叫七七，是她向我提起你的。",                                          pinyin: "Wǒ de shì yǒu jiào Qī qī, shì tā xiàng wǒ tí qǐ nǐ de.",                                                en: "My roommate is Qiqi — she's the one who mentioned you to me." },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "原来是夏七七。怪不得。",                                                       pinyin: "Yuán lái shì Xià Qī qī. Guài bu de.",                                                                  en: "So it's Xia Qiqi. No wonder." },
-          { speaker: "诺拉",              role: "learner", zh: "听说你是副社长，面试特别严格，说实话我还有点紧张。",                          pinyin: "Tīng shuō nǐ shì fù shè zhǎng, miàn shì tè bié yán gé, shuō shí huà wǒ hái yǒu diǎn jǐn zhāng.",       en: "I heard you're the vice president and the interviews are especially strict — to be honest, I'm a little nervous." },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "摄影社确实看重作品。你为什么想加入摄影社？",                                     pinyin: "Shè yǐng shè què shí kàn zhòng zuò pǐn. Nǐ wèi shén me xiǎng jiā rù shè yǐng shè?",                       en: "The photography club really does value the portfolio. Why do you want to join?" },
-          { speaker: "诺拉",              role: "learner", zh: "因为我刚来到中国，想用镜头记录下这里不一样的生活。",                            pinyin: "Yīn wèi wǒ gāng lái dào Zhōng guó, xiǎng yòng jìng tóu jì lù xià zhè lǐ bù yí yàng de shēng huó.",      en: "Because I just arrived in China — I want to use my lens to record the different life here." },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "我们加个微信吧，我把报名的具体要求发给你。",                                     pinyin: "Wǒ men jiā gè Wēi xìn ba, wǒ bǎ bào míng de jù tǐ yào qiú fā gěi nǐ.",                                   en: "Let's add WeChat — I'll send you the specific sign-up requirements." },
-          { speaker: "诺拉",              role: "learner", zh: "好的，那你扫我的微信二维码吧。",                                                pinyin: "Hǎo de, nà nǐ sǎo wǒ de Wēi xìn èr wéi mǎ ba.",                                                          en: "Okay — then go ahead and scan my WeChat QR code." },
-          { speaker: "林晚 · Lin Wan",    role: "local",   zh: "好了。面试的时候，记得带上你的作品和我的笔记本。",                                pinyin: "Hǎo le. Miàn shì de shí hou, jì de dài shàng nǐ de zuò pǐn hé wǒ de bǐ jì běn.",                          en: "Done. At the interview, remember to bring your portfolio — and my notebook." }
-        ],
-        correct: [
-          { zh: "我可以加你为好友吗？", pinyin: "Wǒ kě yǐ jiā nǐ wéi hǎo yǒu ma?", en: "May I add you as a friend? (textbook)",
-            note: "教材式问句，听起来正式得像在审批申请，年轻人之间几乎不这么说。" },
-          { zh: "我们加个微信吧。", pinyin: "Wǒ men jiā gè Wēi xìn ba.", en: "Let's add WeChat. ✅ (natural)",
-            note: "口语首选：「加个」+「吧」两个轻量词把请求变成顺手提议，是中国所有社交关系的标准起手式。" },
-          { type: "culture", zh: "「加个微信」=社交基础设施",
-            desc: "在中国，「加个微信」是所有人际交往的开端。微信不止是聊天软件，更是社团通知群、文件传输、扫码支付与身份验证的全能入口。加微信的标准动作就是扫一下对方的二维码。" }
-        ]
+    // ── buildLessonMeta: derives dialogue from LESSONS[i].sentences ─────
+    // Replaces the old LESSONS_META array. Works for both structures:
+    //   flat (role: local/learner on each sentence, no context fields)
+    //   contextAbove/Below (learner sentences with local context attached)
+    function buildLessonMeta(lesson) {
+      if (!lesson) return null;
+      var sents = lesson.sentences || [];
+      var dialogue = [];
+      var lastLocalZh = null;
+      for (var i = 0; i < sents.length; i++) {
+        var s = sents[i];
+        if (s.contextAbove && s.contextAbove.zh !== lastLocalZh) {
+          dialogue.push({ role: 'local',
+            speaker: s.contextAbove.speaker || '',
+            zh:      s.contextAbove.zh      || '',
+            pinyin:  s.contextAbove.pinyin  || '',
+            en:      s.contextAbove.en      || '' });
+          lastLocalZh = s.contextAbove.zh;
+        }
+        dialogue.push({ role:    s.role    || 'learner',
+                         speaker: s.speaker || '',
+                         zh:      s.zh      || '',
+                         pinyin:  s.pinyin  || '',
+                         en:      s.en      || '' });
+        if (s.contextBelow) {
+          dialogue.push({ role: 'local',
+            speaker: s.contextBelow.speaker || '',
+            zh:      s.contextBelow.zh      || '',
+            pinyin:  s.contextBelow.pinyin  || '',
+            en:      s.contextBelow.en      || '' });
+          lastLocalZh = s.contextBelow.zh;
+        }
       }
-    ];
+      return {
+        id:       lesson.id,
+        title:    lesson.title || '',
+        scene:    lesson.scene || (lesson.coverScene && lesson.coverScene.zh) || '',
+        correct:  lesson.correct  || [],
+        dialogue: dialogue
+      };
+    }
 
     // Dialogue mode: 3-step flow
     // step: 1 = Listen Mode, 2 = Your Turn, 3 = Guide
@@ -14089,7 +13744,7 @@
     // ── Dialogue mode (3 steps) ───────────────────────────────
     function initDialogMode() {
       setStepTitle("第1步：先听一遍 👂", "跟着完整对话先感受语气");
-      dialogLessonMeta = LESSONS_META[lessonIdx] || LESSONS_META[0];
+      dialogLessonMeta = buildLessonMeta(LESSONS[lessonIdx] || LESSONS[0]);
       buildDialogRounds();
       renderDialogStep1Intro();
     }
@@ -14528,37 +14183,23 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (data) {
           if (!data) return;
-          // Cross-reference with LESSONS_META to build zh-text keyed lookup.
-          // LESSONS_META[0-8] use numeric id (1-9); LESSONS uses "lesson-N".
-          // We resolve the canonical id from LESSONS when possible, so the key
-          // matches what getStaticAudioUrl() reads from LESSONS[lessonIdx].id.
-          LESSONS_META.forEach(function (meta, li) {
-            var mapKey = 'lesson' + String(li + 1).padStart(2, '0'); // "lesson01"
+          // Build zh-text keyed audio lookup directly from LESSONS.
+          LESSONS.forEach(function (lesson, li) {
+            var mapKey = 'lesson' + String(li + 1).padStart(2, '0');
             var lineMap = data[mapKey];
             if (!lineMap) return;
-            // Resolve canonical lesson id: find matching LESSONS entry first
-            var lid = null;
-            for (var k = 0; k < LESSONS.length; k++) {
-              var l = LESSONS[k];
-              // LESSONS_META id may be a number (1-9) or string ("lesson-10"+)
-              if (l.id === meta.id || l.id === 'lesson-' + meta.id) {
-                lid = l.id; break;
-              }
-            }
-            // Lesson only in LESSONS_META (e.g. lesson-13): derive from meta.id
-            if (!lid) lid = (typeof meta.id === 'string') ? meta.id : 'lesson-' + (li + 1);
+            var lid = lesson.id;
             _audioMap[lid] = {};
-            // Index dialogue lines ("1", "2", ...)
-            meta.dialogue.forEach(function (d, di) {
-              var filePath = lineMap[String(di + 1)];
-              if (filePath && d.zh) _audioMap[lid][d.zh] = filePath;
-            });
-            // Index vocab words ("v1", "v2", ...) — from matching LESSONS entry
-            var lesson = null;
-            for (var k = 0; k < LESSONS.length; k++) {
-              if (LESSONS[k].id === lid) { lesson = LESSONS[k]; break; }
+            // Index dialogue lines ('1', '2', ...) via derived dialogue
+            var meta = buildLessonMeta(lesson);
+            if (meta && meta.dialogue) {
+              meta.dialogue.forEach(function (d, di) {
+                var filePath = lineMap[String(di + 1)];
+                if (filePath && d.zh) _audioMap[lid][d.zh] = filePath;
+              });
             }
-            if (lesson && lesson.vocab) {
+            // Index vocab words ('v1', 'v2', ...)
+            if (lesson.vocab) {
               lesson.vocab.forEach(function (v, vi) {
                 var filePath = lineMap['v' + (vi + 1)];
                 if (filePath && v.zh) _audioMap[lid][v.zh] = filePath;
