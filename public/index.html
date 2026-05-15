@@ -7555,6 +7555,32 @@
     var SHARD_REWARD     = { N: 1,    R: 3,    SR: 8,   SSR: 20  };
     var SHARD_PRICE      = { N: 5,    R: 15,   SR: 40,  SSR: 80  };
 
+    // ── i18n 脚手架 ──────────────────────────────────────────────────
+    // 读取用户母语设置（默认英语）。
+    // 当 nameI18n / titleI18n / bodyI18n 等字段存在时优先使用，
+    // 否则回退到原有 *En 字段，保证现有内容零破坏。
+    var USER_LANG = localStorage.getItem('userLang') || 'en';
+
+    /** 设置用户母语并持久化 */
+    function setUserLang(lang) {
+      USER_LANG = lang;
+      localStorage.setItem('userLang', lang);
+    }
+
+    /**
+     * 从数据对象中读取指定字段的本地化文本。
+     * 优先级：obj[key+'I18n'][USER_LANG] → obj[key+'I18n'].en → obj[key+'En'] → ''
+     * @param {Object} obj  数据对象（lesson / item / series / unit）
+     * @param {string} key  字段基名，如 'name' / 'title' / 'body'
+     */
+    function tField(obj, key) {
+      if (!obj) return '';
+      var map = obj[key + 'I18n'];
+      if (map) return map[USER_LANG] || map.en || obj[key + 'En'] || '';
+      return obj[key + 'En'] || '';
+    }
+    // ── end i18n ─────────────────────────────────────────────────────
+
     var GACHA_SERIES = {
       'nora-debut': {
         id: 'nora-debut',
@@ -8128,7 +8154,7 @@
         // ── 系列标题
         '<div class="gs-series-title" id="gs-series-title">' +
           '<div class="gs-series-name-zh" id="gs-series-name-zh">' + series.nameZh + '</div>' +
-          '<div class="gs-series-name-en" id="gs-series-name-en">' + series.nameEn + '</div>' +
+          '<div class="gs-series-name-en" id="gs-series-name-en">' + tField(series, 'name') + '</div>' +
         '</div>' +
         // ── 抽卡按钮
         '<div class="gs-action-area">' +
@@ -8466,7 +8492,7 @@
             '<div class="gr-img-fallback" style="display:none">' + emoji + '</div>' +
           '</div>' +
           '<div class="gr-name-zh">' + item.nameZh + '</div>' +
-          '<div class="gr-name-en">' + item.nameEn + '</div>' +
+          '<div class="gr-name-en">' + tField(item, 'name') + '</div>' +
           bodyHtml +
           (result.isDup
             ? '<div class="gr-dup-hint">已有 · 获得 <b>' + result.shardsGained + '</b> 碎片</div>'
@@ -8682,7 +8708,7 @@
           var zhEl = document.getElementById('gs-series-name-zh');
           var enEl = document.getElementById('gs-series-name-en');
           if (zhEl) zhEl.textContent = s.nameZh;
-          if (enEl) enEl.textContent = s.nameEn;
+          if (enEl) enEl.textContent = tField(s, 'name');
           titleEl.style.opacity = '1';
         }, 160);
       }
@@ -8928,7 +8954,7 @@
       return (
         '<div class="gcb-car-tier gcb-detail-tier-' + tier.toLowerCase() + '">' + TIER_LABEL[tier] + '</div>' +
         '<div class="gcb-car-name-zh">' + item.nameZh + '</div>' +
-        '<div class="gcb-car-name-en">' + item.nameEn + '</div>' +
+        '<div class="gcb-car-name-en">' + tField(item, 'name') + '</div>' +
         (rec && rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-car-count">×' + rec.count + '</div>' : '')
       );
     }
@@ -9028,7 +9054,7 @@
             (thumbClickable ? '<span class="gcb-thumb-zoom-icon">⤢</span>' : '') +
           '</div>' +
           '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
-          '<div class="gcb-detail-name-en">' + item.nameEn + '</div>' +
+          '<div class="gcb-detail-name-en">' + tField(item, 'name') + '</div>' +
           bodyHtml +
           (rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-detail-count">已获得 ' + rec.count + ' 份</div>' : '') +
           '<div class="gcb-detail-btns">' + btns + '</div>' +
@@ -9153,7 +9179,7 @@
           return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
         }).join('');
       }
-      var hasEn = !!item.bodyEn;
+      var hasEn = !!(item.bodyI18n || item.bodyEn);
       var tierBreathCls = item.tier ? ' tier-breath-' + item.tier.toLowerCase() : '';
       // 语言切换行（仅有英文时显示）
       var langRow = hasEn
@@ -9167,7 +9193,7 @@
         : '';
       var transcriptBody =
         '<div class="vt-zh-block">' + toParagraphs(item.body) + '</div>' +
-        (hasEn ? '<div class="vt-en-block" style="display:none">' + toParagraphs(item.bodyEn) + '</div>' : '');
+        (hasEn ? '<div class="vt-en-block" style="display:none">' + toParagraphs(tField(item, 'body')) + '</div>' : '');
       return (
         '<div class="' + prefix + '-voice-player">' +
           '<button class="' + prefix + '-voice-btn' + tierBreathCls + '" id="' + btnId + '"' +
@@ -11818,7 +11844,7 @@
 
       if (el("lesson-title-text")) el("lesson-title-text").innerHTML =
         '<span class="lesson-title-zh">' + lesson.titleZh + '</span>' +
-        '<span class="lesson-title-en">' + lesson.titleEn + '</span>';
+        '<span class="lesson-title-en">' + tField(lesson, 'title') + '</span>';
       if (el("btn-lesson-prev")) el("btn-lesson-prev").disabled = lessonIdx === 0;
       if (el("btn-lesson-next")) el("btn-lesson-next").disabled = lessonIdx === LESSONS.length - 1;
 
@@ -13472,7 +13498,7 @@
 
       // 标题去掉"第X课："前缀，只保留课名
       var titleZh = (lesson.titleZh || '').replace(/^第.+课[：:]\s*/, '');
-      var titleEn = (lesson.titleEn || '').replace(/^Lesson \d+[:\s]+/i, '');
+      var titleEn = tField(lesson, 'title').replace(/^Lesson \d+[:\s]+/i, '');
       var tzhEl = document.getElementById('cover-title-zh');
       var tenEl = document.getElementById('cover-title-en');
       if (tzhEl) tzhEl.textContent = titleZh;
@@ -14841,7 +14867,7 @@
       if (titleEl && dialogLessonMeta.title) {
         var lesson = LESSONS[lessonIdx] || LESSONS[0];
         var lessonNum = lessonIdx + 1;
-        var enTitle = lesson && lesson.titleEn ? lesson.titleEn.replace(/^Lesson \d+:\s*/i, '') : '';
+        var enTitle = lesson ? tField(lesson, 'title').replace(/^Lesson \d+:\s*/i, '') : '';
         titleEl.innerHTML =
           '<div class="plp-title-zh">第' + lessonNum + '课 · ' + dialogLessonMeta.title + '</div>' +
           (enTitle ? '<div class="plp-title-en">Lesson ' + lessonNum + ': ' + enTitle + '</div>' : '');
@@ -16297,7 +16323,7 @@
         titleEl.textContent = '选择单元 · Choose Your Unit';
       } else {
         var u = UNITS[chsActiveUnitIdx];
-        titleEl.textContent = u.titleZh + ' · ' + u.titleEn;
+        titleEl.textContent = u.titleZh + ' · ' + tField(u, 'title');
       }
     }
 
@@ -16362,7 +16388,7 @@
                 '<div class="chs-typo-number">' + (u.numLabel || ('0' + (i + 1)).slice(-2)) + '</div>' +
                 '<div class="chs-typo-divider"></div>' +
                 '<div class="chs-typo-title-zh">' + (u.titleZh || '') + '</div>' +
-                '<div class="chs-typo-title-en">' + (u.titleEn || '') + '</div>' +
+                '<div class="chs-typo-title-en">' + tField(u, 'title') + '</div>' +
               '</div>' +
               '<div class="chs-typo-motif">' + (u.motif || '') + '</div>';
 
@@ -16389,7 +16415,7 @@
             var numZh = ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'][lIdx] || (lIdx + 1);
             var eyebrow = 'CHAPTER ' + (lIdx + 1) + ' · 第' + numZh + '章';
             var titleZh = (L && L.titleZh || '').replace(/^第.+课[：:]\s*/, '');
-            var titleEn = (L && L.titleEn || '').replace(/^Lesson \d+[:\s]+/i, '');
+            var titleEn = (L ? tField(L, 'title') : '').replace(/^Lesson \d+[:\s]+/i, '');
 
             var bg = document.createElement('div');
             bg.className = 'chs-card-bg';
