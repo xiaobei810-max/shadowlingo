@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Pre-push hook：push 前自动跑 validator
+# 失败时阻断 push；紧急绕过用 `git push --no-verify`
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+VALIDATOR="$REPO_ROOT/scripts/validate_lessons.py"
+
+if [ ! -f "$VALIDATOR" ]; then
+  echo "⚠️  validate_lessons.py 不存在，跳过验证"
+  exit 0
+fi
+
+echo "🔍 跑 validator..."
+if python3 "$VALIDATOR"; then
+  echo "✅ 验证通过，继续 push"
+  exit 0
+else
+  echo ""
+  echo "❌ 验证失败，push 已阻断"
+  echo "   修复错误后重新 push，或紧急绕过用 'git push --no-verify'"
+  exit 1
+fi
