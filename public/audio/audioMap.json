@@ -138,5 +138,10 @@
     "4": "/audio/lesson15/L15_04_Linwan.mp3",
     "6": "/audio/lesson15/L15_06_Linwan.mp3",
     "8": "/audio/lesson15/L15_08_Linwan.mp3"
+  },
+  "lesson16": {
+    "3": "/audio/lesson16/L16_03_Linwan.mp3",
+    "5": "/audio/lesson16/L16_05_Linwan.mp3",
+    "7": "/audio/lesson16/L16_07_Linwan.mp3"
   }
 }
