@@ -103,8 +103,8 @@ def main():
         sys.exit(1)
 
     lessons = load_lesson_files()
-    if len(lessons) != 15:
-        print(f"⚠️  期望 15 个文件，实际 {len(lessons)} 个")
+    if not lessons:
+        print("❌ lessons/ 目录里没有 lesson-*.js 文件"); sys.exit(1)
     print(f"读入 {len(lessons)} 个 lesson 文件")
 
     src = HTML.read_text(encoding="utf-8")
