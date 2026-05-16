@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Pre-commit hook：
+# 1. 如果 lessons/lesson-*.js 有 staged 改动，自动跑 build_lessons.py
+#    把 index.html 重新生成，然后把 index.html 也加进本次 commit
+# 2. 这样工作流变成"只编辑 lessons/lesson-N.js，commit 时自动同步 index.html"
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+BUILD="$REPO_ROOT/scripts/build_lessons.py"
+
+# 检查本次 commit 是否包含 lessons/ 改动
+if ! git diff --cached --name-only | grep -q '^lessons/lesson-.*\.js$'; then
+  exit 0   # 没动课程文件，跳过
+fi
+
+if [ ! -f "$BUILD" ]; then
+  exit 0   # 构建脚本不存在，跳过
+fi
+
+echo "🔧 检测到 lessons/ 改动，跑 build_lessons.py..."
+python3 "$BUILD"
+
+# 如果 index.html 被改了，自动加进本次 commit
+if ! git diff --quiet public/index.html; then
+  echo "🔗 同步 public/index.html 到本次 commit"
+  git add public/index.html
+fi
+
+exit 0
