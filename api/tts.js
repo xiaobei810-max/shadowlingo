@@ -85,12 +85,13 @@ const VOICES = {
     pitchAdj:  '+2%',
   },
   // 林晚运行时回退：台词有静态 MP3 时不会走到这里
-  // 仅用于静态文件尚未生成的新台词（如开发阶段）
+  // 与 sync_audio.py LINWAN_VOICE / RATE / PITCH 完全一致，
+  // 保证新台词在生成静态 MP3 之前听感与已有 L13-L15 保持一致
   linwan: {
-    name:      'zh-CN-YunjianNeural',
+    name:      'zh-CN-YunhaoNeural',
     lang:      'zh-CN',
     rateScale: 0.95,
-    pitchAdj:  '-10%',
+    pitchAdj:  '0%',
   },
 };
 

@@ -214,6 +214,29 @@ LINWAN_SCRIPT = [
         "filename":   "L15_08_Linwan.mp3",
         "text":       "好了。面试的时候，记得带上你的作品和我的笔记本。",
     },
+    # ── 第 16 课对话台词（百团大战）──────────────────────────────────
+    # Lesson 16 用扁平 8 句结构（无 contextAbove/Below），林晚是 dialogue[2/4/6]
+    # 对应 audioMap line_key "3"（1-based dialogue index）
+    {
+        "lesson_key": "lesson16",
+        "line_key":   "3",
+        "filename":   "L16_03_Linwan.mp3",
+        "text":       "终于找回来了，谢谢。这些照片，你准备得很充分啊。",
+    },
+    # 对应 dialogue[4] → line_key "5"
+    {
+        "lesson_key": "lesson16",
+        "line_key":   "5",
+        "filename":   "L16_05_Linwan.mp3",
+        "text":       "照片我先收下，后面再安排面试。",
+    },
+    # 对应 dialogue[6] → line_key "7"
+    {
+        "lesson_key": "lesson16",
+        "line_key":   "7",
+        "filename":   "L16_07_Linwan.mp3",
+        "text":       "现在还不知道。等确定下来，我再给你发微信。",
+    },
     # ── 角色介绍问候语（非对话，独立文件）──────────────────────────
     # 对应 CHARACTER_DB.linwan.greeting，由 charIntroPlayGreeting() 读取
     {
