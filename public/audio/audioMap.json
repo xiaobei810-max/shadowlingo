@@ -149,5 +149,11 @@
     "3": "/audio/lesson17/L17_03_Linwan.mp3",
     "5": "/audio/lesson17/L17_05_Linwan.mp3",
     "7": "/audio/lesson17/L17_07_Linwan.mp3"
+  },
+  "lesson18": {
+    "1": "/audio/lesson18/L18_01_Linwan.mp3",
+    "3": "/audio/lesson18/L18_03_Linwan.mp3",
+    "5": "/audio/lesson18/L18_05_David.mp3",
+    "7": "/audio/lesson18/L18_07_David.mp3"
   }
 }
