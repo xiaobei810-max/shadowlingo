@@ -360,6 +360,31 @@ MINGXUAN_SCRIPT = [
         "filename":   "L19_07_Mingxuan.mp3",
         "text":       "难怪。怎么样，拍到满意的照片了吗？",
     },
+    # ── 第 20 课对话台词 ── 明轩 dialogue[1/3/5/7]（明轩先开口）
+    {
+        "lesson_key": "lesson20",
+        "line_key":   "1",
+        "filename":   "L20_01_Mingxuan.mp3",
+        "text":       "哇，这起跳的瞬间抓得真准！把我拍得很帅啊。",
+    },
+    {
+        "lesson_key": "lesson20",
+        "line_key":   "3",
+        "filename":   "L20_03_Mingxuan.mp3",
+        "text":       "没问题！你最近在学校过得怎么样？还习惯吗？",
+    },
+    {
+        "lesson_key": "lesson20",
+        "line_key":   "5",
+        "filename":   "L20_05_Mingxuan.mp3",
+        "text":       "那就好，有事记得来找我。",
+    },
+    {
+        "lesson_key": "lesson20",
+        "line_key":   "7",
+        "filename":   "L20_07_Mingxuan.mp3",
+        "text":       "可以啊。那就这么说定了！这张照片拍得不错，也发给我吧。",
+    },
 ]
 
 
