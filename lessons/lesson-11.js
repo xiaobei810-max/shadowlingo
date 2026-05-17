@@ -24,7 +24,7 @@
         titleZh: "第十一课：慧姐咖啡馆", titleEn: "Lesson 11: Sister Hui's Cafe",
         newChars: [],
         cgImage:   '/assets/cg/lesson11_coffee-shop.png',
-        cardImage: '/assets/cg/lesson11_coffee-shop_card.jpg',
+        cardImage: '/assets/cg/lesson11_coffee-shop_card.png?v=20260517',
         cgText:  '深吸一口气，在这醇厚的咖啡香中，开启第一场全中文的点单挑战。',
         cgTextEn: 'Take a deep breath — in this rich coffee aroma, your first all-Chinese ordering challenge begins.',
         coverScene: {

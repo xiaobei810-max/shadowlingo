@@ -19,7 +19,7 @@
         titleZh: "第一课：机场相遇", titleEn: "Lesson 1: Encounter at the Airport",
         newChars: ['nora', 'mingxuan'],
         cgImage:   '/assets/cg/lesson1_airport.png?v=20260505',
-        cardImage: '/assets/cg/lesson1_airport_card.jpg?v=20260507',
+        cardImage: '/assets/cg/lesson1_airport_card.png?v=20260517',
         coverScene: {
           zh: 'Nora 刚想去追一个遗落笔记本的男生，<br>突然听到有人喊她的名字。',
           en: "Nora was about to chase the boy who had left his notebook behind when someone suddenly called her name."
