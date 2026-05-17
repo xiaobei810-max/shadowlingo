@@ -16,9 +16,27 @@ Azure 免费额度：F0 套餐每月 50 万字符，完全够用。
 
 import os
 import json
+import ssl
 import time
 import urllib.request
 import urllib.error
+
+
+def _make_ssl_ctx():
+    """macOS Python 3.9 默认不带 CA bundle，会导致 SSL 验证失败。
+    优先用 certifi 提供的根证书；如果没装 certifi，临时退到不验证模式
+    （仅用于本地 dev 调用已知 Microsoft Azure 端点，风险可控）。"""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return ctx
+
+
+SSL_CTX = _make_ssl_ctx()
 
 # ── MiniMax API 配置 ──────────────────────────────────────────────
 MINIMAX_API_KEY = "sk-api-k0C134YCrEhkh7dQGQFhVK4B2gUxcdLIKbNrTZklQSMyG5ulacGpftRrzhL-RD2mc3qOySPXRdhCjVjfIR6ITzlm7xJrLUoDoF8Bdcqig47m0v37zwCrOxM"
@@ -305,7 +323,7 @@ def synthesize_minimax(text: str, voice_id: str, retries: int = 3) -> bytes:
             req  = urllib.request.Request(MINIMAX_API_URL, data=body, method="POST")
             req.add_header("Authorization", f"Bearer {MINIMAX_API_KEY}")
             req.add_header("Content-Type", "application/json; charset=utf-8")
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            with urllib.request.urlopen(req, timeout=60, context=SSL_CTX) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             base_resp = data.get("base_resp", {})
             if base_resp.get("status_code") != 0:
@@ -347,7 +365,7 @@ def synthesize_azure(text: str, voice: str = LINWAN_VOICE,
             req.add_header("Content-Type", "application/ssml+xml; charset=utf-8")
             req.add_header("X-Microsoft-OutputFormat", "audio-24khz-96kbitrate-mono-mp3")
             req.add_header("User-Agent", "ShadowLingo/1.0")
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
                 return resp.read()
         except urllib.error.HTTPError as e:
             code = e.code
