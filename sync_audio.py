@@ -17,7 +17,8 @@ Azure 免费额度：F0 套餐每月 50 万字符，完全够用。
 import os
 import json
 import time
-import requests
+import urllib.request
+import urllib.error
 
 # ── MiniMax API 配置 ──────────────────────────────────────────────
 MINIMAX_API_KEY = "sk-api-k0C134YCrEhkh7dQGQFhVK4B2gUxcdLIKbNrTZklQSMyG5ulacGpftRrzhL-RD2mc3qOySPXRdhCjVjfIR6ITzlm7xJrLUoDoF8Bdcqig47m0v37zwCrOxM"
@@ -300,9 +301,12 @@ def synthesize_minimax(text: str, voice_id: str, retries: int = 3) -> bytes:
     }
     for attempt in range(1, retries + 1):
         try:
-            r = requests.post(MINIMAX_API_URL, headers=headers, json=payload, timeout=60)
-            r.raise_for_status()
-            data = r.json()
+            body = json.dumps(payload).encode("utf-8")
+            req  = urllib.request.Request(MINIMAX_API_URL, data=body, method="POST")
+            req.add_header("Authorization", f"Bearer {MINIMAX_API_KEY}")
+            req.add_header("Content-Type", "application/json; charset=utf-8")
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
             base_resp = data.get("base_resp", {})
             if base_resp.get("status_code") != 0:
                 raise RuntimeError(f"API 错误: {base_resp.get('status_msg')}")
@@ -315,7 +319,7 @@ def synthesize_minimax(text: str, voice_id: str, retries: int = 3) -> bytes:
                 raise
 
 
-# ── Azure TTS 合成函数 ───────────────────────────────────────────
+# ── Azure TTS 合成函数（使用内置 urllib，避免 requests latin-1 编码问题）──
 def synthesize_azure(text: str, voice: str = LINWAN_VOICE,
                      rate: str = LINWAN_RATE, pitch: str = LINWAN_PITCH,
                      retries: int = 3) -> bytes:
@@ -327,29 +331,31 @@ def synthesize_azure(text: str, voice: str = LINWAN_VOICE,
             "注册地址：https://portal.azure.com → Speech Services → 创建（F0 免费层）"
         )
 
-    ssml = (
+    ssml_bytes = (
         f"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'>"
         f"<voice name='{voice}'>"
         f"<prosody rate='{rate}' pitch='{pitch}'>{text}</prosody>"
         f"</voice></speak>"
-    )
+    ).encode("utf-8")
+
     url = f"https://{AZURE_REGION}.tts.speech.microsoft.com/cognitiveservices/v1"
-    headers = {
-        "Ocp-Apim-Subscription-Key": AZURE_KEY,
-        "Content-Type":              "application/ssml+xml",
-        "X-Microsoft-OutputFormat":  "audio-24khz-96kbitrate-mono-mp3",
-        "User-Agent":                "EchoChinese/1.0",
-    }
+
     for attempt in range(1, retries + 1):
         try:
-            r = requests.post(url, headers=headers,
-                              data=ssml.encode("utf-8"), timeout=30)
-            if r.status_code == 401:
+            req = urllib.request.Request(url, data=ssml_bytes, method="POST")
+            req.add_header("Ocp-Apim-Subscription-Key", AZURE_KEY)
+            req.add_header("Content-Type", "application/ssml+xml; charset=utf-8")
+            req.add_header("X-Microsoft-OutputFormat", "audio-24khz-96kbitrate-mono-mp3")
+            req.add_header("User-Agent", "ShadowLingo/1.0")
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as e:
+            code = e.code
+            if code == 401:
                 raise RuntimeError("Azure Key 无效或已过期，请检查 AZURE_SPEECH_KEY")
-            if r.status_code == 400:
-                raise RuntimeError(f"Azure SSML 格式错误: {r.text[:200]}")
-            r.raise_for_status()
-            return r.content
+            if code == 400:
+                raise RuntimeError(f"Azure SSML 格式错误 (400): {e.read()[:200]}")
+            raise RuntimeError(f"Azure HTTP {code}: {e.reason}")
         except RuntimeError:
             raise
         except Exception as e:
