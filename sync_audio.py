@@ -362,6 +362,9 @@ def synthesize_azure(text: str, voice: str = LINWAN_VOICE,
 
 # ── 主流程 ─────────────────────────────────────────────────────────
 def main():
+    import sys
+    linwan_only = "--linwan-only" in sys.argv
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     audio_root = os.path.join(script_dir, "public", "audio")
     os.makedirs(audio_root, exist_ok=True)
@@ -374,49 +377,53 @@ def main():
             audio_map = json.load(f)
 
     # ── 第一阶段：MiniMax 批量合成（1-10 课）──────────────────────
-    total   = len(SCRIPT)
-    success = skipped = 0
-    print(f"🎙  MiniMax TTS — 共 {total} 条台词\n")
+    if linwan_only:
+        print("⏭  --linwan-only：跳过 MiniMax 阶段\n")
+    else:
+        total   = len(SCRIPT)
+        success = skipped = 0
+        print(f"🎙  MiniMax TTS — 共 {total} 条台词\n")
 
-    for entry in SCRIPT:
-        lesson   = entry["lesson"]
-        line     = entry["line"]
-        role     = entry["role"]
-        text     = entry["text"]
+    if not linwan_only:
+        for entry in SCRIPT:
+            lesson   = entry["lesson"]
+            line     = entry["line"]
+            role     = entry["role"]
+            text     = entry["text"]
 
-        folder   = os.path.join(audio_root, f"lesson{lesson}")
-        os.makedirs(folder, exist_ok=True)
-        filename = f"L{lesson}_{line}_{role}.mp3"
-        filepath = os.path.join(folder, filename)
-        url_path = f"/audio/lesson{lesson}/{filename}"
+            folder   = os.path.join(audio_root, f"lesson{lesson}")
+            os.makedirs(folder, exist_ok=True)
+            filename = f"L{lesson}_{line}_{role}.mp3"
+            filepath = os.path.join(folder, filename)
+            url_path = f"/audio/lesson{lesson}/{filename}"
 
-        map_key      = f"lesson{lesson}"
-        line_key     = line if line.startswith("v") else str(int(line))
-        audio_map.setdefault(map_key, {})[line_key] = url_path
+            map_key      = f"lesson{lesson}"
+            line_key     = line if line.startswith("v") else str(int(line))
+            audio_map.setdefault(map_key, {})[line_key] = url_path
 
-        if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:
-            print(f"  ✓ 跳过（已存在）  L{lesson}_{line}_{role}")
-            skipped += 1
-            continue
+            if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:
+                print(f"  ✓ 跳过（已存在）  L{lesson}_{line}_{role}")
+                skipped += 1
+                continue
 
-        voice_id = MINIMAX_VOICE_MAP.get(role)
-        if not voice_id:
-            print(f"  ⚠ 未知角色 '{role}'，跳过")
-            continue
+            voice_id = MINIMAX_VOICE_MAP.get(role)
+            if not voice_id:
+                print(f"  ⚠ 未知角色 '{role}'，跳过")
+                continue
 
-        label = text[:20] + "…" if len(text) > 20 else text
-        print(f"  🔊 合成  L{lesson}_{line}_{role}  │  {label}")
-        try:
-            audio_bytes = synthesize_minimax(text, voice_id)
-            with open(filepath, "wb") as f:
-                f.write(audio_bytes)
-            print(f"      → 保存  {filename}  ({len(audio_bytes)//1024} KB)")
-            success += 1
-        except Exception as e:
-            print(f"      ✗ 失败: {e}")
-        time.sleep(0.6)
+            label = text[:20] + "…" if len(text) > 20 else text
+            print(f"  🔊 合成  L{lesson}_{line}_{role}  │  {label}")
+            try:
+                audio_bytes = synthesize_minimax(text, voice_id)
+                with open(filepath, "wb") as f:
+                    f.write(audio_bytes)
+                print(f"      → 保存  {filename}  ({len(audio_bytes)//1024} KB)")
+                success += 1
+            except Exception as e:
+                print(f"      ✗ 失败: {e}")
+            time.sleep(0.6)
 
-    print(f"\n✅ MiniMax 完成  成功 {success} / 跳过 {skipped} / 共 {total}\n")
+        print(f"\n✅ MiniMax 完成  成功 {success} / 跳过 {skipped} / 共 {total}\n")
 
     # ── 第二阶段：Azure TTS（林晚台词）────────────────────────────
     linwan_total   = len(LINWAN_SCRIPT)
