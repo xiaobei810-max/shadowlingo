@@ -69,6 +69,14 @@ DAVID_VOICE  = "en-US-AndrewMultilingualNeural"
 DAVID_RATE   = "-12%"   # rateScale 0.88 → -12%
 DAVID_PITCH  = "+3%"
 
+# ── 明轩 Azure TTS 参数（与 api/tts.js local 默认一致）────────────
+# Yunxi 是温和年轻男声，符合「学长」人设
+# L1 明轩的 MP3 是 MiniMax 「Chinese (Mandarin)_Gentleman」生成的，
+# MiniMax 已失效，新课用 Azure YunxiNeural 顶替；两厂商音色略有差异
+MINGXUAN_VOICE = "zh-CN-YunxiNeural"
+MINGXUAN_RATE  = "+2%"   # rateScale 1.02 → +2%
+MINGXUAN_PITCH = "+2%"
+
 # ── 台词数据（1-10 课，MiniMax 合成）────────────────────────────────
 SCRIPT = [
     # 第一课
@@ -331,6 +339,30 @@ DAVID_SCRIPT = [
 ]
 
 
+# ── 明轩 Azure TTS 台词（YunxiNeural 温和年轻男声）────────────────
+MINGXUAN_SCRIPT = [
+    # ── 第 19 课对话台词 ── 明轩 dialogue[3/5/7]
+    {
+        "lesson_key": "lesson19",
+        "line_key":   "3",
+        "filename":   "L19_03_Mingxuan.mp3",
+        "text":       "诺拉？你怎么在这？",
+    },
+    {
+        "lesson_key": "lesson19",
+        "line_key":   "5",
+        "filename":   "L19_05_Mingxuan.mp3",
+        "text":       "哈哈，我周末经常在这里打球。你怎么带着相机？",
+    },
+    {
+        "lesson_key": "lesson19",
+        "line_key":   "7",
+        "filename":   "L19_07_Mingxuan.mp3",
+        "text":       "难怪。怎么样，拍到满意的照片了吗？",
+    },
+]
+
+
 # ── MiniMax 合成函数 ─────────────────────────────────────────────
 def synthesize_minimax(text: str, voice_id: str, retries: int = 3) -> bytes:
     headers = {
@@ -570,6 +602,42 @@ def main():
         time.sleep(0.3)
 
     print(f"\n✅ Azure 大卫 完成  成功 {david_success} / 跳过 {david_skipped} / 共 {david_total}\n")
+
+    # ── 第四阶段：Azure TTS（明轩台词，YunxiNeural 温和年轻男声）─────
+    mingxuan_total   = len(MINGXUAN_SCRIPT)
+    mingxuan_success = mingxuan_skipped = 0
+
+    print(f"🎙  Azure TTS（明轩 YunxiNeural）— 共 {mingxuan_total} 条\n")
+
+    for entry in MINGXUAN_SCRIPT:
+        folder = os.path.join(audio_root, entry["lesson_key"])
+        os.makedirs(folder, exist_ok=True)
+        filename = entry["filename"]
+        filepath = os.path.join(folder, filename)
+        text     = entry["text"]
+
+        url_path = f"/audio/{entry['lesson_key']}/{filename}"
+        audio_map.setdefault(entry["lesson_key"], {})[entry["line_key"]] = url_path
+
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:
+            print(f"  ✓ 跳过（已存在）  {filename}")
+            mingxuan_skipped += 1
+            continue
+
+        label = text[:25] + "…" if len(text) > 25 else text
+        print(f"  🔊 合成  {filename}  │  {label}")
+        try:
+            audio_bytes = synthesize_azure(text, voice=MINGXUAN_VOICE,
+                                           rate=MINGXUAN_RATE, pitch=MINGXUAN_PITCH)
+            with open(filepath, "wb") as f:
+                f.write(audio_bytes)
+            print(f"      → 保存  {filename}  ({len(audio_bytes)//1024} KB)")
+            mingxuan_success += 1
+        except Exception as e:
+            print(f"      ✗ 失败: {e}")
+        time.sleep(0.3)
+
+    print(f"\n✅ Azure 明轩 完成  成功 {mingxuan_success} / 跳过 {mingxuan_skipped} / 共 {mingxuan_total}\n")
 
     # ── 写入 audioMap.json ─────────────────────────────────────────
     with open(map_path, "w", encoding="utf-8") as f:
