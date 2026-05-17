@@ -237,6 +237,32 @@ LINWAN_SCRIPT = [
         "filename":   "L16_07_Linwan.mp3",
         "text":       "现在还不知道。等确定下来，我再给你发微信。",
     },
+    # ── 第 17 课对话台词（正式面试）──────────────────────────────────
+    # Lesson 17 用扁平 8 句结构，林晚出现在 dialogue[1/3/5/7]
+    {
+        "lesson_key": "lesson17",
+        "line_key":   "1",
+        "filename":   "L17_01_Linwan.mp3",
+        "text":       "请坐。先做一个简单的自我介绍吧。",
+    },
+    {
+        "lesson_key": "lesson17",
+        "line_key":   "3",
+        "filename":   "L17_03_Linwan.mp3",
+        "text":       "我看过你的照片了，光影处理得很好。",
+    },
+    {
+        "lesson_key": "lesson17",
+        "line_key":   "5",
+        "filename":   "L17_05_Linwan.mp3",
+        "text":       "你的构图也很干净。欢迎你加入摄影社。",
+    },
+    {
+        "lesson_key": "lesson17",
+        "line_key":   "7",
+        "filename":   "L17_07_Linwan.mp3",
+        "text":       "周五晚上七点有社团例会，别迟到。",
+    },
     # ── 角色介绍问候语（非对话，独立文件）──────────────────────────
     # 对应 CHARACTER_DB.linwan.greeting，由 charIntroPlayGreeting() 读取
     {
