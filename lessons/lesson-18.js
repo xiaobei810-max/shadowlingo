@@ -23,7 +23,7 @@
         ],
         titleZh: "第十八课：第一次例会", titleEn: "Lesson 18: The First Club Meeting",
         newChars: [],
-        cgImage:   '/assets/cg/lesson18_classroom.jpg',
+        cgImage:   '/assets/cg/lesson18_classroom.png?v=2',
         cardImage: '/assets/cg/lesson18_classroom_card.png',
         cgText:  '听完讲台上的任务，我和大卫在座位上犯了愁。看来这个周末，得带着相机去好好逛逛了。',
         cgTextEn: 'After hearing the task from the podium, David and I got worried at our seats. Looks like this weekend, I have to walk around with my camera.',
