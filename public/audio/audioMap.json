@@ -155,5 +155,10 @@
     "3": "/audio/lesson18/L18_03_Linwan.mp3",
     "5": "/audio/lesson18/L18_05_David.mp3",
     "7": "/audio/lesson18/L18_07_David.mp3"
+  },
+  "lesson19": {
+    "3": "/audio/lesson19/L19_03_Mingxuan.mp3",
+    "5": "/audio/lesson19/L19_05_Mingxuan.mp3",
+    "7": "/audio/lesson19/L19_07_Mingxuan.mp3"
   }
 }
