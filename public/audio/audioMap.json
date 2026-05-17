@@ -160,5 +160,11 @@
     "3": "/audio/lesson19/L19_03_Mingxuan.mp3",
     "5": "/audio/lesson19/L19_05_Mingxuan.mp3",
     "7": "/audio/lesson19/L19_07_Mingxuan.mp3"
+  },
+  "lesson20": {
+    "1": "/audio/lesson20/L20_01_Mingxuan.mp3",
+    "3": "/audio/lesson20/L20_03_Mingxuan.mp3",
+    "5": "/audio/lesson20/L20_05_Mingxuan.mp3",
+    "7": "/audio/lesson20/L20_07_Mingxuan.mp3"
   }
 }
