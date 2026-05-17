@@ -63,6 +63,12 @@ LINWAN_VOICE  = "zh-CN-YunhaoNeural"
 LINWAN_RATE   = "-5%"    # rateScale 0.95 → (0.95-1)*100 = -5%
 LINWAN_PITCH  = "0%"
 
+# ── 大卫 Azure TTS 参数（与 api/tts.js david 配置一致）────────────
+# Andrew 是英文男声读中文，自带洋腔，符合"留学生"人设
+DAVID_VOICE  = "en-US-AndrewMultilingualNeural"
+DAVID_RATE   = "-12%"   # rateScale 0.88 → -12%
+DAVID_PITCH  = "+3%"
+
 # ── 台词数据（1-10 课，MiniMax 合成）────────────────────────────────
 SCRIPT = [
     # 第一课
@@ -282,6 +288,19 @@ LINWAN_SCRIPT = [
         "filename":   "L17_07_Linwan.mp3",
         "text":       "周五晚上七点有社团例会，别迟到。",
     },
+    # ── 第 18 课对话台词（第一次例会）── 林晚 dialogue[1/3]
+    {
+        "lesson_key": "lesson18",
+        "line_key":   "1",
+        "filename":   "L18_01_Linwan.mp3",
+        "text":       "大家安静。这周的任务是：拍摄一张最能代表「校园生活」的照片。",
+    },
+    {
+        "lesson_key": "lesson18",
+        "line_key":   "3",
+        "filename":   "L18_03_Linwan.mp3",
+        "text":       "都可以。下周一记得把照片原图发到我的邮箱。",
+    },
     # ── 角色介绍问候语（非对话，独立文件）──────────────────────────
     # 对应 CHARACTER_DB.linwan.greeting，由 charIntroPlayGreeting() 读取
     {
@@ -290,6 +309,24 @@ LINWAN_SCRIPT = [
         "filename":   "linwan_greeting.mp3",
         "subdir":     "linwan",       # 存到 /public/audio/linwan/
         "text":       "如果不知道怎么选，点「正常」就可以。",
+    },
+]
+
+
+# ── 大卫 Azure TTS 台词（Andrew Multilingual 读中文带洋腔）────────
+DAVID_SCRIPT = [
+    # ── 第 18 课对话台词 ── 大卫 dialogue[5/7]
+    {
+        "lesson_key": "lesson18",
+        "line_key":   "5",
+        "filename":   "L18_05_David.mp3",
+        "text":       "找灵感太难了！诺拉，你周末打算去哪里拍？",
+    },
+    {
+        "lesson_key": "lesson18",
+        "line_key":   "7",
+        "filename":   "L18_07_David.mp3",
+        "text":       "那我周末去图书馆附近拍吧。祝你好运！",
     },
 ]
 
@@ -496,7 +533,43 @@ def main():
                 break
         time.sleep(0.3)
 
-    print(f"\n✅ Azure 完成  成功 {linwan_success} / 跳过 {linwan_skipped} / 共 {linwan_total}\n")
+    print(f"\n✅ Azure 林晚 完成  成功 {linwan_success} / 跳过 {linwan_skipped} / 共 {linwan_total}\n")
+
+    # ── 第三阶段：Azure TTS（大卫台词，AndrewMultilingual 洋腔中文）────
+    david_total   = len(DAVID_SCRIPT)
+    david_success = david_skipped = 0
+
+    print(f"🎙  Azure TTS（大卫 AndrewMultilingual）— 共 {david_total} 条\n")
+
+    for entry in DAVID_SCRIPT:
+        folder = os.path.join(audio_root, entry["lesson_key"])
+        os.makedirs(folder, exist_ok=True)
+        filename = entry["filename"]
+        filepath = os.path.join(folder, filename)
+        text     = entry["text"]
+
+        url_path = f"/audio/{entry['lesson_key']}/{filename}"
+        audio_map.setdefault(entry["lesson_key"], {})[entry["line_key"]] = url_path
+
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:
+            print(f"  ✓ 跳过（已存在）  {filename}")
+            david_skipped += 1
+            continue
+
+        label = text[:25] + "…" if len(text) > 25 else text
+        print(f"  🔊 合成  {filename}  │  {label}")
+        try:
+            audio_bytes = synthesize_azure(text, voice=DAVID_VOICE,
+                                           rate=DAVID_RATE, pitch=DAVID_PITCH)
+            with open(filepath, "wb") as f:
+                f.write(audio_bytes)
+            print(f"      → 保存  {filename}  ({len(audio_bytes)//1024} KB)")
+            david_success += 1
+        except Exception as e:
+            print(f"      ✗ 失败: {e}")
+        time.sleep(0.3)
+
+    print(f"\n✅ Azure 大卫 完成  成功 {david_success} / 跳过 {david_skipped} / 共 {david_total}\n")
 
     # ── 写入 audioMap.json ─────────────────────────────────────────
     with open(map_path, "w", encoding="utf-8") as f:
