@@ -46,7 +46,8 @@
           { zh: '抓拍', py: 'zhuā pāi',   en: 'Candid shot' },
           { zh: '动作', py: 'dòng zuò',   en: 'Action / movement' },
           { zh: '经常', py: 'jīng cháng', en: 'Often / frequently' },
-          { zh: '满意', py: 'mǎn yì',     en: 'Satisfied' }
+          { zh: '满意', py: 'mǎn yì',     en: 'Satisfied' },
+          { zh: '难怪', py: 'nán guài',   en: 'No wonder' }
         ],
         insiderTip: {
           textbookLabel: '📖 书面语 · Textbook',

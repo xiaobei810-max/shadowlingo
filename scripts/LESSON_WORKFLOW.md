@@ -155,7 +155,23 @@ zh:     "Wi-Fi 密码"
 
 validator 会用 json5 解析 LESSONS 数组，遇到错误会报 `Unexpected "X" at column N`。中文引号「」/『』在视觉上最贴近双引号，建议优先用。
 
-### 6.6 图片路径要真实存在
+### 6.6 同一页两句皆 Nora → 跟读页声音错乱（已修，仍要警觉）
+
+如果一页里 `top` 和 `bottom` **都是 Nora**（如 L19 第 1 页：自言自语 + 主动搭话），
+`top` 进绿色 sentence-box（Nora 跟读），`bottom` 会被丢到「下方 context-panel」。
+
+修复前：context-panel 调 `_speakerRole('nora')` 时，因为函数没识别 nora，
+fallthrough 到 `return 'local'` → runtime TTS 拿到 Mingxuan 音色。
+
+修复（commit `15d6b11`）：`_speakerRole` 顶部加 nora/learner 判断，正确返回 'learner'。
+
+⚠️ **设计建议**：尽量避免同一页两句皆 Nora。如果剧情需要"自言自语+对外讲话"
+的连续句，考虑：
+1. 把内心独白合并到下一句
+2. 移到 `coverScene` / `cgText` 当旁白
+3. 接受双 Nora 排版（已不影响音频，仅视觉上略奇怪）
+
+### 6.7 图片路径要真实存在
 
 ```js
 cgImage: '/assets/cg/lesson16_tent.png?v=2'   // ?v=2 会被验证器自动去除
