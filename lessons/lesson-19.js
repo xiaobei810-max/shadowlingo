@@ -43,10 +43,10 @@
           { zh: "这个嘛，我正要和你商量……", pinyin: "Zhè gè ma, wǒ zhèng yào hé nǐ shāng liang...", en: "Well, about that — I was just going to discuss it with you...", role: "learner", speaker: "诺拉 · Nora", start: 0, end: 0, praise: "💭 「这个嘛...」悬念拉满！", hint: "【这个嘛…】= 思考/犹豫的口语缓冲，给后面要提的请求留出过渡空间，比直接开口更委婉", chars: [{ c: "这", p: "zhe4" }, { c: "个", p: "ge4" }, { c: "嘛", p: "ma5" }, { c: "我", p: "wo3" }, { c: "正", p: "zheng4" }, { c: "要", p: "yao4" }, { c: "和", p: "he2" }, { c: "你", p: "ni3" }, { c: "商", p: "shang1" }, { c: "量", p: "liang5" }] }
         ],
         vocab: [
-          { zh: '抓拍', py: 'zhuā pāi', en: 'Candid shot' },
-          { zh: '动作', py: 'dòng zuò', en: 'Action / movement' },
-          { zh: '巧',   py: 'qiǎo',     en: 'Coincidental' },
-          { zh: '任务', py: 'rèn wu',   en: 'Task' }
+          { zh: '抓拍', py: 'zhuā pāi',   en: 'Candid shot' },
+          { zh: '动作', py: 'dòng zuò',   en: 'Action / movement' },
+          { zh: '经常', py: 'jīng cháng', en: 'Often / frequently' },
+          { zh: '满意', py: 'mǎn yì',     en: 'Satisfied' }
         ],
         insiderTip: {
           textbookLabel: '📖 书面语 · Textbook',
