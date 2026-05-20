@@ -5234,66 +5234,146 @@
       transform: rotate(45deg);
     }
 
-    /* ── 邮件订阅条 Email Subscribe Strip ──────────────────────── */
-    .email-strip {
-      position: absolute;
-      bottom: 22px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 40px);
-      max-width: 400px;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      animation: fadeInUp 0.6s ease both;
-    }
-    .email-strip.hidden { display: none; }
-    .email-strip-label {
-      font-size: 11px;
-      color: rgba(255,255,255,0.45);
-      letter-spacing: 0.04em;
-    }
-    .email-strip-row {
-      display: flex;
-      width: 100%;
-      gap: 6px;
-    }
-    .email-strip-input {
+    /* ── 邮箱输入框 + 按钮通用样式 ──────────────────────────────── */
+    .email-input {
       flex: 1;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(34,197,94,0.30);
       border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
+      padding: 11px 14px;
+      font-size: 14px;
       color: #e2e8f0;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s;
+      min-width: 0;
     }
-    .email-strip-input::placeholder { color: rgba(255,255,255,0.3); }
-    .email-strip-input:focus { border-color: rgba(255,255,255,0.4); }
-    .email-strip-btn {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
+    .email-input::placeholder { color: rgba(255,255,255,0.32); }
+    .email-input:focus {
+      border-color: rgba(34,197,94,0.60);
+      background: rgba(255,255,255,0.10);
+    }
+    .email-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none;
       border-radius: 10px;
-      padding: 10px 16px;
-      font-size: 13px;
-      color: #e2e8f0;
+      padding: 11px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0a1a0e;
       cursor: pointer;
       white-space: nowrap;
-      transition: background 0.2s;
+      box-shadow: 0 4px 14px rgba(34,197,94,0.25);
+      transition: transform 0.15s ease, box-shadow 0.2s;
     }
-    .email-strip-btn:hover { background: rgba(255,255,255,0.2); }
-    .email-strip-thanks {
-      font-size: 12px;
-      color: rgba(255,255,255,0.55);
-      padding: 10px 0 4px;
+    .email-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(34,197,94,0.35); }
+    .email-btn:active { transform: translateY(0); }
+
+    /* ── 场景 A：最后一课完成后的全屏邮箱页 ─────────────────────── */
+    .email-final-page {
+      position: fixed; inset: 0;
+      z-index: 9500;
       display: none;
+      background: var(--bg);
+      overflow-y: auto;
+      padding: 56px 24px 40px;
+      align-items: center; justify-content: center;
     }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .email-final-page.show { display: flex; }
+    .email-final-card {
+      width: 100%; max-width: 440px;
+      display: flex; flex-direction: column;
+      gap: 26px;
+      animation: efpRise 0.7s ease both;
+    }
+    @keyframes efpRise {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .email-final-text {
+      font-size: 16px;
+      line-height: 1.85;
+      color: rgba(255,255,255,0.88);
+      letter-spacing: 0.01em;
+    }
+    .email-final-text .efp-strong {
+      color: #22c55e;
+      font-weight: 700;
+    }
+    .email-final-form {
+      display: flex; gap: 8px;
+    }
+    .email-final-skip {
+      align-self: center;
+      background: none; border: none;
+      color: rgba(255,255,255,0.42);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 4px 12px;
+      transition: color 0.2s;
+    }
+    .email-final-skip:hover { color: rgba(255,255,255,0.72); }
+    .email-final-thanks {
+      display: none;
+      font-size: 15px;
+      color: #22c55e;
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    /* ── 场景 B：单元完成后的小提示卡片 ────────────────────────── */
+    .email-unit-card {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      width: calc(100% - 32px);
+      max-width: 380px;
+      background: rgba(10, 18, 30, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(34,197,94,0.40);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.55), 0 0 24px rgba(34,197,94,0.20);
+      border-radius: 14px;
+      padding: 14px 16px 14px 16px;
+      z-index: 9400;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .email-unit-card.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+    .email-unit-close {
+      position: absolute;
+      top: 6px; right: 8px;
+      background: none; border: none;
+      color: rgba(255,255,255,0.45);
+      font-size: 18px; line-height: 1;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .email-unit-close:hover { color: rgba(255,255,255,0.85); }
+    .email-unit-title {
+      font-size: 14px; font-weight: 700;
+      color: #22c55e;
+      margin-bottom: 2px;
+    }
+    .email-unit-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 10px;
+    }
+    .email-unit-form { display: flex; gap: 6px; }
+    .email-unit-card .email-input { font-size: 13px; padding: 9px 12px; }
+    .email-unit-card .email-btn   { font-size: 13px; padding: 9px 14px; }
+    .email-unit-thanks {
+      display: none;
+      font-size: 13px;
+      color: #22c55e;
+      text-align: center;
+      padding: 4px 0;
     }
 
   </style>
@@ -5316,43 +5396,88 @@
       } catch(e) {}
     }
 
-    // ── 邮件订阅条逻辑 ──────────────────────────────────────────
-    (function initEmailStrip() {
-      // 若已订阅则直接隐藏
-      try {
-        if (localStorage.getItem('sl_email_submitted')) {
-          var s = document.getElementById('email-strip');
-          if (s) s.classList.add('hidden');
-        }
-      } catch(e) {}
-    })();
-
-    function submitEmailStrip() {
-      var input = document.getElementById('email-strip-input');
+    // ── 邮箱订阅：两个触发场景共用的提交逻辑 ───────────────────
+    function _emailIsValid(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+    function _submitEmailFrom(input, source) {
       var email = input ? input.value.trim() : '';
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        if (input) { input.focus(); input.style.borderColor = 'rgba(239,68,68,0.6)'; }
-        return;
+      if (!_emailIsValid(email)) {
+        if (input) { input.focus(); input.style.borderColor = 'rgba(239,68,68,0.7)'; }
+        return false;
       }
-
-      // 捕获事件 + 绑定用户身份
-      track('email_submit', { email: email });
+      track('email_submit', { email: email, source: source || 'unknown' });
       try {
         if (window.posthog && typeof posthog.identify === 'function') {
           posthog.identify(email, { email: email });
         }
       } catch(e) {}
-
-      // UI 反馈
-      var row   = document.querySelector('.email-strip-row');
-      var label = document.querySelector('.email-strip-label');
-      var thanks = document.getElementById('email-strip-thanks');
-      if (row)   row.style.display   = 'none';
-      if (label) label.style.display = 'none';
-      if (thanks) thanks.style.display = 'block';
-
-      // 持久化，下次不再显示
       try { localStorage.setItem('sl_email_submitted', '1'); } catch(e) {}
+      return true;
+    }
+
+    // 场景 A：最后一课全屏页 ──────────────────────────────────
+    function showFinalEmailPage() {
+      try { if (localStorage.getItem('sl_email_submitted')) return; } catch(e) {}
+      var p = document.getElementById('email-final-page');
+      if (p) p.classList.add('show');
+    }
+    function closeFinalEmailPage() {
+      var p = document.getElementById('email-final-page');
+      if (p) p.classList.remove('show');
+    }
+    function submitFinalEmail() {
+      var input = document.getElementById('email-final-input');
+      if (!_submitEmailFrom(input, 'final_page')) return;
+      var form   = document.getElementById('email-final-form');
+      var thanks = document.getElementById('email-final-thanks');
+      var skip   = document.getElementById('email-final-skip');
+      if (form)   form.style.display   = 'none';
+      if (thanks) thanks.style.display = 'block';
+      if (skip)   skip.textContent     = '回到关卡 →';
+      // 2 秒后自动关闭
+      setTimeout(closeFinalEmailPage, 2000);
+    }
+
+    // 场景 B：单元完成小卡片 ───────────────────────────────────
+    function showUnitEmailCard() {
+      try { if (localStorage.getItem('sl_email_submitted')) return; } catch(e) {}
+      var c = document.getElementById('email-unit-card');
+      if (c) c.classList.add('show');
+    }
+    function closeUnitEmailCard() {
+      var c = document.getElementById('email-unit-card');
+      if (c) c.classList.remove('show');
+    }
+    function submitUnitEmail() {
+      var input = document.getElementById('email-unit-input');
+      if (!_submitEmailFrom(input, 'unit_card')) return;
+      var form   = document.getElementById('email-unit-form');
+      var thanks = document.getElementById('email-unit-thanks');
+      if (form)   form.style.display   = 'none';
+      if (thanks) thanks.style.display = 'block';
+      setTimeout(closeUnitEmailCard, 1800);
+    }
+
+    // 决策入口：完课后判断该展示哪种（或都不展示）
+    function maybeShowEmailPrompts(idx) {
+      try { if (localStorage.getItem('sl_email_submitted')) return; } catch(e) {}
+      if (typeof LESSONS === 'undefined' || typeof UNITS === 'undefined') return;
+      // 场景 A：当前已上线的最后一课
+      if (idx === LESSONS.length - 1) {
+        setTimeout(showFinalEmailPage, 3800); // 等成绩单 + 烟花跑完一阵子再出
+        return;
+      }
+      // 场景 B：单元最后一课，且后面还有内容
+      var uIdx = -1;
+      for (var i = 0; i < UNITS.length; i++) {
+        if (UNITS[i] && UNITS[i].lessons && UNITS[i].lessons.indexOf(idx) !== -1) { uIdx = i; break; }
+      }
+      if (uIdx === -1) return;
+      var u = UNITS[uIdx];
+      var lastInUnit = u.lessons[u.lessons.length - 1] === idx;
+      var hasMore    = uIdx < UNITS.length - 1; // 后面还有单元 = 还有内容
+      if (lastInUnit && hasMore) {
+        setTimeout(showUnitEmailCard, 2200);
+      }
     }
   </script>
 </head>
@@ -13751,6 +13876,8 @@
       if (!noPractice) launchFireworks();
       // 金币提示气泡：不论本课得币多少，只要是首次看到成绩单就出现
       try { showCoinHintOnce(); } catch(e) {}
+      // 邮箱触发：最后一课 → 全屏页；单元最后一课 → 小卡片
+      try { maybeShowEmailPrompts(lessonIdx); } catch(e) {}
     }
 
     function showTipPage() {
@@ -17291,16 +17418,6 @@
     <div class="chs-dots" id="chs-dots"></div>
     <!-- 锁定反馈 toast（点击锁定卡片时浮现，1.8s 后自动消失） -->
     <div class="chs-locked-toast" id="chs-locked-toast"></div>
-    <!-- 邮件订阅条（已订阅则自动隐藏） -->
-    <div class="email-strip" id="email-strip">
-      <div class="email-strip-label">新课更新第一时间通知 · Get notified when new lessons drop</div>
-      <div class="email-strip-row">
-        <input class="email-strip-input" id="email-strip-input" type="email"
-               placeholder="your@email.com" autocomplete="email" />
-        <button class="email-strip-btn" onclick="submitEmailStrip()">通知我 →</button>
-      </div>
-      <div class="email-strip-thanks" id="email-strip-thanks">✓ 已收到！有新课第一时间通知你 We'll let you know!</div>
-    </div>
   </div>
 
   <!-- 课程封面 Lesson Cover -->
@@ -17762,6 +17879,39 @@
 
   <!-- Tone sandhi tooltip (shown on kara char tap) -->
   <div id="sandhi-tip"></div>
+
+  <!-- ── 邮箱场景 A：完成"当前已上线的最后一课"后的全屏邮箱页 ── -->
+  <div class="email-final-page" id="email-final-page">
+    <div class="email-final-card">
+      <div class="email-final-text">
+        短短一个月，你陪诺拉从一个刚下飞机、连扫码都不会的留学生，走到了能自己加入摄影社、开口邀人当模特。<br/><br/>
+        她在这儿的故事，<span class="efp-strong">才刚刚铺开</span>。<br/><br/>
+        新学期、新的人、还有那些刚刚建立起来的关系——接下来会往哪儿走，谁也说不准。<br/><br/>
+        后面的内容正在写。留下邮箱，做好第一时间发给你。<br/><br/>
+        你是<span class="efp-strong">最早陪诺拉走到这儿的人</span>，这个座位给你留着。
+      </div>
+      <div class="email-final-form" id="email-final-form">
+        <input class="email-input" id="email-final-input" type="email"
+               placeholder="your@email.com" autocomplete="email" />
+        <button class="email-btn" onclick="submitFinalEmail()">给我留个座 →</button>
+      </div>
+      <div class="email-final-thanks" id="email-final-thanks">✓ 座位留好了，等你回来 We'll be in touch.</div>
+      <button class="email-final-skip" id="email-final-skip" onclick="closeFinalEmailPage()">先逛逛 ×</button>
+    </div>
+  </div>
+
+  <!-- ── 邮箱场景 B：单元完成小提示卡片（可关闭）─────────────── -->
+  <div class="email-unit-card" id="email-unit-card">
+    <button class="email-unit-close" onclick="closeUnitEmailCard()" aria-label="关闭">×</button>
+    <div class="email-unit-title">🎉 本单元完成</div>
+    <div class="email-unit-sub">想第一时间收到新内容？</div>
+    <div class="email-unit-form" id="email-unit-form">
+      <input class="email-input" id="email-unit-input" type="email"
+             placeholder="your@email.com" autocomplete="email" />
+      <button class="email-btn" onclick="submitUnitEmail()">通知我</button>
+    </div>
+    <div class="email-unit-thanks" id="email-unit-thanks">✓ 已收到，有新课立刻告诉你</div>
+  </div>
 
 </body>
 
