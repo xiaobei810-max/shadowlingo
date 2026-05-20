@@ -5135,6 +5135,59 @@
       .header-toggles { gap: 4px; }
       .tgl-btn { padding: 4px 8px; font-size: 10px; }
     }
+    /* ── 首课完成"金币提示气泡" Coin Hint Bubble（仅出现 1 次）─── */
+    .coin-hint-bubble {
+      position: absolute;
+      top: 56px;
+      right: 14px;
+      max-width: 240px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #1a1a1a;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 600;
+      padding: 10px 14px 10px 12px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15);
+      z-index: 200;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.92);
+      pointer-events: none;
+      transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .coin-hint-bubble.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .coin-hint-bubble::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 28px;
+      width: 12px;
+      height: 12px;
+      background: #fbbf24;
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+    .coin-hint-bubble .chb-close {
+      position: absolute;
+      top: 2px;
+      right: 6px;
+      font-size: 14px;
+      opacity: 0.55;
+    }
+    @keyframes coinIconNudge {
+      0%, 100% { transform: scale(1); }
+      30%      { transform: scale(1.18) rotate(-6deg); }
+      60%      { transform: scale(1.18) rotate(6deg); }
+    }
+    #coin-bal-overlay.coin-nudge {
+      animation: coinIconNudge 0.7s ease-in-out 2;
+    }
+
     /* ── 邮件订阅条 Email Subscribe Strip ──────────────────────── */
     .email-strip {
       position: absolute;
@@ -5450,6 +5503,12 @@
         </div>
       </div>
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
+      <!-- 首课"金币提示气泡"，仅首次完成课程后出现一次 -->
+      <div class="coin-hint-bubble" id="coin-hint-bubble" onclick="dismissCoinHint()">
+        <span class="chb-close">×</span>
+        点这里看回声币 🪙<br/>
+        <span style="font-weight:500;opacity:0.85">攒 10 个就能抽盲盒解锁特别 CG</span>
+      </div>
     </div>
     <div class="completion-card">
       <div class="completion-title">本课完成！</div>
@@ -7887,6 +7946,33 @@
         }
       });
     }
+    // ── 首课金币提示气泡 ────────────────────────────────────────
+    // 仅在用户首次完成课程时出现一次，引导关注顶部金币图标
+    var _coinHintTimer = null;
+    function showCoinHintOnce() {
+      try {
+        if (localStorage.getItem('sl_hint_coin_seen')) return;
+      } catch(e) {}
+      var bubble = document.getElementById('coin-hint-bubble');
+      var icon   = document.getElementById('coin-bal-overlay');
+      if (!bubble || !icon) return;
+      // 等金币飞入动画跑完再出现（金币动画 ~1.3s）
+      setTimeout(function() {
+        bubble.classList.add('show');
+        icon.classList.add('coin-nudge');
+        // 6 秒后自动消失
+        _coinHintTimer = setTimeout(dismissCoinHint, 6000);
+      }, 1400);
+    }
+    function dismissCoinHint() {
+      var bubble = document.getElementById('coin-hint-bubble');
+      var icon   = document.getElementById('coin-bal-overlay');
+      if (bubble) bubble.classList.remove('show');
+      if (icon)   icon.classList.remove('coin-nudge');
+      if (_coinHintTimer) { clearTimeout(_coinHintTimer); _coinHintTimer = null; }
+      try { localStorage.setItem('sl_hint_coin_seen', '1'); } catch(e) {}
+    }
+
     // Web Audio 硬币音效（升调，数量越多音符越多）
     function playCoinSound(count) {
       try {
@@ -13540,6 +13626,8 @@
             if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
             playCoinSound(_sessionCoinsEarned);
           }, 600);
+          // 首课金币提示气泡：金币动画结束后 1.4s 出现，引导用户关注顶部金币图标
+          try { showCoinHintOnce(); } catch(e) {}
         } else {
           // 0 币：展示但不显示动画硬币
           coinText.textContent = '本课回声币：0';
