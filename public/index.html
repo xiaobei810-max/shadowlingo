@@ -5188,6 +5188,45 @@
       animation: coinIconNudge 0.7s ease-in-out 2;
     }
 
+    /* ── 角色档案"i"按钮提示气泡（一次性引导）─────────────────── */
+    .profile-hint-bubble {
+      position: absolute;
+      top: 64px;
+      right: 14px;
+      max-width: 180px;
+      background: rgba(34, 197, 94, 0.95);
+      color: #0a1a0e;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 600;
+      padding: 9px 12px;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35), 0 0 0 1px rgba(255,255,255,0.18);
+      z-index: 6;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.92);
+      pointer-events: none;
+      transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      text-align: center;
+    }
+    .profile-hint-bubble.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .profile-hint-bubble::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      right: 14px;
+      width: 10px;
+      height: 10px;
+      background: rgba(34, 197, 94, 0.95);
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+
     /* ── 邮件订阅条 Email Subscribe Strip ──────────────────────── */
     .email-strip {
       position: absolute;
@@ -7971,6 +8010,33 @@
       if (icon)   icon.classList.remove('coin-nudge');
       if (_coinHintTimer) { clearTimeout(_coinHintTimer); _coinHintTimer = null; }
       try { localStorage.setItem('sl_hint_coin_seen', '1'); } catch(e) {}
+    }
+
+    // ── 角色档案"i"按钮提示（仅首次角色介绍出现时显示一次）──────
+    var _profileHintTimer = null;
+    function showProfileHintOnce() {
+      try {
+        if (localStorage.getItem('sl_hint_profile_seen')) return;
+      } catch(e) {}
+      var bubble = document.getElementById('profile-hint-bubble');
+      if (!bubble) return;
+      // 角色卡入场动画约 0.6s，留 1.2s 让用户先看人物再提示
+      setTimeout(function() {
+        bubble.classList.add('show');
+        _profileHintTimer = setTimeout(dismissProfileHint, 5000);
+      }, 1200);
+      // 用户点了 i 按钮也算看过提示
+      var iBtn = document.getElementById('char-intro-corner-btn');
+      if (iBtn && !iBtn._hintBound) {
+        iBtn.addEventListener('click', dismissProfileHint, { once: false });
+        iBtn._hintBound = true;
+      }
+    }
+    function dismissProfileHint() {
+      var bubble = document.getElementById('profile-hint-bubble');
+      if (bubble) bubble.classList.remove('show');
+      if (_profileHintTimer) { clearTimeout(_profileHintTimer); _profileHintTimer = null; }
+      try { localStorage.setItem('sl_hint_profile_seen', '1'); } catch(e) {}
     }
 
     // Web Audio 硬币音效（升调，数量越多音符越多）
@@ -16040,6 +16106,9 @@
       // 显示弹窗
       el('char-intro-overlay').classList.add('visible');
 
+      // 首次看到角色介绍时，引导用户点 "i" 看档案
+      if (!isProfile) { try { showProfileHintOnce(); } catch(e) {} }
+
       // 自动播放问候语
       if (!isProfile) {
         setTimeout(function() { charIntroPlayGreeting(); }, 600);
@@ -17669,6 +17738,11 @@
       <!-- 右上角幽灵 (i)：卡片级，始终可见，z-index:5 -->
       <button class="char-intro-profile-corner-btn" id="char-intro-corner-btn"
               onclick="charIntroToggleProfile()">i</button>
+
+      <!-- 首次出现人物介绍时的提示气泡（一次性） -->
+      <div class="profile-hint-bubble" id="profile-hint-bubble" onclick="dismissProfileHint()">
+        👆 看看 TA 的故事
+      </div>
 
     </div>
   </div>
