@@ -5291,13 +5291,25 @@
     }
     .email-final-text {
       font-size: 16px;
-      line-height: 1.85;
-      color: rgba(255,255,255,0.88);
+      line-height: 1.7;
+      color: rgba(255,255,255,0.92);
       letter-spacing: 0.01em;
     }
     .email-final-text .efp-strong {
       color: #22c55e;
       font-weight: 700;
+    }
+    .email-final-text .efp-zh {
+      margin-top: 18px;
+    }
+    .email-final-text .efp-zh:first-child { margin-top: 0; }
+    .email-final-text .efp-en {
+      display: block;
+      margin-top: 6px;
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0;
     }
     .email-final-form {
       display: flex; gap: 8px;
@@ -5358,12 +5370,25 @@
     .email-unit-title {
       font-size: 14px; font-weight: 700;
       color: #22c55e;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
+    }
+    .email-unit-title .euc-en {
+      font-weight: 500;
+      font-size: 11.5px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.02em;
     }
     .email-unit-sub {
       font-size: 12px;
-      color: rgba(255,255,255,0.65);
+      color: rgba(255,255,255,0.72);
       margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .email-unit-sub .euc-en,
+    .email-unit-thanks .euc-en {
+      font-size: 11px;
+      color: rgba(255,255,255,0.42);
+      letter-spacing: 0.01em;
     }
     .email-unit-form { display: flex; gap: 6px; }
     .email-unit-card .email-input { font-size: 13px; padding: 9px 12px; }
@@ -17884,33 +17909,49 @@
   <div class="email-final-page" id="email-final-page">
     <div class="email-final-card">
       <div class="email-final-text">
-        短短一个月，你陪诺拉从一个刚下飞机、连扫码都不会的留学生，走到了能自己加入摄影社、开口邀人当模特。<br/><br/>
-        她在这儿的故事，<span class="efp-strong">才刚刚铺开</span>。<br/><br/>
-        新学期、新的人、还有那些刚刚建立起来的关系——接下来会往哪儿走，谁也说不准。<br/><br/>
-        后面的内容正在写。留下邮箱，做好第一时间发给你。<br/><br/>
-        你是<span class="efp-strong">最早陪诺拉走到这儿的人</span>，这个座位给你留着。
+        <div class="efp-zh">短短一个月，你陪诺拉从一个刚下飞机、连扫码都不会的留学生，走到了能自己加入摄影社、开口邀人当模特。
+          <span class="efp-en">In just one month, you've taken Nora from a student who couldn't even scan a QR code when she landed, to someone who joined the photography club and worked up the nerve to ask a senior to model for her.</span>
+        </div>
+        <div class="efp-zh">她在这儿的故事，<span class="efp-strong">才刚刚铺开</span>。
+          <span class="efp-en">Her story here is only just opening up.</span>
+        </div>
+        <div class="efp-zh">新学期、新的人、还有那些刚刚建立起来的关系——接下来会往哪儿走，谁也说不准。
+          <span class="efp-en">A new term, new people, and the relationships she's only just started to build — where it all goes next, nobody can say yet.</span>
+        </div>
+        <div class="efp-zh">后面的内容正在写。留下邮箱，做好第一时间发给你。
+          <span class="efp-en">The rest is being written. Leave your email and I'll send it to you the moment it's ready.</span>
+        </div>
+        <div class="efp-zh">你是<span class="efp-strong">最早陪诺拉走到这儿的人</span>，这个座位给你留着。
+          <span class="efp-en">You were one of the first to come this far with Nora — this seat is saved for you.</span>
+        </div>
       </div>
       <div class="email-final-form" id="email-final-form">
         <input class="email-input" id="email-final-input" type="email"
                placeholder="your@email.com" autocomplete="email" />
-        <button class="email-btn" onclick="submitFinalEmail()">给我留个座 →</button>
+        <button class="email-btn" onclick="submitFinalEmail()">给我留个座 · Save my seat →</button>
       </div>
-      <div class="email-final-thanks" id="email-final-thanks">✓ 座位留好了，等你回来 We'll be in touch.</div>
-      <button class="email-final-skip" id="email-final-skip" onclick="closeFinalEmailPage()">先逛逛 ×</button>
+      <div class="email-final-thanks" id="email-final-thanks">
+        ✓ 座位留好了，等你回来<br/>
+        <span style="font-size:12.5px;color:rgba(255,255,255,0.55);font-weight:400">Your seat is saved — we'll see you soon.</span>
+      </div>
+      <button class="email-final-skip" id="email-final-skip" onclick="closeFinalEmailPage()">先逛逛 · Keep browsing ×</button>
     </div>
   </div>
 
   <!-- ── 邮箱场景 B：单元完成小提示卡片（可关闭）─────────────── -->
   <div class="email-unit-card" id="email-unit-card">
     <button class="email-unit-close" onclick="closeUnitEmailCard()" aria-label="关闭">×</button>
-    <div class="email-unit-title">🎉 本单元完成</div>
-    <div class="email-unit-sub">想第一时间收到新内容？</div>
+    <div class="email-unit-title">🎉 本单元完成 <span class="euc-en">· Unit Complete</span></div>
+    <div class="email-unit-sub">想第一时间收到新内容？<br/><span class="euc-en">Want to know the moment new content drops?</span></div>
     <div class="email-unit-form" id="email-unit-form">
       <input class="email-input" id="email-unit-input" type="email"
              placeholder="your@email.com" autocomplete="email" />
-      <button class="email-btn" onclick="submitUnitEmail()">通知我</button>
+      <button class="email-btn" onclick="submitUnitEmail()">通知我 · Notify me</button>
     </div>
-    <div class="email-unit-thanks" id="email-unit-thanks">✓ 已收到，有新课立刻告诉你</div>
+    <div class="email-unit-thanks" id="email-unit-thanks">
+      ✓ 已收到，有新课立刻告诉你<br/>
+      <span class="euc-en">Got it — we'll ping you as soon as new lessons land.</span>
+    </div>
   </div>
 
 </body>
