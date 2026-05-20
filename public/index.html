@@ -5324,6 +5324,37 @@
       transition: color 0.2s;
     }
     .email-final-skip:hover { color: rgba(255,255,255,0.72); }
+    /* 极小反馈入口：比邮箱框低一档，不抢眼 */
+    .email-final-feedback {
+      align-self: center;
+      font-size: 11px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.30);
+      text-align: center;
+      padding: 2px 12px;
+      max-width: 340px;
+    }
+    .email-final-feedback a {
+      color: rgba(255,255,255,0.42);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      text-decoration-color: rgba(255,255,255,0.22);
+      transition: color 0.2s;
+    }
+    .email-final-feedback a:hover {
+      color: rgba(34,197,94,0.85);
+      text-decoration-color: rgba(34,197,94,0.5);
+    }
+    .email-final-feedback .effb-en {
+      display: block;
+      font-size: 10.5px;
+      color: rgba(255,255,255,0.24);
+      margin-top: 2px;
+    }
+    .email-final-feedback .effb-en a {
+      color: rgba(255,255,255,0.34);
+      text-decoration-color: rgba(255,255,255,0.18);
+    }
     .email-final-thanks {
       display: none;
       font-size: 15px;
@@ -5448,6 +5479,11 @@
     function closeFinalEmailPage() {
       var p = document.getElementById('email-final-page');
       if (p) p.classList.remove('show');
+      // 拦截调用方留下的导航回调（例如：返回章节选择页）
+      if (typeof _finalEmailContinue === 'function') {
+        var cb = _finalEmailContinue; _finalEmailContinue = null;
+        try { cb(); } catch(e) {}
+      }
     }
     function submitFinalEmail() {
       var input = document.getElementById('email-final-input');
@@ -5457,8 +5493,8 @@
       var skip   = document.getElementById('email-final-skip');
       if (form)   form.style.display   = 'none';
       if (thanks) thanks.style.display = 'block';
-      if (skip)   skip.textContent     = '回到关卡 →';
-      // 2 秒后自动关闭
+      if (skip)   skip.textContent     = '回到关卡 · Back to lessons →';
+      // 2 秒后自动关闭并继续导航
       setTimeout(closeFinalEmailPage, 2000);
     }
 
@@ -5482,15 +5518,12 @@
       setTimeout(closeUnitEmailCard, 1800);
     }
 
-    // 决策入口：完课后判断该展示哪种（或都不展示）
+    // 完课时决策（只处理场景 B：单元小卡片；场景 A 移到 tipNextLesson 拦截）
     function maybeShowEmailPrompts(idx) {
       try { if (localStorage.getItem('sl_email_submitted')) return; } catch(e) {}
       if (typeof LESSONS === 'undefined' || typeof UNITS === 'undefined') return;
-      // 场景 A：当前已上线的最后一课
-      if (idx === LESSONS.length - 1) {
-        setTimeout(showFinalEmailPage, 3800); // 等成绩单 + 烟花跑完一阵子再出
-        return;
-      }
+      // 最后一课不在此处弹（等用户点"下一课"再弹）
+      if (idx === LESSONS.length - 1) return;
       // 场景 B：单元最后一课，且后面还有内容
       var uIdx = -1;
       for (var i = 0; i < UNITS.length; i++) {
@@ -5499,10 +5532,20 @@
       if (uIdx === -1) return;
       var u = UNITS[uIdx];
       var lastInUnit = u.lessons[u.lessons.length - 1] === idx;
-      var hasMore    = uIdx < UNITS.length - 1; // 后面还有单元 = 还有内容
+      var hasMore    = uIdx < UNITS.length - 1;
       if (lastInUnit && hasMore) {
         setTimeout(showUnitEmailCard, 2200);
       }
+    }
+
+    // 用户在最后一课的"地道指南"页点"下一课"时调用：
+    // 若邮箱未提交，先弹场景 A 全屏页，关闭后再继续原导航
+    var _finalEmailContinue = null;
+    function maybeInterceptForFinalEmail(continueFn) {
+      try { if (localStorage.getItem('sl_email_submitted')) return false; } catch(e) {}
+      _finalEmailContinue = continueFn || null;
+      showFinalEmailPage();
+      return true;
     }
   </script>
 </head>
@@ -14418,15 +14461,22 @@
     }
 
     function tipNextLesson() {
-      document.getElementById("tip-page").classList.remove("show");
-      document.getElementById("overlay").classList.remove("show");
-      _resetEndingCg();
-      stopFireworks();
-      var nextIdx = lessonIdx < LESSONS.length - 1 ? lessonIdx + 1 : 0;
-      idx = 0;
-      sessionScores = []; _sessionCoinsEarned = 0;
-      // 回到章节选择，active 在下一章（已因本课完成而解锁）
-      showChapterSelectPage(nextIdx);
+      // 真正的导航逻辑提出来，便于在场景 A 弹窗关闭后回调执行
+      var _doNav = function() {
+        document.getElementById("tip-page").classList.remove("show");
+        document.getElementById("overlay").classList.remove("show");
+        _resetEndingCg();
+        stopFireworks();
+        var nextIdx = lessonIdx < LESSONS.length - 1 ? lessonIdx + 1 : 0;
+        idx = 0;
+        sessionScores = []; _sessionCoinsEarned = 0;
+        showChapterSelectPage(nextIdx);
+      };
+      // 若是最后一课且邮箱未提交，先弹场景 A 全屏页，关闭后再导航
+      if (lessonIdx === LESSONS.length - 1) {
+        if (maybeInterceptForFinalEmail(_doNav)) return;
+      }
+      _doNav();
     }
 
     function restartLesson() {
@@ -17935,6 +17985,11 @@
         <span style="font-size:12.5px;color:rgba(255,255,255,0.55);font-weight:400">Your seat is saved — we'll see you soon.</span>
       </div>
       <button class="email-final-skip" id="email-final-skip" onclick="closeFinalEmailPage()">先逛逛 · Keep browsing ×</button>
+      <div class="email-final-feedback">
+        做这个的就我一个人，有想法/吐槽 →
+        <a href="mailto:xiaobei810@gmail.com?subject=EchoChinese%20%E5%8F%8D%E9%A6%88" target="_blank" rel="noopener">直接告诉我</a>
+        <span class="effb-en">Built by one person — thoughts or complaints? <a href="mailto:xiaobei810@gmail.com?subject=EchoChinese%20feedback" target="_blank" rel="noopener">drop me a line</a></span>
+      </div>
     </div>
   </div>
 
