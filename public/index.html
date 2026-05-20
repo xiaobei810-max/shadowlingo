@@ -5135,7 +5135,127 @@
       .header-toggles { gap: 4px; }
       .tgl-btn { padding: 4px 8px; font-size: 10px; }
     }
+    /* ── 邮件订阅条 Email Subscribe Strip ──────────────────────── */
+    .email-strip {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 40px);
+      max-width: 400px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      animation: fadeInUp 0.6s ease both;
+    }
+    .email-strip.hidden { display: none; }
+    .email-strip-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.04em;
+    }
+    .email-strip-row {
+      display: flex;
+      width: 100%;
+      gap: 6px;
+    }
+    .email-strip-input {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #e2e8f0;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .email-strip-input::placeholder { color: rgba(255,255,255,0.3); }
+    .email-strip-input:focus { border-color: rgba(255,255,255,0.4); }
+    .email-strip-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: #e2e8f0;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .email-strip-btn:hover { background: rgba(255,255,255,0.2); }
+    .email-strip-thanks {
+      font-size: 12px;
+      color: rgba(255,255,255,0.55);
+      padding: 10px 0 4px;
+      display: none;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
   </style>
+
+  <!-- ── PostHog Analytics ──────────────────────────────────── -->
+  <!-- 替换 YOUR_POSTHOG_KEY 为 PostHog 项目 API Key (ph_xxxx...) -->
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId setPersonPropertiesForFlags".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('YOUR_POSTHOG_KEY', {
+      api_host: 'https://us.i.posthog.com',
+      person_profiles: 'identified_only'
+    });
+
+    // ── 埋点辅助函数 track() — 静默失败，不影响主业务 ───────────
+    function track(event, props) {
+      try {
+        if (window.posthog && typeof posthog.capture === 'function') {
+          posthog.capture(event, props || {});
+        }
+      } catch(e) {}
+    }
+
+    // ── 邮件订阅条逻辑 ──────────────────────────────────────────
+    (function initEmailStrip() {
+      // 若已订阅则直接隐藏
+      try {
+        if (localStorage.getItem('sl_email_submitted')) {
+          var s = document.getElementById('email-strip');
+          if (s) s.classList.add('hidden');
+        }
+      } catch(e) {}
+    })();
+
+    function submitEmailStrip() {
+      var input = document.getElementById('email-strip-input');
+      var email = input ? input.value.trim() : '';
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (input) { input.focus(); input.style.borderColor = 'rgba(239,68,68,0.6)'; }
+        return;
+      }
+
+      // 捕获事件 + 绑定用户身份
+      track('email_submit', { email: email });
+      try {
+        if (window.posthog && typeof posthog.identify === 'function') {
+          posthog.identify(email, { email: email });
+        }
+      } catch(e) {}
+
+      // UI 反馈
+      var row   = document.querySelector('.email-strip-row');
+      var label = document.querySelector('.email-strip-label');
+      var thanks = document.getElementById('email-strip-thanks');
+      if (row)   row.style.display   = 'none';
+      if (label) label.style.display = 'none';
+      if (thanks) thanks.style.display = 'block';
+
+      // 持久化，下次不再显示
+      try { localStorage.setItem('sl_email_submitted', '1'); } catch(e) {}
+    }
+  </script>
 </head>
 
 <body>
@@ -8157,6 +8277,15 @@
       // 6) 持久化 + 刷新顶部金币条
       saveGachaState(state);
       try { refreshCoinDisplay(); } catch(e) {}
+
+      // 7) 埋点
+      track('blindbox_open', {
+        tier:        tier,
+        item_id:     item.id,
+        is_dup:      isDup,
+        coins_spent: cost,
+        pull_count:  state.flags.pullCount
+      });
 
       return {
         ok:           true,
@@ -16174,6 +16303,7 @@
     function startLesson() {
       prewarmMic();
       var lesson     = LESSONS[lessonIdx];
+      track('lesson_start', { lesson_number: lessonIdx + 1, lesson_id: lesson.id, lesson_title: lesson.title });
       var newChars   = lesson.newChars || [];
 
       if (newChars.length > 0) {
@@ -16455,7 +16585,12 @@
       try { return !!localStorage.getItem('sl_completed_' + idx); } catch(e) { return false; }
     }
     function markLessonCompleted(idx) {
+      var _isFirstCompletion = !isLessonCompleted(idx);
       try { localStorage.setItem('sl_completed_' + idx, '1'); } catch(e) {}
+      if (_isFirstCompletion) {
+        var _l = LESSONS[idx] || {};
+        track('lesson_complete', { lesson_number: idx + 1, lesson_id: _l.id, lesson_title: _l.title });
+      }
       // 单元通关赠送 CG：找出该课程所属单元，若 5 课全完成则赠送 CG
       try {
         for (var ui = 0; ui < UNITS.length; ui++) {
@@ -16992,6 +17127,16 @@
     <div class="chs-dots" id="chs-dots"></div>
     <!-- 锁定反馈 toast（点击锁定卡片时浮现，1.8s 后自动消失） -->
     <div class="chs-locked-toast" id="chs-locked-toast"></div>
+    <!-- 邮件订阅条（已订阅则自动隐藏） -->
+    <div class="email-strip" id="email-strip">
+      <div class="email-strip-label">新课更新第一时间通知 · Get notified when new lessons drop</div>
+      <div class="email-strip-row">
+        <input class="email-strip-input" id="email-strip-input" type="email"
+               placeholder="your@email.com" autocomplete="email" />
+        <button class="email-strip-btn" onclick="submitEmailStrip()">通知我 →</button>
+      </div>
+      <div class="email-strip-thanks" id="email-strip-thanks">✓ 已收到！有新课第一时间通知你 We'll let you know!</div>
+    </div>
   </div>
 
   <!-- 课程封面 Lesson Cover -->
