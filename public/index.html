@@ -13686,8 +13686,6 @@
             if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
             playCoinSound(_sessionCoinsEarned);
           }, 600);
-          // 首课金币提示气泡：金币动画结束后 1.4s 出现，引导用户关注顶部金币图标
-          try { showCoinHintOnce(); } catch(e) {}
         } else {
           // 0 币：展示但不显示动画硬币
           coinText.textContent = '本课回声币：0';
@@ -13738,6 +13736,8 @@
       markLessonCompleted(lessonIdx); // 解锁下一课
       document.getElementById("overlay").classList.add("show");
       if (!noPractice) launchFireworks();
+      // 金币提示气泡：不论本课得币多少，只要是首次看到成绩单就出现
+      try { showCoinHintOnce(); } catch(e) {}
     }
 
     function showTipPage() {
