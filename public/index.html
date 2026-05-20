@@ -5166,7 +5166,7 @@
     .coin-hint-bubble {
       position: absolute;
       top: calc(100% + 14px); /* 金币 badge 正下方留 14px 间距 */
-      right: 0;
+      left: 0;                /* 气泡从 badge 左边缘起，向右延展（远离标题）*/
       width: 168px;
       padding: 10px 22px 10px 12px;
       text-align: left;
@@ -5175,13 +5175,25 @@
       content: '';
       position: absolute;
       top: -6px;
-      right: 16px;        /* 箭头对准 badge 中心偏左 */
+      left: 16px;           /* 箭头在气泡左上角，指向 badge 中心 */
       width: 11px;
       height: 11px;
       background: rgba(3, 9, 18, 0.88);
       border-left: 1px solid rgba(34, 197, 94, 0.45);
       border-top: 1px solid rgba(34, 197, 94, 0.45);
       transform: rotate(45deg);
+    }
+    /* 防止 mobile 端右侧溢出：屏幕较窄时让气泡贴回右侧 */
+    @media (max-width: 520px) {
+      .coin-hint-bubble {
+        left: auto;
+        right: 0;
+        width: 158px;
+      }
+      .coin-hint-bubble::before {
+        left: auto;
+        right: 16px;
+      }
     }
     .coin-hint-bubble .chb-close {
       position: absolute;
