@@ -5135,49 +5135,60 @@
       .header-toggles { gap: 4px; }
       .tgl-btn { padding: 4px 8px; font-size: 10px; }
     }
-    /* ── 首课完成"金币提示气泡" Coin Hint Bubble（仅出现 1 次）─── */
-    .coin-hint-bubble {
-      position: absolute;
-      top: 56px;
-      right: 14px;
-      max-width: 240px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: #1a1a1a;
+    /* ── 提示气泡通用样式（金币 + 角色档案 i，风格统一）────────── */
+    .coin-hint-bubble,
+    .profile-hint-bubble {
+      background: rgba(3, 9, 18, 0.88);
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      color: #22c55e;
       font-size: 12px;
       line-height: 1.5;
       font-weight: 600;
-      padding: 10px 14px 10px 12px;
       border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.25), 0 4px 16px rgba(0,0,0,0.5);
       z-index: 200;
       opacity: 0;
       transform: translateY(-6px) scale(0.92);
       pointer-events: none;
       transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    .coin-hint-bubble.show {
+    .coin-hint-bubble.show,
+    .profile-hint-bubble.show {
       opacity: 1;
       transform: translateY(0) scale(1);
       pointer-events: auto;
       cursor: pointer;
     }
+
+    /* ── 金币气泡专属位置 + 箭头 ──────────────────────────────── */
+    .coin-hint-bubble {
+      position: absolute;
+      top: 56px;
+      right: 14px;
+      max-width: 240px;
+      padding: 10px 24px 10px 12px;
+    }
     .coin-hint-bubble::before {
       content: '';
       position: absolute;
-      top: -6px;
+      top: -5px;
       right: 28px;
-      width: 12px;
-      height: 12px;
-      background: #fbbf24;
+      width: 10px;
+      height: 10px;
+      background: rgba(3, 9, 18, 0.88);
+      border-left: 1px solid rgba(34, 197, 94, 0.45);
+      border-top: 1px solid rgba(34, 197, 94, 0.45);
       transform: rotate(45deg);
-      border-radius: 2px;
     }
     .coin-hint-bubble .chb-close {
       position: absolute;
       top: 2px;
       right: 6px;
       font-size: 14px;
-      opacity: 0.55;
+      opacity: 0.45;
+      color: #22c55e;
     }
     @keyframes coinIconNudge {
       0%, 100% { transform: scale(1); }
@@ -5188,32 +5199,14 @@
       animation: coinIconNudge 0.7s ease-in-out 2;
     }
 
-    /* ── 角色档案"i"按钮提示气泡（一次性引导）─────────────────── */
+    /* ── 角色档案气泡专属位置 + 箭头 ──────────────────────────── */
     .profile-hint-bubble {
       position: absolute;
       top: 64px;
       right: 14px;
       max-width: 180px;
-      background: rgba(34, 197, 94, 0.95);
-      color: #0a1a0e;
-      font-size: 12px;
-      line-height: 1.5;
-      font-weight: 600;
       padding: 9px 12px;
-      border-radius: 10px;
-      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35), 0 0 0 1px rgba(255,255,255,0.18);
-      z-index: 6;
-      opacity: 0;
-      transform: translateY(-6px) scale(0.92);
-      pointer-events: none;
-      transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
       text-align: center;
-    }
-    .profile-hint-bubble.show {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      pointer-events: auto;
-      cursor: pointer;
     }
     .profile-hint-bubble::before {
       content: '';
@@ -5222,9 +5215,10 @@
       right: 14px;
       width: 10px;
       height: 10px;
-      background: rgba(34, 197, 94, 0.95);
+      background: rgba(3, 9, 18, 0.88);
+      border-left: 1px solid rgba(34, 197, 94, 0.45);
+      border-top: 1px solid rgba(34, 197, 94, 0.45);
       transform: rotate(45deg);
-      border-radius: 2px;
     }
 
     /* ── 邮件订阅条 Email Subscribe Strip ──────────────────────── */
