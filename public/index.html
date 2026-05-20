@@ -5165,16 +5165,17 @@
     /* ── 金币气泡专属位置 + 箭头 ──────────────────────────────── */
     .coin-hint-bubble {
       position: absolute;
-      top: 56px;
-      right: 14px;
-      max-width: 240px;
+      top: calc(100% + 10px); /* 金币 badge 正下方 */
+      right: 0;
+      max-width: 200px;
       padding: 10px 24px 10px 12px;
+      white-space: nowrap;
     }
     .coin-hint-bubble::before {
       content: '';
       position: absolute;
       top: -5px;
-      right: 28px;
+      right: 14px;        /* 箭头对准 badge 中心 */
       width: 10px;
       height: 10px;
       background: rgba(3, 9, 18, 0.88);
@@ -5528,20 +5529,20 @@
           <div class="logo-icon">影</div>
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
         </div>
-        <div class="header-right">
+        <div class="header-right" style="position:relative">
           <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-overlay" style="display:none">
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-overlay">0</span>
           </div>
+          <!-- 首课"金币提示气泡"，仅首次完成课程后出现一次 -->
+          <div class="coin-hint-bubble" id="coin-hint-bubble" onclick="dismissCoinHint()">
+            <span class="chb-close">×</span>
+            点这里看回声币 🪙<br/>
+            <span style="font-weight:500;opacity:0.75">攒 10 个就能抽盲盒解锁特别 CG</span>
+          </div>
         </div>
       </div>
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
-      <!-- 首课"金币提示气泡"，仅首次完成课程后出现一次 -->
-      <div class="coin-hint-bubble" id="coin-hint-bubble" onclick="dismissCoinHint()">
-        <span class="chb-close">×</span>
-        点这里看回声币 🪙<br/>
-        <span style="font-weight:500;opacity:0.85">攒 10 个就能抽盲盒解锁特别 CG</span>
-      </div>
     </div>
     <div class="completion-card">
       <div class="completion-title">本课完成！</div>
