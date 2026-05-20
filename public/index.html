@@ -5324,36 +5324,37 @@
       transition: color 0.2s;
     }
     .email-final-skip:hover { color: rgba(255,255,255,0.72); }
-    /* 极小反馈入口：比邮箱框低一档，不抢眼 */
+    /* 反馈入口：独立小尾注，与上方"先逛逛"拉开距离 */
     .email-final-feedback {
       align-self: center;
-      font-size: 11px;
-      line-height: 1.55;
-      color: rgba(255,255,255,0.30);
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.38);
       text-align: center;
-      padding: 2px 12px;
+      padding: 0 16px;
+      margin-top: 20px;
       max-width: 340px;
     }
     .email-final-feedback a {
-      color: rgba(255,255,255,0.42);
+      color: rgba(255,255,255,0.62);
       text-decoration: underline;
       text-underline-offset: 2px;
-      text-decoration-color: rgba(255,255,255,0.22);
-      transition: color 0.2s;
+      text-decoration-color: rgba(255,255,255,0.35);
+      transition: color 0.2s, text-decoration-color 0.2s;
     }
     .email-final-feedback a:hover {
-      color: rgba(34,197,94,0.85);
-      text-decoration-color: rgba(34,197,94,0.5);
+      color: rgba(255,255,255,0.88);
+      text-decoration-color: rgba(255,255,255,0.55);
     }
     .email-final-feedback .effb-en {
       display: block;
-      font-size: 10.5px;
-      color: rgba(255,255,255,0.24);
-      margin-top: 2px;
+      font-size: 11.5px;
+      color: rgba(255,255,255,0.28);
+      margin-top: 3px;
     }
     .email-final-feedback .effb-en a {
-      color: rgba(255,255,255,0.34);
-      text-decoration-color: rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.50);
+      text-decoration-color: rgba(255,255,255,0.28);
     }
     .email-final-thanks {
       display: none;
@@ -17987,8 +17988,8 @@
       <button class="email-final-skip" id="email-final-skip" onclick="closeFinalEmailPage()">先逛逛 · Keep browsing ×</button>
       <div class="email-final-feedback">
         做这个的就我一个人，有想法/吐槽 →
-        <a href="mailto:xiaobei810@gmail.com?subject=EchoChinese%20%E5%8F%8D%E9%A6%88" target="_blank" rel="noopener">直接告诉我</a>
-        <span class="effb-en">Built by one person — thoughts or complaints? <a href="mailto:xiaobei810@gmail.com?subject=EchoChinese%20feedback" target="_blank" rel="noopener">drop me a line</a></span>
+        <a href="https://tally.so/r/VLbkXl" target="_blank" rel="noopener">直接告诉我</a>
+        <span class="effb-en">Built by one person — thoughts or complaints? <a href="https://tally.so/r/VLbkXl" target="_blank" rel="noopener">drop me a line</a></span>
       </div>
     </div>
   </div>
