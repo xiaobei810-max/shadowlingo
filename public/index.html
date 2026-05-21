@@ -1914,18 +1914,6 @@
       justify-content: space-between;
       margin-bottom: 4px;
     }
-    #eval-gift-btn {
-      background: none; border: none; font-size: 22px; cursor: pointer;
-      padding: 4px 6px; line-height: 1; border-radius: 10px;
-      transition: transform 0.15s;
-      animation: giftPulse 2s ease infinite;
-    }
-    #eval-gift-btn:hover { transform: scale(1.2); }
-    @keyframes giftPulse {
-      0%,100% { transform: scale(1); }
-      50%     { transform: scale(1.12); }
-    }
-
     .eval-badge {
       background: rgba(255, 255, 255, 0.06);
       border-radius: 99px;
@@ -2162,37 +2150,55 @@
        ── 盲盒系统 UI  Gacha UI ────────────────────────────────
        ═══════════════════════════════════════════════════════════ */
 
-    /* ── 解锁提示 Toast ──────────────────────────────────────── */
-    .gacha-unlock-toast {
-      position: fixed; bottom: 90px; left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      z-index: 9500; background: #1c212e;
-      border: 1px solid rgba(245,166,35,0.5);
-      border-radius: 18px; padding: 14px 18px;
-      display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 4px 24px rgba(245,166,35,0.2), 0 2px 8px rgba(0,0,0,0.5);
+    /* ── 一次性解锁动画：光束 + 气泡（仅首次攒满10币触发） ───── */
+    .unlock-beam {
+      position: fixed; z-index: 9600;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle, #facc15 0%, rgba(250,204,21,0.6) 40%, rgba(250,204,21,0) 75%);
+      box-shadow: 0 0 16px 6px rgba(250,204,21,0.55);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
       opacity: 0;
-      animation: gutSlideIn 0.35s 0.1s cubic-bezier(.34,1.56,.64,1) forwards;
+      will-change: transform, opacity;
+    }
+    .unlock-beam.fly {
+      animation: unlockBeamFly 0.95s cubic-bezier(.4,.05,.2,1) forwards;
+    }
+    @keyframes unlockBeamFly {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+      15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      85%  { opacity: 1; }
+      100% { opacity: 0; transform: var(--unlock-end, translate(-50%, -50%)) scale(0.6); }
+    }
+    .unlock-bubble {
+      position: fixed; z-index: 9601;
+      background: rgba(7,11,18,0.92);
+      border: 1.5px solid rgba(34,197,94,0.55);
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 0 22px rgba(34,197,94,0.32);
+      opacity: 0;
+      pointer-events: auto;
+      cursor: pointer;
+      transform: translateY(-4px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
       white-space: nowrap;
     }
-    .gacha-unlock-toast.gut-hiding {
-      animation: gutSlideIn 0.25s ease reverse forwards;
+    .unlock-bubble.show { opacity: 1; transform: translateY(0); }
+    .unlock-bubble-zh { font-size: 13px; font-weight: 700; color: #22c55e; line-height: 1.3; }
+    .unlock-bubble-en { font-size: 10.5px; color: rgba(255,255,255,0.55); margin-top: 2px; line-height: 1.3; }
+    .unlock-bubble::before {
+      content: ''; position: absolute;
+      top: -7px; right: 16px;
+      width: 0; height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 7px solid rgba(34,197,94,0.55);
     }
-    @keyframes gutSlideIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .unlock-skip-layer {
+      position: fixed; inset: 0; z-index: 9595;
+      background: transparent;
     }
-    .gut-icon { font-size: 26px; line-height: 1; }
-    .gut-text { display: flex; flex-direction: column; gap: 2px; }
-    .gut-zh { font-size: 14px; font-weight: 700; color: #f5a623; }
-    .gut-en { font-size: 11px; color: #6b7280; }
-    .gut-btn {
-      padding: 8px 16px; background: #f5a623;
-      border: none; border-radius: 10px;
-      color: #000; font-size: 13px; font-weight: 800;
-      cursor: pointer; transition: background 0.15s; flex-shrink: 0;
-    }
-    .gut-btn:hover { background: #e0941c; }
 
     /* ── 商店页 Overlay ─────────────────────────────────────── */
     .gacha-store-overlay {
@@ -4211,16 +4217,16 @@
       text-align: center;
     }
     .guide-btn-user {
-      background: rgba(248,113,113,0.15);
-      color: #f87171;
-      border: 1.5px solid rgba(248,113,113,0.4);
+      background: rgba(96,165,250,0.15);
+      color: #60a5fa;
+      border: 1.5px solid rgba(96,165,250,0.4);
     }
     .guide-btn-native {
       background: rgba(34,197,94,0.12);
       color: #22c55e;
       border: 1.5px solid rgba(34,197,94,0.3);
     }
-    .guide-btn-user:active { background: rgba(248,113,113,0.3); }
+    .guide-btn-user:active { background: rgba(96,165,250,0.3); }
     .guide-btn-native:active { background: rgba(34,197,94,0.25); }
 
     /* 底部导航 */
@@ -8738,32 +8744,99 @@
       if (getCoins() >= threshold && !state.flags.storeUnlockedSeen) {
         state.flags.storeUnlockedSeen = true;
         saveGachaState(state);
-        showGachaUnlockToast();
+        try { playUnlockAnimation(); } catch(e) {}
       }
     }
 
-    function showGachaUnlockToast() {
-      var existing = document.getElementById('gacha-unlock-toast');
-      if (existing) return;
-      var toast = document.createElement('div');
-      toast.id = 'gacha-unlock-toast';
-      toast.className = 'gacha-unlock-toast';
-      toast.innerHTML =
-        '<span class="gut-icon">🎁</span>' +
-        '<div class="gut-text">' +
-          '<span class="gut-zh">盲盒商店已解锁！</span>' +
-          '<span class="gut-en">Blind Box unlocked!</span>' +
-        '</div>' +
-        '<button class="gut-btn" onclick="openGachaStore();removeGachaUnlockToast()">开盲盒</button>';
-      document.body.appendChild(toast);
-      setTimeout(removeGachaUnlockToast, 6000);
+    // 一次性解锁动画：光束从分数下方回声币飞到右上角图标，再冒出气泡
+    function playUnlockAnimation() {
+      // 找出起点（分数下方的 +N 回声币 badge）和终点（右上角的回声币图标）
+      var startEl = document.getElementById('eval-coin-badge')
+                 || document.getElementById('completion-coin-icon');
+      // 找一个当前可见的右上角图标
+      var endIds  = ['coin-bal-eval','coin-bal-practice','coin-bal-overlay','coin-bal-cover','coin-bal-fc','coin-bal-plp','coin-bal-tip'];
+      var endEl = null;
+      for (var i = 0; i < endIds.length; i++) {
+        var el = document.getElementById(endIds[i]);
+        if (el && el.offsetParent !== null) { endEl = el; break; }
+      }
+      if (!startEl || !endEl) {
+        // 没找到起点/终点就直接弹气泡（兜底），不做飞行
+        _showUnlockBubble(endEl || document.body);
+        return;
+      }
+      var sRect = startEl.getBoundingClientRect();
+      var eRect = endEl.getBoundingClientRect();
+      var sx = sRect.left + sRect.width  / 2;
+      var sy = sRect.top  + sRect.height / 2;
+      var ex = eRect.left + eRect.width  / 2;
+      var ey = eRect.top  + eRect.height / 2;
+
+      var beam = document.createElement('div');
+      beam.className = 'unlock-beam';
+      beam.style.left = sx + 'px';
+      beam.style.top  = sy + 'px';
+      // 用 CSS var 把终点位移传给 keyframes
+      beam.style.setProperty('--unlock-end', 'translate(' + (ex - sx - 7) + 'px, ' + (ey - sy - 7) + 'px)');
+      document.body.appendChild(beam);
+      // 跳过层：用户点任意处提前结束
+      var skipLayer = document.createElement('div');
+      skipLayer.className = 'unlock-skip-layer';
+      skipLayer.addEventListener('click', function() { _skipUnlockAnimation(); });
+      document.body.appendChild(skipLayer);
+
+      // 启动飞行
+      requestAnimationFrame(function() { beam.classList.add('fly'); });
+      // 飞行 ~950ms 后清光束 + 抖一下终点图标 + 弹气泡
+      _unlockTimers.push(setTimeout(function() {
+        if (beam.parentNode) beam.parentNode.removeChild(beam);
+        endEl.classList.remove('bal-bounce-anim');
+        void endEl.offsetWidth;
+        endEl.classList.add('bal-bounce-anim');
+        _showUnlockBubble(endEl);
+      }, 950));
     }
 
-    function removeGachaUnlockToast() {
-      var el = document.getElementById('gacha-unlock-toast');
-      if (!el) return;
-      el.classList.add('gut-hiding');
-      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+    var _unlockTimers = [];
+    function _skipUnlockAnimation() {
+      _unlockTimers.forEach(function(t) { clearTimeout(t); });
+      _unlockTimers = [];
+      var beam = document.querySelector('.unlock-beam');
+      if (beam && beam.parentNode) beam.parentNode.removeChild(beam);
+      var skip = document.querySelector('.unlock-skip-layer');
+      if (skip && skip.parentNode) skip.parentNode.removeChild(skip);
+      _removeUnlockBubble();
+    }
+    function _showUnlockBubble(anchorEl) {
+      var bub = document.createElement('div');
+      bub.className = 'unlock-bubble';
+      bub.innerHTML =
+        '<div class="unlock-bubble-zh">🎁 盲盒商店已解锁</div>' +
+        '<div class="unlock-bubble-en">Blind Box Unlocked</div>';
+      bub.addEventListener('click', function(e) { e.stopPropagation(); _skipUnlockAnimation(); });
+      document.body.appendChild(bub);
+      // 定位：气泡贴在 anchor 下方略偏左
+      var r = anchorEl.getBoundingClientRect();
+      // 先放进 DOM 拿到宽度，再调整
+      requestAnimationFrame(function() {
+        var bw = bub.offsetWidth;
+        var top  = r.bottom + 10;
+        var left = Math.min(window.innerWidth - bw - 12, Math.max(12, r.right - bw));
+        bub.style.top = top + 'px';
+        bub.style.left = left + 'px';
+        bub.classList.add('show');
+      });
+      // 2.6s 后自动收掉气泡 + 跳过层
+      _unlockTimers.push(setTimeout(function() { _removeUnlockBubble(); }, 2600));
+    }
+    function _removeUnlockBubble() {
+      var bub = document.querySelector('.unlock-bubble');
+      if (bub) {
+        bub.classList.remove('show');
+        setTimeout(function() { if (bub.parentNode) bub.parentNode.removeChild(bub); }, 250);
+      }
+      var skip = document.querySelector('.unlock-skip-layer');
+      if (skip && skip.parentNode) skip.parentNode.removeChild(skip);
     }
 
     function openGachaStore() {
@@ -10415,15 +10488,6 @@
           });
           // 第一次拿到代币时触发 Aha! 引导气泡（终生仅一次，1.2s 后弹出）
           setTimeout(maybeShowAha, 1200);
-          // 更新 🎁 入口图标（新币入账后立即检查）
-          (function() {
-            var giftBtn = document.getElementById('eval-gift-btn');
-            if (!giftBtn) return;
-            try {
-              var _gs = loadGachaState();
-              giftBtn.style.display = getCoins() >= getCurrentThreshold(_gs.flags.pullCount) ? '' : 'none';
-            } catch(e) {}
-          })();
         }, delay || 500);
       } else if (tier > 0) {
         // 分数够，但今日已拿过同等或更高档——不重复发币
@@ -12973,16 +13037,6 @@
       document.getElementById("eval-next").textContent = isLast ? "完成 Finish 🎉" : "下一页 Next ▶";
       document.getElementById("eval-page").classList.add("show");
       document.getElementById("eval-page").scrollTop = 0;
-      // 🎁 入口：金币达到当前门槛时显示
-      (function() {
-        var giftBtn = document.getElementById('eval-gift-btn');
-        if (!giftBtn) return;
-        try {
-          var _gs = loadGachaState();
-          var _threshold = getCurrentThreshold(_gs.flags.pullCount);
-          giftBtn.style.display = getCoins() >= _threshold ? '' : 'none';
-        } catch(e) { giftBtn.style.display = 'none'; }
-      })();
       startEvalLoadingAnim();
     }
 
@@ -14233,7 +14287,6 @@
         if (ov) { ov.style.transition = 'opacity 0.6s ease'; ov.style.opacity = '0'; }
         setTimeout(function() {
           if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
-          if (typeof showGachaUnlockToast === 'function') showGachaUnlockToast();
           // 自动打开收集册到「回忆」标签，让玩家立即感受到收录
           setTimeout(function() { openCollectionBook('cg'); }, 400);
         }, 600);
@@ -17756,9 +17809,6 @@
           </div>
           <span id="coin-bal-num-eval">0</span>
         </div>
-        <!-- 盲盒商店入口图标（金币够时显示） -->
-        <button id="eval-gift-btn" onclick="openGachaStore()" style="display:none"
-          title="盲盒商店已解锁！">🎁</button>
       </div>
       <!-- 句子进度条 -->
       <div class="eval-prog-wrap"><div class="eval-prog-fill" id="eval-prog-fill"></div></div>
