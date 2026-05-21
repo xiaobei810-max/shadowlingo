@@ -5749,12 +5749,6 @@
             <div class="echo-coin echo-coin-sm"><svg width="11" height="11" viewBox="0 0 11 11" class="ec-svg"><rect class="ec-bar" x="0" y="4" width="2.2" height="3" rx="1.1"/><rect class="ec-bar" x="3.1" y="1" width="2.2" height="9" rx="1.1"/><rect class="ec-bar" x="6.2" y="2.5" width="2.2" height="6" rx="1.1"/><rect class="ec-bar" x="9.3" y="4" width="2.2" height="3" rx="1.1"/></svg></div>
             <span id="coin-bal-num-overlay">0</span>
           </div>
-          <!-- 首课"金币提示气泡"，仅首次完成课程后出现一次 -->
-          <div class="coin-hint-bubble" id="coin-hint-bubble" onclick="dismissCoinHint()">
-            <span class="chb-close">×</span>
-            点这里看回声币 🪙<br/>
-            <span style="font-weight:500;opacity:0.75">攒 10 个就能抽盲盒解锁特别 CG</span>
-          </div>
         </div>
       </div>
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
@@ -14003,7 +13997,7 @@
       document.getElementById("overlay").classList.add("show");
       if (!noPractice) launchFireworks();
       // 金币提示气泡：不论本课得币多少，只要是首次看到成绩单就出现
-      try { showCoinHintOnce(); } catch(e) {}
+      // 金币提示气泡已下线（已被一次性解锁动画取代）
       // 邮箱触发：最后一课 → 全屏页；单元最后一课 → 小卡片
       try { maybeShowEmailPrompts(lessonIdx); } catch(e) {}
     }
