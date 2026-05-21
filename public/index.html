@@ -5500,12 +5500,15 @@
     }
 
     // 场景 B：单元完成小卡片 ───────────────────────────────────
+    var _unitEmailTimer = null;
     function showUnitEmailCard() {
+      _unitEmailTimer = null;
       try { if (localStorage.getItem('sl_email_submitted')) return; } catch(e) {}
       var c = document.getElementById('email-unit-card');
       if (c) c.classList.add('show');
     }
     function closeUnitEmailCard() {
+      if (_unitEmailTimer) { clearTimeout(_unitEmailTimer); _unitEmailTimer = null; }
       var c = document.getElementById('email-unit-card');
       if (c) c.classList.remove('show');
     }
@@ -5535,7 +5538,7 @@
       var lastInUnit = u.lessons[u.lessons.length - 1] === idx;
       var hasMore    = uIdx < UNITS.length - 1;
       if (lastInUnit && hasMore) {
-        setTimeout(showUnitEmailCard, 2200);
+        _unitEmailTimer = setTimeout(showUnitEmailCard, 2200);
       }
     }
 
