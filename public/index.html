@@ -16991,6 +16991,10 @@
     // ⚠️ 测试阶段开关：true = 启用单元/课程渐进解锁；false = 全开（便于调试）
     var CHS_LOCKING_ENABLED = false;
 
+    // 📢 已发布课程数量：索引 >= 此值的课程（第 PUBLISHED_LESSON_COUNT+1 课起）将对用户隐藏/锁定
+    // 恢复方法：把数字改为 LESSONS.length 或删掉相关检查即可全部放开
+    var PUBLISHED_LESSON_COUNT = 15;
+
     // 视图状态：'units' = 单元总览, 'lessons' = 某单元内的 5 课
     var chsView         = 'units';
     var chsActiveUnitIdx = 0;   // 当前所在/最近浏览的单元下标
@@ -17026,6 +17030,9 @@
     }
     // 单元解锁：第一个单元永远解锁；后续单元需上一单元全部课程完成
     function isUnitUnlocked(uIdx) {
+      // 该单元所有课程均超出已发布范围 → 锁定
+      var u = UNITS[uIdx];
+      if (u && u.lessons.length > 0 && u.lessons[0] >= PUBLISHED_LESSON_COUNT) return false;
       if (!CHS_LOCKING_ENABLED) return true;
       if (uIdx <= 0) return true;
       var prev = UNITS[uIdx - 1];
@@ -17040,6 +17047,8 @@
     }
     // 课程解锁：所属单元已解锁，且单元内前一课已完成（或本身是单元第一课）
     function isLessonUnlocked(lIdx) {
+      // 超出已发布范围 → 锁定
+      if (lIdx >= PUBLISHED_LESSON_COUNT) return false;
       if (!CHS_LOCKING_ENABLED) return true;
       var uIdx = _unitOfLesson(lIdx);
       if (uIdx < 0) return false;
