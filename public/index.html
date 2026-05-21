@@ -14014,6 +14014,8 @@
     function dismissOverlay() {
       document.getElementById("overlay").classList.remove("show");
       stopFireworks();
+      // 关闭得分页 = 进入底下的地道指南，邮件卡片不应再弹出
+      try { closeUnitEmailCard(); } catch(e) {}
     }
 
     function tipReturn() {
