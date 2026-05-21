@@ -13951,6 +13951,8 @@
 
     function showTipPage() {
       teardownMic(); // leaving practice page — release mic
+      // 进入地道指南时隐藏单元完成邮件卡片
+      try { closeUnitEmailCard(); } catch(e) {}
       var lesson = LESSONS[lessonIdx];
       var tip = lesson.insiderTip;
       var inner = document.getElementById("tip-inner-content");
