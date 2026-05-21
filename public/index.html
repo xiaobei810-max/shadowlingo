@@ -13222,7 +13222,9 @@
       // eval-praise removed — grade label below coin is sufficient
 
       // ── 回声币结算（防刷：同一句子当天只能按档位差累计） ──
-      var _coinLIdx = lessonIdx, _coinSIdx = idx;
+      // 对话模式下 idx 在多轮间不变，必须用 dialogRoundIdx 才能区分各轮
+      var _coinLIdx = lessonIdx;
+      var _coinSIdx = (dialogMode && dialogStep === 2) ? dialogRoundIdx : idx;
       var _scoreTier = coinTierForScore(score);   // 本次分数对应档位（0-3）
       var coinsEarned = calcCoinsEarned(score, _coinLIdx, _coinSIdx);
 
