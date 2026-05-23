@@ -5473,6 +5473,25 @@
       person_profiles: 'identified_only'
     });
 
+    // ── 内部用户标记：页面加载时检查，若是开发者邮箱则打 is_internal ──
+    (function() {
+      try {
+        var _INTERNAL_EMAILS = ['xiaobei810@gmail.com'];
+        var _storedEmail = localStorage.getItem('sl_submitted_email') || '';
+        // 兼容旧版：sl_email_submitted 只存了 '1'，需要从 identify 历史里取邮箱
+        // 所以同时检查 posthog 当前 distinct_id 是否匹配
+        var _distinctId = window.posthog && posthog.get_distinct_id ? posthog.get_distinct_id() : '';
+        var _isInternal = _INTERNAL_EMAILS.indexOf(_storedEmail) !== -1 ||
+                          _INTERNAL_EMAILS.indexOf(_distinctId) !== -1;
+        if (_isInternal && window.posthog && typeof posthog.identify === 'function') {
+          posthog.identify(_distinctId || _storedEmail, {
+            is_internal: true,
+            email: _distinctId || _storedEmail
+          });
+        }
+      } catch(e) {}
+    })();
+
     // ── 埋点辅助函数 track() — 静默失败，不影响主业务 ───────────
     function track(event, props) {
       try {
@@ -5496,7 +5515,7 @@
           posthog.identify(email, { email: email });
         }
       } catch(e) {}
-      try { localStorage.setItem('sl_email_submitted', '1'); } catch(e) {}
+      try { localStorage.setItem('sl_email_submitted', '1'); localStorage.setItem('sl_submitted_email', email); } catch(e) {}
       return true;
     }
 
