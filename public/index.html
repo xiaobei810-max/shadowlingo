@@ -1580,6 +1580,12 @@
       pointer-events: none !important;
     }
     .overlay.cg-viewing #fw-canvas { opacity: 0 !important; }
+    /* 看图模式：高清原图改用 contain，确保横向 CG 在竖屏手机上完整可见（不再裁切） */
+    .overlay.cg-viewing #ending-cg-bg {
+      background-size: contain !important;
+      background-color: #07090f;
+      transform: scale(1) !important;
+    }
     /* 看图模式返回提示 */
     #cg-view-hint {
       position: absolute; bottom: 44px; left: 50%;
@@ -10041,6 +10047,7 @@
         return;
       }
       _detailAudio = new Audio(src);
+      _attachLoudnessCompressor(_detailAudio);
       _detailAudio.addEventListener('ended', function() {
         _detailAudio = null;
         if (btn) btn.textContent = '▶ 播放语音 Play Audio';
@@ -10127,6 +10134,7 @@
         return;
       }
       _detailAudio = new Audio(src);
+      _attachLoudnessCompressor(_detailAudio);
       _detailAudio.addEventListener('ended', function() {
         _detailAudio = null;
         if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
@@ -10584,11 +10592,66 @@
       if (el) el.classList.remove("show");
     }
 
+    // ── 音量归一化：用 Web Audio DynamicsCompressor 实时拉平大小声 ──
+    // 不同台词录音的电平参差不齐，外放时尤其明显。这里给每个 <audio>
+    // 元素挂一条 Source → Compressor → Gain → Destination 的链路：
+    // 压缩器把过响的部分压下来，配合 +5dB 的补偿增益，整体响度趋于一致。
+    var _sharedAudioCtx = null;
+    function _ensureAudioCtx() {
+      if (_sharedAudioCtx) return _sharedAudioCtx;
+      try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return null;
+        _sharedAudioCtx = new Ctx();
+      } catch(e) { return null; }
+      return _sharedAudioCtx;
+    }
+    // 首次用户交互时唤醒 AudioContext（iOS Safari 必需，否则 MediaElementSource 链路无声）
+    (function() {
+      function _resumeOnce() {
+        try {
+          var ctx = _ensureAudioCtx();
+          if (ctx && ctx.state === 'suspended') ctx.resume();
+        } catch(e) {}
+        document.removeEventListener('touchstart', _resumeOnce, true);
+        document.removeEventListener('click',      _resumeOnce, true);
+        document.removeEventListener('keydown',    _resumeOnce, true);
+      }
+      document.addEventListener('touchstart', _resumeOnce, true);
+      document.addEventListener('click',      _resumeOnce, true);
+      document.addEventListener('keydown',    _resumeOnce, true);
+    })();
+
+    function _attachLoudnessCompressor(audioEl) {
+      try {
+        if (!audioEl || audioEl._compHooked) return;
+        var ctx = _ensureAudioCtx();
+        if (!ctx) return;
+        // iOS Safari 需要在用户手势中 resume
+        if (ctx.state === 'suspended') { try { ctx.resume(); } catch(e) {} }
+        audioEl.crossOrigin = audioEl.crossOrigin || 'anonymous';
+        var src = ctx.createMediaElementSource(audioEl);
+        var comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -24; // 超过 -24dB 开始压
+        comp.knee.value      = 30;
+        comp.ratio.value     = 6;   // 6:1 中等压缩
+        comp.attack.value    = 0.003;
+        comp.release.value   = 0.25;
+        var makeup = ctx.createGain();
+        makeup.gain.value = 1.8;    // +5dB 左右补偿增益
+        src.connect(comp);
+        comp.connect(makeup);
+        makeup.connect(ctx.destination);
+        audioEl._compHooked = true;
+      } catch(e) { /* 同源/MediaElementSource 重复挂载等异常静默忽略 */ }
+    }
+
     function setupAudio(src) {
       if (audio) { audio.pause(); audio.removeEventListener("timeupdate", onTimeUpdate); audio.src = ""; }
       _clearAudioError(); // always dismiss a previous error when setting up new audio
       audio = new Audio(src || '');
       audio.preload = "auto";
+      _attachLoudnessCompressor(audio);
       audio.addEventListener("error", function () {
         // 仅当真正提供了 src 时才显示加载失败提示（空 src 时静默忽略）
         if (src) {
@@ -12932,21 +12995,14 @@
     function prewarmMic() {
       if (micStream && micStream.active) return; // already warm
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-      // 仅在用户已授权时预热，避免课程开始时弹出系统权限请求弹窗
-      function _doWarm() {
+      // 直接在用户手势同步路径里 getUserMedia —— iOS Safari 必须如此，
+      // 否则 permissions.query 这一层异步会切断手势上下文，导致权限弹窗不出现、
+      // 进而第一次按录音键无反应（permission still in 'prompt' state）。
+      try {
         navigator.mediaDevices.getUserMedia({ audio: true })
           .then(function(s) { micStream = s; console.log('[Mic] Pre-warmed ✓'); })
           .catch(function(e) { console.log('[Mic] Pre-warm skipped:', e.name); });
-      }
-      if (navigator.permissions && navigator.permissions.query) {
-        navigator.permissions.query({ name: 'microphone' }).then(function(result) {
-          if (result.state === 'granted' || result.state === 'prompt') _doWarm();
-          // 'prompt'：在课程开始的用户手势链中触发权限请求，确保进入跟读时麦克风已就绪
-          // 'denied'：跳过，startRecording 时给出麦克风被拒提示
-        }).catch(_doWarm); // Permissions API 不支持时降级
-      } else {
-        _doWarm(); // 旧版浏览器降级
-      }
+      } catch(e) { console.log('[Mic] Pre-warm threw:', e); }
     }
     // ─────────────────────────────────────────────────────────
 
@@ -14311,6 +14367,7 @@
         if (_ch1Audio) { _ch1Audio.pause(); _ch1Audio = null; }
         _ch1Audio = new Audio(audioSrc);
         _ch1Audio.volume = 0.82;
+        _attachLoudnessCompressor(_ch1Audio);
         _ch1Audio.play().catch(function(){});
       } catch(e) {}
     }
