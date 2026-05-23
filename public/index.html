@@ -5492,6 +5492,41 @@
       } catch(e) {}
     })();
 
+    // ── 开发者快捷键：连按 5 下反引号(`) 切换 PostHog 数据采集 ──
+    (function() {
+      var _devKeyCount = 0, _devKeyTimer = null;
+      document.addEventListener('keydown', function(e) {
+        if (e.key !== '`') { _devKeyCount = 0; return; }
+        _devKeyCount++;
+        clearTimeout(_devKeyTimer);
+        _devKeyTimer = setTimeout(function() { _devKeyCount = 0; }, 2000);
+        if (_devKeyCount < 5) return;
+        _devKeyCount = 0;
+        try {
+          var ph = window.posthog;
+          if (!ph) return;
+          var isOptedOut = ph.has_opted_out_capturing();
+          if (isOptedOut) {
+            ph.opt_in_capturing();
+            _devToast('📊 PostHog 已恢复采集（正常用户模式）');
+          } else {
+            ph.opt_out_capturing();
+            _devToast('🚫 PostHog 已停止采集（开发者模式）');
+          }
+        } catch(e) {}
+      });
+      function _devToast(msg) {
+        var t = document.createElement('div');
+        t.textContent = msg;
+        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+          'background:#1e293b;color:#e2e8f0;font-size:13px;padding:10px 18px;' +
+          'border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.4);' +
+          'pointer-events:none;white-space:nowrap;';
+        document.body.appendChild(t);
+        setTimeout(function() { t.remove(); }, 3000);
+      }
+    })();
+
     // ── 埋点辅助函数 track() — 静默失败，不影响主业务 ───────────
     function track(event, props) {
       try {
