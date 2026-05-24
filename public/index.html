@@ -5504,6 +5504,17 @@
     //   音频会话模式，所有音频（含 TTS、开场旁白）才能被屏幕录制捕获
     function _enterDemoMode() {
       try { localStorage.setItem('sl_demo_mode', '1'); } catch(e) {}
+      // 演示模式：直接充值 200 回声币，并标记盲盒商店已解锁，方便展示所有功能
+      try {
+        var cur = parseInt(localStorage.getItem('echo_coins') || '0', 10);
+        if (cur < 200) localStorage.setItem('echo_coins', '200');
+        // 标记商店解锁动画已播过（避免每次进入都重新播放）
+        var st = JSON.parse(localStorage.getItem('echo_gacha_state') || '{}');
+        if (!st.flags) st.flags = {};
+        st.flags.storeUnlocked = true;
+        st.flags.storeUnlockedSeen = true;
+        localStorage.setItem('echo_gacha_state', JSON.stringify(st));
+      } catch(e) {}
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
       if (micStream && micStream.active) return; // 已有活跃流
       navigator.mediaDevices.getUserMedia({ audio: true })
