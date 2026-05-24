@@ -5518,6 +5518,28 @@
       }
     }
     (function() {
+      function _cycleMode() {
+        try {
+          var ph = window.posthog;
+          if (!ph) return;
+          var isOptedOut = ph.has_opted_out_capturing();
+          var isDemo     = false;
+          try { isDemo = localStorage.getItem('sl_demo_mode') === '1'; } catch(e) {}
+          if (!isOptedOut && !isDemo) {
+            ph.opt_out_capturing();
+            _devToast('🚫 PostHog 已停止采集（开发者模式）');
+          } else if (isOptedOut && !isDemo) {
+            _enterDemoMode();
+            _devToast('🎬 演示模式（麦克风常驻 · 屏幕录制可录全部音频）');
+          } else {
+            _exitDemoMode();
+            ph.opt_in_capturing();
+            _devToast('📊 PostHog 已恢复采集（正常用户模式）');
+          }
+        } catch(e) {}
+      }
+
+      // ── 触发方式 1：电脑键盘连按 5 下反引号 ──
       var _devKeyCount = 0, _devKeyTimer = null;
       document.addEventListener('keydown', function(e) {
         if (e.key !== '`') { _devKeyCount = 0; return; }
@@ -5526,28 +5548,26 @@
         _devKeyTimer = setTimeout(function() { _devKeyCount = 0; }, 2000);
         if (_devKeyCount < 5) return;
         _devKeyCount = 0;
-        try {
-          var ph = window.posthog;
-          if (!ph) return;
-          var isOptedOut = ph.has_opted_out_capturing();
-          var isDemo     = false;
-          try { isDemo = localStorage.getItem('sl_demo_mode') === '1'; } catch(e) {}
-          if (!isOptedOut && !isDemo) {
-            // 正常 → 开发者
-            ph.opt_out_capturing();
-            _devToast('🚫 PostHog 已停止采集（开发者模式）');
-          } else if (isOptedOut && !isDemo) {
-            // 开发者 → 演示
-            _enterDemoMode();
-            _devToast('🎬 演示模式（麦克风常驻 · 屏幕录制可录全部音频）');
-          } else {
-            // 演示 → 正常
-            _exitDemoMode();
-            ph.opt_in_capturing();
-            _devToast('📊 PostHog 已恢复采集（正常用户模式）');
-          }
-        } catch(e) {}
+        _cycleMode();
       });
+
+      // ── 触发方式 2：屏幕左上角 60×60 区域内连续点击 7 下 ──
+      // 普通用户极不可能在这么小的区域内连续点 7 下，完全不影响正常体验
+      var _devTapCount = 0, _devTapTimer = null;
+      function _onCornerTap(e) {
+        var x, y;
+        if (e.touches && e.touches[0]) { x = e.touches[0].clientX; y = e.touches[0].clientY; }
+        else { x = e.clientX; y = e.clientY; }
+        if (x > 60 || y > 60) { _devTapCount = 0; return; }
+        _devTapCount++;
+        clearTimeout(_devTapTimer);
+        _devTapTimer = setTimeout(function() { _devTapCount = 0; }, 3000);
+        if (_devTapCount < 7) return;
+        _devTapCount = 0;
+        _cycleMode();
+      }
+      document.addEventListener('touchstart', _onCornerTap, true);
+      document.addEventListener('click',      _onCornerTap, true);
       function _devToast(msg) {
         var t = document.createElement('div');
         t.textContent = msg;
