@@ -5578,6 +5578,25 @@
         document.body.appendChild(t);
         setTimeout(function() { t.remove(); }, 3500);
       }
+      // ── 触发方式 3：URL 参数 ?mode=demo / ?mode=off / ?mode=normal ──
+      // 这是最可靠的方式：直接改 URL 就能切换，不依赖触屏/键盘事件
+      try {
+        var _q = (location.search || '').toLowerCase();
+        if (_q.indexOf('mode=demo') !== -1) {
+          try { localStorage.setItem('sl_demo_mode', '1'); } catch(e) {}
+          if (window.posthog && posthog.opt_out_capturing) posthog.opt_out_capturing();
+          setTimeout(function() { _devToast('🎬 演示模式已开启（点击屏幕任意位置激活麦克风）'); }, 500);
+        } else if (_q.indexOf('mode=off') !== -1) {
+          try { localStorage.setItem('sl_demo_mode', '0'); } catch(e) {}
+          if (window.posthog && posthog.opt_out_capturing) posthog.opt_out_capturing();
+          setTimeout(function() { _devToast('🚫 开发者模式（PostHog 关闭）'); }, 500);
+        } else if (_q.indexOf('mode=normal') !== -1) {
+          try { localStorage.setItem('sl_demo_mode', '0'); } catch(e) {}
+          if (window.posthog && posthog.opt_in_capturing) posthog.opt_in_capturing();
+          setTimeout(function() { _devToast('📊 已恢复正常用户模式'); }, 500);
+        }
+      } catch(e) {}
+
       // ── 演示模式持久化：页面加载时若处于演示模式，自动锁定麦克风 ──
       // 必须等到首次用户交互才能成功调用 getUserMedia（iOS Safari 限制）
       try {
