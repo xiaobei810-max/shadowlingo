@@ -5498,7 +5498,25 @@
       } catch(e) {}
     })();
 
-    // ── 开发者快捷键：连按 5 下反引号(`) 切换 PostHog 数据采集 ──
+    // ── 开发者快捷键：连按 5 下反引号(`) 循环切换三档模式 ──
+    //   正常 → 开发者（关 PostHog） → 演示（关 PostHog + 麦克风常驻）→ 正常
+    //   演示模式：占用一个静默麦克风流，让 iOS 整 session 停留在 PlayAndRecord
+    //   音频会话模式，所有音频（含 TTS、开场旁白）才能被屏幕录制捕获
+    function _enterDemoMode() {
+      try { localStorage.setItem('sl_demo_mode', '1'); } catch(e) {}
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+      if (micStream && micStream.active) return; // 已有活跃流
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(s) { micStream = s; console.log('[Demo] Mic stream locked for recording'); })
+        .catch(function(e) { console.warn('[Demo] mic acquire failed:', e && e.name); });
+    }
+    function _exitDemoMode() {
+      try { localStorage.setItem('sl_demo_mode', '0'); } catch(e) {}
+      if (micStream) {
+        micStream.getTracks().forEach(function(t) { t.stop(); });
+        micStream = null;
+      }
+    }
     (function() {
       var _devKeyCount = 0, _devKeyTimer = null;
       document.addEventListener('keydown', function(e) {
@@ -5512,12 +5530,21 @@
           var ph = window.posthog;
           if (!ph) return;
           var isOptedOut = ph.has_opted_out_capturing();
-          if (isOptedOut) {
-            ph.opt_in_capturing();
-            _devToast('📊 PostHog 已恢复采集（正常用户模式）');
-          } else {
+          var isDemo     = false;
+          try { isDemo = localStorage.getItem('sl_demo_mode') === '1'; } catch(e) {}
+          if (!isOptedOut && !isDemo) {
+            // 正常 → 开发者
             ph.opt_out_capturing();
             _devToast('🚫 PostHog 已停止采集（开发者模式）');
+          } else if (isOptedOut && !isDemo) {
+            // 开发者 → 演示
+            _enterDemoMode();
+            _devToast('🎬 演示模式（麦克风常驻 · 屏幕录制可录全部音频）');
+          } else {
+            // 演示 → 正常
+            _exitDemoMode();
+            ph.opt_in_capturing();
+            _devToast('📊 PostHog 已恢复采集（正常用户模式）');
           }
         } catch(e) {}
       });
@@ -5527,10 +5554,23 @@
         t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
           'background:#1e293b;color:#e2e8f0;font-size:13px;padding:10px 18px;' +
           'border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.4);' +
-          'pointer-events:none;white-space:nowrap;';
+          'pointer-events:none;white-space:nowrap;max-width:90vw;';
         document.body.appendChild(t);
-        setTimeout(function() { t.remove(); }, 3000);
+        setTimeout(function() { t.remove(); }, 3500);
       }
+      // ── 演示模式持久化：页面加载时若处于演示模式，自动锁定麦克风 ──
+      // 必须等到首次用户交互才能成功调用 getUserMedia（iOS Safari 限制）
+      try {
+        if (localStorage.getItem('sl_demo_mode') === '1') {
+          function _autoLock() {
+            _enterDemoMode();
+            document.removeEventListener('touchstart', _autoLock, true);
+            document.removeEventListener('click',      _autoLock, true);
+          }
+          document.addEventListener('touchstart', _autoLock, true);
+          document.addEventListener('click',      _autoLock, true);
+        }
+      } catch(e) {}
     })();
 
     // ── 埋点辅助函数 track() — 静默失败，不影响主业务 ───────────
@@ -11967,6 +12007,11 @@
     function teardownMic() {
       _cancelCountdown();
       _stopCurrentRecorder();
+      // ── 演示模式：保持 mic stream 常驻，让 iOS 音频会话停留在
+      // PlayAndRecord 模式，所有音频（含 TTS）才能被屏幕录制捕获
+      try {
+        if (localStorage.getItem('sl_demo_mode') === '1') return;
+      } catch(e) {}
       if (micStream) {
         micStream.getTracks().forEach(function (t) { t.stop(); });
         micStream = null;
