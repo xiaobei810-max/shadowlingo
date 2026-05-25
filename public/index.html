@@ -12834,6 +12834,8 @@
       document.getElementById("speed-label").textContent = fmtSpeed(slowSpeed);
       _updateSpeedSliderFill();
       _syncPreviewSpeedSlider();
+      // 即时变速：如果当前有音频正在播放，立即按新比例调整 playbackRate
+      _applyPlaybackScale(_currentAudio);
       saveState();
     }
 
@@ -15379,6 +15381,27 @@
     var _guideUserAudio = null;         // Audio object for guide user-recording playback
     var _guideNativeAudio = null;       // Audio object for guide native TTS playback
     var _currentAudio = null; // currently playing <audio> element
+
+    // ── 即时变速：把音频元素的 playbackRate 按比例缩放到当前 slowSpeed ──
+    // 服务端返回的 MP3 已经把 rate 烘焙进去（如 0.7×）。当用户中途拖动速度条，
+    // 我们用 audio.playbackRate = newRate / synthRate 在客户端再做比例调整，
+    // 实现"同一句话立刻变速"，无需重新合成。preservesPitch=true 让浏览器
+    // 在变速时保留人声音高，避免明显的"机械感"。
+    function _applyPlaybackScale(audioEl) {
+      if (!audioEl) return;
+      try {
+        audioEl.preservesPitch = true;
+        audioEl.mozPreservesPitch = true;
+        audioEl.webkitPreservesPitch = true;
+      } catch(e) {}
+      var synth = (typeof audioEl._synthRate === 'number' && audioEl._synthRate > 0)
+                  ? audioEl._synthRate : 1.0;
+      var ratio = slowSpeed / synth;
+      // 浏览器对 playbackRate 通常支持 [0.0625, 16]，这里限制在 [0.25, 4] 范围保证音质
+      if (!isFinite(ratio)) ratio = 1.0;
+      ratio = Math.max(0.25, Math.min(4.0, ratio));
+      try { audioEl.playbackRate = ratio; } catch(e) {}
+    }
     var _needsGesture = false; // autoplay blocked — waiting for user tap
     var _gestureCallback = null;
 
@@ -15423,6 +15446,9 @@
             sAu = new Audio(staticUrl);
           }
           _currentAudio = sAu;
+          // 静态音频文件是按 1.0× 录制的，记录合成 rate=1.0 用于后续 playbackRate 比例计算
+          sAu._synthRate = 1.0;
+          _applyPlaybackScale(sAu);
           var _sMeta = false;
           var _onplayCalled = false;  // one-shot guard: fire onplay(duration) exactly once
           function _fireOnplay() {
@@ -15475,6 +15501,9 @@
         var _playFired = false;
         var _knownDuration = null;
         _currentAudio = audio;
+        // Azure 服务端按 rate 合成的 MP3，记录合成速率用于后续 playbackRate 比例缩放
+        audio._synthRate = (typeof rate === 'number' && rate > 0) ? rate : 1.0;
+        _applyPlaybackScale(audio);
         audio.onloadedmetadata = function () {
           _knownDuration = isFinite(audio.duration) ? audio.duration : null;
           if (_playFired && onplay) { onplay(_knownDuration); _playFired = false; }
