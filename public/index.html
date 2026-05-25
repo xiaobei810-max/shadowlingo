@@ -15257,7 +15257,7 @@
           .catch(function () {});
         }
       }
-      speakAzure(d.zh, role, 1.0,
+      speakAzure(d.zh, role, slowSpeed,
         function () { if (!dlpPaused) dlpPlayOne(idx + 1); },
         function (actualDur) {
           var dur = actualDur || Math.max(1.5, d.zh.replace(/[，。！？,.!?]/g, '').length * 0.3);
@@ -16252,7 +16252,7 @@
         }
       }
       var _dZh = d.text || d.zh || '';
-      speakAzure(_dZh, plpRole, 1.0,
+      speakAzure(_dZh, plpRole, slowSpeed,
         function () { if (plpPlaying && !plpPaused) plpPlayOne(idx + 1); },
         function (actualDur) {
           var dur = actualDur || Math.max(1.5, _dZh.replace(/[，。！？,.!?]/g, '').length * 0.3);
@@ -18052,6 +18052,14 @@
       </div>
     </div>
     <div class="dlp-footer">
+      <!-- 速度条：与练习页共享 slowSpeed，调一次两页同步 -->
+      <div class="speed-control" style="margin:0 0 6px;">
+        <span>慢 Slow</span>
+        <input type="range" id="speed-slider-preview" min="0.3" max="1.5" step="0.05" value="0.7"
+          oninput="onSpeedChange(this.value)" />
+        <span>快 Fast</span>
+        <span class="speed-label" id="speed-label-preview">0.7×</span>
+      </div>
       <button class="dlp-play-btn" id="dlp-play-btn" onclick="dlpPlayPauseClick()">▶ 听完整对话 Listen</button>
       <button class="dlp-next-btn" id="dlp-next-btn" onclick="dlpSkip()">去练习 Practice ▶</button>
     </div>
