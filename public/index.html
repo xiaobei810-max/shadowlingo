@@ -1105,33 +1105,101 @@
 
     /* .en style is now unified with .ctx-en above */
 
-    /* Speed control */
+    /* Speed control — visually upgraded for discoverability */
     .speed-control {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px 20px 0;
+      gap: 12px;
+      padding: 14px 20px 6px;
     }
 
     .speed-control span {
-      font-size: 12px;
-      color: var(--muted);
+      font-size: 14px;
+      color: rgba(226, 232, 240, 0.85);
       white-space: nowrap;
+      font-weight: 500;
     }
 
+    /* 自定义滑轨样式（WebKit + Firefox） */
     .speed-control input[type=range] {
       flex: 1;
-      accent-color: var(--green);
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      background: linear-gradient(to right,
+        var(--green) 0%, var(--green) var(--speed-fill, 33%),
+        rgba(255,255,255,0.14) var(--speed-fill, 33%), rgba(255,255,255,0.14) 100%);
+      border-radius: 6px;
+      outline: none;
+    }
+    .speed-control input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 3px solid #0b1322;
+      box-shadow: 0 2px 8px rgba(74, 222, 128, 0.45);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .speed-control input[type=range]::-webkit-slider-thumb:active { transform: scale(1.15); }
+    .speed-control input[type=range]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 3px solid #0b1322;
+      box-shadow: 0 2px 8px rgba(74, 222, 128, 0.45);
       cursor: pointer;
     }
 
     .speed-label {
-      font-size: 12px;
+      font-size: 16px;
       color: var(--green);
-      font-weight: 600;
-      min-width: 36px;
+      font-weight: 700;
+      min-width: 46px;
       text-align: right;
+      letter-spacing: 0.02em;
     }
+
+    /* 一次性引导气泡：第一次进跟读页时指向速度条 */
+    .speed-hint-bubble {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: calc(100% + 4px);
+      background: rgba(15, 23, 42, 0.96);
+      color: #e2e8f0;
+      font-size: 12.5px;
+      line-height: 1.5;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(96, 165, 250, 0.4);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+      white-space: nowrap;
+      z-index: 50;
+      pointer-events: auto;
+      cursor: pointer;
+      animation: speedHintBreathe 2.4s ease-in-out infinite;
+    }
+    .speed-hint-bubble::before {
+      content: '';
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 7px solid rgba(15, 23, 42, 0.96);
+    }
+    @keyframes speedHintBreathe {
+      0%, 100% { opacity: 0.78; }
+      50%      { opacity: 1; }
+    }
+    .speed-control { position: relative; }
 
     /* Status + speech indicator */
     .status-row {
@@ -8178,6 +8246,8 @@
           const lbl = document.getElementById("speed-label");
           if (lbl) lbl.textContent = fmtSpeed(slowSpeed);
         }
+        // 恢复或初始化滑轨填充比例（覆盖默认 0.7 与已保存值两种情况）
+        try { _updateSpeedSliderFill(); } catch(e) {}
       } catch (e) { }
     }
 
@@ -12750,7 +12820,60 @@
     function onSpeedChange(val) {
       slowSpeed = parseFloat(val);
       document.getElementById("speed-label").textContent = fmtSpeed(slowSpeed);
+      _updateSpeedSliderFill();
+      _syncPreviewSpeedSlider();
       saveState();
+    }
+
+    // 把当前 slowSpeed 投影成 0~100% 填充比例，更新自定义滑轨颜色
+    function _updateSpeedSliderFill() {
+      var pct = ((slowSpeed - 0.3) / 1.2) * 100;
+      pct = Math.max(0, Math.min(100, pct));
+      ['speed-slider', 'speed-slider-preview'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+          el.style.setProperty('--speed-fill', pct + '%');
+          if (parseFloat(el.value) !== slowSpeed) el.value = slowSpeed;
+        }
+      });
+    }
+    // 预览页滑块同步显示数值（避免两页不一致）
+    function _syncPreviewSpeedSlider() {
+      var lbl = document.getElementById('speed-label-preview');
+      if (lbl) lbl.textContent = fmtSpeed(slowSpeed);
+    }
+
+    // ── 速度条一次性引导气泡：首次进跟读页时出现，点击关闭，永不再弹 ──
+    function maybeShowSpeedHint() {
+      try {
+        if (localStorage.getItem('sl_speed_hint_seen') === '1') return;
+      } catch(e) { return; }
+      var ctrl = document.querySelector('#practice .speed-control')
+              || document.querySelector('.speed-control');
+      if (!ctrl) return;
+      if (ctrl.querySelector('.speed-hint-bubble')) return; // 已经在显示
+      var bubble = document.createElement('div');
+      bubble.className = 'speed-hint-bubble';
+      bubble.innerHTML = '慢一点? 拖这里调整语速 · Too fast? Drag to adjust speed';
+      function _dismiss() {
+        try { localStorage.setItem('sl_speed_hint_seen', '1'); } catch(e) {}
+        bubble.style.transition = 'opacity 0.4s ease';
+        bubble.style.opacity = '0';
+        setTimeout(function() { if (bubble.parentNode) bubble.parentNode.removeChild(bubble); }, 420);
+      }
+      bubble.addEventListener('click', _dismiss);
+      // 用户调一次速度也算"看见过"，自动关闭
+      var slider = document.getElementById('speed-slider');
+      if (slider) slider.addEventListener('input', _dismiss, { once: true });
+      ctrl.appendChild(bubble);
+      // 8 秒后自动收回（防止挡视线太久），但不写 localStorage —— 给真正没注意到的用户再看一次的机会
+      setTimeout(function() {
+        if (bubble.parentNode && bubble.style.opacity !== '0') {
+          bubble.style.transition = 'opacity 0.6s ease';
+          bubble.style.opacity = '0';
+          setTimeout(function() { if (bubble.parentNode) bubble.parentNode.removeChild(bubble); }, 620);
+        }
+      }, 8000);
     }
 
     function changeLesson(dir) {
@@ -15520,6 +15643,8 @@
       setStepTitle("第2步：轮到你说 🎯", "按对话顺序：先听上方，再说/听下方");
       dialogRoundIdx = 0;
       renderDialogYourTurn();
+      // 进入跟读页时显示一次性语速引导（已看过则跳过）
+      setTimeout(function() { try { maybeShowSpeedHint(); } catch(e) {} }, 600);
     }
 
     // ── 工具：把一行台词渲染到指定的 context 容器（上方 / 下方） ──
