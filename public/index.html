@@ -4459,7 +4459,7 @@
       z-index: 500;
       background: var(--bg);
       flex-direction: column;
-      overflow: hidden;
+      overflow-y: auto;
     }
     #dialog-listen-page.show { display: flex; }
     .dlp-header {
@@ -4477,7 +4477,9 @@
       font-size: 13px; padding: 6px 14px; border-radius: 99px; cursor: pointer; transition: all 0.2s;
     }
     .dlp-skip:hover { border-color: var(--green); color: var(--green); }
-    .dlp-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .dlp-body { flex: 0 0 auto; display: flex; flex-direction: column; }
+    /* 让 footer 永远贴底，多余空白集中在 dlp-body 与 footer 之间 */
+    #dialog-listen-page .dlp-footer { margin-top: auto; }
     .dlp-block {
       flex: 1; display: flex; flex-direction: column; padding: 16px 18px;
       transition: opacity 0.3s, background 0.3s; min-height: 0;
@@ -4555,9 +4557,11 @@
     .plp-title-en { font-size: 14px; color: #94a3b8; font-weight: 400; }
     .plp-header-sub { display: none; }
     .plp-cards-wrap {
-      flex: 1; display: flex; flex-direction: column;
-      justify-content: flex-start; gap: 16px; padding: 24px 20px 0;
+      flex: 0 0 auto; display: flex; flex-direction: column;
+      gap: 16px; padding: 24px 20px 0;
     }
+    /* 让 footer 永远贴底，多余空白集中在 cards-wrap 与 footer 之间 */
+    #pre-listen-page .plp-footer { margin-top: auto; }
     .plp-panel {
       flex: none; display: flex; flex-direction: column;
       padding: 16px 14px; transition: opacity 0.3s, border-color 0.25s, box-shadow 0.25s;
