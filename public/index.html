@@ -13852,7 +13852,7 @@
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       setPanelFocus('above');
       var ctxZhEl = document.getElementById('ctx-zh');
-      speakAzure(zh, role, 1.0,
+      speakAzure(zh, role, slowSpeed,
         function () {
           if (ctxPlayingId === 'above') { ctxPlayingId = null; ctxPausedId = null; }
           if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
@@ -13911,7 +13911,7 @@
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
       setPanelFocus('below');
       var ctxBelowZhEl = document.getElementById('ctx-zh-below');
-      speakAzure(zh, role, 1.0,
+      speakAzure(zh, role, slowSpeed,
         function () {
           if (ctxPlayingId === 'below') { ctxPlayingId = null; ctxPausedId = null; }
           if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
@@ -13957,7 +13957,7 @@
       ctxPlayingId = 'top';
       resetKara();
       if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
-      speakAzure(s.zh, role, 1.0,
+      speakAzure(s.zh, role, slowSpeed,
         function () {
           if (ctxPlayingId === 'top') { ctxPlayingId = null; ctxPausedId = null; }
           if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
