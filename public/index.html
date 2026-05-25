@@ -12825,11 +12825,11 @@
       saveState();
     }
 
-    // 把当前 slowSpeed 投影成 0~100% 填充比例，更新自定义滑轨颜色
+    // 把当前 slowSpeed 投影成 0~100% 填充比例，更新所有滑轨颜色
     function _updateSpeedSliderFill() {
       var pct = ((slowSpeed - 0.3) / 1.2) * 100;
       pct = Math.max(0, Math.min(100, pct));
-      ['speed-slider', 'speed-slider-preview'].forEach(function(id) {
+      ['speed-slider', 'speed-slider-preview', 'speed-slider-plp'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
           el.style.setProperty('--speed-fill', pct + '%');
@@ -12837,10 +12837,13 @@
         }
       });
     }
-    // 预览页滑块同步显示数值（避免两页不一致）
+    // 预览页滑块同步显示数值（练习页 / dlp / plp 三处保持一致）
     function _syncPreviewSpeedSlider() {
-      var lbl = document.getElementById('speed-label-preview');
-      if (lbl) lbl.textContent = fmtSpeed(slowSpeed);
+      var txt = fmtSpeed(slowSpeed);
+      ['speed-label-preview', 'speed-label-plp'].forEach(function(id) {
+        var lbl = document.getElementById(id);
+        if (lbl) lbl.textContent = txt;
+      });
     }
 
     // ── 速度条一次性引导气泡：首次进跟读页时出现，点击关闭，永不再弹 ──
@@ -17972,6 +17975,14 @@
       </div>
     </div>
     </div><!-- /.plp-cards-wrap -->
+    <!-- 速度条：与练习页共享 slowSpeed，调一次两页同步 -->
+    <div class="speed-control" style="margin:0 0 6px;">
+      <span>慢 Slow</span>
+      <input type="range" id="speed-slider-plp" min="0.3" max="1.5" step="0.05" value="0.7"
+        oninput="onSpeedChange(this.value)" />
+      <span>快 Fast</span>
+      <span class="speed-label" id="speed-label-plp">0.7×</span>
+    </div>
     <!-- 按钮：上一页 · 播放 · 下一页 -->
     <div class="plp-footer">
       <button class="plp-replay-btn" onclick="plpGoBack()">◀ 上一页<br>Prev</button>
