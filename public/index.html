@@ -8243,6 +8243,10 @@
     // 当前这一次评测要用的句子（默认回退到 LESSONS[lessonIdx].sentences[idx]）
     let currentSentenceForEval = null;
 
+    // ── 实验开关：true = 生词页直接跳到跟读页（移除全文预览页 pre-listen-page）──
+    // 一键回滚：改成 false 即可恢复原流程。完整代码保留，未删除任何函数 / DOM / CSS。
+    var SKIP_PREVIEW_PAGE = true;
+
     // ── Storage ───────────────────────────────────────────────
     function loadState() {
       try {
@@ -14121,10 +14125,17 @@
       currentSentenceForEval = null;
       if (dialogMode && dialogStep === 2) {
         if (dialogRoundIdx > 0) { dialogRoundIdx--; renderDialogYourTurn(); }
-        else { showPreListenPage(); }
+        else {
+          // [实验] 跟读第一句的「上一页」：原本回到全文预览页；移除预览页后改回生词页
+          if (SKIP_PREVIEW_PAGE) { showFlashcardPage(); } else { showPreListenPage(); }
+        }
         return;
       }
-      if (idx > 0) { idx--; updateUI(); } else { showPreListenPage(); }
+      if (idx > 0) { idx--; updateUI(); }
+      else {
+        // [实验] 同上：非对话模式下，第一句的「上一页」也改回生词页
+        if (SKIP_PREVIEW_PAGE) { showFlashcardPage(); } else { showPreListenPage(); }
+      }
     }
 
     function doNext() {
@@ -17066,7 +17077,11 @@
 
     function showFlashcardPage() {
       var lesson = LESSONS[lessonIdx];
-      if (!lesson.vocab || !lesson.vocab.length) { showPreListenPage(); return; }
+      if (!lesson.vocab || !lesson.vocab.length) {
+        // [实验] 无生词直接进入跟读流程；SKIP_PREVIEW_PAGE=false 时恢复原行为（先看全文预览）
+        if (SKIP_PREVIEW_PAGE) { plpNext(); } else { showPreListenPage(); }
+        return;
+      }
       fcIdx = 0;
       // 只保留目标页，防止 CG/预听等旧层短暂露出
       _hideFullscreenLayersForRoute();
@@ -17162,7 +17177,13 @@
     }
 
     function fcDone() {
-      showPreListenPage(); // 先显示目标页，再隐藏当前页，避免底层跟读页闪现
+      if (SKIP_PREVIEW_PAGE) {
+        // [实验] 跳过全文预览页，直接进跟读页。plpNext() 已包含所有必要的转场清理
+        // （stopAudio / prewarmMic / 隐藏 tip-page 等），不依赖 plp 当前是否可见。
+        plpNext();
+      } else {
+        showPreListenPage(); // 先显示目标页，再隐藏当前页，避免底层跟读页闪现
+      }
       document.getElementById('flashcard-page').classList.remove('show');
     }
 
