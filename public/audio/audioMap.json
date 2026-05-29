@@ -1,4 +1,24 @@
 {
+  "lesson01": {
+    "1": "/audio/lesson01/L01_01_Mingxuan.mp3",
+    "2": "/audio/lesson01/L01_02_Nora.mp3",
+    "3": "/audio/lesson01/L01_03_Mingxuan.mp3",
+    "4": "/audio/lesson01/L01_04_Nora.mp3",
+    "5": "/audio/lesson01/L01_05_Mingxuan.mp3",
+    "6": "/audio/lesson01/L01_06_Nora.mp3",
+    "7": "/audio/lesson01/L01_07_Mingxuan.mp3",
+    "8": "/audio/lesson01/L01_08_Nora.mp3"
+  },
+  "lesson03": {
+    "1": "/audio/lesson03/L03_01_Mingxuan.mp3",
+    "2": "/audio/lesson03/L03_02_Nora.mp3",
+    "3": "/audio/lesson03/L03_03_Mingxuan.mp3",
+    "4": "/audio/lesson03/L03_04_Nora.mp3",
+    "5": "/audio/lesson03/L03_05_Linyue.mp3",
+    "6": "/audio/lesson03/L03_06_Nora.mp3",
+    "7": "/audio/lesson03/L03_07_Linyue.mp3",
+    "8": "/audio/lesson03/L03_08_Mingxuan.mp3"
+  },
   "lesson13": {
     "1": "/audio/lesson13/L13_01_Linwan.mp3",
     "7": "/audio/lesson13/L13_07_Linwan.mp3"
