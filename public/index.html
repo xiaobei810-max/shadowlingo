@@ -4741,7 +4741,7 @@
     #chapter-select-page {
       display: none; position: fixed; inset: 0; z-index: 800;
       background: #07090f;          /* dark fallback behind chs-bg */
-      flex-direction: column; align-items: center;
+      flex-direction: column; align-items: center; justify-content: center;
       overflow: hidden;
     }
 
@@ -4762,7 +4762,7 @@
 
     /* Header */
     .chs-header {
-      flex-shrink: 0; padding: 48px 24px 10px;
+      flex-shrink: 0; padding: 0 24px 20px;
       text-align: center; width: 100%;
       position: relative; z-index: 1;
     }
@@ -4770,7 +4770,8 @@
       font-size: 11px; font-weight: 500;
       color: rgba(255,255,255,0.48);        /* 更清晰 */
       letter-spacing: 0.30em; text-transform: uppercase; /* 更透气 */
-      margin-bottom: 8px;
+      line-height: 1.5;
+      margin-bottom: 14px;
     }
     .chs-header-title {
       font-family: "Noto Serif SC","SimSun",serif;
@@ -4780,7 +4781,7 @@
 
     /* Track / Carousel */
     .chs-track-wrap {
-      flex: 1; display: flex; align-items: center;
+      flex: 0 1 auto; display: flex; align-items: center;
       width: 100%; overflow: hidden; min-height: 0;
       position: relative; z-index: 1;
       cursor: grab;
@@ -4845,9 +4846,9 @@
       text-shadow: 0 2px 8px rgba(0,0,0,0.9);
     }
     .chs-chapter-en {
-      font-size: 0.7rem; color: rgba(226,232,240,0.58);
-      margin-top: 3px; letter-spacing: 0.04em;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      font-size: 1rem; font-weight: 600; color: #fff;
+      margin-top: 3px; letter-spacing: 0.02em; line-height: 1.3;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
     }
     /* 锁定卡片文字：可读但克制（用户需要知道接下来学什么） */
     .chs-card.chs-locked .chs-chapter-zh,
@@ -4858,7 +4859,7 @@
        ── 单元封面：纯排版（无 CG，主题色 + 渐变光晕）────────── */
     .chs-card.chs-card-typo {
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto 1fr;
       padding: 28px 22px;
       /* background 由 JS 按单元主题注入 */
       box-shadow: 0 4px 24px rgba(0,0,0,0.35),
@@ -4909,12 +4910,14 @@
       text-shadow: 0 2px 12px rgba(0,0,0,0.55);
     }
     .chs-typo-title-en {
-      font-size: 0.74rem;
-      color: rgba(226,232,240,0.52);
-      letter-spacing: 0.12em;
-      font-style: italic;
-      margin-top: 10px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.96);
+      letter-spacing: 0.04em;
+      margin-top: 14px;
       text-align: center;
+      line-height: 1.25;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.55);
     }
     .chs-typo-motif {
       font-size: 10px;
@@ -5081,14 +5084,24 @@
     .chs-back-btn:active { transform: scale(0.96); }
     #chapter-select-page.lessons-view .chs-back-btn { display: inline-block; }
 
-    /* Cover page back button */
+    /* Cover page back button — pinned top-left, matches chapter page ← Back */
     .cover-back-btn {
-      align-self: flex-start; background: none; border: none;
-      color: rgba(255,255,255,0.38); font-size: 12px;
-      cursor: pointer; padding: 0; letter-spacing: 0.06em;
-      transition: color 0.2s; margin-top: -8px;
+      position: absolute; top: 75px; left: 22px; z-index: 4;
+      background: rgba(8, 12, 22, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.88);
+      padding: 8px 14px 8px 12px; border-radius: 999px;
+      font-size: 12px; letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
     }
-    .cover-back-btn:hover { color: rgba(255,255,255,0.78); }
+    .cover-back-btn:hover {
+      background: rgba(8, 12, 22, 0.78);
+      border-color: rgba(255,255,255,0.32);
+    }
+    .cover-back-btn:active { transform: scale(0.96); }
 
     /* ── 课程封面 Lesson Cover ───────────────────────────────── */
     #cover-page {
@@ -5100,19 +5113,20 @@
     /* 封面角色立绘已下线（M7 换装在收集册中独立展示，封面保持纯净） */
     .cover-character-img { display: none !important; }
     .cover-inner {
-      flex: 1; width: 100%; max-width: 480px; padding: 48px 32px 56px;
+      flex: 1; width: 100%; max-width: 480px; padding: 32px 32px 104px;
       display: flex; flex-direction: column; align-items: center;
-      justify-content: flex-start; text-align: center; gap: 16px;
+      justify-content: center; text-align: center; gap: 14px;
     }
     .cover-lesson-num {
-      font-size: 24px; font-weight: 700; color: var(--green);
+      font-size: 22px; font-weight: 700; color: var(--green);
       letter-spacing: 1px; margin-bottom: 2px;
     }
     .cover-title-zh {
       font-size: 52px; font-weight: 800; color: var(--text); line-height: 1.15;
     }
     .cover-title-en {
-      font-size: 18px; color: #94a3b8; margin-bottom: 4px;
+      font-size: 32px; font-weight: 800; color: var(--text);
+      line-height: 1.2; margin-bottom: 4px;
     }
     .cover-divider {
       width: 48px; height: 3px; background: var(--green); border-radius: 99px; margin: 6px 0;
@@ -5246,6 +5260,8 @@
       .plp-pause-btn, .plp-replay-btn, .plp-go-btn { padding: 13px 6px; font-size: 12px; }
       .fc-zh { font-size: 40px; }
       .cover-title-zh { font-size: 30px; }
+      .cover-title-en { font-size: 27px; }
+      .chs-typo-title-en { font-size: 1.35rem; }
       .cover-start-btn { font-size: 15px; padding: 16px; }
       .header-toggles { gap: 4px; }
       .tgl-btn { padding: 4px 8px; font-size: 10px; }
@@ -5731,7 +5747,7 @@
         <div class="logo-icon">影</div>
         <div>
           <div class="logo-text">EchoChinese</div>
-          <div class="logo-sub">轻松学中文</div>
+          <div class="logo-sub">Speak real Chinese through story</div>
         </div>
       </div>
       <div class="header-right">
@@ -5766,10 +5782,10 @@
     <!-- 拼音/英文开关 -->
     <div class="toggle-row">
       <button class="tgl-btn" id="tgl-py" onclick="togglePy()">
-        <span class="tgl-zh">拼音</span><span class="tgl-en-label">Pinyin</span>
+        <span class="tgl-zh">Pinyin</span>
       </button>
       <button class="tgl-btn" id="tgl-en" onclick="toggleEn()">
-        <span class="tgl-zh">英文</span><span class="tgl-en-label">English</span>
+        <span class="tgl-zh">English</span>
       </button>
     </div>
 
@@ -5793,7 +5809,7 @@
           <div class="card-content-col">
             <div class="ctx-header">
               <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
-              <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ 播放 Play</button>
+              <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ Play</button>
             </div>
             <div class="ctx-zh" id="ctx-zh"></div>
             <div class="ctx-en" id="ctx-en"></div>
@@ -5813,7 +5829,7 @@
           <div class="card-content-col">
             <div class="learner-panel-hdr">
               <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">诺拉 · Nora</span>
-              <button class="ctx-play-btn" id="sentence-play-btn" onclick="playSentenceTop()" style="display:none">▶ 播放 Play</button>
+              <button class="ctx-play-btn" id="sentence-play-btn" onclick="playSentenceTop()" style="display:none">▶ Play</button>
               <div class="mascot-ring" id="ring"></div>
             </div>
             <div class="kara-wrap" id="kara"></div>
@@ -5845,7 +5861,7 @@
           <div class="card-content-col">
             <div class="ctx-header">
               <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
-              <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ 播放 Play</button>
+              <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ Play</button>
             </div>
             <div class="ctx-zh" id="ctx-zh-below"></div>
             <div class="ctx-en" id="ctx-en-below"></div>
@@ -5869,17 +5885,17 @@
         <span class="speed-label" id="speed-label">0.7×</span>
       </div>
       <!-- 竖排 2 个功能按钮 -->
-      <button class="btn" id="bs" onclick="doSlow()">▶ 跟读 Listen</button>
-      <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 录音 Record</button>
+      <button class="btn" id="bs" onclick="doSlow()">▶ Listen</button>
+      <button class="btn" id="bn" onclick="dialogRecordToggle()">🎤 Record</button>
 
       <!-- 隐藏的旧按钮（JS 兼容用） -->
       <button class="btn" id="bm" style="display:none">Shadow</button>
-      <button class="btn btn-retry" id="bretry" onclick="doRetry()" style="display:none">↩ 再练一次 Retry</button>
+      <button class="btn btn-retry" id="bretry" onclick="doRetry()" style="display:none">↩ Retry</button>
 
       <!-- 横排 2 个导航按钮 -->
       <div class="btn-nav">
-        <button class="btn" id="bprev" onclick="doPrev()">◀ 上一页 Prev</button>
-        <button class="btn btn-done show" id="bdone" onclick="doNext()">下一页 Next ▶</button>
+        <button class="btn" id="bprev" onclick="doPrev()">◀ Prev</button>
+        <button class="btn btn-done show" id="bdone" onclick="doNext()">Next ▶</button>
       </div>
     </div>
   </div>
@@ -5892,7 +5908,7 @@
       <div id="prologue-text-en"></div>
     </div>
     <div id="prologue-start-hint">🖱️ 点击屏幕开始 · Click to start</div>
-    <div id="prologue-tap-hint">✦ 点击屏幕继续 · Tap to continue ✦</div>
+    <div id="prologue-tap-hint">✦ Tap to continue ✦</div>
   </div>
 
   <div class="overlay" id="overlay">
@@ -5905,7 +5921,7 @@
       <div class="pth-inner">
         <div class="logo">
           <div class="logo-icon">影</div>
-          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right" style="position:relative">
           <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-overlay" style="display:none">
@@ -5944,8 +5960,8 @@
       </div><!-- /.score-summary-card -->
       <!-- 主操作按钮区（纵向堆叠） -->
       <div class="completion-primary-btns">
-        <button class="btn-restart" onclick="dismissOverlay()">查看地道指南 · Native Insider Tip →</button>
-        <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ 欣赏高清原图 · View HD CG</button>
+        <button class="btn-restart" onclick="dismissOverlay()">Native Insider Tip →</button>
+        <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ View HD CG</button>
         <div id="ending-locked-hint">🔒 达到 80 分解锁原图 · Score 80 to Unlock CG</div>
       </div>
       <a class="btn-review-link" onclick="reviewLesson()">↺ 重新复习 · Review</a>
@@ -7824,8 +7840,8 @@
           { zh: '面试',   py: 'miàn shì',    en: 'Interview' }
         ],
         insiderTip: {
-          textbookLabel: '📖 书面语 · Textbook',
-          streetLabel:   '🗣️ 口语 · Real Street',
+          textbookLabel: '📖 Textbook',
+          streetLabel:   '🗣️ Real Street',
           textbook: { zh: '我以后会通知你。', en: 'I will notify you later.' },
           street:   { zh: '我再给你发微信。', pinyin: 'Wǒ zài gěi nǐ fā Wēi xìn.' },
           langTip: {
@@ -7890,8 +7906,8 @@
           { zh: '构图',   py: 'gòu tú',           en: 'Composition' }
         ],
         insiderTip: {
-          textbookLabel: '📖 书面语 · Textbook',
-          streetLabel:   '🗣️ 口语 · Real Street',
+          textbookLabel: '📖 Textbook',
+          streetLabel:   '🗣️ Real Street',
           textbook: { zh: '我被录取了吗？', en: 'Have I been admitted?' },
           street:   { zh: '我通过啦？', pinyin: 'Wǒ tōng guò la?' },
           langTip: {
@@ -7956,8 +7972,8 @@
           { zh: '灵感',   py: 'líng gǎn',   en: 'Inspiration' }
         ],
         insiderTip: {
-          textbookLabel: '📖 书面语 · Textbook',
-          streetLabel:   '🗣️ 口语 · Real Street',
+          textbookLabel: '📖 Textbook',
+          streetLabel:   '🗣️ Real Street',
           textbook: { zh: '我必须带相机去走一走。', en: 'I must take my camera and walk around.' },
           street:   { zh: '看来得带着相机去逛逛了。', pinyin: 'Kàn lái děi dài zhe xiāng jī qù guàng guang le.' },
           langTip: {
@@ -8023,8 +8039,8 @@
           { zh: '难怪', py: 'nán guài',   en: 'No wonder' }
         ],
         insiderTip: {
-          textbookLabel: '📖 书面语 · Textbook',
-          streetLabel:   '🗣️ 口语 · Real Street',
+          textbookLabel: '📖 Textbook',
+          streetLabel:   '🗣️ Real Street',
           textbook: { zh: '我有件事想请你帮忙。', en: 'I have something I want to ask your help with.' },
           street:   { zh: '这个嘛……我正想跟你商量。', pinyin: 'Zhè gè ma... wǒ zhèng xiǎng gēn nǐ shāng liang.' },
           langTip: {
@@ -8089,8 +8105,8 @@
           { zh: '模特', py: 'mó tè',    en: 'Model' }
         ],
         insiderTip: {
-          textbookLabel: '📖 书面语 · Textbook',
-          streetLabel:   '🗣️ 口语 · Real Street',
+          textbookLabel: '📖 Textbook',
+          streetLabel:   '🗣️ Real Street',
           textbook: { zh: '照片里的你很好看。', en: 'You look good in the photo.' },
           street:   { zh: '是你本来就很上镜！', pinyin: 'Shì nǐ běn lái jiù hěn shàng jìng!' },
           langTip: {
@@ -8113,7 +8129,7 @@
         id: 1, numLabel: '01',
         titleZh: '初来乍到',  titleEn: 'New Arrival',
         eyebrowZh: '第一单元', eyebrowEn: 'Unit 1',
-        motif: '机场 · 大巴 · 报到 · 宿舍',
+        motif: 'Airport · Bus · Check-in · Dorm',
         // 冷蓝灰 —— 机场清晨、玻璃幕墙、淡光
         themeColor: '#bfd4ea',
         cardBg:
@@ -8128,7 +8144,7 @@
         id: 2, numLabel: '02',
         titleZh: '校园探索',  titleEn: 'Campus Life',
         eyebrowZh: '第二单元', eyebrowEn: 'Unit 2',
-        motif: '宿舍 · 食堂 · 超市 · 大堂',
+        motif: 'Dorm · Canteen · Supermarket · Lobby',
         // 暖琥珀 —— 宿舍灯光、木地板、午后阳光
         themeColor: '#e8b890',
         cardBg:
@@ -8143,7 +8159,7 @@
         id: 3, numLabel: '03',
         titleZh: '咖啡点单',  titleEn: 'Coffee Order',
         eyebrowZh: '第三单元', eyebrowEn: 'Unit 3',
-        motif: '咖啡 · 林晚 · 摄影社',
+        motif: 'Coffee · Linwan · Photography Club',
         // 咖啡奶油 —— 深焙、铜灯、雨后窗
         themeColor: '#d4ad88',
         cardBg:
@@ -8158,7 +8174,7 @@
         id: 4, numLabel: '04',
         titleZh: '社团生活',  titleEn: 'Club Life',
         eyebrowZh: '第四单元', eyebrowEn: 'Unit 4',
-        motif: '百团 · 摄影社 · 面试',
+        motif: 'Club Fair · Photography Club · Interview',
         // 草坪绿 —— 百团大战草坪、摄影社取景框
         themeColor: '#7ecba1',
         cardBg:
@@ -8895,7 +8911,7 @@
     // ════════════════════════════════════════════════════════════
 
     var TIER_COLOR = { N: '#a8a8a8', R: '#c4b5fd', SR: '#e6c27a', SSR: '#f87171' };
-    var TIER_LABEL = { N: 'N 普通',  R: 'R 稀有',  SR: 'SR 精选', SSR: 'SSR 至臻' };
+    var TIER_LABEL = { N: 'N Common',  R: 'R Rare',  SR: 'SR', SSR: 'SSR' };
 
     // ─ 5.4 入口逻辑 ─────────────────────────────────────────────
     var _gachaStoreEl = null;
@@ -9100,7 +9116,7 @@
       container.innerHTML =
         // ── 顶部状态栏
         '<div class="gs-topbar">' +
-          '<button class="gs-back-btn" onclick="closeGachaStore()">◀ 返回</button>' +
+          '<button class="gs-back-btn" onclick="closeGachaStore()">◀ Back</button>' +
           '<div class="gs-topbar-coins" onclick="showTopbarTooltip(\'coin\',this)">' +
             '<div class="echo-coin" style="width:22px;height:22px;flex-shrink:0">' +
               '<svg width="10" height="10" viewBox="0 0 11 11" class="ec-svg">' +
@@ -9143,12 +9159,12 @@
             ' id="gs-pull-btn"' +
             ' onclick="onGachaPullClick()"' +
             (canPull ? '' : ' disabled') + '>' +
-            (canPull ? '抽盲盒' : '回声币不足') +
+            (canPull ? 'Draw' : '回声币不足') +
           '</button>' +
         '</div>' +
         // ── 次级入口
         '<div class="gs-secondary-row">' +
-          '<button class="gs-sec-btn" onclick="openCollectionBook(null, _currentGachaSeriesId)">收集册</button>' +
+          '<button class="gs-sec-btn" onclick="openCollectionBook(null, _currentGachaSeriesId)">Collection</button>' +
           '<div class="gs-sec-divider"></div>' +
           '<button class="gs-sec-btn" onclick="openShardShop()">碎片商店</button>' +
         '</div>';
@@ -9190,7 +9206,7 @@
       if (pullBtn) {
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
-        pullBtn.innerHTML = canPull ? '抽盲盒' : '回声币不足';
+        pullBtn.innerHTML = canPull ? 'Draw' : '回声币不足';
       }
     }
 
@@ -9472,19 +9488,18 @@
               ' alt="">' +
             '<div class="gr-img-fallback" style="display:none">' + emoji + '</div>' +
           '</div>' +
-          '<div class="gr-name-zh">' + item.nameZh + '</div>' +
-          '<div class="gr-name-en">' + tField(item, 'name') + '</div>' +
+          '<div class="gr-name-zh">' + tField(item, 'name') + '</div>' +
           bodyHtml +
           (result.isDup
             ? '<div class="gr-dup-hint">已有 · 获得 <b>' + result.shardsGained + '</b> 碎片</div>'
-            : '<div class="gr-new-hint">— 首次收藏 —</div>') +
+            : '<div class="gr-new-hint">— First Collected —</div>') +
           '<div class="gr-btn-row">' +
-            '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult()">返回商店</button>' +
-            '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult();openCollectionBook(\'' + item.type + '\')">收集册</button>' +
+            '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult()">Back to Shop</button>' +
+            '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult();openCollectionBook(\'' + item.type + '\')">Collection</button>' +
             (nextCost
               ? '<button class="gr-btn gr-btn-primary btn-tier-' + tier.toLowerCase() + '"' +
                   ' onclick="closeGachaResult();onGachaPullClick()"' +
-                  (canAgain ? '' : ' disabled') + '>再抽</button>'
+                  (canAgain ? '' : ' disabled') + '>Draw Again</button>'
               : '') +
           '</div>' +
         '</div>';
@@ -9513,7 +9528,7 @@
     var _carouselIdx       = 0;       // 当前轮播索引
     var _carouselItems     = [];      // 当前轮播物品列表
 
-    var TAB_LABELS = { card: '📇 卡片', diary: '📖 日记', outfit: '👗 衣服', cg: '🖼️ 回忆' };
+    var TAB_LABELS = { card: '📇 Cards', diary: '📖 Diary', outfit: '👗 Clothes', cg: '🖼️ Memories' };
     var ITEM_EMOJI = {
       card:   { N: '📮', R: '🎖️', SR: '🌟', SSR: '✨' },
       diary:  { N: '📄', R: '📔', SR: '📻', SSR: '📖' },
@@ -9551,8 +9566,8 @@
       var s = GACHA_SERIES[_collectionSeriesId];
       container.innerHTML =
         '<div class="gcb-topbar">' +
-          '<button class="gcb-back-btn" onclick="closeCollectionBook()">◀ 返回</button>' +
-          '<div class="gcb-title">' + (s ? s.nameZh : '收集册') + '</div>' +
+          '<button class="gcb-back-btn" onclick="closeCollectionBook()">◀ Back</button>' +
+          '<div class="gcb-title">' + (s ? tField(s, 'name') : 'Collection') + '</div>' +
           '<div class="gcb-progress" id="gcb-progress-text"></div>' +
         '</div>' +
         '<div class="gcb-tabs" id="gcb-tabs"></div>' +
@@ -9701,7 +9716,7 @@
       if (btn) {
         btn.disabled  = !canPull;
         btn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
-        btn.innerHTML = canPull ? '抽盲盒' : '回声币不足';
+        btn.innerHTML = canPull ? 'Draw' : '回声币不足';
       }
     }
 
@@ -9818,8 +9833,8 @@
                   '<span class="gcb-item-emoji" style="position:absolute;display:none">' + emoji + '</span>'
                 : '<span class="gcb-item-emoji">' + emoji + '</span>') +
             '</div>' +
-            '<div class="gcb-item-name">' + (owned ? item.nameZh : '?') + '</div>' +
-            (isEquipped ? '<div class="gcb-equipped-badge">已换装</div>' : '') +
+            '<div class="gcb-item-name">' + (owned ? tField(item, 'name') : '?') + '</div>' +
+            (isEquipped ? '<div class="gcb-equipped-badge">Equipped</div>' : '') +
             (count > 1 && !isEquipped && item.type !== 'outfit' ? '<div class="gcb-count-badge">×' + count + '</div>' : '') +
           '</div>'
         );
@@ -9934,8 +9949,7 @@
       var tier = item.tier;
       return (
         '<div class="gcb-car-tier gcb-detail-tier-' + tier.toLowerCase() + '">' + TIER_LABEL[tier] + '</div>' +
-        '<div class="gcb-car-name-zh">' + item.nameZh + '</div>' +
-        '<div class="gcb-car-name-en">' + tField(item, 'name') + '</div>' +
+        '<div class="gcb-car-name-zh">' + tField(item, 'name') + '</div>' +
         (rec && rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-car-count">×' + rec.count + '</div>' : '')
       );
     }
@@ -9990,7 +10004,7 @@
           '<button class="gcb-audio-btn" id="gcb-audio-btn"' +
           ' onclick="toggleDetailAudio(\'' + item.audio + '\')">' + audioLabel + '</button>';
       }
-      btns += '<button class="gcb-close-btn" onclick="closeItemDetail()">关闭</button>';
+      btns += '<button class="gcb-close-btn" onclick="closeItemDetail()">Close</button>';
 
       // 服装类用 contain padding；CG 类用宽幅横图展示
       var imgContainCls = (item.type === 'outfit')                    ? ' gcb-img-contain'
@@ -10034,8 +10048,7 @@
             '<span class="gcb-detail-img-emoji" style="display:none">' + emoji + '</span>' +
             (thumbClickable ? '<span class="gcb-thumb-zoom-icon">⤢</span>' : '') +
           '</div>' +
-          '<div class="gcb-detail-name-zh">' + item.nameZh + '</div>' +
-          '<div class="gcb-detail-name-en">' + tField(item, 'name') + '</div>' +
+          '<div class="gcb-detail-name-zh">' + tField(item, 'name') + '</div>' +
           bodyHtml +
           (rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-detail-count">已获得 ' + rec.count + ' 份</div>' : '') +
           '<div class="gcb-detail-btns">' + btns + '</div>' +
@@ -10129,24 +10142,24 @@
       var btn = document.getElementById('gcb-audio-btn');
       if (_detailAudio && !_detailAudio.paused) {
         _stopDetailAudio();
-        if (btn) btn.textContent = '▶ 播放语音 Play Audio';
+        if (btn) btn.textContent = '▶ Play Audio';
         return;
       }
       _detailAudio = new Audio(src);
       _attachLoudnessCompressor(_detailAudio);
       _detailAudio.addEventListener('ended', function() {
         _detailAudio = null;
-        if (btn) btn.textContent = '▶ 播放语音 Play Audio';
+        if (btn) btn.textContent = '▶ Play Audio';
       });
       _detailAudio.addEventListener('error', function() {
         _detailAudio = null;
-        if (btn) btn.textContent = '⚠ 音频暂不可用';
+        if (btn) btn.textContent = '⚠ Audio unavailable';
       });
       _detailAudio.play().catch(function() {
         _detailAudio = null;
-        if (btn) btn.textContent = '⚠ 音频暂不可用';
+        if (btn) btn.textContent = '⚠ Audio unavailable';
       });
-      if (btn) btn.textContent = '⏸ 暂停';
+      if (btn) btn.textContent = '⏸ Pause';
     }
 
     // ─ 通用语音日记播放器（结果弹窗 + 详情弹窗共用） ───────────
@@ -10180,7 +10193,7 @@
         '<div class="' + prefix + '-voice-player">' +
           '<button class="' + prefix + '-voice-btn' + tierBreathCls + '" id="' + btnId + '"' +
                 ' onclick="toggleVoicePlayer(\'' + safeAudio + '\',\'' + btnId + '\',\'' + hintId + '\')">▶</button>' +
-          '<span class="' + prefix + '-voice-hint" id="' + hintId + '">点击播放 · Play Voice Note</span>' +
+          '<span class="' + prefix + '-voice-hint" id="' + hintId + '">Play Voice Note</span>' +
           '<button class="' + prefix + '-voice-toggle"' +
                 ' onclick="toggleVoiceTranscript(\'' + transId + '\', this)">显示文字 · Show Transcript</button>' +
           '<div class="' + prefix + '-voice-transcript" id="' + transId + '">' +
@@ -10216,7 +10229,7 @@
       if (_detailAudio && !_detailAudio.paused) {
         _stopDetailAudio();
         if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
-        if (hint) { hint.textContent = '点击播放 · Play Voice Note'; }
+        if (hint) { hint.textContent = 'Play Voice Note'; }
         return;
       }
       _detailAudio = new Audio(src);
@@ -10224,20 +10237,20 @@
       _detailAudio.addEventListener('ended', function() {
         _detailAudio = null;
         if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
-        if (hint) { hint.textContent = '点击播放 · Play Voice Note'; }
+        if (hint) { hint.textContent = 'Play Voice Note'; }
       });
       _detailAudio.addEventListener('error', function() {
         _detailAudio = null;
         if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
-        if (hint) { hint.textContent = '音频准备中 · Audio coming soon'; }
+        if (hint) { hint.textContent = 'Audio coming soon'; }
       });
       _detailAudio.play().catch(function() {
         _detailAudio = null;
         if (btn)  { btn.textContent = '▶'; btn.classList.remove('playing'); }
-        if (hint) { hint.textContent = '音频准备中 · Audio coming soon'; }
+        if (hint) { hint.textContent = 'Audio coming soon'; }
       });
       if (btn)  { btn.textContent = '❚❚'; btn.classList.add('playing'); }
-      if (hint) { hint.textContent = '正在播放 · Playing...'; }
+      if (hint) { hint.textContent = 'Playing...'; }
     }
 
     function toggleVoiceTranscript(transId, toggleBtn) {
@@ -10607,7 +10620,7 @@
               '<div class="aha-text"><span class="aha-zh">换新衣</span><span class="aha-en">Unlock Outfits</span></div>' +
             '</div>' +
           '</div>' +
-          '<button class="aha-btn" id="aha-got-it">我知道了 Got it</button>' +
+          '<button class="aha-btn" id="aha-got-it">Got it</button>' +
         '</div>';
       function dismiss() {
         ov.style.animation = 'ahaFadeIn 0.18s ease reverse forwards';
@@ -10664,7 +10677,7 @@
         // 分数不足60，提示重练
         setTimeout(function() {
           retryEl.innerHTML = '发音准确率不足，暂未获得回声币' +
-            '<button class="eval-coin-retry-btn" onclick="doRecord()">🔄 再练一次 Retry</button>';
+            '<button class="eval-coin-retry-btn" onclick="doRecord()">🔄 Retry</button>';
           retryEl.style.display = 'block';
         }, delay || 400);
       }
@@ -12043,7 +12056,7 @@
         _stopCurrentRecorder();
         phase = 'idle';
         var bn = document.getElementById('bn');
-        if (bn) { bn.textContent = '🎤 录音 Record'; bn.classList.remove('active'); bn.disabled = false; }
+        if (bn) { bn.textContent = '🎤 Record'; bn.classList.remove('active'); bn.disabled = false; }
         var si = document.getElementById('speech-indicator');
         if (si) si.classList.remove('active');
       }
@@ -12965,9 +12978,9 @@
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
-      if (el("bn")) el("bn").textContent = "🎤 录音 Record";
+      if (el("bn")) el("bn").textContent = "🎤 Record";
 
-      if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); el("bs").textContent = "▶ 跟读 Listen"; }
+      if (el("bs")) { el("bs").disabled = false; el("bs").classList.remove("active"); el("bs").textContent = "▶ Listen"; }
       if (el("bm")) el("bm").classList.remove("active");
       if (el("bn")) { el("bn").disabled = false; el("bn").classList.remove("active"); }
       if (el("bprev")) el("bprev").disabled = false;
@@ -13020,7 +13033,7 @@
         resumeAudio();
         resumeKaraTimer();
         ttsPaused = false;
-        if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
+        if (btn) { btn.classList.add("active"); btn.textContent = "⏸ Pause"; }
         return;
       }
       // 正在播放 → 暂停
@@ -13028,7 +13041,7 @@
         pauseAudio();
         pauseKaraTimer();
         ttsPaused = true;
-        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 继续 Resume"; }
+        if (btn) { btn.classList.remove("active"); btn.textContent = "▶ Resume"; }
         return;
       }
       // 空闲 → 重新开始
@@ -13042,7 +13055,7 @@
       var s = currentSentenceForEval || LESSONS[lessonIdx].sentences[idx];
       
       var estSec = Math.max(2.0, s.zh.replace(/[，。！？,.!?]/g, '').length * 0.28 / slowSpeed);
-      if (btn) { btn.classList.add("active"); btn.textContent = "⏸ 暂停 Pause"; }
+      if (btn) { btn.classList.add("active"); btn.textContent = "⏸ Pause"; }
       resetKara();
 
       // 【核心修复】：动态映射声音角色（staff→linyue, cashier→cashier, cafestaff→cafestaff,
@@ -13061,7 +13074,7 @@
           if (phase !== "slow") return;
           ttsPaused = false;
           completeKara();
-          if (btn) { btn.classList.remove("active"); btn.textContent = "▶ 跟读 Listen"; }
+          if (btn) { btn.classList.remove("active"); btn.textContent = "▶ Listen"; }
           busy = false; phase = "idle";
         },
         function (actualDuration) {
@@ -13091,13 +13104,13 @@
       document.getElementById('rec-countdown').classList.remove('show');
       if (!micStream || !micStream.active || !mediaRecorder || mediaRecorder.state !== 'recording') {
         busy = false; phase = 'idle';
-        document.getElementById('bn').textContent = '🎤 录音 Record';
+        document.getElementById('bn').textContent = '🎤 Record';
         document.getElementById('bn').classList.remove('active');
         document.getElementById('speech-indicator').classList.remove('active');
         return;
       }
       _isCapturing = true;
-      document.getElementById('bn').textContent = '⏹ 停止录音 Stop';
+      document.getElementById('bn').textContent = '⏹ Stop';
       document.getElementById('bn').classList.add('active');
       document.getElementById('speech-indicator').classList.add('active');
       setStatus('🎙 录音中 Recording...');
@@ -13154,7 +13167,7 @@
     function _recError(msg) {
       busy = false; phase = 'idle';
       var bn = document.getElementById('bn');
-      if (bn) { bn.textContent = '🎤 录音 Record'; bn.classList.remove('active'); bn.disabled = false; }
+      if (bn) { bn.textContent = '🎤 Record'; bn.classList.remove('active'); bn.disabled = false; }
       showShardToast(msg || '⚠️ 录音失败，请重试');
     }
 
@@ -13165,7 +13178,7 @@
       phase = 'recording';
       busy = true;
       resetKara();
-      document.getElementById('bn').textContent = '✕ 取消 Cancel';
+      document.getElementById('bn').textContent = '✕ Cancel';
       document.getElementById('bn').classList.remove('active');
       setStatus('准备录音中...');
 
@@ -13208,7 +13221,7 @@
         _cancelCountdown();
         _stopCurrentRecorder();
         phase = 'idle'; busy = false;
-        document.getElementById('bn').textContent = '🎤 录音 Record';
+        document.getElementById('bn').textContent = '🎤 Record';
         document.getElementById('bn').classList.remove('active');
         document.getElementById('speech-indicator').classList.remove('active');
         setStatus('准备好了 Ready');
@@ -13216,7 +13229,7 @@
       }
       // Instant UI feedback; disable button to prevent double-tap during drain
       var bn = document.getElementById('bn');
-      bn.textContent = '🎤 录音 Record';
+      bn.textContent = '🎤 Record';
       bn.classList.remove('active');
       bn.disabled = true;
       document.getElementById('speech-indicator').classList.remove('active');
@@ -13305,7 +13318,7 @@
       var isLast = (dialogMode && dialogStep === 2)
         ? dialogRoundIdx >= getDialogRoundCount() - 1
         : idx >= LESSONS[lessonIdx].sentences.length - 1;
-      document.getElementById("eval-next").textContent = isLast ? "完成 Finish 🎉" : "下一页 Next ▶";
+      document.getElementById("eval-next").textContent = isLast ? "Finish 🎉" : "Next ▶";
       document.getElementById("eval-page").classList.add("show");
       document.getElementById("eval-page").scrollTop = 0;
       startEvalLoadingAnim();
@@ -13940,9 +13953,9 @@
       var btnAbove = document.getElementById('ctx-play-btn');
       var btnBelow = document.getElementById('ctx-play-btn-below');
       var btnTop   = document.getElementById('sentence-play-btn');
-      if (btnAbove) { btnAbove.textContent = '▶ 播放 Play'; btnAbove.classList.remove('playing'); }
-      if (btnBelow) { btnBelow.textContent = '▶ 播放 Play'; btnBelow.classList.remove('playing'); }
-      if (btnTop)   { btnTop.textContent   = '▶ 播放 Play'; btnTop.classList.remove('playing'); }
+      if (btnAbove) { btnAbove.textContent = '▶ Play'; btnAbove.classList.remove('playing'); }
+      if (btnBelow) { btnBelow.textContent = '▶ Play'; btnBelow.classList.remove('playing'); }
+      if (btnTop)   { btnTop.textContent   = '▶ Play'; btnTop.classList.remove('playing'); }
       ctxPlayingId = null;
       ctxPausedId = null;
       setPanelFocus('learner');
@@ -13973,33 +13986,33 @@
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
         var bsBtn = document.getElementById('bs');
-        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
+        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ Listen'; }
         phase = 'idle'; busy = false;
       }
       var btn = document.getElementById('ctx-play-btn');
       if (ctxPausedId === 'above') {
         resumeAudio();
         ctxPlayingId = 'above'; ctxPausedId = null;
-        if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+        if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
         setPanelFocus('above');
         return;
       }
       if (ctxPlayingId === 'above') {
         pauseAudio();
         ctxPausedId = 'above'; ctxPlayingId = null;
-        if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
+        if (btn) { btn.textContent = '▶ Resume'; btn.classList.remove('playing'); }
         setPanelFocus('learner');
         return;
       }
       stopCtxTTS();
       ctxPlayingId = 'above';
-      if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+      if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
       setPanelFocus('above');
       var ctxZhEl = document.getElementById('ctx-zh');
       speakAzure(zh, role, slowSpeed,
         function () {
           if (ctxPlayingId === 'above') { ctxPlayingId = null; ctxPausedId = null; }
-          if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
+          if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
           setPanelFocus('learner');
         },
         function (dur) {
@@ -14032,33 +14045,33 @@
       if (phase === 'normal' || phase === 'slow') {
         clearTimers();
         var bsBtn = document.getElementById('bs');
-        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ 跟读 Listen'; }
+        if (bsBtn) { bsBtn.classList.remove('active'); bsBtn.textContent = '▶ Listen'; }
         phase = 'idle'; busy = false;
       }
       var btn = document.getElementById('ctx-play-btn-below');
       if (ctxPausedId === 'below') {
         resumeAudio();
         ctxPlayingId = 'below'; ctxPausedId = null;
-        if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+        if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
         setPanelFocus('below');
         return;
       }
       if (ctxPlayingId === 'below') {
         pauseAudio();
         ctxPausedId = 'below'; ctxPlayingId = null;
-        if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
+        if (btn) { btn.textContent = '▶ Resume'; btn.classList.remove('playing'); }
         setPanelFocus('learner');
         return;
       }
       stopCtxTTS();
       ctxPlayingId = 'below';
-      if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+      if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
       setPanelFocus('below');
       var ctxBelowZhEl = document.getElementById('ctx-zh-below');
       speakAzure(zh, role, slowSpeed,
         function () {
           if (ctxPlayingId === 'below') { ctxPlayingId = null; ctxPausedId = null; }
-          if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
+          if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
           setPanelFocus('learner');
         },
         function (dur) {
@@ -14076,7 +14089,7 @@
         resumeAudio();
         resumeKaraTimer();
         ctxPlayingId = 'top'; ctxPausedId = null;
-        if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+        if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
         return;
       }
       // 正在播放 → 暂停
@@ -14084,7 +14097,7 @@
         pauseAudio();
         pauseKaraTimer();
         ctxPausedId = 'top'; ctxPlayingId = null;
-        if (btn) { btn.textContent = '▶ 继续'; btn.classList.remove('playing'); }
+        if (btn) { btn.textContent = '▶ Resume'; btn.classList.remove('playing'); }
         return;
       }
       // 开始播放
@@ -14100,11 +14113,11 @@
                : 'local';
       ctxPlayingId = 'top';
       resetKara();
-      if (btn) { btn.textContent = '⏸ 暂停'; btn.classList.add('playing'); }
+      if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
       speakAzure(s.zh, role, slowSpeed,
         function () {
           if (ctxPlayingId === 'top') { ctxPlayingId = null; ctxPausedId = null; }
-          if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
+          if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
           completeKara();
         },
         function (dur) {
@@ -14297,16 +14310,16 @@
         var compareHtml =
           "<div class='tip-compare'>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag'>" + (tip.textbookLabel || '📖 书面语 · Textbook') + "</div>" +
+              "<div class='tip-tag'>" + (tip.textbookLabel || '📖 Textbook') + "</div>" +
               "<div class='tip-zh-big'>" + tip.textbook.zh + "</div>" +
               (tip.textbook.en ? "<div class='tip-en-sm'>" + tip.textbook.en + "</div>" : "") +
-              "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.textbook.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
+              "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.textbook.zh) + ", \"local\")'>🔊 Listen</button>" +
             "</div>" +
             "<div class='tip-compare-row'>" +
-              "<div class='tip-tag street'>" + (tip.streetLabel || '🗣 口语 · Real Street') + "</div>" +
+              "<div class='tip-tag street'>" + (tip.streetLabel || '🗣 Real Street') + "</div>" +
               "<div class='tip-zh-big'>" + tip.street.zh + "</div>" +
               (tip.street.pinyin ? "<div class='tip-py'>" + tip.street.pinyin + "</div>" : "") +
-              "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.street.zh) + ", \"local\")'>🔊 朗读 Listen</button>" +
+              "<button class='tip-play-btn' onclick='tipSpeak(" + JSON.stringify(tip.street.zh) + ", \"local\")'>🔊 Listen</button>" +
             "</div>" +
           "</div>";
 
@@ -14316,10 +14329,8 @@
             "<div class='tip-card'>" +
               "<div class='tip-card-head'>" +
                 "<span class='tip-card-icon'>💡</span>" +
-                "<span class='tip-card-lzh'>口语习惯</span>" +
                 "<span class='tip-card-len'>Speaking Tip</span>" +
               "</div>" +
-              "<div class='tip-card-zh'>" + tip.langTip.zh + "</div>" +
               "<div class='tip-card-en'>" + tip.langTip.en + "</div>" +
             "</div>";
         }
@@ -14328,10 +14339,8 @@
             "<div class='tip-card'>" +
               "<div class='tip-card-head'>" +
                 "<span class='tip-card-icon'>🤝</span>" +
-                "<span class='tip-card-lzh'>文化密码</span>" +
                 "<span class='tip-card-len'>Culture Note</span>" +
               "</div>" +
-              "<div class='tip-card-zh'>" + tip.cultureTip.zh + "</div>" +
               "<div class='tip-card-en'>" + tip.cultureTip.en + "</div>" +
             "</div>";
         }
@@ -14413,7 +14422,7 @@
           '<div class="ch1-front-body">' +
             '<div class="ch1-tag" id="ch1-tag">✦ 第一篇章完结 · CHAPTER ONE COMPLETE ✦</div>' +
             '<div class="ch1-title" id="ch1-title">初 抵 京 华</div>' +
-            '<button class="ch1-unlock-btn" id="ch1-unlock-btn" onclick="chapter1Flip()">点击解锁</button>' +
+            '<button class="ch1-unlock-btn" id="ch1-unlock-btn" onclick="chapter1Flip()">Tap to Unlock</button>' +
           '</div>' +
         '</div>' +
         // ── BACK ──
@@ -14427,7 +14436,7 @@
               '<span class="ch1-lang-sep">/</span>' +
               '<button class="ch1-lang-btn" id="ch1-en-btn" onclick="ch1SwitchLang(\'en\')">EN</button>' +
             '</div>' +
-            '<button class="ch1-fly-btn" id="ch1-fly-btn" onclick="chapter1FlyToCollection()">收下这段回忆</button>' +
+            '<button class="ch1-fly-btn" id="ch1-fly-btn" onclick="chapter1FlyToCollection()">Keep This Memory</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(ov);
@@ -14588,21 +14597,20 @@
       var numZh    = zhNums[lessonIdx] || String(lessonNum);
 
       var numEl = document.getElementById('cover-lesson-num');
-      if (numEl) numEl.textContent = '第' + numZh + '课 · Lesson ' + lessonNum;
+      if (numEl) numEl.textContent = 'Lesson ' + lessonNum;
 
-      // 标题去掉"第X课："前缀，只保留课名
-      var titleZh = (lesson.titleZh || '').replace(/^第.+课[：:]\s*/, '');
+      // 标题去掉"第X课："前缀，只保留课名（仅英文）
       var titleEn = tField(lesson, 'title').replace(/^Lesson \d+[:\s]+/i, '');
       var tzhEl = document.getElementById('cover-title-zh');
       var tenEl = document.getElementById('cover-title-en');
-      if (tzhEl) tzhEl.textContent = titleZh;
+      if (tzhEl) tzhEl.style.display = 'none';
       if (tenEl) tenEl.textContent = titleEn;
 
-      // 场景描述
+      // 场景描述（仅英文）
       if (lesson.coverScene) {
         var szhEl = document.getElementById('cover-scene-zh');
         var senEl = document.getElementById('cover-scene-en');
-        if (szhEl) szhEl.innerHTML = lesson.coverScene.zh;
+        if (szhEl) szhEl.style.display = 'none';
         if (senEl) senEl.textContent = lesson.coverScene.en;
       }
 
@@ -14703,7 +14711,7 @@
         'font-size:12px;color:rgba(255,255,255,0);' +
         'letter-spacing:0.12em;margin-top:44px;' +
         'transition:color 0.8s ease;text-align:center;';
-      hint.textContent = '✦ 点击屏幕继续 · Tap to continue ✦';
+      hint.textContent = '✦ Tap to continue ✦';
       page.appendChild(hint);
 
       document.body.appendChild(page);
@@ -15196,13 +15204,13 @@
       dlpPaused = true;
       stopAudio();
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
-      dlpUpdatePlayButton('▶ 继续 Resume');
+      dlpUpdatePlayButton('▶ Resume');
     }
 
     function dlpResume() {
       if (!dlpPlaying || !dlpPaused || !dlpSeq) return;
       dlpPaused = false;
-      dlpUpdatePlayButton('⏸ 暂停 Pause');
+      dlpUpdatePlayButton('⏸ Pause');
       dlpPlayOne(dlpCurrentIndex);
     }
 
@@ -15309,7 +15317,7 @@
       dlpCurrentIndex = 0;
       dlpPlaying = true;
       dlpPaused = false;
-      dlpUpdatePlayButton('⏸ 暂停 Pause');
+      dlpUpdatePlayButton('⏸ Pause');
 
       dlpPlayOne(0);
     }
@@ -15729,7 +15737,7 @@
       if (enEl) enEl.textContent = line.en || '';
 
       var btn = document.getElementById(idMap.btn);
-      if (btn) { btn.textContent = '▶ 播放 Play'; btn.classList.remove('playing'); }
+      if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
 
       // 头像：mingxuan / nora / staff
       var isStaff = line._sid === 'staff' || _isStaffSpeaker(line.speaker);
@@ -15808,9 +15816,9 @@
       // ── 切换前彻底清空上一轮评测残影 ──────────────
       if (el("eval-page"))        el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
-      if (el("bn"))     { el("bn").disabled = false;     el("bn").classList.remove("active");     el("bn").textContent = "🎤 录音 Record"; }
-      if (el("bs"))     { el("bs").disabled = false;     el("bs").classList.remove("active");     el("bs").textContent = "▶ 跟读 Listen"; }
-      if (el("sentence-play-btn")) { el("sentence-play-btn").textContent = '▶ 播放 Play'; el("sentence-play-btn").classList.remove('playing'); }
+      if (el("bn"))     { el("bn").disabled = false;     el("bn").classList.remove("active");     el("bn").textContent = "🎤 Record"; }
+      if (el("bs"))     { el("bs").disabled = false;     el("bs").classList.remove("active");     el("bs").textContent = "▶ Listen"; }
+      if (el("sentence-play-btn")) { el("sentence-play-btn").textContent = '▶ Play'; el("sentence-play-btn").classList.remove('playing'); }
       if (el("bm"))     el("bm").classList.remove("active");
       if (el("bdone"))  el("bdone").className = "btn btn-done show";
       if (el("bretry")) el("bretry").className = "btn btn-retry";
@@ -15951,7 +15959,7 @@
       }
 
       card.innerHTML = html +
-        "<button class='btn-restart' onclick='restartLesson()'>再练一次 Practice Again</button>";
+        "<button class='btn-restart' onclick='restartLesson()'>Practice Again</button>";
     }
 
     // ── 预听页面 (Pre-Listen Page) ────────────────────────────
@@ -15965,9 +15973,9 @@
       // state: 'play' = not started / finished, 'pause' = playing, 'resume' = paused
       var btn = document.getElementById('plp-pause-btn');
       if (!btn) return;
-      if (state === 'pause')       btn.innerHTML = '⏸ 暂停<br>Pause';
-      else if (state === 'resume') btn.innerHTML = '▶ 继续<br>Resume';
-      else                         btn.innerHTML = '▶ 播放<br>Play';
+      if (state === 'pause')       btn.innerHTML = '⏸ Pause';
+      else if (state === 'resume') btn.innerHTML = '▶ Resume';
+      else                         btn.innerHTML = '▶ Play';
     }
 
     function showPreListenPage() {
@@ -16382,7 +16390,7 @@
         pills: ['京华大学', '阳光学长', '热心肠'],
         greeting: '嗨！欢迎来到中国，我来接你了！',
         greetingRole: 'local',
-        btnText: '继续 Continue ➔',
+        btnText: 'Continue ➔',
         profileRows: [
           { icon: '🎓', val: '京华大学研究生，热爱帮助外国留学生' },
           { icon: '✦',  val: '阳光开朗，热情直率，行动力超强' },
@@ -16409,7 +16417,7 @@
         greeting: '我是夏七七，以后咱们就是室友啦！',
         greetingRole: 'qiqi',
         greetingRate: 1.05,
-        btnText: '继续 Continue ➔',
+        btnText: 'Continue ➔',
         profileRows: [
           { icon: '📱', val: '诺拉的同寝室友，带你快速融入本地校园生活的好帮手' },
           { icon: '✨', val: '热情开朗，喜欢网购、打卡探店，永远走在学校八卦的第一线' },
@@ -16435,7 +16443,7 @@
         greeting: '你好，我是大卫。我们可以一起做中文练习吗？',
         greetingRole: 'david',
         greetingRate: 0.9,
-        btnText: '继续 Continue ➔',
+        btnText: 'Continue ➔',
         profileRows: [
           { icon: '📱', val: '诺拉的留学生朋友，和你一样正在努力攻克中文难关的"战友"' },
           { icon: '✨', val: '阳光开朗，极其刻苦，随身携带单词本，但总是被英语母语思维带偏' },
@@ -16460,7 +16468,7 @@
         quoteAudio: '/audio/linwan/linwan_quote.mp3',
         greetingRole: 'linwan',
         greetingRate: 0.95,
-        btnText: '继续 Continue ➔',
+        btnText: 'Continue ➔',
         profileRows: [
           { icon: '🎓', val: '京华大学计算机系学霸，兼任摄影社副社长，极致的效率主义者' },
           { icon: '✨', val: '低语境交流的倡导者，说话以陈述句为主，自动省略所有无效的寒暄与废话' },
@@ -16484,7 +16492,7 @@
         greeting: '终于到了，该怎么去京华大学呢？',
         greetingRole: 'learner',
         greetingRate: 1.1,
-        btnText: '继续 Continue ➔',
+        btnText: 'Continue ➔',
         profileRows: [
           { icon: '✈️', val: '京华大学留学生，中文水平正在努力进阶中' },
           { icon: '✨', val: '拒绝被动等待，拥有明确的边界感与破局勇气' },
@@ -16585,7 +16593,7 @@
       el('char-intro-narrative').textContent  = c.narrative || '';
       el('char-intro-name-cn').textContent    = c.nameCn;
       el('char-intro-voice-text').textContent = c.greeting;
-      el('char-intro-btn').textContent        = isProfile ? '关闭 Close ✕' : (c.btnText || '继续 Continue ➔');
+      el('char-intro-btn').textContent        = isProfile ? 'Close ✕' : (c.btnText || 'Continue ➔');
       el('char-intro-btn').onclick            = charIntroClose;
       // 根据历史显示/隐藏"上一位"按钮（第一个角色时隐藏）
       var prevBtn = el('char-intro-btn-prev');
@@ -17102,7 +17110,7 @@
       if (fcTopCount) fcTopCount.textContent = (fcIdx + 1) + ' / ' + vocab.length;
       var fcTopProg = document.getElementById('fc-top-prog');
       if (fcTopProg) fcTopProg.style.width = Math.round(fcIdx / vocab.length * 100) + '%';
-      document.getElementById('fc-next-btn').textContent = '下一页 Next ▶';
+      document.getElementById('fc-next-btn').textContent = 'Next ▶';
       // animate timer bar
       var fill = document.getElementById('fc-timer-fill');
       fill.style.transition = 'none';
@@ -17130,8 +17138,8 @@
           var vAuto = LESSONS[lessonIdx].vocab[capturedIdx];
           if (!vAuto) return;
           var btn = document.getElementById('fc-speak-btn');
-          var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } };
-          if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 播放中…'; }
+          var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 Listen'; } };
+          if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 Playing…'; }
           speakAzure(vAuto.zh, vAuto.role || 'local', 1.0, restore, null);
         }, 300);
       })(fcIdx);
@@ -17193,8 +17201,8 @@
       var v = LESSONS[lessonIdx].vocab[fcIdx];
       if (!v) return;
       var btn = document.getElementById('fc-speak-btn');
-      var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 朗读 Listen'; } };
-      if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 播放中…'; }
+      var restore = function() { if (btn) { btn.classList.remove('playing'); btn.textContent = '🔊 Listen'; } };
+      if (btn) { btn.classList.add('playing'); btn.textContent = '🔊 Playing…'; }
       // If cached, speakAzure plays instantly; otherwise fetches
       speakAzure(v.zh, v.role || 'local', 1.0, restore, null);
     }
@@ -17212,10 +17220,10 @@
       var sub = '<br><span style="font-size:10px;opacity:0.75">';
       if (btnId === 'guide-btn-user') {
         var icon = state === 'playing' ? '⏸' : state === 'paused' ? '▶' : '🎙';
-        btn.innerHTML = icon + ' 录音' + sub + 'Recording</span>';
+        btn.innerHTML = icon + ' ' + sub + 'Recording</span>';
       } else {
         var icon = state === 'playing' ? '⏸' : state === 'paused' ? '▶' : '🔊';
-        btn.innerHTML = icon + ' 原声' + sub + 'Native</span>';
+        btn.innerHTML = icon + ' ' + sub + 'Native</span>';
       }
     }
 
@@ -17468,10 +17476,10 @@
       var titleEl = document.getElementById('chs-header-title');
       if (!titleEl) return;
       if (chsView === 'units') {
-        titleEl.textContent = '选择单元 · Choose Your Unit';
+        titleEl.textContent = 'Choose Your Unit';
       } else {
         var u = UNITS[chsActiveUnitIdx];
-        titleEl.textContent = u.titleZh + ' · ' + tField(u, 'title');
+        titleEl.textContent = tField(u, 'title');
       }
     }
 
@@ -17529,16 +17537,14 @@
             if (u.cardBg) card.style.background = u.cardBg;
             if (u.themeColor) card.style.setProperty('--chs-typo-accent', u.themeColor);
 
-            var eyebrowTxt = (u.eyebrowEn || ('UNIT ' + (i + 1))) + ' · ' + (u.eyebrowZh || ('第' + (i + 1) + '单元'));
+            var eyebrowTxt = (u.eyebrowEn || ('UNIT ' + (i + 1)));
             card.innerHTML =
               '<div class="chs-typo-eyebrow">' + eyebrowTxt + '</div>' +
               '<div class="chs-typo-center">' +
                 '<div class="chs-typo-number">' + (u.numLabel || ('0' + (i + 1)).slice(-2)) + '</div>' +
                 '<div class="chs-typo-divider"></div>' +
-                '<div class="chs-typo-title-zh">' + (u.titleZh || '') + '</div>' +
                 '<div class="chs-typo-title-en">' + tField(u, 'title') + '</div>' +
-              '</div>' +
-              '<div class="chs-typo-motif">' + (u.motif || '') + '</div>';
+              '</div>';
 
             if (locked) {
               var lockOv = document.createElement('div');
@@ -17561,7 +17567,7 @@
             if (locked) card.classList.add('chs-locked');
             var cardSrc = (L && (L.cardImage || L.cgImage)) || '';
             var numZh = ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'][lIdx] || (lIdx + 1);
-            var eyebrow = 'CHAPTER ' + (lIdx + 1) + ' · 第' + numZh + '章';
+            var eyebrow = 'CHAPTER ' + (lIdx + 1);
             var titleZh = (L && L.titleZh || '').replace(/^第.+课[：:]\s*/, '');
             var titleEn = (L ? tField(L, 'title') : '').replace(/^Lesson \d+[:\s]+/i, '');
 
@@ -17590,7 +17596,6 @@
             info.className = 'chs-card-info';
             info.innerHTML =
               '<div class="chs-chapter-tag">' + eyebrow + '</div>' +
-              '<div class="chs-chapter-zh">' + titleZh + '</div>' +
               '<div class="chs-chapter-en">' + titleEn + '</div>';
             card.appendChild(info);
           }
@@ -17870,10 +17875,10 @@
     <!-- Cinematic full-bleed background — updated by chsUpdateBg() -->
     <div id="chs-bg"></div>
     <!-- Back to units (only visible in lessons view via CSS) -->
-    <button class="chs-back-btn" id="chs-back-btn" onclick="chsBackToUnits()">← 返回单元 · Back</button>
+    <button class="chs-back-btn" id="chs-back-btn" onclick="chsBackToUnits()">← Back</button>
     <div class="chs-header">
-      <div class="chs-header-eyebrow">EchoChinese · 轻松学中文</div>
-      <div class="chs-header-title" id="chs-header-title">选择单元 · Choose Your Unit</div>
+      <div class="chs-header-eyebrow">EchoChinese · Speak real Chinese through story</div>
+      <div class="chs-header-title" id="chs-header-title">Choose Your Unit</div>
     </div>
     <div class="chs-track-wrap" id="chs-track-wrap">
       <div class="chs-track" id="chs-track">
@@ -17891,7 +17896,7 @@
       <div class="pth-inner">
         <div class="logo">
           <div class="logo-icon">影</div>
-          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right">
           <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-cover" style="display:none">
@@ -17903,14 +17908,14 @@
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:0%"></div></div>
     </div>
     <div class="cover-inner">
-      <button class="cover-back-btn" onclick="showChapterSelectPage(lessonIdx)">← 章节 · Chapters</button>
+      <button class="cover-back-btn" onclick="showChapterSelectPage(lessonIdx)">← Chapters</button>
       <div class="cover-lesson-num" id="cover-lesson-num">第一课 · Lesson 1</div>
       <div class="cover-title-zh" id="cover-title-zh">机场相遇</div>
       <div class="cover-title-en" id="cover-title-en">Encounter at the Airport</div>
       <div class="cover-divider"></div>
       <div class="cover-scene-zh" id="cover-scene-zh">诺拉刚抵达机场，找不到接机人，<br>只好向路人询问去市区的路线。</div>
       <div class="cover-scene-en" id="cover-scene-en">Nora has just arrived at the airport and can't find her pickup, so she asks a passerby for directions to the city center.</div>
-      <button class="cover-start-btn" onclick="startLesson()">开始学习 · Start Learning →</button>
+      <button class="cover-start-btn" onclick="startLesson()">Start Learning →</button>
     </div>
     <!-- 封面角色立绘（换装系统，M7） -->
     <img id="cover-character-img" class="cover-character-img" src="" alt="" aria-hidden="true"
@@ -17923,7 +17928,7 @@
       <div class="pth-inner">
         <div class="logo">
           <div class="logo-icon">影</div>
-          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right">
           <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-fc" style="display:none">
@@ -17942,13 +17947,13 @@
       <div class="fc-card">
         <div class="fc-zh" id="fc-zh">不好意思</div>
         <div class="fc-py" id="fc-py">bù hǎo yì si</div>
-        <button class="fc-speak-btn" id="fc-speak-btn" onclick="fcSpeak(event)">🔊 朗读 Listen</button>
+        <button class="fc-speak-btn" id="fc-speak-btn" onclick="fcSpeak(event)">🔊 Listen</button>
         <div class="fc-en" id="fc-en">Excuse me / Sorry to bother you</div>
       </div>
       <div class="fc-footer">
-        <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ 上一页 Prev</button>
-        <button class="fc-skip-btn" onclick="fcSkipAll()">跳过 Skip</button>
-        <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">下一页 Next ▶</button>
+        <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ Prev</button>
+        <button class="fc-skip-btn" onclick="fcSkipAll()">Skip</button>
+        <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">Next ▶</button>
       </div>
     </div>
   </div>
@@ -17959,7 +17964,7 @@
     <div class="pth-inner">
       <div class="logo">
         <div class="logo-icon">影</div>
-        <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+        <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
       </div>
       <div class="header-right">
         <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-plp" style="display:none">
@@ -18047,9 +18052,9 @@
     </div><!-- /.plp-cards-wrap -->
     <!-- 按钮：上一页 · 播放 · 下一页 -->
     <div class="plp-footer">
-      <button class="plp-replay-btn" onclick="plpGoBack()">◀ 上一页<br>Prev</button>
-      <button class="plp-pause-btn" id="plp-pause-btn" onclick="plpPauseResume()">▶ 播放<br>Play</button>
-      <button class="plp-go-btn" onclick="plpNext()">下一页<br>Next ▶</button>
+      <button class="plp-replay-btn" onclick="plpGoBack()">◀ Prev</button>
+      <button class="plp-pause-btn" id="plp-pause-btn" onclick="plpPauseResume()">▶ Play</button>
+      <button class="plp-go-btn" onclick="plpNext()">Next ▶</button>
     </div>
   </div><!-- /.plp-inner -->
   </div><!-- /#pre-listen-page -->
@@ -18061,7 +18066,7 @@
         <div class="dlp-title">完整对话 · 先听一遍</div>
         <div class="dlp-subtitle">上：赵明轩 Zhao Mingxuan · 下：诺拉 Nora —— 每句带拼音和英文</div>
       </div>
-      <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">跳过 Skip ▶</button>
+      <button class="dlp-skip" id="dlp-skip-btn" onclick="dlpSkip()">Skip ▶</button>
     </div>
     <div class="dlp-body">
       <!-- 上半部分：赵明轩 / Staff（动态切换） -->
@@ -18133,8 +18138,8 @@
       </div>
     </div>
     <div class="dlp-footer">
-      <button class="dlp-play-btn" id="dlp-play-btn" onclick="dlpPlayPauseClick()">▶ 听完整对话 Listen</button>
-      <button class="dlp-next-btn" id="dlp-next-btn" onclick="dlpSkip()">去练习 Practice ▶</button>
+      <button class="dlp-play-btn" id="dlp-play-btn" onclick="dlpPlayPauseClick()">▶ Listen</button>
+      <button class="dlp-next-btn" id="dlp-next-btn" onclick="dlpSkip()">Practice ▶</button>
     </div>
   </div>
   <!-- 评价页面 -->
@@ -18213,7 +18218,7 @@
       <div id="eval-incomplete-msg" style="display:none;text-align:center;padding:40px 16px 32px;font-size:17px;font-weight:600;color:#f87171;line-height:1.8;">
         🎙 未检测到录音，请再说一遍<br>
         <span style="font-size:14px;font-weight:400;color:#94a3b8">No recording detected — please speak again</span><br>
-        <button class="btn active" style="margin-top:20px;font-size:15px;" onclick="evalRetry()">🎤 重新录音 Try Again</button>
+        <button class="btn active" style="margin-top:20px;font-size:15px;" onclick="evalRetry()">🎤 Try Again</button>
       </div>
 
       <!-- 发音提示 -->
@@ -18235,16 +18240,16 @@
           <div>🟣 紫色：平翘舌专项提示 / Purple: Retroflex-specific hint</div>
         </div>
         <div class="guide-compare-btns" style="margin-bottom:12px">
-          <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 录音<br><span style="font-size:10px;opacity:0.75">Recording</span></button>
-          <button class="guide-btn-native" id="guide-btn-native" onclick="playGuideNative()">🔊 原声<br><span style="font-size:10px;opacity:0.75">Native</span></button>
+          <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 <br><span style="font-size:10px;opacity:0.75">Recording</span></button>
+          <button class="guide-btn-native" id="guide-btn-native" onclick="playGuideNative()">🔊 <br><span style="font-size:10px;opacity:0.75">Native</span></button>
         </div>
         <div id="eval-dualtrack-body"></div>
       </div>
 
       <!-- 导航按钮 -->
       <div class="eval-nav" id="eval-nav">
-        <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ 上一页 Prev</button>
-        <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">下一页 Next ▶</button>
+        <button class="btn" id="eval-prev" onclick="evalNav(-1)">◀ Prev</button>
+        <button class="btn eval-btn-next" id="eval-next" onclick="evalNav(1)">Next ▶</button>
       </div>
     </div>
   </div>
@@ -18255,7 +18260,7 @@
       <div class="pth-inner">
         <div class="logo">
           <div class="logo-icon">影</div>
-          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">轻松学中文</div></div>
+          <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right">
           <div class="coin-bal-wrap" onclick="toggleWallet(event)" id="coin-bal-tip" style="display:none">
@@ -18267,13 +18272,12 @@
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
     </div>
     <div class="tip-inner">
-      <div class="tip-section-title">📚 本课地道指南</div>
-      <div class="tip-section-sub">Native Insider Tip</div>
+      <div class="tip-section-title">📚 Native Insider Tip</div>
       <div id="tip-inner-content"></div>
     </div>
     <div class="tip-footer">
-      <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ 返回 Back to Start</button>
-      <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">下一课 Next Lesson ▶</button>
+      <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ Back to Start</button>
+      <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">Next Lesson ▶</button>
     </div>
   </div>
 
@@ -18316,8 +18320,8 @@
             </div>
             <!-- 继续按钮在 flex 流内，紧跟语音条 -->
             <div class="char-intro-btn-row">
-              <button class="char-intro-btn char-intro-btn-prev" id="char-intro-btn-prev" onclick="charIntroPrev()" style="display:none">◀ 上一位 Prev</button>
-              <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">继续 Continue ➔</button>
+              <button class="char-intro-btn char-intro-btn-prev" id="char-intro-btn-prev" onclick="charIntroPrev()" style="display:none">◀ Prev</button>
+              <button class="char-intro-btn" id="char-intro-btn" onclick="charIntroClose()">Continue ➔</button>
             </div>
           </div>
         </div>
@@ -18331,7 +18335,7 @@
             <div id="char-profile-rows"><!-- JS 填充 --></div>
           </div>
           <div class="char-profile-footer">
-            <button class="char-profile-back-btn" onclick="charIntroToggleProfile()">← 返回 Back</button>
+            <button class="char-profile-back-btn" onclick="charIntroToggleProfile()">← Back</button>
           </div>
         </div>
 
@@ -18381,13 +18385,13 @@
       <div class="email-final-form" id="email-final-form">
         <input class="email-input" id="email-final-input" type="email"
                placeholder="your@email.com" autocomplete="email" />
-        <button class="email-btn" onclick="submitFinalEmail()">给我留个座 · Save my seat →</button>
+        <button class="email-btn" onclick="submitFinalEmail()">Save my seat →</button>
       </div>
       <div class="email-final-thanks" id="email-final-thanks">
         ✓ 座位留好了，等你回来<br/>
         <span style="font-size:12.5px;color:rgba(255,255,255,0.55);font-weight:400">Your seat is saved — we'll see you soon.</span>
       </div>
-      <button class="email-final-skip" id="email-final-skip" onclick="closeFinalEmailPage()">先逛逛 · Keep browsing ×</button>
+      <button class="email-final-skip" id="email-final-skip" onclick="closeFinalEmailPage()">Keep browsing ×</button>
       <div class="email-final-feedback">
         做这个的就我一个人，有想法/吐槽 →
         <a href="https://tally.so/r/VLbkXl" target="_blank" rel="noopener">直接告诉我</a>
@@ -18404,7 +18408,7 @@
     <div class="email-unit-form" id="email-unit-form">
       <input class="email-input" id="email-unit-input" type="email"
              placeholder="your@email.com" autocomplete="email" />
-      <button class="email-btn" onclick="submitUnitEmail()">通知我 · Notify me</button>
+      <button class="email-btn" onclick="submitUnitEmail()">Notify me</button>
     </div>
     <div class="email-unit-thanks" id="email-unit-thanks">
       ✓ 已收到，有新课立刻告诉你<br/>
