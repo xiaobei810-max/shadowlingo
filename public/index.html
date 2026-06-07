@@ -589,6 +589,13 @@
         0 2px 10px rgba(0,0,0,0.80),
         0 0 40px   rgba(0,0,0,0.90);
     }
+    /* 罗马音/英文名：第二行，约中文 60%，次级浅灰，居中 */
+    .char-intro-name-en {
+      font-size: 25px; font-weight: 700; color: rgba(226,232,240,0.62);
+      line-height: 1; letter-spacing: 0.06em; text-align: center;
+      margin-top: 6px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.95), 0 0 22px rgba(0,0,0,0.8);
+    }
 
     /* 右上角档案入口 — 绿色徽章，呼吸灯诱导点击 */
     @keyframes cornerBtnPulse {
@@ -692,6 +699,13 @@
     .char-intro-voice-text {
       font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.4; flex: 1;
     }
+    /* 签名台词英文字幕 */
+    .char-intro-quote-en {
+      font-size: 12px; font-style: italic;
+      color: rgba(255,255,255,0.52); line-height: 1.45;
+      letter-spacing: 0.02em; max-width: 88%;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+    }
 
     /* 继续按钮：flex 流内自然排列，呼吸绿光 */
     @keyframes btnPulse {
@@ -740,10 +754,27 @@
     }
     .char-profile-panel.open { opacity: 1; pointer-events: all; }
 
+    /* 角色立绘淡化水印（右下角，低透明度） */
+    .char-profile-watermark {
+      position: absolute; right: -6%; bottom: 0; z-index: 0;
+      height: 82%; width: auto; max-width: 70%;
+      object-fit: contain; object-position: bottom right;
+      opacity: 0.14; pointer-events: none;
+      filter: grayscale(0.15) contrast(1.05);
+    }
+    /* 水印上的暗色渐变：保证文字清晰 */
+    .char-profile-watermark-fade {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        linear-gradient(105deg, rgba(3,9,18,0.92) 30%, rgba(3,9,18,0.45) 72%, rgba(3,9,18,0.20) 100%),
+        linear-gradient(0deg, rgba(3,9,18,0.55) 0%, transparent 40%);
+    }
+
 /* 档案面板内容滚动区（宽卡片留更多横向 padding；顶部多留空间给角落关闭按钮） */
     .char-profile-scroll {
-      flex: 1; overflow-y: auto; padding: 48px 30px 22px;
+      flex: 1; overflow-y: auto; padding: 40px 30px 22px;
       position: relative; z-index: 1;
+      display: flex; flex-direction: column; justify-content: center;
     }
     .char-profile-scroll::-webkit-scrollbar { width: 3px; }
     .char-profile-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -778,12 +809,12 @@
 
     /* 图标行 */
     .char-profile-row {
-      display: flex; gap: 18px; margin-bottom: 14px; align-items: flex-start;
+      display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start;
     }
     .char-profile-icon {
-      font-size: 18px; flex-shrink: 0;
-      width: 24px; text-align: center; margin-top: 2px;
-      opacity: 0.88;
+      font-size: 19px; flex-shrink: 0;
+      width: 24px; text-align: center; margin-top: 1px;
+      opacity: 0.92;
     }
     .char-profile-val {
       font-size: 15px; color: rgba(255,255,255,0.78); line-height: 1.8; flex: 1;
@@ -4837,8 +4868,9 @@
                   inset 0 0 0 1px rgba(255,255,255,0.10);
     }
     .chs-typo-eyebrow {
-      font-size: 10px;
-      color: rgba(255,255,255,0.45);
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
       letter-spacing: 0.26em;
       text-transform: uppercase;
       text-align: center;
@@ -16341,7 +16373,16 @@
         id: 'mingxuan',
         speakerPattern: '赵明轩',
         nameCn: '赵明轩', nameEn: 'Zhao Mingxuan',
+        nameFront: '赵明轩',
+        bioIcons: ['🎓','✨','🤝'],
         title: '阳光学长 · Sunny Senior',
+        titleEn: 'Sunny Senior',
+        signature: { zh: '没问题！交给我！', en: 'No problem — leave it to me!' },
+        bioEn: [
+          "Grad student at Jinghua who genuinely loves helping people — always the first to step in when someone's stuck.",
+          'Sunny, direct, and powered by energy that never runs out.',
+          'The first friend Nora makes in China — the one who came to the airport to pick her up.',
+        ],
         badge: '✦ NEW CHARACTER · 新角色登场',
         narrative: '他在机场等候多时...',
         pills: ['京华大学', '阳光学长', '热心肠'],
@@ -16367,7 +16408,16 @@
         id: 'qiqi',
         speakerPattern: '夏七七',
         nameCn: '夏七七', nameEn: 'Xia Qiqi',
+        nameFront: '夏七七',
+        bioIcons: ['📱','✨','🎯'],
         title: '宝藏室友 · Bestie Roommate',
+        titleEn: 'Bestie Roommate',
+        signature: { zh: '别见外啊，有事直接喊我！', en: "Don't be a stranger — just holler whenever you need anything!" },
+        bioEn: [
+          'Nora\'s dorm roommate and your "walking map" to mastering the campus scene.',
+          "Lively and outgoing — she's the one who pulls Nora into the vibrant hustle and bustle of the real world.",
+          'Talks you through every tongue-tied moment with the real, slangy Chinese textbooks leave out.',
+        ],
         badge: '✦ NEW CHARACTER · 新角色登场',
         narrative: '听到开门的动静，她立刻放下手机迎了上来...',
         pills: ['中国室友', '生活向导', '吃瓜前线'],
@@ -16393,7 +16443,16 @@
         id: 'david',
         speakerPattern: '大卫',
         nameCn: '大卫 (David)', nameEn: 'David',
+        nameFront: '大卫',
+        bioIcons: ['📱','✨','🎯'],
         title: '热血语伴 · Enthusiastic Study Buddy',
+        titleEn: 'Lost in Translation',
+        signature: { zh: '今天的语法让我很头疼…… 我们去喝杯咖啡，放松我的脑子吧？', en: "Today's grammar is frying my brain… coffee break to reboot it?" },
+        bioEn: [
+          "Nora's fellow international student — your comrade-in-arms in the trenches of Chinese grammar.",
+          'Sunny and relentless, flashcards always on hand — but his English brain keeps hijacking his Chinese.',
+          "Your walking grammar-minesweeper: every hilarious mistake he makes is one you'll never have to.",
+        ],
         badge: '✦ NEW CHARACTER · 新角色登场',
         narrative: '他拿着手机到处寻找网络，脸上写满了对中文的求知欲……',
         pills: ['留学生搭子', '直翻受害者', '行走的错题本'],
@@ -16416,7 +16475,16 @@
         id: 'linwan',
         speakerPattern: '林晚',
         nameCn: '林晚 Lin Wan', nameEn: 'Lin Wan',
+        nameFront: '林晚',
+        bioIcons: ['🎓','✨','🎯'],
         title: '计算机学神 · The Quiet Tech Genius',
+        titleEn: 'The Quiet Tech Genius',
+        signature: { zh: '废话解决不了问题，行动才是最优解。', en: 'Talk solves nothing. Action is the optimal solution.' },
+        bioEn: [
+          "Top of Jinghua's CS department and president of the photography club — ruthlessly efficient.",
+          'A low-context talker: all flat statements, zero pleasantries, no filler.',
+          "Cold on the surface, pure action underneath — skips the emotional padding and just fixes the problem the second you're stuck.",
+        ],
         badge: '✦ NEW CHARACTER · 新角色登场',
         narrative: '看到她在点咖啡时的不知所措，我决定跳过寒暄，直接给出答案。',
         pills: ['计算机系学神', '极简主义', '细节杀手'],
@@ -16442,7 +16510,16 @@
         id: 'nora',
         speakerPattern: 'Nora',
         nameCn: '诺拉 Nora', nameEn: 'Nora',
+        nameFront: '诺拉',
+        bioIcons: ['✈️','✨','🎯'],
         title: '玩家镜像 · The Protagonist',
+        titleEn: 'The Protagonist',
+        signature: { zh: '与其等别人搭话，不如我先开口！', en: "Why wait for someone else to break the ice? I'll go first." },
+        bioEn: [
+          'Exchange student at Jinghua University, leveling up her Chinese one real conversation at a time.',
+          'Never waits around — she makes the first move.',
+          'Takes problems head-on instead of complaining about them.',
+        ],
         badge: '✦ NEW CHARACTER · 新角色登场',
         narrative: '推着沉重的行李箱，她环顾着陌生的机场...',
         pills: ['京华留学生', '独立清醒', '行动派'],
@@ -16546,50 +16623,45 @@
       if (!c) return;
       var el = function(i) { return document.getElementById(i); };
 
-      // ── 主卡片内容填充 ──
-      el('char-intro-narrative').textContent  = c.narrative || '';
-      el('char-intro-name-cn').textContent    = c.nameCn;
-      el('char-intro-voice-text').textContent = c.greeting;
+      // ── 主卡片正面内容填充（重设：隐藏旁白/标签/问候，改放签名台词）──
+      var narrEl = el('char-intro-narrative');
+      if (narrEl) narrEl.style.display = 'none';
+      el('char-intro-name-cn').textContent    = c.nameFront || c.nameCn;
+      var nameEnEl = el('char-intro-name-en');
+      if (nameEnEl) nameEnEl.textContent = c.nameEn || '';
+      // 正面语音条 = 签名台词（中文）+ 英文字幕
+      var sig = c.signature || { zh: c.greeting || '', en: '' };
+      el('char-intro-voice-text').textContent = sig.zh;
+      var qEnEl = el('char-intro-quote-en');
+      if (qEnEl) qEnEl.textContent = sig.en || '';
       el('char-intro-btn').textContent        = isProfile ? 'Close ✕' : (c.btnText || 'Continue ➔');
       el('char-intro-btn').onclick            = charIntroClose;
       // 根据历史显示/隐藏"上一位"按钮（第一个角色时隐藏）
       var prevBtn = el('char-intro-btn-prev');
       if (prevBtn) prevBtn.style.display = (!isProfile && _charIntroHistory.length > 1) ? '' : 'none';
 
-      // 胶囊标签
+      // 胶囊标签：重设后不再展示
       var pillsEl = el('char-intro-pills');
-      pillsEl.innerHTML = (c.pills || []).map(function(p) {
-        return '<span class="char-intro-pill">' + p + '</span>';
-      }).join('');
+      if (pillsEl) { pillsEl.innerHTML = ''; pillsEl.style.display = 'none'; }
 
-      // ── 档案面板内容填充 ──
-      el('char-profile-name').textContent     = c.nameCn;
-      el('char-profile-subtitle').textContent = c.title;
+      // ── 档案面板（反面）：纯英文、纯文字、无音频 ──
+      el('char-profile-name').textContent     = c.nameEn || c.nameCn;
+      el('char-profile-subtitle').textContent = c.titleEn || c.title;
       var rowsEl = el('char-profile-rows');
-      rowsEl.innerHTML = (c.profileRows || []).map(function(r) {
-        if (r.quote) {
-          // 口头禅：纵向铺开 — 顶部小标题行 + 大引号句 + 播放按钮
-          var escapedVal = r.val.replace(/'/g, "\\'");
-          var role = c.greetingRole || 'local';
-          var rate = c.greetingRate || 1.0;
-          var quoteAudioUrl = c.quoteAudio ? '\'' + c.quoteAudio + '\'' : 'null';
-          return '<div class="char-profile-row char-profile-row-quote">' +
-            '<div class="char-profile-quote-header">' +
-              '<span class="char-profile-icon">' + (r.icon || '💬') + '</span>' +
-              (r.label ? '<span class="char-profile-quote-label">' + r.label + ' &middot; ' + (r.labelEn || 'Catchphrase') + '</span>' : '') +
-              '<button class="char-profile-quote-play" onclick="charProfilePlayQuote(\'' + escapedVal + '\',\'' + role + '\',' + rate + ',' + quoteAudioUrl + ')" title="播放">' +
-                '<svg width="8" height="10" viewBox="0 0 8 10" fill="none"><path d="M1 1L7 5L1 9V1Z" fill="#22c55e"/></svg>' +
-              '</button>' +
-            '</div>' +
-            '<span class="char-profile-quote">' + r.val + '</span>' +
-            '</div>';
-        }
-        // 普通图标行
+      var _bioIcons = c.bioIcons || [];
+      rowsEl.innerHTML = (c.bioEn || []).map(function(b, i) {
         return '<div class="char-profile-row">' +
-          '<div class="char-profile-icon">' + (r.icon || '') + '</div>' +
-          '<div class="char-profile-val">'  + r.val          + '</div>' +
+          '<div class="char-profile-icon">' + (_bioIcons[i] || '•') + '</div>' +
+          '<div class="char-profile-val">' + b + '</div>' +
           '</div>';
       }).join('');
+      // 反面立绘淡化水印（取现有单图立绘 / body / head）
+      var wmEl = el('char-profile-watermark');
+      if (wmEl) {
+        var wmSrc = c.singleSprite || c.body || c.head || '';
+        if (wmSrc) { wmEl.src = wmSrc; wmEl.style.display = ''; }
+        else { wmEl.style.display = 'none'; }
+      }
       // 剪影图：用 body 图（躯干轮廓更像剪影）
       // 每次打开都重置到正面
       el('char-profile-panel').classList.remove('open');
@@ -16797,16 +16869,19 @@
         audio.play().catch(function() { _setPlayBtnIcon(false); });
       }
 
-      if (c.greetingAudio) {
+      // 重设后正面播放的是「签名台词」：静态文件用 quoteAudio，否则走 TTS
+      var sigText = (c.signature && c.signature.zh) || c.greeting;
+      var sigStatic = c.quoteAudio || null;
+      if (sigStatic) {
         // 有预生成静态文件：直接播放，无需 loading 动画
-        _playGreetingUrl(c.greetingAudio, false);
+        _playGreetingUrl(sigStatic, false);
       } else {
         // 无静态文件：实时调 Edge TTS
         if (playBtn) { playBtn.classList.add('loading'); playBtn.innerHTML = ''; }
         fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: c.greeting, role: c.greetingRole || 'local', rate: c.greetingRate || 1.0 })
+          body: JSON.stringify({ text: sigText, role: c.greetingRole || 'local', rate: c.greetingRate || 1.0 })
         }).then(function(r) { return r.ok ? r.blob() : Promise.reject('tts-err'); })
           .then(function(blob) {
             _playGreetingUrl(URL.createObjectURL(blob), true);
@@ -18261,6 +18336,7 @@
             <div class="char-intro-name-row">
               <div class="char-intro-name-cn" id="char-intro-name-cn">赵明轩</div>
             </div>
+            <div class="char-intro-name-en" id="char-intro-name-en">Zhao Mingxuan</div>
             <div class="char-intro-pills" id="char-intro-pills">
               <span class="char-intro-pill">京华大学</span>
               <span class="char-intro-pill">阳光学长</span>
@@ -18274,6 +18350,8 @@
               </button>
               <span class="char-intro-voice-text" id="char-intro-voice-text">嗨！欢迎来到中国，我来接你了！</span>
             </div>
+            <!-- 签名台词英文字幕（正面） -->
+            <div class="char-intro-quote-en" id="char-intro-quote-en"></div>
             <!-- 继续按钮在 flex 流内，紧跟语音条 -->
             <div class="char-intro-btn-row">
               <button class="char-intro-btn char-intro-btn-prev" id="char-intro-btn-prev" onclick="charIntroPrev()" style="display:none">◀ Prev</button>
@@ -18284,6 +18362,10 @@
 
         <!-- ★ 背面档案（默认隐藏，点 i 切换） ★ -->
         <div class="char-profile-panel" id="char-profile-panel">
+          <!-- 角色立绘淡化水印 + 暗色渐变（保证文字清晰） -->
+          <img class="char-profile-watermark" id="char-profile-watermark" alt="" aria-hidden="true"
+               onerror="this.style.display='none'">
+          <div class="char-profile-watermark-fade"></div>
           <div class="char-profile-scroll">
             <div class="char-profile-name-big" id="char-profile-name">赵明轩</div>
             <div class="char-profile-subtitle" id="char-profile-subtitle">阳光学长 · Sunny Senior</div>
