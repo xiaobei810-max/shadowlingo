@@ -5,6 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EchoChinese</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
 
   <!-- Open Graph / Social sharing -->
   <meta property="og:type"        content="website" />
@@ -77,35 +79,16 @@
       gap: 12px;
     }
 
+    /* 开放式平铺 logo：无底盘/描边/阴影/圆框，纯绿色声波剪影 */
     .logo-icon {
       width: 46px;
       height: 46px;
-      /* 深邃暗黑底盘 — 磨砂玻璃质感 */
-      background: linear-gradient(145deg, #1c212e 0%, #0d1117 100%);
-      border-radius: 14px;
-      border: 1px solid rgba(31,204,102,0.18);
-      box-shadow:
-        0 0 18px rgba(31,204,102,0.07),
-        inset 0 1px 0 rgba(255,255,255,0.09),
-        inset 0 -1px 0 rgba(0,0,0,0.45),
-        0 4px 18px rgba(0,0,0,0.65);
       display: flex;
       align-items: center;
       justify-content: center;
-      /* 现代几何黑体字，首选系统 PingFang / HeiTi，降级 Noto Sans SC */
-      font-family: 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB',
-                   'Microsoft YaHei UI', 'Source Han Sans CN', sans-serif;
-      font-size: 22px;
-      font-weight: 900;
-      /* 高饱和亮绿，从磨砂玻璃透出的收敛柔光 */
-      color: #1fcc66;
-      text-shadow:
-        0 0  6px rgba(31,204,102,0.80),
-        0 0 16px rgba(31,204,102,0.35),
-        0 0 34px rgba(31,204,102,0.14);
-      letter-spacing: -0.02em;
       user-select: none;
     }
+    .logo-wave rect { fill: #1fcc66; }
 
     .logo-text {
       font-size: 20px;
@@ -134,7 +117,6 @@
     /* 小尺寸 logo（32px） */
     .pth-inner .logo-icon {
       width: 32px; height: 32px;
-      font-size: 15px; border-radius: 9px;
     }
     .pth-inner .logo-text { font-size: 15px; }
     .pth-inner .logo-sub  { font-size: 11px; }
@@ -2083,39 +2065,20 @@
 
     /* ── 回声币系统 Echo Coin (Premium Crypto Token) ────────── */
 
-    /* ─── 硬币底座：金属磨砂玻璃质感 ──────────────────────── */
+    /* ─── 扁平图标式金币：实心盘 + 外缘描边 + 内环 + ¥（无球面高光）── */
     .echo-coin {
       position: relative;
       border-radius: 50%;
-      background: linear-gradient(135deg, #2a2d35 0%, #161b22 100%);
-      border: 1px solid rgba(31,204,102,0.22);
-      box-shadow:
-        0 0 10px rgba(31,204,102,0.13),
-        0 0 26px rgba(31,204,102,0.05),
-        inset 0 1px 0 rgba(255,255,255,0.12),
-        inset 0 -1px 0 rgba(0,0,0,0.45),
-        inset 1px 0 0 rgba(255,255,255,0.05),
-        0 6px 24px rgba(0,0,0,0.65);
+      background: url('/coin.svg') center/100% 100% no-repeat;
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-    }
-    /* 左上角弧形高光（模拟光源） */
-    .echo-coin::before {
-      content: '';
-      position: absolute;
-      top: 9%; left: 12%;
-      width: 42%; height: 22%;
-      background: linear-gradient(135deg, rgba(255,255,255,0.20), transparent);
-      border-radius: 50%;
-      transform: rotate(-18deg);
-      pointer-events: none;
     }
     .echo-coin-lg { width: 58px; height: 58px; }
     .echo-coin-sm { width: 22px; height: 22px; }
 
-    /* ─── 声波竖条图标 ──────────────────────────────────────── */
-    .ec-svg { display: block; overflow: visible; }
-    .ec-bar { fill: #1fcc66; rx: 2px; } /* rx 兜底（SVG attr 优先） */
+    /* ─── 旧声波竖条已移作 logo；货币改用纯金盘，隐藏内部竖条 ── */
+    .ec-svg { display: none; }
+    .ec-bar { fill: #1fcc66; rx: 2px; }
 
     /* ─── 悬浮动画（套在外层 wrapper 上，不影响 coinPop） ─── */
     .coin-float-wrap { animation: ecFloat 3s ease-in-out infinite; }
@@ -2177,8 +2140,12 @@
     }
     /* header row: icon + label */
     .wp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-    .wp-header-icon { width: 36px; height: 36px; border-radius: 10px;
-      background: rgba(31,204,102,0.10); border: 1px solid rgba(31,204,102,0.20);
+    .wp-header-icon { width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(145deg, #ffe27a 0%, #f4bf45 46%, #c98321 100%);
+      border: 1px solid rgba(180,120,30,0.55);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.22),
+        inset 0 2px 2px rgba(255,255,255,0.55),
+        inset 0 -3px 4px rgba(150,90,15,0.55), 0 2px 7px rgba(0,0,0,0.45);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .wp-header-label { font-size: 16px; font-weight: 700; color: #e2e8f0; }
     .wp-header-sub   { font-size: 11px; color: #4b5563; margin-top: 1px; }
@@ -5744,7 +5711,7 @@
   <div class="app">
     <div class="header">
       <div class="logo">
-        <div class="logo-icon">影</div>
+        <div class="logo-icon"><svg class="logo-wave" viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><rect x="2" y="8" width="3" height="8" rx="1.5"/><rect x="6.25" y="4.5" width="3" height="15" rx="1.5"/><rect x="10.5" y="1" width="3" height="22" rx="1.5"/><rect x="14.75" y="4.5" width="3" height="15" rx="1.5"/><rect x="19" y="8" width="3" height="8" rx="1.5"/></svg></div>
         <div>
           <div class="logo-text">EchoChinese</div>
           <div class="logo-sub">Speak real Chinese through story</div>
@@ -5920,7 +5887,7 @@
     <div class="page-top-bar">
       <div class="pth-inner">
         <div class="logo">
-          <div class="logo-icon">影</div>
+          <div class="logo-icon"><svg class="logo-wave" viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><rect x="2" y="8" width="3" height="8" rx="1.5"/><rect x="6.25" y="4.5" width="3" height="15" rx="1.5"/><rect x="10.5" y="1" width="3" height="22" rx="1.5"/><rect x="14.75" y="4.5" width="3" height="15" rx="1.5"/><rect x="19" y="8" width="3" height="8" rx="1.5"/></svg></div>
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right" style="position:relative">
@@ -5953,8 +5920,8 @@
           </div>
         </div>
         <div>
-          <div class="completion-coin-text" id="completion-coin-text">本课获得 +0 回声币</div>
-          <div class="completion-coin-sub" id="completion-coin-sub">累计余额：0 枚</div>
+          <div class="completion-coin-text" id="completion-coin-text">+0 Coins</div>
+          <div class="completion-coin-sub" id="completion-coin-sub">Balance: 0 coins</div>
         </div>
       </div>
       </div><!-- /.score-summary-card -->
@@ -8990,8 +8957,8 @@
       var bub = document.createElement('div');
       bub.className = 'unlock-bubble';
       bub.innerHTML =
-        '<div class="unlock-bubble-zh">🎁 盲盒商店已解锁</div>' +
-        '<div class="unlock-bubble-en">Blind Box Unlocked</div>';
+        '<div class="unlock-bubble-zh">🎁 Blind Box Shop</div>' +
+        '<div class="unlock-bubble-en">Unlocked!</div>';
       bub.addEventListener('click', function(e) { e.stopPropagation(); _skipUnlockAnimation(); });
       document.body.appendChild(bub);
       // 定位：气泡贴在 anchor 下方略偏左
@@ -9072,8 +9039,7 @@
     function showTopbarTooltip(type, anchorEl) {
       hideTopbarTooltip();
       var html = type === 'coin'
-        ? '<b>回声币 · Echo Coins</b>' +
-          '<span class="tt-zh">完成课程获得，用于抽盲盒</span>' +
+        ? '<b>Coins</b>' +
           '<span class="tt-en">Earn from lessons; spend to pull boxes</span>'
         : '<b>碎片 · Memory Shards</b>' +
           '<span class="tt-zh">重复获得自动转化</span>' +
@@ -9159,7 +9125,7 @@
             ' id="gs-pull-btn"' +
             ' onclick="onGachaPullClick()"' +
             (canPull ? '' : ' disabled') + '>' +
-            (canPull ? 'Draw' : '回声币不足') +
+            (canPull ? 'Draw' : 'Not enough coins') +
           '</button>' +
         '</div>' +
         // ── 次级入口
@@ -9206,7 +9172,7 @@
       if (pullBtn) {
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
-        pullBtn.innerHTML = canPull ? 'Draw' : '回声币不足';
+        pullBtn.innerHTML = canPull ? 'Draw' : 'Not enough coins';
       }
     }
 
@@ -9716,7 +9682,7 @@
       if (btn) {
         btn.disabled  = !canPull;
         btn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
-        btn.innerHTML = canPull ? 'Draw' : '回声币不足';
+        btn.innerHTML = canPull ? 'Draw' : 'Not enough coins';
       }
     }
 
@@ -10548,25 +10514,18 @@
       card.addEventListener('click', function(e) { e.stopPropagation(); });
       var ctaHtml = canOpen
         ? '<div class="wp-cta wp-cta-active" onclick="openGachaStore()" style="cursor:pointer">' +
-            '<span>🎁</span><span>盲盒商店</span>' +
+            '<span>🎁</span><span>Blind Box Shop</span>' +
           '</div>'
         : '<div class="wp-cta">' +
-            '<span>🔒</span><span>盲盒商店 Store (' + goal + ')</span>' +
+            '<span>🔒</span><span>Blind Box Shop (' + goal + ')</span>' +
           '</div>';
       card.innerHTML =
         '<button class="wp-close" onclick="closeWallet()">✕</button>' +
         '<div class="wp-header">' +
-          '<div class="wp-header-icon">' +
-            '<svg width="18" height="16" viewBox="0 0 28 24" style="display:block">' +
-              '<rect fill="#1fcc66" x="0"    y="8"  width="5" height="8"  rx="2.5"/>' +
-              '<rect fill="#1fcc66" x="7.5"  y="1"  width="5" height="22" rx="2.5"/>' +
-              '<rect fill="#1fcc66" x="15"   y="4"  width="5" height="16" rx="2.5"/>' +
-              '<rect fill="#1fcc66" x="22.5" y="8"  width="5" height="8"  rx="2.5"/>' +
-            '</svg>' +
-          '</div>' +
-          '<div class="wp-header-label">回声币 Echo Coins</div>' +
+          '<div class="echo-coin" style="width:36px;height:36px"></div>' +
+          '<div class="wp-header-label">Coins</div>' +
         '</div>' +
-        '<div class="wp-bal-num">' + bal + '<span class="wp-bal-unit">枚</span></div>' +
+        '<div class="wp-bal-num">' + bal + '<span class="wp-bal-unit">coins</span></div>' +
         '<div class="wp-track-wrap">' +
           '<div class="wp-track-label">' +
             '<span class="wp-track-label-l">0</span>' +
@@ -10576,8 +10535,6 @@
         '</div>' +
         (!canOpen
           ? '<div class="wp-hint">' +
-              '<span class="wp-hint-zh">还需 ' + rem + ' 枚</span>' +
-              '<span class="wp-hint-sep">·</span>' +
               '<span class="wp-hint-en">' + rem + ' more to unlock</span>' +
             '</div>'
           : '') +
@@ -10608,7 +10565,7 @@
                 '<rect class="ec-bar" x="22.5" y="8" width="5" height="8" rx="2.5"/>' +
               '</svg>' +
             '</div>' +
-            'First Echo Coin!' +
+            'First Coin!' +
           '</div>' +
           '<div class="aha-rows">' +
             '<div class="aha-row">' +
@@ -10676,7 +10633,7 @@
       } else {
         // 分数不足60，提示重练
         setTimeout(function() {
-          retryEl.innerHTML = '发音准确率不足，暂未获得回声币' +
+          retryEl.innerHTML = 'Accuracy too low — no coins yet' +
             '<button class="eval-coin-retry-btn" onclick="doRecord()">🔄 Retry</button>';
           retryEl.style.display = 'block';
         }, delay || 400);
@@ -14235,7 +14192,7 @@
         var coinFloat = document.getElementById('completion-coin-float');
         if (coinFloat) coinFloat.style.display = ''; // reset in case previous run hid it
         if (_sessionCoinsEarned > 0) {
-          coinText.textContent = '本课获得 +' + _sessionCoinsEarned + ' 回声币';
+          coinText.textContent = '+' + _sessionCoinsEarned + ' Coins';
           if (coinSub) coinSub.style.display = 'none';
           coinRow.style.display = 'flex';
           setTimeout(function() {
@@ -14245,7 +14202,7 @@
           }, 600);
         } else {
           // 0 币：展示但不显示动画硬币
-          coinText.textContent = '本课回声币：0';
+          coinText.textContent = 'Coins: 0';
           coinSub.textContent  = '';
           coinRow.style.display = 'flex';
           // 隐藏大硬币，只留文字
@@ -17895,7 +17852,7 @@
     <div class="page-top-bar">
       <div class="pth-inner">
         <div class="logo">
-          <div class="logo-icon">影</div>
+          <div class="logo-icon"><svg class="logo-wave" viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><rect x="2" y="8" width="3" height="8" rx="1.5"/><rect x="6.25" y="4.5" width="3" height="15" rx="1.5"/><rect x="10.5" y="1" width="3" height="22" rx="1.5"/><rect x="14.75" y="4.5" width="3" height="15" rx="1.5"/><rect x="19" y="8" width="3" height="8" rx="1.5"/></svg></div>
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right">
@@ -17927,7 +17884,7 @@
     <div class="page-top-bar">
       <div class="pth-inner">
         <div class="logo">
-          <div class="logo-icon">影</div>
+          <div class="logo-icon"><svg class="logo-wave" viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><rect x="2" y="8" width="3" height="8" rx="1.5"/><rect x="6.25" y="4.5" width="3" height="15" rx="1.5"/><rect x="10.5" y="1" width="3" height="22" rx="1.5"/><rect x="14.75" y="4.5" width="3" height="15" rx="1.5"/><rect x="19" y="8" width="3" height="8" rx="1.5"/></svg></div>
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right">
@@ -17963,7 +17920,7 @@
   <div class="page-top-bar">
     <div class="pth-inner">
       <div class="logo">
-        <div class="logo-icon">影</div>
+        <div class="logo-icon"><svg class="logo-wave" viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><rect x="2" y="8" width="3" height="8" rx="1.5"/><rect x="6.25" y="4.5" width="3" height="15" rx="1.5"/><rect x="10.5" y="1" width="3" height="22" rx="1.5"/><rect x="14.75" y="4.5" width="3" height="15" rx="1.5"/><rect x="19" y="8" width="3" height="8" rx="1.5"/></svg></div>
         <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
       </div>
       <div class="header-right">
@@ -18194,8 +18151,7 @@
             <div>
               <div class="eval-coin-plus" id="eval-coin-plus">+3</div>
               <div class="eval-coin-label">
-                <span class="ec-label-main">回声币</span>
-                <span class="ec-label-sub">Echo Coins</span>
+                <span class="ec-label-main">Coins</span>
               </div>
             </div>
           </div>
@@ -18259,7 +18215,7 @@
     <div class="page-top-bar">
       <div class="pth-inner">
         <div class="logo">
-          <div class="logo-icon">影</div>
+          <div class="logo-icon"><svg class="logo-wave" viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><rect x="2" y="8" width="3" height="8" rx="1.5"/><rect x="6.25" y="4.5" width="3" height="15" rx="1.5"/><rect x="10.5" y="1" width="3" height="22" rx="1.5"/><rect x="14.75" y="4.5" width="3" height="15" rx="1.5"/><rect x="19" y="8" width="3" height="8" rx="1.5"/></svg></div>
           <div><div class="logo-text">EchoChinese</div><div class="logo-sub">Speak real Chinese through story</div></div>
         </div>
         <div class="header-right">

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <circle cx="40" cy="40" r="38" fill="#1F9E58"/>
+  <circle cx="40" cy="40" r="38" fill="none" stroke="#0A3A1D" stroke-width="3"/>
+  <circle cx="40" cy="40" r="28" fill="none" stroke="#0A3A1D" stroke-width="3"/>
+  <text x="40" y="40" text-anchor="middle" dominant-baseline="central"
+        font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif"
+        font-weight="800" font-size="40" fill="#0A3A1D">¥</text>
+</svg>
