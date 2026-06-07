@@ -1552,83 +1552,10 @@
     }
     .tip-btn-next:hover { background: #16a34a; }
 
-    /* ══════════════════════════════════════════════════════════
-       ── 开场悬念 Prologue CG ───────────────────────────────── */
-    #prologue-page {
-      position: fixed; inset: 0; z-index: 10000; /* 必须高于 char-intro-overlay 的 9999 */
-      display: none; align-items: center; justify-content: center;
-      flex-direction: column; cursor: pointer; user-select: none;
-    }
-    #prologue-page.show { display: flex; }
-    #prologue-bg {
-      position: absolute; inset: 0;
-      background: url('/assets/cg/lesson1_airport.png?v=20260505') center/cover no-repeat;
-      filter: blur(20px) brightness(0.52);
-      transform: scale(1.08); /* 防模糊白边 */
-    }
-    /* 双语文本容器 */
-    #prologue-texts {
-      position: relative; z-index: 1;
-      display: flex; flex-direction: column; align-items: center; gap: 14px;
-      padding: 0 24px; text-align: center;
-    }
-    /* 中文主标题 — 衬线体，电影字幕感 */
-    #prologue-text-zh {
-      font-family: "Noto Serif SC", "SimSun", "STSong", serif;
-      font-size: clamp(1.3rem, 4.8vw, 1.55rem);
-      font-weight: 700; color: #fff;
-      white-space: nowrap;
-      letter-spacing: 3px; line-height: 1.5;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 32px rgba(0,0,0,0.85);
-    }
-    /* 英文副标题 — 无衬线，稍暗，允许换行（句子较长） */
-    #prologue-text-en {
-      font-size: clamp(0.82rem, 2.8vw, 1rem);
-      font-weight: 400; color: rgba(226,232,240,0.82);
-      white-space: normal; max-width: 36em;
-      letter-spacing: 0.04em; line-height: 1.6;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-    }
-    /* 超小屏兜底 */
-    @media (max-width: 380px) {
-      #prologue-text-zh { font-size: 1.1rem; letter-spacing: 2px; }
-      #prologue-text-en { font-size: 0.78rem; }
-    }
-    @media (max-width: 320px) {
-      #prologue-text-zh { font-size: 0.95rem; letter-spacing: 1.5px; }
-      #prologue-text-en { font-size: 0.72rem; }
-    }
-    /* 每个打字机字符的浮现动画 */
-    @keyframes charFadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    /* ── 等待点击的开始提示 ── */
-    #prologue-start-hint {
-      position: relative; z-index: 1;
-      font-size: 13px; color: rgba(255,255,255,0.6);
-      margin-top: 52px; letter-spacing: 0.13em;
-      display: none; /* JS 控制：show 时 display:block */
-      text-align: center;
-    }
-    #prologue-start-hint.show {
-      display: block;
-      animation: breatheHint 1.8s ease-in-out infinite;
-    }
-    /* ── 打字机完成后的继续提示 ── */
-    #prologue-tap-hint {
-      position: relative; z-index: 1;
-      font-size: 12px; color: rgba(255,255,255,0.5);
-      margin-top: 44px; letter-spacing: 0.12em;
-      opacity: 0; /* 由 JS 在打字机完成后控制 */
-    }
     /* 呼吸灯：由 JS 添加 .breathing 触发 */
     @keyframes breatheHint {
       0%, 100% { opacity: 0.28; }
       50%       { opacity: 0.80; }
-    }
-    #prologue-tap-hint.breathing {
-      animation: breatheHint 2.4s ease-in-out infinite;
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -5107,12 +5034,25 @@
       justify-content: flex-start; overflow-y: auto;
     }
     #cover-page.show { display: flex; }
+    /* 模糊 CG 背景氛围（取该课 cgImage） */
+    #cover-cg-bg {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background-position: center; background-size: cover; background-repeat: no-repeat;
+      filter: blur(22px) brightness(0.46); transform: scale(1.1);
+    }
+    /* 暗渐变叠层：保证标题/简介清晰 */
+    #cover-cg-fade {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(7,9,15,0.62) 0%, rgba(7,9,15,0.46) 42%, rgba(7,9,15,0.78) 100%);
+    }
     /* 封面角色立绘已下线（M7 换装在收集册中独立展示，封面保持纯净） */
     .cover-character-img { display: none !important; }
     .cover-inner {
       flex: 1; width: 100%; max-width: 480px; padding: 32px 32px 104px;
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; text-align: center; gap: 14px;
+      position: relative; z-index: 1;
     }
     .cover-lesson-num {
       font-size: 22px; font-weight: 700; color: var(--green);
@@ -5897,16 +5837,6 @@
     </div>
   </div>
 
-  <!-- ── 开场悬念 Prologue CG Page ── -->
-  <div id="prologue-page">
-    <div id="prologue-bg"></div>
-    <div id="prologue-texts">
-      <div id="prologue-text-zh"></div>
-      <div id="prologue-text-en"></div>
-    </div>
-    <div id="prologue-start-hint">🖱️ 点击屏幕开始 · Click to start</div>
-    <div id="prologue-tap-hint">✦ Tap to continue ✦</div>
-  </div>
 
   <div class="overlay" id="overlay">
     <!-- Fireworks canvas sits at z-index:1 inside overlay's stacking context;
@@ -14586,6 +14516,21 @@
       var numEl = document.getElementById('cover-lesson-num');
       if (numEl) numEl.textContent = 'Lesson ' + lessonNum;
 
+      // 模糊 CG 背景氛围：用该课 cgImage（无则回退纯色底）
+      var cgBgEl = document.getElementById('cover-cg-bg');
+      var cgFadeEl = document.getElementById('cover-cg-fade');
+      if (cgBgEl) {
+        if (lesson.cgImage) {
+          cgBgEl.style.backgroundImage = 'url("' + lesson.cgImage + '")';
+          cgBgEl.style.display = '';
+          if (cgFadeEl) cgFadeEl.style.display = '';
+        } else {
+          cgBgEl.style.backgroundImage = '';
+          cgBgEl.style.display = 'none';
+          if (cgFadeEl) cgFadeEl.style.display = 'none';
+        }
+      }
+
       // 标题去掉"第X课："前缀，只保留课名（仅英文）
       var titleEn = tField(lesson, 'title').replace(/^Lesson \d+[:\s]+/i, '');
       var tzhEl = document.getElementById('cover-title-zh');
@@ -14636,166 +14581,6 @@
       })();
     }
 
-    // ── 无新角色时的 CG 全屏过场（模糊背景 + 衬线叙事文字，与序章风格一致）───
-    // onShown（可选）：CG 淡入完成后立即回调，用于隐藏封面避免闪烁
-    function showLessonCg(cgUrl, callback, onShown) {
-      var lesson    = LESSONS[lessonIdx];
-      var textZh    = lesson.cgText   || '';
-      var textEn    = lesson.cgTextEn || '';
-
-      var page = document.createElement('div');
-      page.style.cssText =
-        'position:fixed;inset:0;z-index:10000;' +
-        'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-        'cursor:pointer;user-select:none;' +
-        'opacity:0;transition:opacity 0.5s ease;';
-
-      // 模糊背景（与 #prologue-bg 参数保持一致）
-      var bg = document.createElement('div');
-      bg.style.cssText =
-        'position:absolute;inset:0;' +
-        'background:url("' + cgUrl + '") center/cover no-repeat;' +
-        'filter:blur(20px) brightness(0.52);' +
-        'transform:scale(1.08);'; // 防模糊白边
-      page.appendChild(bg);
-
-      // 居中双语叙事文字
-      var texts = document.createElement('div');
-      texts.style.cssText =
-        'position:relative;z-index:1;' +
-        'display:flex;flex-direction:column;align-items:center;gap:14px;' +
-        'padding:0 24px;text-align:center;';
-
-      var zhEl = null, enEl = null;
-      if (textZh) {
-        zhEl = document.createElement('div');
-        zhEl.style.cssText =
-          'font-family:"Noto Serif SC","SimSun","STSong",serif;' +
-          'font-size:clamp(1.3rem,4.8vw,1.55rem);font-weight:700;color:#fff;' +
-          'letter-spacing:3px;line-height:1.5;min-height:1.5em;' +
-          'text-shadow:0 2px 8px rgba(0,0,0,0.8),0 0 32px rgba(0,0,0,0.85);';
-        zhEl.textContent = '';   // 打字机从空开始
-        texts.appendChild(zhEl);
-      }
-      if (textEn) {
-        enEl = document.createElement('div');
-        enEl.style.cssText =
-          'font-size:clamp(0.82rem,2.8vw,1rem);font-weight:400;' +
-          'color:rgba(226,232,240,0.82);white-space:normal;max-width:36em;' +
-          'letter-spacing:0.04em;line-height:1.6;min-height:1.4em;' +
-          'text-shadow:0 2px 8px rgba(0,0,0,0.8);';
-        enEl.textContent = '';   // 打字机从空开始
-        texts.appendChild(enEl);
-      }
-      page.appendChild(texts);
-
-      // 点击继续提示（初始透明）
-      var hintId = 'lcg-hint-' + Date.now();
-      var hint = document.createElement('div');
-      hint.id = hintId;
-      hint.style.cssText =
-        'position:relative;z-index:1;' +
-        'font-size:12px;color:rgba(255,255,255,0);' +
-        'letter-spacing:0.12em;margin-top:44px;' +
-        'transition:color 0.8s ease;text-align:center;';
-      hint.textContent = '✦ Tap to continue ✦';
-      page.appendChild(hint);
-
-      document.body.appendChild(page);
-      var cgTypeTimers = [];
-      var cgFallbackTid = null;
-      // 视觉小说式两段交互：typed=false 时点击=立即出全文；typed=true 时点击=进入下一页
-      var typed = false;
-
-      function showTapHint() {
-        var hintEl = document.getElementById(hintId);
-        if (hintEl) {
-          hintEl.style.color = 'rgba(255,255,255,0.5)';
-          hintEl.style.animation = 'breatheHint 2.4s ease-in-out infinite';
-        }
-      }
-      // 立即把全文塞进去（用户在打字过程中点击时调用）
-      function finishTypingNow() {
-        if (typed) return;
-        cgTypeTimers.forEach(function (t) { clearTimeout(t); });
-        cgTypeTimers.length = 0;
-        if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
-        if (zhEl && textZh) zhEl.textContent = textZh;
-        if (enEl && textEn) enEl.textContent = textEn;
-        // 不停 TTS — 让旁白继续播完更自然；如希望同步停掉，注释下一行打开即可
-        // stopAudio();
-        showTapHint();
-        typed = true;
-      }
-
-      // 淡入后启动打字机 + TTS
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-          page.style.opacity = '1';
-          if (onShown) setTimeout(onShown, 500);
-
-          // ── 打字机 + 语音：中文逐字与整句 TTS 大致同拍；英文整句一次出现 ──
-          setTimeout(function() {
-            var zhChars = textZh ? Array.from(textZh) : [];
-            var n = Math.max(1, zhChars.length);
-            function armZhEn(stepMs, zhDonePadMs) {
-              stepMs = Math.max(52, Math.min(220, stepMs));
-              zhDonePadMs = zhDonePadMs == null ? 420 : zhDonePadMs;
-              if (zhEl) zhEl.textContent = '';
-              if (enEl) enEl.textContent = '';
-              zhChars.forEach(function(ch, i) {
-                var tid = setTimeout(function() { if (zhEl) zhEl.textContent += ch; }, Math.round(i * stepMs));
-                cgTypeTimers.push(tid);
-              });
-              var zhDone = Math.round(zhChars.length * stepMs) + zhDonePadMs;
-              var tidEn = setTimeout(function() { if (enEl && textEn) enEl.textContent = textEn; }, zhDone);
-              cgTypeTimers.push(tidEn);
-              var tidHint = setTimeout(function() { typed = true; showTapHint(); }, zhDone + 320);
-              cgTypeTimers.push(tidHint);
-            }
-            var armed = false;
-            function armOnceFromDuration(durSec) {
-              if (armed) return;
-              armed = true;
-              var totalMs = (durSec && isFinite(durSec) && durSec > 0.28) ? durSec * 1000 : n * 110;
-              armZhEn(totalMs / n);
-            }
-            /* onplay 拿到时长后再开打字机；极慢网络下超时兜底（避免永远不出现字） */
-            cgFallbackTid = setTimeout(function() { armOnceFromDuration(0); }, 4500);
-            if (textZh) {
-              speakAzure(textZh, 'learner', 1.0, null, function (durSec) {
-                if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
-                armOnceFromDuration(durSec);
-              });
-            } else {
-              if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
-              if (enEl && textEn) enEl.textContent = textEn;
-              cgTypeTimers.push(setTimeout(function() { typed = true; showTapHint(); }, 500));
-            }
-          }, 600); // 等页面淡入完成
-        });
-      });
-
-      // 点击逻辑：第一次点击（typing 中）→ 立即出全文；第二次点击（已出全）→ 进入下一页
-      var _dismissed = false;
-      setTimeout(function() {
-        page.addEventListener('click', function() {
-          if (_dismissed) return;
-          if (!typed) { finishTypingNow(); return; }
-          _dismissed = true;
-          cgTypeTimers.forEach(function (t) { clearTimeout(t); });
-          cgTypeTimers.length = 0;
-          if (cgFallbackTid) { clearTimeout(cgFallbackTid); cgFallbackTid = null; }
-          stopAudio();
-          // 先切到目标页，再淡出 CG，避免淡出过程露出底层旧页面
-          if (callback) callback();
-          page.style.opacity = '0';
-          setTimeout(function() {
-            if (page.parentNode) page.parentNode.removeChild(page);
-          }, 500);
-        });
-      }, 400);
-    }
 
     function tipNextLesson() {
       // 真正的导航逻辑提出来，便于在场景 A 弹窗关闭后回调执行
@@ -16883,134 +16668,6 @@
       }
     }
 
-    // ── 开场悬念 Prologue ─────────────────────────────────────
-
-    // 逐字打字机：每隔 charDelayMs 淡入一个字符，完成后回调 onComplete
-    function prologueTypewriter(text, container, charDelayMs, onComplete) {
-      container.innerHTML = '';
-      var chars = Array.from(text); // 正确处理中文/emoji
-      chars.forEach(function(ch, i) {
-        var span = document.createElement('span');
-        span.textContent = ch;
-        span.style.cssText =
-          'display:inline;opacity:0;' +
-          'animation:charFadeIn 0.35s ease ' + (i * charDelayMs / 1000).toFixed(3) + 's forwards;';
-        container.appendChild(span);
-      });
-      var totalMs = chars.length * charDelayMs + 380;
-      setTimeout(onComplete, totalMs);
-    }
-
-    function showPrologue(callback) {
-      var page      = document.getElementById('prologue-page');
-      if (!page) { callback(); return; }
-      var textZhEl  = document.getElementById('prologue-text-zh');
-      var textEnEl  = document.getElementById('prologue-text-en');
-      var hintEl    = document.getElementById('prologue-tap-hint');
-      var startHint = document.getElementById('prologue-start-hint');
-
-      // ── 重置状态（支持多次播放） ──
-      page.style.opacity = '';
-      page.style.transition = '';
-      if (textZhEl) textZhEl.innerHTML = '';
-      if (textEnEl) textEnEl.innerHTML = '';
-      if (hintEl) {
-        hintEl.style.opacity = '0';
-        hintEl.style.transition = '';
-        hintEl.classList.remove('breathing');
-      }
-      // 自动播放：不再需要"点击屏幕开始"提示
-      if (startHint) startHint.classList.remove('show');
-      page.classList.add('show');
-
-      var _audio = new Audio('/assets/audio/lesson1_prologue.mp3');
-      _audio.volume = 0.85;
-      var _utter = null;   // TTS 备用
-      var _dismissed = false;
-      var _typed = false;  // 视觉小说式：第一次点击 = 立即出全文；之后点击 = 进入下一页
-
-      // ── 停止所有音频（MP3 + TTS 两路都停） ──
-      function _stopAudio() {
-        try { _audio.pause(); _audio.currentTime = 0; } catch(e) {}
-        if (_utter && window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-          _utter = null;
-        }
-      }
-
-      var ZH_TEXT = '机场，不仅是终点，更是初见……';
-      var EN_TEXT = 'The airport is not just a destination, but a first encounter...';
-
-      // 显示呼吸继续提示
-      function _showHint() {
-        if (hintEl) {
-          hintEl.style.transition = 'opacity 1.2s ease';
-          hintEl.style.opacity = '0.28';
-          setTimeout(function() { hintEl.classList.add('breathing'); }, 1200);
-        }
-      }
-
-      // 立即把全文塞进去（点击发生在打字过程中时调用）
-      function _finishTypingNow() {
-        if (_typed) return;
-        // prologueTypewriter 用 CSS animation+forwards 控制每个字的淡入；
-        // 强制完成 = 用纯文本直接重写容器内容（覆盖未完成的 span 动画）
-        if (textZhEl) textZhEl.textContent = ZH_TEXT;
-        if (textEnEl) textEnEl.textContent = EN_TEXT;
-        _typed = true;
-        _showHint();
-      }
-
-      // 打字机自然完成回调
-      function onAllTyped() {
-        _typed = true;
-        _showHint();
-      }
-
-      // 单一点击处理器：未打完 → 立即打完；已打完 → 进入下一页
-      function onClick() {
-        if (_dismissed) return;
-        if (!_typed) { _finishTypingNow(); return; }
-        _dismissed = true;
-        page.removeEventListener('click', onClick);
-        _stopAudio();
-        callback();
-        page.style.transition = 'opacity 0.7s ease';
-        page.style.opacity = '0';
-        setTimeout(function() {
-          page.classList.remove('show');
-          page.style.opacity = '';
-          page.style.transition = '';
-        }, 700);
-      }
-      page.addEventListener('click', onClick);
-
-      // ── 自动启动配音 + 双语打字机（不再等待首次点击） ──
-      // 优先播放 MP3；文件不存在时自动降级到浏览器内置 TTS 朗读中文旁白
-      _audio.play().catch(function() {
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          _utter = new SpeechSynthesisUtterance(ZH_TEXT);
-          _utter.lang  = 'zh-CN';
-          _utter.rate  = 0.82;
-          _utter.pitch = 1.0;
-          _utter.volume = 0.9;
-          window.speechSynthesis.speak(_utter);
-        }
-      });
-
-      // 先打中文（120ms/字），结束后短暂停顿再打英文（38ms/字）
-      prologueTypewriter(ZH_TEXT, textZhEl, 120, function() {
-        if (_typed) return;       // 用户已点击跳过，不再触发后续打字
-        setTimeout(function() {
-          if (_typed) return;
-          prologueTypewriter(EN_TEXT, textEnEl, 38, function() {
-            if (_typed) return;
-            onAllTyped();
-          });
-        }, 280);
-      });
-    }
 
     // ── CG 纯净看图模式 ───────────────────────────────────────
     function viewCG(e) {
@@ -17046,13 +16703,8 @@
 
       if (!isProfile) {
         if (_charIntroQueue.length) {
-          // 诺拉→明轩之间插入开场悬念 CG 页
-          if (id === 'nora' && _charIntroQueue[0] === 'mingxuan') {
-            showPrologue(function() { charIntroShowNext(); });
-          } else {
-            // 其他角色：overlay 保持全屏可见，直接切换内容，完全避免背景闪现
-            charIntroShowNext();
-          }
+          // overlay 保持全屏可见，直接切换内容（已移除诺拉→明轩之间的 CG 过场页）
+          charIntroShowNext();
         } else {
           // 最后一个角色：淡出 overlay，同时立刻显示下一页（flashcard/pre-listen 在底下顶上来）
           overlay.classList.remove('visible');
@@ -17075,27 +16727,18 @@
       var newChars   = lesson.newChars || [];
 
       if (newChars.length > 0) {
-        // 有新角色 → 先隐藏封面，再进角色介绍
-        // 若本课有 cgText，角色介绍结束后插入 CG 页，再进生词卡
-        var _afterIntro = (lesson.cgText && lesson.cgImage)
-          ? function() { showLessonCg(lesson.cgImage, showFlashcardPage); }
-          : showFlashcardPage;
+        // 有新角色 → 先隐藏封面，再进角色介绍（已移除角色介绍后的 CG 过场页）
         document.getElementById('cover-page').classList.remove('show');
         var _ciOverlay = document.getElementById('char-intro-overlay');
         if (_ciOverlay) _ciOverlay.style.transition = 'none';
-        charIntroCheck(_afterIntro);
+        charIntroCheck(showFlashcardPage);
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
             if (_ciOverlay) _ciOverlay.style.transition = '';
           });
         });
-      } else if (lesson.cgImage) {
-        // 无新角色，有 CG → 先在封面上层淡入 CG，CG 完全不透明后再隐藏封面，避免底层闪烁
-        showLessonCg(lesson.cgImage, showFlashcardPage, function() {
-          document.getElementById('cover-page').classList.remove('show');
-        });
       } else {
-        // 无新角色、无 CG → 直接进入生词卡
+        // 无新角色 → 直接进入生词卡（已移除 CG 过场页）
         document.getElementById('cover-page').classList.remove('show');
         showFlashcardPage();
       }
@@ -17195,12 +16838,8 @@
         if (lastCharId) {
           charIntroShow(lastCharId, false);
           document.getElementById('flashcard-page').classList.remove('show');
-        } else if (LESSONS[lessonIdx] && LESSONS[lessonIdx].cgImage) {
-          document.getElementById('flashcard-page').classList.remove('show');
-          showLessonCg(LESSONS[lessonIdx].cgImage, function() {
-            showFlashcardPage();
-          }, null);
         } else {
+          // 返回封面（已移除 CG 过场页）
           showCoverPage();
           document.getElementById('flashcard-page').classList.remove('show');
         }
@@ -17915,6 +17554,9 @@
 
   <!-- 课程封面 Lesson Cover -->
   <div id="cover-page">
+    <!-- 模糊 CG 背景氛围（按该课 cgImage，showCoverPage 设置） -->
+    <div id="cover-cg-bg"></div>
+    <div id="cover-cg-fade"></div>
     <div class="page-top-bar">
       <div class="pth-inner">
         <div class="logo">
