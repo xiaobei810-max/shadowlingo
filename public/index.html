@@ -744,7 +744,9 @@
     /* ── 背面档案面板：opacity 切换，绝不用 translateY 避免溢出卡片 ── */
     .char-profile-panel {
       position: absolute; inset: 0;
-      background: rgba(3, 9, 18, 0.97);
+      /* 比四周纯黑略亮的深色填充 + 很淡的描边勾边 */
+      background: #14181F;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
       backdrop-filter: blur(28px) saturate(140%);
       -webkit-backdrop-filter: blur(28px) saturate(140%);
       overflow: hidden;
@@ -753,22 +755,6 @@
       transition: opacity 0.28s ease;
     }
     .char-profile-panel.open { opacity: 1; pointer-events: all; }
-
-    /* 角色立绘淡化水印（右下角，低透明度） */
-    .char-profile-watermark {
-      position: absolute; right: -6%; bottom: 0; z-index: 0;
-      height: 82%; width: auto; max-width: 70%;
-      object-fit: contain; object-position: bottom right;
-      opacity: 0.14; pointer-events: none;
-      filter: grayscale(0.15) contrast(1.05);
-    }
-    /* 水印上的暗色渐变：保证文字清晰 */
-    .char-profile-watermark-fade {
-      position: absolute; inset: 0; z-index: 0; pointer-events: none;
-      background:
-        linear-gradient(105deg, rgba(3,9,18,0.92) 30%, rgba(3,9,18,0.45) 72%, rgba(3,9,18,0.20) 100%),
-        linear-gradient(0deg, rgba(3,9,18,0.55) 0%, transparent 40%);
-    }
 
 /* 档案面板内容滚动区（宽卡片留更多横向 padding；顶部多留空间给角落关闭按钮） */
     .char-profile-scroll {
@@ -16655,13 +16641,6 @@
           '<div class="char-profile-val">' + b + '</div>' +
           '</div>';
       }).join('');
-      // 反面立绘淡化水印（取现有单图立绘 / body / head）
-      var wmEl = el('char-profile-watermark');
-      if (wmEl) {
-        var wmSrc = c.singleSprite || c.body || c.head || '';
-        if (wmSrc) { wmEl.src = wmSrc; wmEl.style.display = ''; }
-        else { wmEl.style.display = 'none'; }
-      }
       // 剪影图：用 body 图（躯干轮廓更像剪影）
       // 每次打开都重置到正面
       el('char-profile-panel').classList.remove('open');
@@ -18362,10 +18341,6 @@
 
         <!-- ★ 背面档案（默认隐藏，点 i 切换） ★ -->
         <div class="char-profile-panel" id="char-profile-panel">
-          <!-- 角色立绘淡化水印 + 暗色渐变（保证文字清晰） -->
-          <img class="char-profile-watermark" id="char-profile-watermark" alt="" aria-hidden="true"
-               onerror="this.style.display='none'">
-          <div class="char-profile-watermark-fade"></div>
           <div class="char-profile-scroll">
             <div class="char-profile-name-big" id="char-profile-name">赵明轩</div>
             <div class="char-profile-subtitle" id="char-profile-subtitle">阳光学长 · Sunny Senior</div>
