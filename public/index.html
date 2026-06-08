@@ -2245,8 +2245,7 @@
     .gacha-collection-overlay::before,
     .gacha-result-overlay::before,
     .gacha-unbox-overlay::before,
-    .gcb-detail-overlay::before,
-    .gacha-shard-shop-overlay::before {
+    .gcb-detail-overlay::before {
       content: ''; position: absolute; pointer-events: none; z-index: 0;
       inset: 0;
       background:
@@ -2259,8 +2258,7 @@
     .gacha-collection-overlay > *,
     .gacha-result-overlay > *,
     .gacha-unbox-overlay > *,
-    .gcb-detail-overlay > *,
-    .gacha-shard-shop-overlay > * { position: relative; z-index: 1; }
+    .gcb-detail-overlay > * { position: relative; z-index: 1; }
     .gacha-store-overlay.gs-visible { transform: translateY(0); opacity: 1; }
 
     .gs-topbar {
@@ -2270,6 +2268,21 @@
       border-bottom: 1px solid rgba(255,255,255,0.06);
       flex-shrink: 0;
     }
+    /* Collection 右上角实心小芯片（无发光，明确可点但次于 Draw） */
+    .gs-col-pill {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.72); font-size: 12px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.2px;
+      transition: background 0.12s, border-color 0.12s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .gs-col-pill:hover { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.32); }
+    .gs-col-pill:active { transform: scale(0.97); background: rgba(255,255,255,0.15); }
+    .gs-col-pill svg { flex-shrink: 0; opacity: 0.68; }
     .gs-back-btn {
       background: none; border: none; color: #9ca3af;
       font-size: 14px; font-weight: 600; cursor: pointer;
@@ -2277,28 +2290,16 @@
       transition: color 0.15s;
     }
     .gs-back-btn:hover { color: #e2e8f0; }
-    .gs-topbar-coins, .gs-topbar-shards {
+    .gs-topbar-coins {
       display: flex; align-items: center; gap: 5px;
       cursor: pointer; padding: 4px 8px; border-radius: 8px;
       position: relative;
       transition: background 0.15s;
     }
-    .gs-topbar-coins:hover, .gs-topbar-shards:hover { background: rgba(255,255,255,0.06); }
-    .gs-topbar-shards { margin-left: 2px; }
-    .gs-coin-icon, .gs-shard-icon { font-size: 15px; line-height: 1; }
-    .gs-shard-emoji-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex-shrink: 0; }
-    .gs-shard-emoji { font-size: 17px; line-height: 1; display: block; }
+    .gs-topbar-coins:hover { background: rgba(255,255,255,0.06); }
+    .gs-coin-icon { font-size: 15px; line-height: 1; }
     .gs-coin-num  { font-size: 15px; font-weight: 700; color: #22c55e; }
-    .gs-shard-num { font-size: 15px; font-weight: 700; color: #67e8f9; }
-    .gs-coin-label, .gs-shard-label { font-size: 11px; color: #4b5563; }
-    /* 水晶四角星呼吸闪烁 */
-    @keyframes shardSparkle {
-      0%, 70%, 100% { opacity: 0.15; transform: scale(0.6); }
-      35%           { opacity: 1;    transform: scale(1.35); }
-    }
-    .gs-shard-sparkle {
-      animation: shardSparkle 2.6s ease-in-out infinite;
-    }
+    .gs-coin-label { font-size: 11px; color: #4b5563; }
     /* 悬浮说明提示 */
     .gs-topbar-tooltip {
       position: absolute; top: calc(100% + 10px); left: 50%;
@@ -2427,32 +2428,35 @@
       padding: 8px 24px 2px;
       transition: opacity 0.18s;
     }
+    /* 英文升主（大），中文降副（小） */
     .gs-series-name-zh {
-      font-size: 28px; font-weight: 700; color: #f1f5f9;
-      letter-spacing: 10px; padding-left: 10px;
-      font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+      font-size: 11px; color: rgba(255,255,255,0.42); letter-spacing: 4px;
+      text-transform: uppercase; margin-top: 5px;
+      font-family: inherit;
     }
     .gs-series-name-en {
-      font-size: 11px; color: rgba(255,255,255,0.42); letter-spacing: 5px;
-      text-transform: uppercase; margin-top: 5px;
+      font-size: 26px; font-weight: 700; color: #f1f5f9;
+      letter-spacing: 2px;
     }
     .gs-series-progress { display: none; }
     .gs-complete-banner { display: none; }
     .gs-pity-row        { display: none; }
 
+    /* ── Draw + Collection 统一布局 ── */
     .gs-action-area {
-      flex-shrink: 0; padding: 14px 24px 8px;
-      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; padding: 14px 24px 0;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
     }
+    /* Draw 主键：绿描边 + 发光 */
     .gs-pull-btn {
-      padding: 16px 84px;
+      width: 280px; height: 54px;
       border: 1.5px solid #22c55e;
       background: rgba(34,197,94,0.20);
-      border-radius: 99px; color: #ffffff;
+      border-radius: 999px; color: #ffffff;
       font-size: 17px; font-weight: 700; cursor: pointer;
       box-shadow: 0 0 28px -6px rgba(34,197,94,0.5),
                   inset 0 1px 0 rgba(255,255,255,0.10);
-      transition: transform 0.12s, box-shadow 0.15s, background 0.15s, border-color 0.15s;
+      transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
       letter-spacing: 2px;
     }
     .gs-pull-btn:hover:not(.gs-pull-disabled) {
@@ -2467,7 +2471,7 @@
       background: rgba(255,255,255,0.04) !important;
       color: rgba(255,255,255,0.6) !important;
       cursor: pointer !important;
-      box-shadow: 0 0 16px -8px rgba(255,255,255,0.18) !important;
+      box-shadow: none !important;
       letter-spacing: 1.5px;
     }
     /* -50 金币飞离动效 */
@@ -2514,22 +2518,6 @@
     }
     .gs-btn-shake { animation: gsShake 0.35s ease; }
 
-    .gs-secondary-row {
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; gap: 0;
-      padding: 8px 24px 32px;
-    }
-    .gs-sec-divider {
-      width: 1px; height: 14px; background: rgba(255,255,255,0.22);
-      margin: 0 28px; flex-shrink: 0;
-    }
-    .gs-sec-btn {
-      background: none; border: none;
-      color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 500; cursor: pointer;
-      letter-spacing: 1px;
-      transition: color 0.15s; padding: 4px 0;
-    }
-    .gs-sec-btn:hover { color: #ffffff; }
 
     /* 物品预览格 — hidden per design */
     .gs-preview-grid { display: none; }
@@ -2770,7 +2758,8 @@
     .vt-lang-btn { background: none; border: none; cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 4px 10px; border-radius: 99px; color: #4b5563; transition: color 0.15s, background 0.15s; }
     .vt-lang-btn.vt-lang-active { color: #d6b577; background: rgba(200,167,102,0.12); }
     .vt-lang-sep { font-size: 10px; color: #4b5563; }
-    .vt-en-block p { font-style: italic; color: #7a8090; }
+    /* EN block 与中文字幕同字号同亮度（去掉偏暗偏斜处理） */
+    .vt-en-block p { font-style: normal; color: #b9bdc9; }
 
     /* ── 第一章通关演出 Chapter-1 Cutscene ─────────────────────── */
     .ch1-ov {
@@ -3531,360 +3520,6 @@
     }
     .gcb-close-btn:hover { background: rgba(255,255,255,0.18); color: #ffffff; border-color: rgba(255,255,255,0.20); }
 
-    /* ── 碎片商店 Shard Shop (M5) ───────────────────────────── */
-    .gacha-shard-shop-overlay {
-      position: fixed; inset: 0; z-index: 9400;
-      background: #07090f;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.22s ease;
-    }
-    .gacha-shard-shop-overlay.gss-visible { opacity: 1; }
-    .gss-card {
-      background: rgba(14, 18, 30, 0.60);
-      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(255,255,255,0.11);
-      border-radius: 24px; padding: 0 0 12px;
-      width: 560px; max-width: 94vw;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.85);
-      transform: scale(0.92) translateY(16px); opacity: 0;
-      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
-      max-height: 86vh; overflow-y: auto;
-    }
-    .gacha-shard-shop-overlay.gss-visible .gss-card {
-      transform: none; opacity: 1;
-    }
-    .gss-topbar {
-      display: flex; align-items: center; gap: 10px;
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .gss-title {
-      font-size: 17px; font-weight: 800; color: #f1f5f9; flex: 1;
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .gss-title.gss-title-clickable {
-      cursor: pointer;
-      animation: gssTitleBreath 3s ease-in-out infinite;
-      border-radius: 8px;
-      transition: transform 0.15s;
-    }
-    .gss-title.gss-title-clickable:active { transform: scale(0.97); }
-    @keyframes gssTitleBreath {
-      0%,100% { text-shadow: 0 0 6px rgba(230,194,122,0.30); }
-      50%     { text-shadow: 0 0 14px rgba(230,194,122,0.70), 0 0 24px rgba(230,194,122,0.32); }
-    }
-    .gss-info-icon {
-      font-size: 13px; color: #7dd3fc;
-      font-weight: 600;
-      text-shadow: 0 0 6px rgba(125,211,252,0.45);
-    }
-    /* 兑换规则展开块 */
-    .gss-rules {
-      max-height: 0; overflow: hidden;
-      padding: 0 20px;
-      font-size: 12.5px; color: #94a3b8; line-height: 1.65;
-      transition: max-height 0.35s ease, padding 0.35s ease, border-color 0.35s ease;
-      border-bottom: 1px solid transparent;
-    }
-    .gss-rules.gss-rules-visible {
-      max-height: 360px;
-      padding: 14px 20px 16px;
-      border-bottom-color: rgba(255,255,255,0.06);
-    }
-    .gss-rules-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 10px; gap: 10px;
-    }
-    .gss-rules-title {
-      font-size: 12.5px; font-weight: 800; color: #e6c27a;
-      letter-spacing: 0.6px;
-      text-shadow: 0 0 8px rgba(230,194,122,0.30);
-    }
-    .gss-lang-switch {
-      display: inline-flex;
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 99px; overflow: hidden;
-      flex-shrink: 0;
-    }
-    .gss-lang-btn {
-      background: transparent; border: none;
-      color: #6b7280; padding: 3px 11px;
-      font-size: 11px; cursor: pointer; letter-spacing: 0.5px;
-      transition: background 0.2s, color 0.2s;
-    }
-    .gss-lang-btn:hover { color: #cbd5e1; }
-    .gss-lang-btn.active {
-      background: rgba(125,211,252,0.12);
-      color: #7dd3fc;
-    }
-    .gss-rules[data-lang="zh"] .gss-rules-en { display: none; }
-    .gss-rules[data-lang="en"] .gss-rules-zh { display: none; }
-    .gss-rules-title .gss-rt-en { display: none; }
-    .gss-rules[data-lang="en"] .gss-rules-title .gss-rt-zh { display: none; }
-    .gss-rules[data-lang="en"] .gss-rules-title .gss-rt-en { display: inline; }
-    .gss-rules-list { list-style: none; padding: 0; margin: 0; }
-    .gss-rules-list li {
-      position: relative;
-      padding: 6px 0 6px 14px;
-      line-height: 1.7;
-    }
-    .gss-rules-list li::before {
-      content: '';
-      position: absolute; left: 0; top: 14px;
-      width: 4px; height: 4px; border-radius: 50%;
-      background: rgba(230,194,122,0.65);
-      box-shadow: 0 0 6px rgba(230,194,122,0.55);
-    }
-    .gss-rules-list b {
-      color: #e2e8f0; font-weight: 700;
-    }
-    .gss-rk-n   { color: #cbd5e1; font-weight: 700; }
-    .gss-rk-r   { color: #c4b5fd; font-weight: 700; }
-    .gss-rk-sr  { color: #e6c27a; font-weight: 700; }
-    .gss-rk-ssr {
-      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      font-weight: 800;
-    }
-    .gss-shard-bal {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 15px; font-weight: 700; color: #7dd3fc;
-      background: rgba(125,211,252,0.08);
-      border: 1px solid rgba(125,211,252,0.18);
-      border-radius: 99px; padding: 4px 12px 4px 8px;
-    }
-    .gss-close-btn {
-      background: none; border: none; color: #4b5563;
-      font-size: 18px; cursor: pointer; padding: 4px 6px;
-      transition: color 0.15s; flex-shrink: 0; line-height: 1;
-    }
-    .gss-close-btn:hover { color: #9ca3af; }
-    .gss-desc {
-      font-size: 12px; color: #4b5563; padding: 10px 20px 4px;
-      line-height: 1.5;
-    }
-    /* ── 2×2 网格 ── */
-    .gss-rows {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-      padding: 16px 18px 14px;
-    }
-    .gss-tile {
-      position: relative;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
-      padding: 18px 14px 16px;
-      display: flex; flex-direction: column; align-items: center; gap: 12px;
-      overflow: hidden;
-      transition: transform 0.18s ease, border-color 0.25s, box-shadow 0.25s, opacity 0.25s;
-      aspect-ratio: 1 / 0.78;
-    }
-    /* lit 视觉（默认应用：可买 + 已集齐都点亮，只有"碎片不足"才暗） */
-    .gss-tile:not(.gss-disabled).gss-tile-n {
-      border-color: rgba(220,228,240,0.32);
-      box-shadow: 0 0 18px rgba(220,228,240,0.14);
-    }
-    .gss-tile:not(.gss-disabled).gss-tile-r {
-      border-color: rgba(196,181,253,0.42);
-      animation: gssTileBreathR 4s ease-in-out infinite;
-    }
-    .gss-tile:not(.gss-disabled).gss-tile-sr {
-      border-color: rgba(245,210,122,0.50);
-      animation: gssTileBreathSR 3.6s ease-in-out infinite;
-    }
-    .gss-tile:not(.gss-disabled).gss-tile-ssr {
-      border-color: rgba(255,223,115,0.55);
-      animation: gssTileBreathSSR 4.2s ease-in-out infinite;
-    }
-    /* 可点击：仅 buyable 给指针、悬停反馈 */
-    .gss-tile.gss-tile-buyable { cursor: pointer; }
-    .gss-tile.gss-tile-buyable:hover {
-      transform: translateY(-3px);
-      border-color: rgba(255,255,255,0.22);
-      box-shadow: 0 16px 36px rgba(0,0,0,0.50);
-    }
-    .gss-tile.gss-tile-buyable:hover .gss-crystal { transform: scale(1.10); }
-    .gss-tile.gss-tile-buyable:active { transform: translateY(-1px); }
-    .gss-tile.gss-disabled {
-      cursor: not-allowed;
-      opacity: 0.42;
-      filter: saturate(0.35);
-    }
-    @keyframes gssTileBreathR {
-      0%,100% { box-shadow: 0 0 14px rgba(167,139,250,0.18); }
-      50%     { box-shadow: 0 0 26px rgba(167,139,250,0.40); }
-    }
-    @keyframes gssTileBreathSR {
-      0%,100% { box-shadow: 0 0 14px rgba(245,210,122,0.20); }
-      50%     { box-shadow: 0 0 30px rgba(245,210,122,0.48); }
-    }
-    @keyframes gssTileBreathSSR {
-      0%,100% { box-shadow: 0 0 18px rgba(255,200,100,0.25); }
-      50%     { box-shadow: 0 0 36px rgba(255,200,100,0.50), 0 0 56px rgba(192,132,252,0.22); }
-    }
-
-    /* ── 💎 钻石（emoji + tier 光芒） ── */
-    .gss-crystal {
-      font-size: 52px; line-height: 1;
-      flex-shrink: 0;
-      transition: transform 0.22s ease;
-    }
-    .gss-crystal-n   { filter: saturate(0.25) brightness(1.15) drop-shadow(0 0 14px rgba(220,228,240,0.65)); }
-    .gss-crystal-r   { filter: hue-rotate(40deg) saturate(1.2)  drop-shadow(0 0 14px rgba(167,139,250,0.75)); }
-    .gss-crystal-sr  { filter: hue-rotate(170deg) saturate(1.4) drop-shadow(0 0 16px rgba(245,210,122,0.80)); }
-    .gss-crystal-ssr { animation: gssCrystalRainbow 5s linear infinite; }
-    @keyframes gssCrystalRainbow {
-      0%   { filter: hue-rotate(0deg)   saturate(1.4) drop-shadow(0 0 16px rgba(255,200,140,0.65)) drop-shadow(0 0 32px rgba(192,132,252,0.30)); }
-      100% { filter: hue-rotate(360deg) saturate(1.4) drop-shadow(0 0 16px rgba(255,200,140,0.65)) drop-shadow(0 0 32px rgba(192,132,252,0.30)); }
-    }
-
-    /* tile 内信息 */
-    .gss-tile-badge {
-      padding: 3px 10px; border-radius: 99px;
-      font-size: 11px; font-weight: 800;
-      background: rgba(0,0,0,0.30);
-      letter-spacing: 0.3px;
-    }
-    .gss-tile-badge.gss-tier-n   { color:#cbd5e1; border: 1px solid rgba(203,213,225,0.32); }
-    .gss-tile-badge.gss-tier-r   { color:#c4b5fd; border: 1px solid rgba(196,181,253,0.45); }
-    .gss-tile-badge.gss-tier-sr  { color:#e6c27a; border: 1px solid rgba(230,194,122,0.50); }
-    .gss-tile-badge.gss-tier-ssr {
-      border: 1px solid rgba(255,223,115,0.50);
-      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      animation: gss-rainbow 4s linear infinite;
-    }
-    .gss-tile-info { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-    .gss-tile-cost {
-      font-size: 15px; font-weight: 800; color: #e2e8f0;
-      display: flex; align-items: center; gap: 5px;
-    }
-    .gss-cost-n   { color: #cbd5e1; }
-    .gss-cost-r   { color: #c4b5fd; }
-    .gss-cost-sr  { color: #e6c27a; }
-    .gss-cost-ssr {
-      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      animation: gss-rainbow 4s linear infinite;
-    }
-    .gss-tile-hint { font-size: 11px; color: #6b7280; letter-spacing: 0.2px; }
-
-    /* ── 兑换二次确认弹窗（仅 SR / SSR） ── */
-    .gss-confirm-overlay {
-      position: fixed; inset: 0; z-index: 9800;
-      background: rgba(7,9,15,0.55);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      display: flex; align-items: center; justify-content: center;
-      padding: 16px;
-      opacity: 0; transition: opacity 0.22s ease;
-    }
-    .gss-confirm-overlay.gscv-visible { opacity: 1; }
-    .gss-confirm-card {
-      background: rgba(14, 18, 30, 0.85);
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 20px;
-      padding: 28px 26px 22px;
-      width: 380px; max-width: 90vw;
-      text-align: center;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
-      transform: scale(0.92) translateY(8px); opacity: 0;
-      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.22s ease;
-    }
-    .gss-confirm-overlay.gscv-visible .gss-confirm-card {
-      transform: scale(1) translateY(0); opacity: 1;
-    }
-    .gss-confirm-icon {
-      font-size: 44px; line-height: 1; margin-bottom: 12px;
-    }
-    .gss-confirm-text {
-      font-size: 14.5px; color: #cbd5e1; line-height: 1.7;
-      margin-bottom: 22px;
-    }
-    .gss-confirm-text b { font-weight: 800; }
-    .gss-confirm-btns { display: flex; gap: 10px; }
-    .gss-confirm-btn {
-      flex: 1; padding: 11px 0;
-      border: none; border-radius: 12px;
-      font-size: 14px; font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.1s, opacity 0.15s, background 0.2s;
-    }
-    .gss-confirm-btn:active { transform: scale(0.97); }
-    .gss-confirm-cancel {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.10);
-      color: #cbd5e1;
-    }
-    .gss-confirm-cancel:hover { background: rgba(255,255,255,0.10); }
-    .gss-confirm-ok { color: #1a0f00; border: 1px solid transparent; }
-    .gss-confirm-ok-sr {
-      background: linear-gradient(135deg, #f0d080, #c8930a);
-      box-shadow: 0 0 22px rgba(245,210,122,0.45);
-      animation: gssConfirmBreathSR 3s ease-in-out infinite;
-    }
-    .gss-confirm-ok-ssr {
-      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
-      color: #1a1a1a;
-      box-shadow: 0 0 24px rgba(255,200,140,0.55), 0 0 48px rgba(192,132,252,0.30);
-      animation: gss-rainbow 4s linear infinite;
-    }
-    @keyframes gssConfirmBreathSR {
-      0%,100% { box-shadow: 0 0 18px rgba(245,210,122,0.35); }
-      50%     { box-shadow: 0 0 30px rgba(245,210,122,0.65); }
-    }
-    .gss-confirm-ok:hover { opacity: 0.92; }
-    .gss-tier-badge {
-      padding: 4px 10px; border-radius: 99px;
-      font-size: 11px; font-weight: 800;
-      flex-shrink: 0; background: rgba(0,0,0,0.25);
-    }
-    .gss-tier-n   { color: #a8a8a8; border: 1px solid rgba(168,168,168,0.30); }
-    .gss-tier-r   { color: #c4b5fd; border: 1px solid rgba(196,181,253,0.45); text-shadow: 0 0 8px rgba(167,139,250,0.50); }
-    .gss-tier-sr  { color: #e6c27a; border: 1px solid rgba(230,194,122,0.50); text-shadow: 0 0 10px rgba(230,194,122,0.50); }
-    .gss-tier-ssr {
-      border: 1px solid rgba(255,255,255,0.25);
-      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc) border-box;
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      text-shadow: none;
-    }
-    /* SSR rainbow keyframe */
-    @keyframes gss-rainbow { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
-    .gss-tier-ssr { animation: gss-rainbow 4s linear infinite; }
-    .gss-row-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-    .gss-cost {
-      font-size: 15px; font-weight: 700; color: #a8a8a8;
-      display: flex; align-items: center; gap: 5px;
-    }
-    .gss-row-r   .gss-cost { color: #c4b5fd; }
-    .gss-row-sr  .gss-cost { color: #e6c27a; }
-    .gss-row-ssr .gss-cost {
-      background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      animation: gss-rainbow 4s linear infinite;
-    }
-    .gss-remaining { font-size: 11px; color: #4b5563; }
-    .gss-remaining.all-owned { color: #2d3748; }
-    /* ── tier-specific exchange buttons ── */
-    .gss-exchange-btn {
-      padding: 10px 18px; border: none; border-radius: 10px;
-      font-size: 13px; font-weight: 700; cursor: pointer;
-      color: #fff; transition: opacity 0.15s, transform 0.1s; flex-shrink: 0;
-      white-space: nowrap; background: linear-gradient(135deg, #b197fc, #9c59ff);
-    }
-    .gss-exchange-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
-    .gss-exchange-btn:active:not(:disabled) { transform: translateY(0); }
-    .gss-exchange-btn-n   { background: linear-gradient(135deg, #9ca3af, #6b7280); }
-    .gss-exchange-btn-r   { background: linear-gradient(135deg, #b197fc, #9c59ff); }
-    .gss-exchange-btn-sr  { background: linear-gradient(135deg, #f0d080, #c8930a); color: #1a0f00; }
-    .gss-exchange-btn-ssr { background: linear-gradient(90deg,#f87171,#fb923c,#fbbf24,#4ade80,#60a5fa,#c084fc); color: #fff; animation: gss-rainbow 4s linear infinite; }
-    .gss-exchange-btn:disabled {
-      background: rgba(255,255,255,0.05); color: #2d3748;
-      cursor: not-allowed; transform: none;
-      border: 1px solid rgba(255,255,255,0.06);
-    }
 
     /* ─── 评分卡奖励区 ──────────────────────────────────────── */
     .eval-coin-reward {
@@ -8400,8 +8035,8 @@
       linwan:   ''   // Phase 2
     };
     var GACHA_RATES      = { N: 0.50, R: 0.30, SR: 0.15, SSR: 0.05 };
-    var SHARD_REWARD     = { N: 1,    R: 3,    SR: 8,   SSR: 20  };
-    var SHARD_PRICE      = { N: 5,    R: 15,   SR: 40,  SSR: 80  };
+    // 集满后抽到重复卡返还的安慰金币（固定）
+    var GACHA_DUP_REFUND = 10;
 
     // ── i18n 脚手架 ──────────────────────────────────────────────────
     // 读取用户母语设置（默认英语）。
@@ -8459,11 +8094,11 @@
           { id: 'nd_r_diary_01', tier: 'R', type: 'diary',
             nameZh: '大巴上的二十块', nameEn: 'Twenty Yuan on the Bus',
             img: '/assets/gacha/nora-debut/diary_01.png',
-            body: '那张没递出去的二十块，成了我初到北京最窘迫、也最温暖的记忆。' },
+            body: "The twenty yuan I never handed over — my most awkward, and most heartwarming, memory of arriving in Beijing." },
           { id: 'nd_r_diary_02', tier: 'R', type: 'diary',
             nameZh: '你好，新室友！', nameEn: 'Hi, New Roomie!',
             img: '/assets/gacha/nora-debut/diary_02.png',
-            body: '看到她笑容的那一刻，初到异国的所有忐忑，都被悄悄治愈了。' },
+            body: "The moment I saw her smile, all my new-in-a-foreign-country nerves quietly melted away." },
           // ── SR (15%) ────────────────────────────────────────
           { id: 'nd_sr_diary_audio', tier: 'SR', type: 'diary',
             nameZh: '第一天的深夜独白', nameEn: 'First Night Monologue',
@@ -8478,7 +8113,7 @@
             img: '/assets/gacha/nora-debut/green_cardigan.png',
             outfitFull: '/assets/gacha/nora-debut/nora_green_cardigan.png',
             target: 'nora',
-            flavor: '第一次尝试这种学院风的穿搭，七七说挺适合我的。你觉得呢？' }
+            flavor: "First time trying a preppy look like this — Qiqi says it suits me. What do you think?" }
         ]
       },
       'explore-begin': {
@@ -8592,7 +8227,6 @@
       return {
         version: 1,
         collection: {},
-        shards: 0,
         pity: {},
         equipped: { nora: null, mingxuan: null, qiqi: null, linwan: null },
         flags:    { storeUnlockedSeen: false, lastUnlockAt: 0, pullCount: 0 }
@@ -8604,7 +8238,6 @@
       var fresh = _initGachaState();
       if (!state.version)            state.version = 1;
       if (!state.collection)         state.collection = {};
-      if (typeof state.shards !== 'number') state.shards = 0;
       if (!state.pity)               state.pity = {};
       if (!state.equipped)           state.equipped = fresh.equipped;
       if (!state.flags)              state.flags = fresh.flags;
@@ -8712,58 +8345,63 @@
 
       if (getCoins() < cost) return { ok: false, reason: 'no-coins', need: cost, have: getCoins() };
 
-      // 1) 扣币
-      setCoins(getCoins() - cost);
+      // 抽卡池 = 本系列非 CG 卡（CG 为单元通关赠送，不入池）；去重按整池算
+      var pool = series.items.filter(function(it) { return it.type !== 'cg'; });
+      if (!pool.length) return { ok: false, reason: 'empty-pool' };
 
-      // 2) 决定稀有度（含保底覆盖）
-      var pity = _ensurePity(state, seriesId);
-      var tier = rollTier(pity);
+      var unowned = pool.filter(function(it) { return !state.collection[it.id]; });
 
-      // 3) 在该稀有度内随机一件
-      var item = pickItemByTier(series.items, tier);
-      if (!item) {
-        // 防御：池子空（理论不会）→ 退币
-        setCoins(getCoins() + cost);
-        return { ok: false, reason: 'no-item-in-tier', tier: tier };
+      var item, isDup, refund = 0;
+      if (unowned.length > 0) {
+        // 未集满：按稀有度升序（N→R→SR→SSR）从未拥有里取 → 必出新卡，绝不重复
+        var TIER_ORDER = ['N', 'R', 'SR', 'SSR'];
+        var picked = null;
+        for (var ti = 0; ti < TIER_ORDER.length && !picked; ti++) {
+          var cand = unowned.filter(function(it) { return it.tier === TIER_ORDER[ti]; });
+          if (cand.length) picked = cand[Math.floor(Math.random() * cand.length)];
+        }
+        if (!picked) picked = unowned[Math.floor(Math.random() * unowned.length)]; // 兜底
+        item  = picked;
+        isDup = false;
+      } else {
+        // 已集满：整池均匀随机（可重复）→ 永远抽得到
+        item   = pool[Math.floor(Math.random() * pool.length)];
+        isDup  = true;
+        refund = GACHA_DUP_REFUND;  // 安慰返还
       }
 
-      // 4) 入库 / 转碎片
-      var isDup = !!state.collection[item.id];
-      var shardsGained = 0;
-      if (isDup) {
-        shardsGained = SHARD_REWARD[tier];
-        state.shards += shardsGained;
+      // 扣币（集满重复时净扣 cost - refund）
+      setCoins(getCoins() - cost + refund);
+
+      // 入库
+      if (state.collection[item.id]) {
         state.collection[item.id].count++;
       } else {
         state.collection[item.id] = { count: 1, firstAt: Date.now() };
       }
 
-      // 5) 更新保底 + 累计抽卡数
-      updatePity(pity, tier);
       state.flags.pullCount++;
-
-      // 6) 持久化 + 刷新顶部金币条
       saveGachaState(state);
       try { refreshCoinDisplay(); } catch(e) {}
 
-      // 7) 埋点
       track('blindbox_open', {
-        tier:        tier,
+        tier:        item.tier,
         item_id:     item.id,
         is_dup:      isDup,
         coins_spent: cost,
+        refund:      refund,
         pull_count:  state.flags.pullCount
       });
 
       return {
-        ok:           true,
-        item:         item,
-        isDup:        isDup,
-        tier:         tier,
-        cost:         cost,
-        shardsGained: shardsGained,
-        pullCount:    state.flags.pullCount,
-        nextCost:     getCurrentThreshold(state.flags.pullCount)
+        ok:        true,
+        item:      item,
+        isDup:     isDup,
+        tier:      item.tier,
+        cost:      cost,
+        refund:    refund,
+        pullCount: state.flags.pullCount,
+        nextCost:  getCurrentThreshold(state.flags.pullCount)
       };
     }
 
@@ -8792,27 +8430,16 @@
         console.log('[gacha] full reset done — reload page to start fresh');
       },
       giveCoins: function(n) { var amt = n || 50; setCoins(getCoins() + amt); refreshCoinDisplay(); console.log('[gacha] coins =', getCoins()); },
-      // 给碎片（测试碎片商店用）
-      giveShards: function(n) {
-        var s = loadGachaState(); s.shards += (n || 50); saveGachaState(s);
-        console.log('[gacha] shards =', s.shards);
-      },
-      // 强制下一抽为指定稀有度（测试动画用，one-shot）
-      forceTier: function(tier) {
-        var _orig = rollTier;
-        rollTier = function() { rollTier = _orig; return tier; };
-        console.log('[gacha] next pull forced to', tier);
-      },
       simulate:  function(n) {
         n = n || 10;
-        var results = { pulls: 0, byTier: { N:0, R:0, SR:0, SSR:0 }, items: {}, dupShards: 0 };
+        var results = { pulls: 0, byTier: { N:0, R:0, SR:0, SSR:0 }, items: {}, dups: 0, refunded: 0 };
         for (var i = 0; i < n; i++) {
           var r = pullGacha(_currentGachaSeriesId);
           if (!r.ok) { console.log('[sim stop]', r); break; }
           results.pulls++;
           results.byTier[r.tier]++;
           results.items[r.item.id] = (results.items[r.item.id] || 0) + 1;
-          if (r.isDup) results.dupShards += r.shardsGained;
+          if (r.isDup) { results.dups++; results.refunded += (r.refund || 0); }
         }
         console.log('[gacha simulate]', results);
         return results;
@@ -8822,9 +8449,7 @@
           '__gacha.open()           — 打开盲盒商店',
           '__gacha.pull()           — 抽一次（有 UI 动画）',
           '__gacha.simulate(n)      — 静默模拟 n 次',
-          '__gacha.forceTier("SSR") — 下一次强出 SSR（测动画）',
-          '__gacha.giveCoins(n)     — 加 n 回声币',
-          '__gacha.giveShards(n)    — 加 n 碎片',
+          '__gacha.giveCoins(n)     — 加 n 金币',
           '__gacha.state()          — 查看完整状态',
           '__gacha.threshold()      — 当前抽卡门槛',
           '__gacha.reset()          — 仅重置盲盒数据',
@@ -8998,14 +8623,9 @@
     // ── 顶栏提示气泡 ──────────────────────────────────────────────
     function showTopbarTooltip(type, anchorEl) {
       hideTopbarTooltip();
-      var html = type === 'coin'
-        ? '<b>Coins</b>' +
-          '<span class="tt-en">Earn from lessons; spend to pull boxes</span>'
-        : '<b>碎片 · Memory Shards</b>' +
-          '<span class="tt-zh">重复获得自动转化</span>' +
-          '<span class="tt-en">Auto-converted from duplicates</span>' +
-          '<span class="tt-zh" style="margin-top:6px">碎片商店可兑换稀有物品</span>' +
-          '<span class="tt-en">Exchange rare items in Shard Shop</span>';
+      var html =
+        '<b>Coins</b>' +
+        '<span class="tt-en">Earn from lessons; spend to pull boxes</span>';
       var tip = document.createElement('div');
       tip.id = 'gs-topbar-tooltip';
       tip.className = 'gs-topbar-tooltip';
@@ -9032,15 +8652,28 @@
       var series = GACHA_SERIES[_currentGachaSeriesId];
       var cost   = getCurrentThreshold(state.flags.pullCount);
       var coins  = getCoins();
-      var shards = state.shards;
       var canPull = coins >= cost;
 
       // 同步 _gsSeriesActiveIdx 和 _currentGachaSeriesId
       var _seriesKeys = Object.keys(GACHA_SERIES);
       _gsSeriesActiveIdx = Math.max(0, _seriesKeys.indexOf(_currentGachaSeriesId));
 
+      // Collection pill data (computed once)
+      var _colPool  = series.items.filter(function(it){ return it.type !== 'cg'; });
+      var _colOwned = _colPool.filter(function(it){ return !!state.collection[it.id]; }).length;
+      var _colFull  = _colOwned >= _colPool.length;
+      var _colCountColor = _colFull ? '#2FB070' : 'rgba(255,255,255,0.38)';
+      var _colGridSvg =
+        '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">' +
+          '<rect x="0.5" y="0.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>' +
+          '<rect x="8.5" y="0.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>' +
+          '<rect x="0.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>' +
+          '<rect x="8.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>' +
+        '</svg>';
+      var _colCountHtml = '<span id="gs-col-count" style="color:' + _colCountColor + '">' + _colOwned + '/' + _colPool.length + '</span>';
+
       container.innerHTML =
-        // ── 顶部状态栏
+        // ── 顶部状态栏（Back | coins | … | Collection 胶囊右上）
         '<div class="gs-topbar">' +
           '<button class="gs-back-btn" onclick="closeGachaStore()">◀ Back</button>' +
           '<div class="gs-topbar-coins" onclick="showTopbarTooltip(\'coin\',this)">' +
@@ -9054,20 +8687,9 @@
             '</div>' +
             '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
           '</div>' +
-          '<div class="gs-topbar-shards" onclick="showTopbarTooltip(\'shard\',this)">' +
-            '<span class="gs-shard-emoji-wrap">' +
-              '<span class="gs-shard-emoji">💎</span>' +
-              '<svg class="gs-shard-sparkles" width="32" height="32" viewBox="0 0 32 32" fill="none" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;overflow:visible">' +
-                '<g class="gs-shard-sparkle" style="transform-origin:27px 7px">' +
-                  '<path d="M27,5.5 L27.5,7 L29,7.4 L27.5,7.8 L27,9.3 L26.5,7.8 L25,7.4 L26.5,7 Z" fill="#ffffff"/>' +
-                '</g>' +
-                '<g class="gs-shard-sparkle" style="transform-origin:5px 22px;animation-delay:1.4s">' +
-                  '<path d="M5,20.5 L5.4,21.7 L6.6,22 L5.4,22.3 L5,23.5 L4.6,22.3 L3.4,22 L4.6,21.7 Z" fill="#ffffff" opacity="0.9"/>' +
-                '</g>' +
-              '</svg>' +
-            '</span>' +
-            '<span class="gs-shard-num" id="gs-shard-num">' + shards + '</span>' +
-          '</div>' +
+          '<button class="gs-col-pill" id="gs-col-btn" onclick="openCollectionBook(null, _currentGachaSeriesId)">' +
+            _colGridSvg + 'Collection ' + _colCountHtml +
+          '</button>' +
         '</div>' +
         // ── 系列封面轮播
         '<div class="gs-sc-wrap" id="gs-sc-wrap">' +
@@ -9076,10 +8698,9 @@
         '<div class="gs-sc-dots" id="gs-sc-dots"></div>' +
         // ── 系列标题
         '<div class="gs-series-title" id="gs-series-title">' +
-          '<div class="gs-series-name-zh" id="gs-series-name-zh">' + series.nameZh + '</div>' +
           '<div class="gs-series-name-en" id="gs-series-name-en">' + tField(series, 'name') + '</div>' +
         '</div>' +
-        // ── 抽卡按钮
+        // ── Draw 主按钮（仅一个，居中）
         '<div class="gs-action-area">' +
           '<button class="gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled') + '"' +
             ' id="gs-pull-btn"' +
@@ -9087,13 +8708,7 @@
             (canPull ? '' : ' disabled') + '>' +
             (canPull ? 'Draw' : 'Not enough coins') +
           '</button>' +
-        '</div>' +
-        // ── 次级入口
-        '<div class="gs-secondary-row">' +
-          '<button class="gs-sec-btn" onclick="openCollectionBook(null, _currentGachaSeriesId)">Collection</button>' +
-          '<div class="gs-sec-divider"></div>' +
-          '<button class="gs-sec-btn" onclick="openShardShop()">碎片商店</button>' +
-        '</div>';
+        '</div>'
 
       requestAnimationFrame(function() { _gsInitSeriesCarousel(); });
     }
@@ -9119,20 +8734,30 @@
       if (!_gachaStoreEl) return;
       var state   = loadGachaState();
       var coins   = getCoins();
-      var shards  = state.shards;
       var cost    = getCurrentThreshold(state.flags.pullCount);
       var canPull = coins >= cost;
 
       var numEl   = document.getElementById('gs-coin-num');
-      var shdEl   = document.getElementById('gs-shard-num');
       var pullBtn = document.getElementById('gs-pull-btn');
+      var colBtn  = document.getElementById('gs-col-btn');
 
       if (numEl)   numEl.textContent = coins;
-      if (shdEl)   shdEl.textContent = shards;
       if (pullBtn) {
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
         pullBtn.innerHTML = canPull ? 'Draw' : 'Not enough coins';
+      }
+      // 刷新 Collection 右上角胶囊数字（集满时绿色）
+      var colCount = document.getElementById('gs-col-count');
+      if (colCount) {
+        var _ser = GACHA_SERIES[_currentGachaSeriesId];
+        if (_ser) {
+          var _pool  = _ser.items.filter(function(it){ return it.type !== 'cg'; });
+          var _owned = _pool.filter(function(it){ return !!state.collection[it.id]; }).length;
+          var _full  = _owned >= _pool.length;
+          colCount.textContent = _owned + '/' + _pool.length;
+          colCount.style.color = _full ? '#2FB070' : 'rgba(255,255,255,0.38)';
+        }
       }
     }
 
@@ -9417,7 +9042,7 @@
           '<div class="gr-name-zh">' + tField(item, 'name') + '</div>' +
           bodyHtml +
           (result.isDup
-            ? '<div class="gr-dup-hint">已有 · 获得 <b>' + result.shardsGained + '</b> 碎片</div>'
+            ? '<div class="gr-dup-hint">Already owned · +<b>' + (result.refund || 0) + '</b> coins</div>'
             : '<div class="gr-new-hint">— First Collected —</div>') +
           '<div class="gr-btn-row">' +
             '<button class="gr-btn gr-btn-secondary" onclick="closeGachaResult()">Back to Shop</button>' +
@@ -9920,7 +9545,7 @@
         btns +=
           '<button class="gcb-equip-btn' + tierCls + (isEquipped ? ' equipped' : '') + '"' +
           ' id="gcb-equip-btn"' + equipTitle + ' onclick="toggleEquipOutfit(\'' + itemId + '\')">' +
-          (isEquipped ? '✓ 已换装' : '换装') + '</button>';
+          (isEquipped ? '✓ Equipped' : 'Wear It') + '</button>';
       }
       // voiceOnly 已经在卡片中提供播放器，不再重复一个底部按钮；
       // CG 类型用"回放独白"；其它 audio 道具保留通用按钮
@@ -9976,7 +9601,7 @@
           '</div>' +
           '<div class="gcb-detail-name-zh">' + tField(item, 'name') + '</div>' +
           bodyHtml +
-          (rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-detail-count">已获得 ' + rec.count + ' 份</div>' : '') +
+          (rec.count > 1 && item.type !== 'outfit' ? '<div class="gcb-detail-count">Owned ×' + rec.count + '</div>' : '') +
           '<div class="gcb-detail-btns">' + btns + '</div>' +
         '</div>';
 
@@ -10008,7 +9633,7 @@
       if (btn) {
         var tierCls = ' btn-tier-' + item.tier.toLowerCase();
         btn.className = 'gcb-equip-btn' + tierCls + (equipped ? ' equipped' : '');
-        btn.textContent = equipped ? '✓ 已换装' : '换装';
+        btn.textContent = equipped ? '✓ Equipped' : 'Wear It';
         if (equipped) btn.setAttribute('title', '点击卸下');
         else btn.removeAttribute('title');
       }
@@ -10102,26 +9727,27 @@
       }
       var hasEn = !!(item.bodyI18n || item.bodyEn);
       var tierBreathCls = item.tier ? ' tier-breath-' + item.tier.toLowerCase() : '';
-      // 语言切换行（仅有英文时显示）
+      // 语言切换行（仅有英文时显示）；默认 EN 高亮
       var langRow = hasEn
         ? '<div class="vt-lang-row">' +
-            '<button class="vt-lang-btn vt-lang-active" id="' + transId + '-zh"' +
-              ' onclick="switchVoiceLang(\'' + transId + '\',\'zh\')">中</button>' +
-            '<span class="vt-lang-sep">/</span>' +
-            '<button class="vt-lang-btn" id="' + transId + '-en"' +
+            '<button class="vt-lang-btn vt-lang-active" id="' + transId + '-en"' +
               ' onclick="switchVoiceLang(\'' + transId + '\',\'en\')">EN</button>' +
+            '<span class="vt-lang-sep">/</span>' +
+            '<button class="vt-lang-btn" id="' + transId + '-zh"' +
+              ' onclick="switchVoiceLang(\'' + transId + '\',\'zh\')">中</button>' +
           '</div>'
         : '';
+      // 有英文时默认显示英文（中文块默认隐藏）；无英文时显示中文原文
       var transcriptBody =
-        '<div class="vt-zh-block">' + toParagraphs(item.body) + '</div>' +
-        (hasEn ? '<div class="vt-en-block" style="display:none">' + toParagraphs(tField(item, 'body')) + '</div>' : '');
+        '<div class="vt-zh-block"' + (hasEn ? ' style="display:none"' : '') + '>' + toParagraphs(item.body) + '</div>' +
+        (hasEn ? '<div class="vt-en-block">' + toParagraphs(tField(item, 'body')) + '</div>' : '');
       return (
         '<div class="' + prefix + '-voice-player">' +
           '<button class="' + prefix + '-voice-btn' + tierBreathCls + '" id="' + btnId + '"' +
                 ' onclick="toggleVoicePlayer(\'' + safeAudio + '\',\'' + btnId + '\',\'' + hintId + '\')">▶</button>' +
           '<span class="' + prefix + '-voice-hint" id="' + hintId + '">Play Voice Note</span>' +
           '<button class="' + prefix + '-voice-toggle"' +
-                ' onclick="toggleVoiceTranscript(\'' + transId + '\', this)">显示文字 · Show Transcript</button>' +
+                ' onclick="toggleVoiceTranscript(\'' + transId + '\', this)">Show Transcript</button>' +
           '<div class="' + prefix + '-voice-transcript" id="' + transId + '">' +
             langRow + transcriptBody +
           '</div>' +
@@ -10183,165 +9809,9 @@
       var el = document.getElementById(transId);
       if (!el) return;
       var open = el.classList.toggle('expanded');
-      if (toggleBtn) toggleBtn.textContent = open ? '收起文字 · Hide Transcript' : '显示文字 · Show Transcript';
+      if (toggleBtn) toggleBtn.textContent = open ? "Hide Transcript" : "Show Transcript";
     }
 
-    // ════════════════════════════════════════════════════════════
-    // ── 盲盒系统 M5: 碎片商店 Shard Shop ──────────────────────
-    // ════════════════════════════════════════════════════════════
-
-    var _shardShopEl = null;
-
-    function openShardShop() {
-      if (_shardShopEl && _shardShopEl.parentNode) {
-        _renderShardShopRows();
-        return;
-      }
-      var ov = document.createElement('div');
-      ov.id = 'gacha-shard-shop-overlay';
-      ov.className = 'gacha-shard-shop-overlay';
-      ov.addEventListener('click', function(e) {
-        if (e.target === ov) closeShardShop();
-      });
-      var card = document.createElement('div');
-      card.className = 'gss-card';
-      card.id = 'gss-card';
-      card.addEventListener('click', function(e) { e.stopPropagation(); });
-      ov.appendChild(card);
-      _shardShopEl = ov;
-      document.body.appendChild(ov);
-      _buildShardShop(card);
-      requestAnimationFrame(function() { ov.classList.add('gss-visible'); });
-    }
-
-    function closeShardShop() {
-      if (!_shardShopEl) return;
-      _shardShopEl.classList.remove('gss-visible');
-      var el = _shardShopEl;
-      _shardShopEl = null;
-      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
-    }
-
-    // 复用顶栏的水晶钻石 SVG（小尺寸）
-    // Returns a 💎 emoji sized to match surrounding text
-    function _shardSvg(size) {
-      var s = size || 16;
-      var fs = Math.round(s * 0.95);
-      return '<span style="font-size:' + fs + 'px;line-height:1;vertical-align:middle;display:inline-block;flex-shrink:0">💎</span>';
-    }
-
-    function _buildShardShop(card) {
-      var state = loadGachaState();
-      card.innerHTML =
-        '<div class="gss-topbar">' +
-          '<div class="gss-title gss-title-clickable" onclick="toggleShardRules()">' +
-            _shardSvg(18) + '&nbsp;碎片商店<span class="gss-info-icon">ⓘ</span>' +
-          '</div>' +
-          '<div class="gss-shard-bal" id="gss-shard-bal">' +
-            _shardSvg(16) + '<span id="gss-shard-num">' + state.shards + '</span> 碎片' +
-          '</div>' +
-          '<button class="gss-close-btn" onclick="closeShardShop()">✕</button>' +
-        '</div>' +
-        '<div class="gss-rules" id="gss-rules" data-lang="zh">' +
-          '<div class="gss-rules-header">' +
-            '<div class="gss-rules-title">' +
-              '<span class="gss-rt-zh">碎片规则</span>' +
-              '<span class="gss-rt-en">Shard Rules</span>' +
-            '</div>' +
-            '<div class="gss-lang-switch">' +
-              '<button class="gss-lang-btn active" data-lang="zh" onclick="setShardRulesLang(\'zh\')">中</button>' +
-              '<button class="gss-lang-btn" data-lang="en" onclick="setShardRulesLang(\'en\')">EN</button>' +
-            '</div>' +
-          '</div>' +
-          '<ul class="gss-rules-list gss-rules-zh">' +
-            '<li><b>如何获取：</b>抽到重复物品时，会自动转化为碎片。稀有度越高，回收越多 —— ' +
-              '<span class="gss-rk-n">普通 +1</span>、' +
-              '<span class="gss-rk-r">稀有 +3</span>、' +
-              '<span class="gss-rk-sr">精选 +8</span>、' +
-              '<span class="gss-rk-ssr">至臻 +20</span>。</li>' +
-            '<li><b>如何使用：</b>消耗碎片，可在对应等级中随机兑换一件尚未拥有的物品。</li>' +
-            '<li><b>收集奖励：</b>万物皆可期 —— 将重复的际遇化作碎片，兑换那些尚未解锁的全新惊喜。</li>' +
-          '</ul>' +
-          '<ul class="gss-rules-list gss-rules-en">' +
-            '<li><b>How to earn:</b> Duplicate pulls are automatically converted into shards. The rarer the item, the more shards you get — ' +
-              '<span class="gss-rk-n">Common +1</span>, ' +
-              '<span class="gss-rk-r">Rare +3</span>, ' +
-              '<span class="gss-rk-sr">Epic +8</span>, ' +
-              '<span class="gss-rk-ssr">Legendary +20</span>.</li>' +
-            '<li><b>How to spend:</b> Spend shards to randomly redeem one item you don\'t yet own at the matching rarity.</li>' +
-            '<li><b>Collection reward:</b> All things in time — let duplicate encounters become shards, and trade them for surprises still waiting to be unlocked.</li>' +
-          '</ul>' +
-        '</div>' +
-        '<div class="gss-rows" id="gss-rows"></div>';
-      _renderShardShopRows();
-    }
-
-    function toggleShardRules() {
-      var el = document.getElementById('gss-rules');
-      if (el) el.classList.toggle('gss-rules-visible');
-    }
-    function setShardRulesLang(lang) {
-      var el = document.getElementById('gss-rules');
-      if (!el) return;
-      el.setAttribute('data-lang', lang);
-      var btns = el.querySelectorAll('.gss-lang-btn');
-      for (var i = 0; i < btns.length; i++) {
-        btns[i].classList.toggle('active', btns[i].getAttribute('data-lang') === lang);
-      }
-      // 阻止冒泡到 .gss-title 的 toggleShardRules（点切换语言不应折叠面板）
-      if (window.event) window.event.stopPropagation();
-    }
-
-    function _renderShardShopRows() {
-      var rowsEl  = document.getElementById('gss-rows');
-      var shdNumEl = document.getElementById('gss-shard-num');
-      if (!rowsEl) return;
-      var state   = loadGachaState();
-      var shards  = state.shards;
-      if (shdNumEl) shdNumEl.textContent = shards;
-
-      var series  = GACHA_SERIES[_currentGachaSeriesId];
-      var tiers   = ['N', 'R', 'SR', 'SSR'];
-      var tierNames = { N: 'N 普通', R: 'R 稀有', SR: 'SR 精选', SSR: 'SSR 至臻' };
-
-      rowsEl.innerHTML = tiers.map(function(tier) {
-        var cost     = SHARD_PRICE[tier];
-        var allItems = series.items.filter(function(it) { return it.tier === tier; });
-        var unowned  = allItems.filter(function(it) { return !state.collection[it.id]; });
-        var allOwned   = unowned.length === 0;
-        var cantAfford = shards < cost;
-        var canBuy     = !allOwned && !cantAfford;
-        var tl         = tier.toLowerCase();
-
-        // 状态分配：
-        //  • canBuy   → buyable（亮 + 可点）
-        //  • cantAfford → disabled（暗 + 不可点）
-        //  • allOwned → 仅亮（无可点指针、无 onclick）
-        var stateCls  = '';
-        if (canBuy)          stateCls = ' gss-tile-buyable';
-        else if (cantAfford) stateCls = ' gss-disabled';
-        // 已集齐：亮着但点击给轻提示；碎片不足：灰着无反馈
-        var clickAttr = canBuy
-          ? ' onclick="confirmExchange(\'' + tier + '\')"'
-          : (allOwned ? ' onclick="showShardToast(\'该等级物品已全部收集 ✓\')"' : '');
-
-        // hint：可买显示剩余数；碎片不足显示提示；已集齐不显示文字
-        var hint = '';
-        if (canBuy)          hint = '剩余 ' + unowned.length + ' 件未获得';
-        else if (cantAfford) hint = '碎片不足';
-
-        return '<div class="gss-tile gss-tile-' + tl + stateCls + '"' + clickAttr + '>' +
-                 '<div class="gss-tile-badge gss-tier-' + tl + '">' + tierNames[tier] + '</div>' +
-                 '<div class="gss-crystal gss-crystal-' + tl + '">💎</div>' +
-                 '<div class="gss-tile-info">' +
-                   '<div class="gss-tile-cost gss-cost-' + tl + '">' + cost + ' 碎片</div>' +
-                   (hint ? '<div class="gss-tile-hint">' + hint + '</div>' : '') +
-                 '</div>' +
-               '</div>';
-      }).join('');
-    }
-
-    // ─ 兑换逻辑 ─────────────────────────────────────────────────
     // ── 轻提示 Toast ──────────────────────────────────────────
     var _shardToastTimer = null;
     function showShardToast(msg) {
@@ -10371,83 +9841,6 @@
       }, 2000);
     }
 
-    // ── 二次确认弹窗（SR / SSR）──────────────────────────────
-    var _gssConfirmEl = null;
-    function confirmExchange(tier) {
-      // 低成本档（N / R）直接兑换，不打扰
-      if (tier === 'N' || tier === 'R') { exchangeByTier(tier); return; }
-
-      var state = loadGachaState();
-      var cost  = SHARD_PRICE[tier];
-      if (state.shards < cost) return;
-
-      var tl = tier.toLowerCase();
-      var tierLabel = tier === 'SSR' ? '至臻 (SSR)' : '精选 (SR)';
-
-      // 已存在 → 不重复创建
-      if (_gssConfirmEl) closeExchangeConfirm();
-
-      var ov = document.createElement('div');
-      ov.className = 'gss-confirm-overlay';
-      ov.id = 'gss-confirm-overlay';
-      ov.onclick = function(e){ if (e.target === ov) closeExchangeConfirm(); };
-      ov.innerHTML =
-        '<div class="gss-confirm-card">' +
-          '<div class="gss-confirm-icon">💎</div>' +
-          '<div class="gss-confirm-text">是否消耗 ' +
-            '<b class="gss-rk-' + tl + '">' + cost + '</b> 时光碎片，<br>' +
-            '随机兑换一件未持有的 <b class="gss-rk-' + tl + '">' + tierLabel + '</b> 物品？' +
-          '</div>' +
-          '<div class="gss-confirm-btns">' +
-            '<button class="gss-confirm-btn gss-confirm-cancel" onclick="closeExchangeConfirm()">取消</button>' +
-            '<button class="gss-confirm-btn gss-confirm-ok gss-confirm-ok-' + tl + '" ' +
-              'onclick="closeExchangeConfirm(); exchangeByTier(\'' + tier + '\')">确认兑换</button>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(ov);
-      _gssConfirmEl = ov;
-      requestAnimationFrame(function(){ ov.classList.add('gscv-visible'); });
-    }
-    function closeExchangeConfirm() {
-      if (!_gssConfirmEl) return;
-      var el = _gssConfirmEl;
-      _gssConfirmEl = null;
-      el.classList.remove('gscv-visible');
-      setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 220);
-    }
-
-    function exchangeByTier(tier) {
-      var state   = loadGachaState();
-      var cost    = SHARD_PRICE[tier];
-      if (state.shards < cost) return;
-
-      var series  = GACHA_SERIES[_currentGachaSeriesId];
-      var unowned = series.items.filter(function(it) {
-        return it.tier === tier && !state.collection[it.id];
-      });
-      if (!unowned.length) return;
-
-      // 随机选一件未持有物品
-      var item = unowned[Math.floor(Math.random() * unowned.length)];
-
-      // 扣碎片 + 入库
-      state.shards -= cost;
-      state.collection[item.id] = { count: 1, firstAt: Date.now() };
-      saveGachaState(state);
-
-      // 刷新 UI
-      _renderShardShopRows();
-      if (_collectionBookEl) _renderCollectionGrid();
-
-      // 展示结果卡（复用结果卡，标记来自碎片商店）
-      var result = {
-        ok: true, item: item, isDup: false, tier: tier,
-        cost: cost, shardsGained: 0, nextCost: null,
-        fromShardShop: true
-      };
-      closeShardShop();
-      showGachaResultCard(result);
-    }
 
     // ── Mini Wallet Panel ─────────────────────────────────────
     var _walletOpen = false;
@@ -17521,12 +16914,10 @@
       // ── ESC 键关闭盲盒系统所有弹窗 ─────────────────────────
       document.addEventListener('keydown', function(e) {
         if (e.key !== 'Escape') return;
-        // 按优先级从高到低关闭：结果卡 > 详情 > 碎片商店 > 收集册 > 商店
-        if (_gssConfirmEl)                                   { closeExchangeConfirm(); return; }
+        // 按优先级从高到低关闭：结果卡 > 详情 > 收集册 > 商店
         if (document.getElementById('gacha-result-overlay')) { closeGachaResult(); return; }
         if (document.getElementById('gcb-detail-overlay'))   { closeItemDetail();  return; }
         if (document.getElementById('gacha-unbox-overlay'))  { if (_unboxOverlayEl) { var el=_unboxOverlayEl; _unboxClearAll(); _unboxOverlayEl=null; if(el.parentNode)el.parentNode.removeChild(el); } return; }
-        if (_shardShopEl)      { closeShardShop();      return; }
         if (_collectionBookEl) { closeCollectionBook(); return; }
         if (_gachaStoreEl)     { closeGachaStore();     return; }
       });
