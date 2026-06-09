@@ -1778,16 +1778,12 @@
       display: inline-block;
     }
 
-    .anno-dot.correct {
-      background: #22c55e;
-    }
-
     .anno-dot.confused {
       background: #fbbf24;
     }
 
     .anno-dot.miss {
-      background: #f87171;
+      background: #fbbf24;
     }
 
     .anno-chars {
@@ -1850,20 +1846,17 @@
       line-height: 1;
       color: #e2e8f0;
     }
-    .anno-token-hz.correct { color: #22c55e; }
     .anno-token-hz.confused {
       color: #fbbf24;
       border-bottom: 2px solid #fbbf24;
     }
     .anno-token-hz.miss {
-      color: #f87171;
-      border-bottom: 2px solid #f87171;
-      text-decoration-line: underline;
-      text-decoration-style: wavy;
+      color: #fbbf24;
+      border-bottom: 2px solid #fbbf24;
     }
     .anno-token-hz.retroflex {
-      color: #a78bfa;
-      border-bottom: 2px solid #a78bfa;
+      color: #fbbf24;
+      border-bottom: 2px solid #fbbf24;
     }
     .anno-token-hz.punct {
       font-size: 28px;
@@ -1871,7 +1864,6 @@
       font-family: inherit;
       letter-spacing: 0;
       vertical-align: baseline;
-      color: #22c55e;
     }
 
     ruby.anno-char {
@@ -1891,20 +1883,14 @@
       letter-spacing: 0;
     }
 
-    .anno-char.correct {
-      color: #22c55e;
-    }
-
     .anno-char.confused {
       color: #fbbf24;
       border-bottom: 2px solid #fbbf24;
     }
 
     .anno-char.miss {
-      color: #f87171;
-      border-bottom: 2px solid #f87171;
-      text-decoration-line: underline;
-      text-decoration-style: wavy;
+      color: #fbbf24;
+      border-bottom: 2px solid #fbbf24;
     }
     /* 评分台词：标点并入前一个汉字单元，天然与汉字同基线 */
     .anno-inline-punct {
@@ -1915,9 +1901,8 @@
       margin-left: 0.02em;
       vertical-align: baseline;
     }
-    .anno-punct-char.correct  { color: #22c55e; }
     .anno-punct-char.confused { color: #fbbf24; }
-    .anno-punct-char.miss     { color: #f87171; }
+    .anno-punct-char.miss     { color: #fbbf24; }
 
     .anno-rec {
       font-size: 12px;
@@ -13576,13 +13561,11 @@
         if (cgBg)  cgBg.classList.add('show');
         if (ovEl)  ovEl.classList.add('cg-active');
         if (overall >= 80) {
-          // 高分：0.9s 后模糊变清晰，再 2.4s 后显示 CG 按钮
+          // 高分：0.3s 后模糊变清晰，同时显示 CG 按钮
           setTimeout(function() {
             if (cgBg) cgBg.classList.add('reveal');
-            setTimeout(function() {
-              if (btnCgView) { btnCgView.style.display = 'flex'; }
-            }, 2400);
-          }, 900);
+            if (btnCgView) { btnCgView.style.display = 'flex'; }
+          }, 300);
         } else {
           // 低分：图片保持模糊，显示解锁提示
           if (lockedHint) lockedHint.classList.add('show');
@@ -15919,6 +15902,8 @@
       function _playQuoteUrl(url, isBlob) {
         if (qBtn) qBtn.classList.remove('loading');
         var audio = new Audio(url);
+        audio._synthRate = 1.0;
+        _applyPlaybackScale(audio);
         window._charIntroAudio = audio;
         window._charIntroAudioSrc = 'quote';
         _setQuoteBtnIcon(true);
@@ -16017,6 +16002,8 @@
       function _playGreetingUrl(url, isBlob) {
         if (playBtn) playBtn.classList.remove('loading');
         var audio = new Audio(url);
+        audio._synthRate = 1.0;
+        _applyPlaybackScale(audio);
         window._charIntroAudio = audio;
         window._charIntroAudioSrc = 'greeting';
         _setPlayBtnIcon(true);
@@ -16988,7 +16975,7 @@
     </div>
     <div class="fc-inner">
       <div class="fc-header">
-        <div class="fc-title">⚡ 核心生词 · Key Vocabulary</div>
+        <div class="fc-title">⚡ Key Vocabulary</div>
       </div>
       <div class="fc-timer-bar"><div class="fc-timer-fill" id="fc-timer-fill"></div></div>
       <div class="fc-card">
@@ -17277,14 +17264,8 @@
       <div class="eval-dualtrack-card" id="eval-dualtrack-card" style="display:none">
         <div class="eval-dualtrack-title-row">
           <div class="eval-dualtrack-title">📖 Pronunciation Guide</div>
-          <button class="guide-legend-btn" id="guide-legend-btn" type="button" onclick="toggleGuideLegend()" title="颜色说明">i</button>
         </div>
-        <div class="guide-legend" id="guide-legend">
-          <div>🟢 绿色：发音正确 / Green: Correct</div>
-          <div>🟡 黄色：需改进（轻微偏差）/ Yellow: Needs improvement</div>
-          <div>🔴 红色：明显错误 / Red: Clear error</div>
-          <div>🟣 紫色：平翘舌专项提示 / Purple: Retroflex-specific hint</div>
-        </div>
+        <div class="guide-legend" id="guide-legend" style="display:none"></div>
         <div class="guide-compare-btns" style="margin-bottom:12px">
           <button class="guide-btn-user" id="guide-btn-user" onclick="playGuideUser()">🎙 <br><span style="font-size:10px;opacity:0.75">Recording</span></button>
           <button class="guide-btn-native" id="guide-btn-native" onclick="playGuideNative()">🔊 <br><span style="font-size:10px;opacity:0.75">Native</span></button>
