@@ -221,9 +221,9 @@
     }
 
     .lesson-title-en {
-      font-size: 12px;
-      color: #94a3b8;
-      font-weight: 500;
+      font-size: 17px;
+      color: #e2e8f0;
+      font-weight: 700;
       line-height: 1.2;
     }
 
@@ -3857,10 +3857,10 @@
       line-height: 1.5;
     }
     .guide-en {
-      font-size: 12px;
-      color: #94a3b8;
+      font-size: 14px;
+      color: #e2e8f0;
       margin-top: 2px;
-      line-height: 1.4;
+      line-height: 1.5;
     }
     .guide-compare-btns {
       display: flex;
@@ -5450,10 +5450,10 @@
     <div class="controls">
       <!-- 速度条 -->
       <div class="speed-control" style="margin:0 0 4px;">
-        <span>慢 Slow</span>
+        <span>Slow</span>
         <input type="range" id="speed-slider" min="0.3" max="1.5" step="0.05" value="0.7"
           oninput="onSpeedChange(this.value)" />
-        <span>快 Fast</span>
+        <span>Fast</span>
         <span class="speed-label" id="speed-label">0.7×</span>
       </div>
       <!-- 竖排 2 个功能按钮 -->
@@ -5495,8 +5495,7 @@
       <div class="pth-bar-wrap"><div class="pth-bar-fill" style="width:100%"></div></div>
     </div>
     <div class="completion-card">
-      <div class="completion-title">本课完成！</div>
-      <div class="completion-sub">Lesson Complete!</div>
+      <div class="completion-title">Lesson Complete!</div>
       <!-- 成绩单容器 -->
       <div class="score-summary-card">
         <div class="avg-score" id="avg-score">--</div>
@@ -5526,7 +5525,7 @@
         <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ View HD CG</button>
         <div id="ending-locked-hint">🔒 达到 80 分解锁原图 · Score 80 to Unlock CG</div>
       </div>
-      <a class="btn-review-link" onclick="reviewLesson()">↺ 重新复习 · Review</a>
+      <a class="btn-review-link" onclick="reviewLesson()">↺ Review</a>
     </div>
     <!-- 纯净看图模式返回提示（绝对定位在 overlay 内部） -->
     <div id="cg-view-hint">✦ 点击屏幕任意位置返回 · Tap to return ✦</div>
@@ -9980,7 +9979,7 @@
       } else if (tier > 0) {
         // 分数够，但今日已拿过同等或更高档——不重复发币
         setTimeout(function() {
-          retryEl.innerHTML = '💡 今日奖励已达上限，明日重置。 Max daily reward reached.';
+          retryEl.innerHTML = '💡 Max daily reward reached.';
           retryEl.style.display = 'block';
         }, delay || 400);
       } else {
@@ -12253,7 +12252,6 @@
       var total = lesson.sentences.length;
 
       if (el("lesson-title-text")) el("lesson-title-text").innerHTML =
-        '<span class="lesson-title-zh">' + lesson.titleZh + '</span>' +
         '<span class="lesson-title-en">' + tField(lesson, 'title') + '</span>';
       if (el("btn-lesson-prev")) el("btn-lesson-prev").disabled = lessonIdx === 0;
       if (el("btn-lesson-next")) el("btn-lesson-next").disabled = lessonIdx === LESSONS.length - 1;
@@ -12859,10 +12857,10 @@
       numEl.textContent = "0";
       numEl.style.color = score === 100 ? "" : color; // perfect uses gradient
 
-      var grade = score >= 95 ? "👑 完美发音！简直像个本地人！<br>Perfect! Just like a local!"
-        : score >= 85 ? "🌟 太棒了！语感非常自然流畅！<br>Awesome! Very natural flow!"
-        : score >= 70 ? "👏 表现不错！就差一点点完美了！<br>Great effort! You're almost there!"
-        : "💪 别灰心！影子跟读多练几次就顺了！<br>Keep trying! Practice makes perfect!";
+      var grade = score >= 95 ? "👑 Perfect! Just like a local!"
+        : score >= 85 ? "🌟 Awesome! Very natural flow!"
+        : score >= 70 ? "👏 Great effort! You're almost there!"
+        : "💪 Keep trying! Practice makes perfect!";
       var gradeEl = document.getElementById("eval-grade");
       gradeEl.innerHTML = grade;
       gradeEl.style.color = color;
@@ -13057,8 +13055,7 @@
           var item = mergedMap[char];
           item.entries.forEach(function (entry) {
             html += '<div class="guide-row">'
-              + '<div class="guide-zh">' + entry.icon + ' ' + entry.zh + '</div>'
-              + '<div class="guide-en">' + entry.en + '</div>'
+              + '<div class="guide-en">' + entry.icon + ' ' + entry.en + '</div>'
               + '</div>';
           });
         });
@@ -13066,8 +13063,7 @@
         // 通用兜底提示（无具体字）追加在所有字级提示之后
         genericTipItems.forEach(function (entry) {
           html += '<div class="guide-row guide-row-generic">'
-            + '<div class="guide-zh">' + (entry.icon || '💡') + ' ' + entry.zh + '</div>'
-            + '<div class="guide-en">' + entry.en + '</div>'
+            + '<div class="guide-en">' + (entry.icon || '💡') + ' ' + entry.en + '</div>'
             + '</div>';
         });
 
@@ -13505,35 +13501,30 @@
       document.getElementById("avg-score").textContent = noPractice ? '--' : overall;
       document.getElementById("avg-score").style.color = oColor;
 
-      var grade = noPractice ? "🎤 未录音<br>No Practice" :
-        overall >= 90 ? "优秀<br>Excellent" :
-        overall >= 80 ? "良好<br>Great" :
-        overall >= 70 ? "一般<br>Good" : "继续加油<br>Keep Going";
+      var grade = noPractice ? "No Practice" :
+        overall >= 90 ? "Excellent" :
+        overall >= 80 ? "Great" :
+        overall >= 70 ? "Good" : "Keep Going";
       document.getElementById("score-grade").innerHTML = grade;
       document.getElementById("score-grade").style.color = oColor;
 
       if (noPractice) {
         document.getElementById("praise-block").innerHTML =
-          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;color:#94a3b8;'>💡 点击麦克风录音，才能获得分数</div>" +
-          "<div style='font-size:13px;color:#64748b;'>Try recording each sentence to see your score!</div>";
+          "<div style='font-size:15px;font-weight:600;color:#94a3b8;'>Try recording each sentence to see your score!</div>";
       } else {
-        var praiseMsg, praiseSub, praiseColor;
+        var praiseSub, praiseColor;
         if (overall >= 90) {
-          praiseMsg   = "✨ 发音纯正！几乎像个本地人！";
           praiseSub   = "Almost like a local!";
           praiseColor = "#22c55e";
         } else if (overall >= 60) {
-          praiseMsg   = "👍 表现不错！继续保持！";
           praiseSub   = "Good job, keep it up!";
           praiseColor = "#facc15";
         } else {
-          praiseMsg   = "💪 再接再厉！多练几遍找找语感！";
           praiseSub   = "Keep practicing — you'll get there!";
           praiseColor = "#64748b";
         }
         document.getElementById("praise-block").innerHTML =
-          "<div style='font-size:15px;font-weight:600;margin-bottom:8px;color:" + praiseColor + ";'>" + praiseMsg + "</div>" +
-          "<div style='font-size:13px;color:#94a3b8;'>" + praiseSub + "</div>";
+          "<div style='font-size:15px;font-weight:600;color:" + praiseColor + ";'>" + praiseSub + "</div>";
       }
 
       // 本课回声币汇总（始终显示，0币也展示）
@@ -17099,10 +17090,10 @@
     </div>
       <!-- 速度条：紧贴卡片底部，跟随卡片高度浮动；与练习页共享 slowSpeed -->
       <div class="speed-control speed-control-inline" style="margin:14px 0 0;">
-        <span>慢 Slow</span>
+        <span>Slow</span>
         <input type="range" id="speed-slider-plp" min="0.3" max="1.5" step="0.05" value="0.7"
           oninput="onSpeedChange(this.value)" />
-        <span>快 Fast</span>
+        <span>Fast</span>
         <span class="speed-label" id="speed-label-plp">0.7×</span>
       </div>
     </div><!-- /.plp-cards-wrap -->
@@ -17186,10 +17177,10 @@
       </div>
       <!-- 速度条：紧贴卡片底部，跟随卡片高度浮动；与练习页共享 slowSpeed -->
       <div class="speed-control speed-control-inline" style="margin:14px 0 0;">
-        <span>慢 Slow</span>
+        <span>Slow</span>
         <input type="range" id="speed-slider-preview" min="0.3" max="1.5" step="0.05" value="0.7"
           oninput="onSpeedChange(this.value)" />
-        <span>快 Fast</span>
+        <span>Fast</span>
         <span class="speed-label" id="speed-label-preview">0.7×</span>
       </div>
     </div>
@@ -17264,7 +17255,7 @@
       <!-- 发音对比 -->
       <div class="eval-compare-card" id="eval-compare-card">
         <div class="eval-compare-row">
-          <span class="eval-tag">原 文</span>
+          <span class="eval-tag">Original</span>
           <div class="eval-anno-wrap" id="eval-anno-chars"></div>
         </div>
       </div>
@@ -17285,7 +17276,7 @@
       <!-- 发音指南（ISE 提示 + Whisper 双轨 + 声学 FFT，统一显示） -->
       <div class="eval-dualtrack-card" id="eval-dualtrack-card" style="display:none">
         <div class="eval-dualtrack-title-row">
-          <div class="eval-dualtrack-title">📖 发音指南 Pronunciation Guide</div>
+          <div class="eval-dualtrack-title">📖 Pronunciation Guide</div>
           <button class="guide-legend-btn" id="guide-legend-btn" type="button" onclick="toggleGuideLegend()" title="颜色说明">i</button>
         </div>
         <div class="guide-legend" id="guide-legend">
