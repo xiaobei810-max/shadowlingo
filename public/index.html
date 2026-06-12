@@ -246,7 +246,7 @@
 
     /* Stage card */
     .stage {
-      background: transparent;
+      background: var(--card);
       border-radius: 20px;
       margin: 10px 20px 0;
       padding: 14px 14px 4px;
@@ -345,7 +345,7 @@
     }
 
     .sentence-box {
-      background: #1a2438;
+      background: rgba(17,24,39,0.7);
       border: 1.5px solid var(--green);
       border-radius: 14px;
       padding: 14px 18px 14px;
@@ -4237,8 +4237,8 @@
 
     /* ── 双面板练习页 Dual-panel practice ─────────────────────── */
     .context-panel {
-      background: #1a2438;
-      border: 1.5px solid rgba(255,255,255,0.07);
+      background: rgba(17,24,39,0.7);
+      border: 1.5px solid var(--border);
       border-radius: 14px;
       padding: 14px 18px 14px;
       margin-bottom: 10px;
@@ -13289,26 +13289,43 @@
       }
     }
 
-    // ── Context-panel karaoke runner ──────────────────────────────
+    // ── Context-panel karaoke runner（支持暂停/继续，与音频同步）──────
     var _ctxKaraTimer = null;
-    function ctxRunKara(containerEl, durationMs, timings) {
-      if (_ctxKaraTimer) { clearInterval(_ctxKaraTimer); _ctxKaraTimer = null; }
-      var chars = containerEl.querySelectorAll('.ctx-kchar');
-      chars.forEach(function (c) { c.className = 'ctx-kchar'; });
-      var start = performance.now();
+    var _ctxKts = { el: null, dur: 0, timings: null, startTime: 0, pausedMs: 0 };
+    function _ctxTickKara() {
+      var chars = _ctxKts.el ? _ctxKts.el.querySelectorAll('.ctx-kchar') : [];
       _ctxKaraTimer = setInterval(function () {
-        var elapsed = performance.now() - start;
+        var elapsed = _ctxKts.pausedMs + (performance.now() - _ctxKts.startTime);
         chars.forEach(function (el, i) {
-          var t = timings[i]; if (!t) return;
+          var t = _ctxKts.timings[i]; if (!t) return;
           if (elapsed >= t.end * 1000)        el.className = 'ctx-kchar ctx-done';
           else if (elapsed >= t.start * 1000) el.className = 'ctx-kchar ctx-active';
           else                                el.className = 'ctx-kchar';
         });
-        if (elapsed >= durationMs) {
+        if (elapsed >= _ctxKts.dur) {
           clearInterval(_ctxKaraTimer); _ctxKaraTimer = null;
           chars.forEach(function (c) { c.className = 'ctx-kchar ctx-done'; });
         }
       }, 40);
+    }
+    function ctxRunKara(containerEl, durationMs, timings) {
+      if (_ctxKaraTimer) { clearInterval(_ctxKaraTimer); _ctxKaraTimer = null; }
+      var chars = containerEl.querySelectorAll('.ctx-kchar');
+      chars.forEach(function (c) { c.className = 'ctx-kchar'; });
+      _ctxKts.el = containerEl; _ctxKts.dur = durationMs; _ctxKts.timings = timings;
+      _ctxKts.pausedMs = 0; _ctxKts.startTime = performance.now();
+      _ctxTickKara();
+    }
+    function pauseCtxKara() {
+      if (_ctxKaraTimer) {
+        _ctxKts.pausedMs += performance.now() - _ctxKts.startTime;
+        clearInterval(_ctxKaraTimer); _ctxKaraTimer = null;
+      }
+    }
+    function resumeCtxKara() {
+      if (!_ctxKts.el || _ctxKaraTimer) return;
+      _ctxKts.startTime = performance.now();
+      _ctxTickKara();
     }
 
     function stopCtxTTS() {
@@ -13357,6 +13374,7 @@
       var btn = document.getElementById('ctx-play-btn');
       if (ctxPausedId === 'above') {
         resumeAudio();
+        resumeCtxKara();
         ctxPlayingId = 'above'; ctxPausedId = null;
         if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
         setPanelFocus('above');
@@ -13364,6 +13382,7 @@
       }
       if (ctxPlayingId === 'above') {
         pauseAudio();
+        pauseCtxKara();
         ctxPausedId = 'above'; ctxPlayingId = null;
         if (btn) { btn.textContent = '▶ Resume'; btn.classList.remove('playing'); }
         setPanelFocus('learner');
@@ -13418,6 +13437,7 @@
       var btn = document.getElementById('ctx-play-btn-below');
       if (ctxPausedId === 'below') {
         resumeAudio();
+        resumeCtxKara();
         ctxPlayingId = 'below'; ctxPausedId = null;
         if (btn) { btn.textContent = '⏸ Pause'; btn.classList.add('playing'); }
         setPanelFocus('below');
@@ -13425,6 +13445,7 @@
       }
       if (ctxPlayingId === 'below') {
         pauseAudio();
+        pauseCtxKara();
         ctxPausedId = 'below'; ctxPlayingId = null;
         if (btn) { btn.textContent = '▶ Resume'; btn.classList.remove('playing'); }
         setPanelFocus('learner');
@@ -14734,17 +14755,19 @@
         var _handled = false;
         var _playFired = false;
         var _knownDuration = null;
+        var _onplayDone = false; // one-shot: onplay callback fires once per play, NOT on resume
+        function _fireOnplayOnce(d) { if (_onplayDone || !onplay) return; _onplayDone = true; onplay(d); }
         _currentAudio = audio;
         // Azure 服务端按 rate 合成的 MP3，记录合成速率用于后续 playbackRate 比例缩放
         audio._synthRate = (typeof rate === 'number' && rate > 0) ? rate : 1.0;
         _applyPlaybackScale(audio);
         audio.onloadedmetadata = function () {
           _knownDuration = isFinite(audio.duration) ? audio.duration : null;
-          if (_playFired && onplay) { onplay(_knownDuration); _playFired = false; }
+          if (_playFired) { _fireOnplayOnce(_knownDuration); _playFired = false; }
         };
         audio.onplay = function () {
           if (_knownDuration !== null) {
-            if (onplay) onplay(_knownDuration);
+            _fireOnplayOnce(_knownDuration);
           } else {
             _playFired = true; // wait for onloadedmetadata
           }
