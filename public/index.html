@@ -1257,6 +1257,14 @@
       display: inline-block;
       animation: coachmarkBounce 1s ease-in-out infinite;
     }
+    /* Hand below text, pointing down — for bubbles sitting ABOVE their target */
+    .coachmark-hand-down {
+      display: block;
+      font-size: 22px;
+      line-height: 1;
+      margin-top: 6px;
+      animation: coachmarkBounce 1s ease-in-out infinite;
+    }
     @keyframes coachmarkBounce {
       0%, 100% { transform: translateY(0); }
       50%       { transform: translateY(-5px); }
@@ -2293,6 +2301,7 @@
     .aha-text { display: flex; flex-direction: column; gap: 4px; }
     .aha-zh { font-size: 20px; font-weight: 700; color: #f1f5f9; }
     .aha-en { font-size: 13px; color: #94a3b8; font-weight: 400; }
+    .aha-en-main { font-size: 20px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.2px; }
     .aha-btn {
       width: 100%; padding: 14px; background: #1fcc66; border: none;
       border-radius: 14px; color: #000; font-size: 16px; font-weight: 800;
@@ -5601,8 +5610,8 @@
       <!-- 语速一次性引导提示（JS控制show/hide，不用absolute定位） -->
       <div id="speed-hint-row" style="display:none">
         <div class="coachmark coachmark-arrow-down">
-          <span class="coachmark-hand">👆</span>
           Too fast? Drag to adjust speed
+          <span class="coachmark-hand-down">👇</span>
         </div>
       </div>
       <!-- 速度条 -->
@@ -10079,11 +10088,11 @@
           '<div class="aha-rows">' +
             '<div class="aha-row">' +
               '<span class="aha-icon">🎁</span>' +
-              '<div class="aha-text"><span class="aha-zh">开盲盒</span><span class="aha-en">Open Blind Boxes</span></div>' +
+              '<div class="aha-text"><span class="aha-en-main">Open Blind Boxes</span></div>' +
             '</div>' +
             '<div class="aha-row">' +
               '<span class="aha-icon">👕</span>' +
-              '<div class="aha-text"><span class="aha-zh">换新衣</span><span class="aha-en">Unlock Outfits</span></div>' +
+              '<div class="aha-text"><span class="aha-en-main">Unlock Outfits</span></div>' +
             '</div>' +
           '</div>' +
           '<button class="aha-btn" id="aha-got-it">Got it</button>' +
@@ -12424,14 +12433,25 @@
       _obStep1Card();
     }
 
-    // Step 1: short bottom card (distinct from full char-intro modal)
+    // Step 1: short card just below the highlighted Nora bubble
     function _obStep1Card() {
       var mask = document.getElementById('onboard-mask');
       var card = document.getElementById('onboard-card');
       var skip = document.getElementById('onboard-skip');
+      var box  = document.getElementById('sentence-box');
       if (mask) mask.classList.add('show');
       if (skip) skip.classList.add('show');
-      if (card) { card.classList.add('show'); }
+      if (box)  _obLift(box); // highlight Nora's bubble during the intro card too
+      if (card) {
+        // position card directly under the Nora bubble (covering the speed bar is fine)
+        if (box) {
+          var r = box.getBoundingClientRect();
+          card.style.left = (r.left + r.width / 2) + 'px';
+          card.style.bottom = 'auto';
+          card.style.top = (r.bottom + 14) + 'px';
+        }
+        card.classList.add('show');
+      }
     }
     function _obStartFromCard() {
       var card = document.getElementById('onboard-card');
@@ -12447,7 +12467,7 @@
       var playBtn = document.getElementById('sentence-play-btn');
       if (!box || !playBtn) { _obTeardown(); return; }
       _obLift(box); // whole bubble (line + play button) lifted above the mask
-      _obCoachAt(box, '<span class="coachmark-hand">👆</span>Tap to hear her line');
+      _obCoachAt(box, 'Tap to hear her line<span class="coachmark-hand-down">👇</span>');
       function onPlay() {
         playBtn.removeEventListener('click', onPlay);
         // hide coach while listening; advance when playback completes (survives pause/resume)
@@ -12474,7 +12494,7 @@
       var recBtn = document.getElementById('bn');
       if (!recBtn) { _obTeardown(); return; }
       _obLift(recBtn);
-      _obCoachAt(recBtn, '<span class="coachmark-hand">👆</span>Your turn — don\'t worry about mistakes, just say it 😄');
+      _obCoachAt(recBtn, 'Your turn — don\'t worry about mistakes, just say it 😄<span class="coachmark-hand-down">👇</span>');
       function onRec() {
         recBtn.removeEventListener('click', onRec);
         // tear down the spotlight so the existing record→eval→celebration flow runs cleanly.
@@ -17628,7 +17648,7 @@
     <div class="ob-text">You're <b>Nora</b>. Listen to the others, then say your lines.</div>
     <button class="ob-start" onclick="_obStartFromCard()">Start →</button>
   </div>
-  <button id="onboard-skip" onclick="_obSkip()">Skip</button>
+  <button id="onboard-skip" onclick="_obSkip()">✕ Skip</button>
 
   <div id="tip-page">
     <div class="page-top-bar">
