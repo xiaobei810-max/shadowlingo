@@ -296,7 +296,7 @@
     }
     /* Active / inactive card states on shadowing page */
     .context-panel.ctx-active { opacity: 1; }
-    .context-panel.ctx-inactive { opacity: 0.45; }
+    .context-panel.ctx-inactive { opacity: 0.72; }
     .sentence-box.sb-active { opacity: 1; }
     .sentence-box.sb-inactive { opacity: 0.45; }
 
@@ -4264,7 +4264,7 @@
     /* ── English translation — unified style across all panels ── */
     .ctx-en, .en {
       font-size: 14px;
-      color: #6b7280;
+      color: #94a3b8;
       font-style: italic;
       line-height: 1.6;
     }
@@ -5311,6 +5311,18 @@
 
 <body>
 
+  <!-- DEV: ?reset=1 clears first-time hint flags for testing onboarding/tutorials -->
+  <script>
+  (function(){
+    if (location.search.indexOf('reset=1') === -1) return;
+    var hints = ['sl_speed_hint_seen','sl_hint_coin_seen','sl_hint_profile_seen',
+                 'echo_coin_aha_seen','guideLegendSeen','sl_onboard_done'];
+    hints.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
+    var qs = location.search.replace(/[?&]reset=1/g,'').replace(/^\?$/,'');
+    history.replaceState(null,'', location.pathname + (qs ? '?'+qs.replace(/^&/,'') : ''));
+  })();
+  </script>
+
   <div class="app">
     <div class="header">
       <div class="logo">
@@ -5376,7 +5388,7 @@
               </svg>
             </div>
           </div>
-          <div class="card-content-col">
+          <div class="card-content-col" style="cursor:pointer" onclick="if(!event.target.closest('.ctx-kchar,button'))playContext()">
             <div class="ctx-header">
               <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
               <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ Play</button>
@@ -5398,7 +5410,7 @@
           </div>
           <div class="card-content-col" style="cursor:pointer" onclick="if(!event.target.closest('.kchar,button,#ring'))doSlow()">
             <div class="learner-panel-hdr">
-              <div style="display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-width:0">
                 <span class="ctx-speaker" id="learner-panel-name" style="color:var(--green)">诺拉 · Nora</span>
                 <span class="your-turn-tag">🎤 Your turn</span>
               </div>
@@ -5431,7 +5443,7 @@
               </svg>
             </div>
           </div>
-          <div class="card-content-col">
+          <div class="card-content-col" style="cursor:pointer" onclick="if(!event.target.closest('.ctx-kchar,button'))playContextBelow()">
             <div class="ctx-header">
               <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
               <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ Play</button>
