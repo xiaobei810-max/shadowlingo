@@ -1257,6 +1257,20 @@
       display: inline-block;
       animation: coachmarkBounce 1s ease-in-out infinite;
     }
+    /* Small ✕ close in the coachmark corner (skip onboarding) */
+    .ob-coach-x {
+      position: absolute;
+      top: -9px; right: -9px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: rgba(15,23,42,0.96);
+      border: 1px solid rgba(148,163,184,0.5);
+      color: #cbd5e1;
+      font-size: 11px; line-height: 1;
+      cursor: pointer; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1;
+    }
     /* Hand below text, pointing down — for bubbles sitting ABOVE their target */
     .coachmark-hand-down {
       display: block;
@@ -2302,6 +2316,7 @@
     .aha-zh { font-size: 20px; font-weight: 700; color: #f1f5f9; }
     .aha-en { font-size: 13px; color: #94a3b8; font-weight: 400; }
     .aha-en-main { font-size: 20px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.2px; }
+    .aha-coincount { font-size: 15px; font-weight: 600; color: #fbbf24; margin: -8px 0 20px; text-align: center; }
     .aha-btn {
       width: 100%; padding: 14px; background: #1fcc66; border: none;
       border-radius: 14px; color: #000; font-size: 16px; font-weight: 800;
@@ -10085,14 +10100,11 @@
             '</div>' +
             'First Coin!' +
           '</div>' +
-          '<div class="aha-rows">' +
+          '<div class="aha-coincount">' + getCoins() + ' coins</div>' +
+          '<div class="aha-rows" style="align-items:center;">' +
             '<div class="aha-row">' +
               '<span class="aha-icon">🎁</span>' +
               '<div class="aha-text"><span class="aha-en-main">Open Blind Boxes</span></div>' +
-            '</div>' +
-            '<div class="aha-row">' +
-              '<span class="aha-icon">👕</span>' +
-              '<div class="aha-text"><span class="aha-en-main">Unlock Outfits</span></div>' +
             '</div>' +
           '</div>' +
           '<button class="aha-btn" id="aha-got-it">Got it</button>' +
@@ -12403,18 +12415,29 @@
       if (_obLifted) { _obLifted.classList.remove('onboard-lift'); _obLifted = null; }
     }
     // Position the floating coachmark above a target, arrow pointing down at it.
-    function _obCoachAt(targetEl, html) {
+    // dir 'down' (default): bubble ABOVE target, arrow+hand point down.
+    // dir 'up': bubble BELOW target, arrow+hand point up.
+    function _obCoachAt(targetEl, html, dir) {
       var coach = document.getElementById('onboard-coach');
       if (!coach || !targetEl) return;
-      coach.innerHTML = '<div class="coachmark coachmark-arrow-down" style="display:inline-block">' + html + '</div>';
+      var arrowCls = (dir === 'up') ? 'coachmark-arrow-up' : 'coachmark-arrow-down';
+      coach.innerHTML = '<div class="coachmark ' + arrowCls + '" style="display:inline-block">' +
+        '<button class="ob-coach-x" onclick="_obSkip()" aria-label="Skip">✕</button>' +
+        html + '</div>';
       coach.classList.add('show');
-      // measure then place centered above the target
+      // measure then place relative to the target
       var r = targetEl.getBoundingClientRect();
       var cw = coach.offsetWidth, ch = coach.offsetHeight;
       var left = r.left + r.width / 2 - cw / 2;
       left = Math.max(10, Math.min(left, window.innerWidth - cw - 10));
-      var top = r.top - ch - 12;
-      if (top < 10) top = r.bottom + 12; // fallback below if no room above
+      var top;
+      if (dir === 'up') {
+        top = r.bottom + 12;                                   // below target
+        if (top + ch > window.innerHeight - 10) top = r.top - ch - 12; // fallback above
+      } else {
+        top = r.top - ch - 12;                                 // above target
+        if (top < 10) top = r.bottom + 12;                     // fallback below
+      }
       coach.style.left = left + 'px';
       coach.style.top = top + 'px';
     }
@@ -12457,7 +12480,42 @@
       var card = document.getElementById('onboard-card');
       if (card) card.classList.remove('show');
       try { prewarmMic(); } catch(e) {} // acquire mic permission inside this user gesture
-      _obStep2PlayNora();
+      _obStepListenNPC();
+    }
+
+    // Step 1: spotlight the NPC bubble (others speak first); advance after
+    // their audio finishes. Hand points UP (bubble sits below the NPC bubble).
+    function _obStepListenNPC() {
+      if (!_onboardingActive) return;
+      // pick whichever NPC context panel is visible this round
+      var panel = document.getElementById('context-panel');
+      var btnId = 'ctx-play-btn';
+      if (!panel || panel.style.display === 'none') {
+        panel = document.getElementById('context-panel-below');
+        btnId = 'ctx-play-btn-below';
+      }
+      var playBtn = panel ? document.getElementById(btnId) : null;
+      if (!panel || panel.style.display === 'none' || !playBtn) {
+        _obStep2PlayNora(); return; // no NPC line → straight to Nora
+      }
+      _obLift(panel);
+      _obCoachAt(panel, '<span class="coachmark-hand">👆</span>First, listen to them', 'up');
+      function onPlay() {
+        playBtn.removeEventListener('click', onPlay);
+        var coach = document.getElementById('onboard-coach');
+        if (coach) coach.classList.remove('show');
+        var sawPlaying = false;
+        if (_obStepPoll) clearInterval(_obStepPoll);
+        _obStepPoll = setInterval(function() {
+          if (!_onboardingActive) { clearInterval(_obStepPoll); _obStepPoll = null; return; }
+          if (ctxPlayingId !== null) sawPlaying = true;
+          else if (sawPlaying && ctxPlayingId === null && ctxPausedId === null) {
+            clearInterval(_obStepPoll); _obStepPoll = null;
+            _obStep2PlayNora();
+          }
+        }, 200);
+      }
+      playBtn.addEventListener('click', onPlay);
     }
 
     // Step 2: spotlight whole Nora bubble; advance only after audio FINISHES.
@@ -12467,7 +12525,7 @@
       var playBtn = document.getElementById('sentence-play-btn');
       if (!box || !playBtn) { _obTeardown(); return; }
       _obLift(box); // whole bubble (line + play button) lifted above the mask
-      _obCoachAt(box, 'Tap to hear her line<span class="coachmark-hand-down">👇</span>');
+      _obCoachAt(box, 'Now hear your line<span class="coachmark-hand-down">👇</span>', 'down');
       function onPlay() {
         playBtn.removeEventListener('click', onPlay);
         // hide coach while listening; advance when playback completes (survives pause/resume)
@@ -12494,7 +12552,7 @@
       var recBtn = document.getElementById('bn');
       if (!recBtn) { _obTeardown(); return; }
       _obLift(recBtn);
-      _obCoachAt(recBtn, 'Your turn — don\'t worry about mistakes, just say it 😄<span class="coachmark-hand-down">👇</span>');
+      _obCoachAt(recBtn, 'Your turn — don\'t worry about mistakes, just say it 😄<span class="coachmark-hand-down">👇</span>', 'down');
       function onRec() {
         recBtn.removeEventListener('click', onRec);
         // tear down the spotlight so the existing record→eval→celebration flow runs cleanly.
