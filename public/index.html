@@ -1252,10 +1252,98 @@
       margin-bottom: 5px;
       animation: coachmarkBounce 1s ease-in-out infinite;
     }
+    /* Inline bouncing hand (keeps host bubble's inline layout, e.g. char-intro hint) */
+    .coachmark-hand-inline {
+      display: inline-block;
+      animation: coachmarkBounce 1s ease-in-out infinite;
+    }
     @keyframes coachmarkBounce {
       0%, 100% { transform: translateY(0); }
       50%       { transform: translateY(-5px); }
     }
+    /* Upward arrow variant: bubble below target, arrow tip points up */
+    .coachmark-arrow-up::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      width: 10px; height: 10px;
+      background: rgba(3,9,18,0.92);
+      border-left: 1.5px solid rgba(34,197,94,0.5);
+      border-top: 1.5px solid rgba(34,197,94,0.5);
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    /* ══ Part B onboarding (placeholder mascot, reuses coachmark) ══ */
+    #onboard-mask {
+      position: fixed; inset: 0;
+      background: rgba(2,6,14,0.78);
+      z-index: 9000;
+      display: none;
+      animation: obFade 0.25s ease;
+    }
+    #onboard-mask.show { display: block; }
+    @keyframes obFade { from { opacity: 0; } to { opacity: 1; } }
+    /* Element lifted above the mask so only it stays clickable */
+    .onboard-lift { position: relative !important; z-index: 9001 !important; }
+    /* Floating coachmark positioned over a target (steps 2 & 3) */
+    #onboard-coach {
+      position: fixed;
+      z-index: 9002;
+      max-width: 280px;
+      display: none;
+    }
+    #onboard-coach.show { display: inline-block; }
+    /* Step 1 bottom slim card (distinct from full char-intro modal) */
+    #onboard-card {
+      position: fixed;
+      left: 50%; bottom: 22px;
+      transform: translateX(-50%) translateY(120%);
+      width: min(440px, calc(100vw - 32px));
+      background: rgba(10,16,28,0.97);
+      border: 1.5px solid rgba(34,197,94,0.45);
+      border-radius: 18px;
+      box-shadow: 0 0 28px rgba(34,197,94,0.18), 0 8px 30px rgba(0,0,0,0.6);
+      padding: 16px 18px;
+      z-index: 9003;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      transition: transform 0.42s cubic-bezier(0.34,1.4,0.64,1);
+    }
+    #onboard-card.show { display: flex; transform: translateX(-50%) translateY(0); }
+    #onboard-mascot {
+      flex-shrink: 0;
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 38%, #22c55e, #14532d);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 0 14px rgba(34,197,94,0.4);
+    }
+    #onboard-card .ob-text {
+      flex: 1; min-width: 0;
+      color: #e2e8f0; font-size: 14.5px; line-height: 1.5; font-weight: 500;
+    }
+    #onboard-card .ob-start {
+      flex-shrink: 0;
+      background: var(--green); color: #000;
+      border: none; border-radius: 10px;
+      padding: 9px 16px; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    /* Small Skip exit (always reachable, never trap the user) */
+    #onboard-skip {
+      position: fixed;
+      top: 14px; right: 14px;
+      z-index: 9004;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.4);
+      color: #cbd5e1;
+      font-size: 12px; font-weight: 600;
+      padding: 6px 12px; border-radius: 20px;
+      cursor: pointer; display: none;
+    }
+    #onboard-skip.show { display: block; }
     /* Downward arrow: bubble above, arrow tip points down toward target */
     .coachmark-arrow-down::before {
       content: '';
@@ -12275,6 +12363,148 @@
       setTimeout(_dismiss, 5000);
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // Part B onboarding (v1): learn-by-doing, placeholder mascot.
+    // Reuses coachmark + existing score/coin celebration. once:true
+    // listeners only READ state to advance; never touches audio/eval/track.
+    // ══════════════════════════════════════════════════════════════
+    var _onboardingActive = false;
+    var _obStepPoll = null;
+
+    function _obDone() {
+      try { localStorage.setItem('sl_onboard_done', '1'); } catch(e) {}
+    }
+    function _obTeardown() {
+      _onboardingActive = false;
+      if (_obStepPoll) { clearInterval(_obStepPoll); _obStepPoll = null; }
+      _obClearLift();
+      var ids = ['onboard-mask', 'onboard-card', 'onboard-coach', 'onboard-skip'];
+      ids.forEach(function(id) { var e = document.getElementById(id); if (e) e.classList.remove('show'); });
+      var coach = document.getElementById('onboard-coach');
+      if (coach) coach.innerHTML = '';
+    }
+    var _obLifted = null, _obLiftedPrev = '';
+    function _obLift(el) {
+      _obClearLift();
+      if (!el) return;
+      _obLifted = el; _obLiftedPrev = el.getAttribute('style') || '';
+      el.classList.add('onboard-lift');
+    }
+    function _obClearLift() {
+      if (_obLifted) { _obLifted.classList.remove('onboard-lift'); _obLifted = null; }
+    }
+    // Position the floating coachmark above a target, arrow pointing down at it.
+    function _obCoachAt(targetEl, html) {
+      var coach = document.getElementById('onboard-coach');
+      if (!coach || !targetEl) return;
+      coach.innerHTML = '<div class="coachmark coachmark-arrow-down" style="display:inline-block">' + html + '</div>';
+      coach.classList.add('show');
+      // measure then place centered above the target
+      var r = targetEl.getBoundingClientRect();
+      var cw = coach.offsetWidth, ch = coach.offsetHeight;
+      var left = r.left + r.width / 2 - cw / 2;
+      left = Math.max(10, Math.min(left, window.innerWidth - cw - 10));
+      var top = r.top - ch - 12;
+      if (top < 10) top = r.bottom + 12; // fallback below if no room above
+      coach.style.left = left + 'px';
+      coach.style.top = top + 'px';
+    }
+
+    function maybeStartOnboarding() {
+      var done = false;
+      try { done = localStorage.getItem('sl_onboard_done') === '1'; } catch(e) {}
+      if (done) { maybeShowSpeedHint(); return; } // normal path keeps speed hint
+      // Only run when a Nora line (Play + Record) is actually present this round.
+      var noraBox = document.getElementById('sentence-box');
+      var recBtn  = document.getElementById('bn');
+      if (!noraBox || noraBox.style.display === 'none' || !recBtn || recBtn.style.display === 'none') {
+        maybeShowSpeedHint(); return;
+      }
+      _onboardingActive = true; // speed hint suppressed until onboarding completes
+      _obStep1Card();
+    }
+
+    // Step 1: short bottom card (distinct from full char-intro modal)
+    function _obStep1Card() {
+      var mask = document.getElementById('onboard-mask');
+      var card = document.getElementById('onboard-card');
+      var skip = document.getElementById('onboard-skip');
+      if (mask) mask.classList.add('show');
+      if (skip) skip.classList.add('show');
+      if (card) { card.classList.add('show'); }
+    }
+    function _obStartFromCard() {
+      var card = document.getElementById('onboard-card');
+      if (card) card.classList.remove('show');
+      try { prewarmMic(); } catch(e) {} // acquire mic permission inside this user gesture
+      _obStep2PlayNora();
+    }
+
+    // Step 2: spotlight whole Nora bubble; advance only after audio FINISHES.
+    function _obStep2PlayNora() {
+      if (!_onboardingActive) return;
+      var box = document.getElementById('sentence-box');
+      var playBtn = document.getElementById('sentence-play-btn');
+      if (!box || !playBtn) { _obTeardown(); return; }
+      _obLift(box); // whole bubble (line + play button) lifted above the mask
+      _obCoachAt(box, '<span class="coachmark-hand">👆</span>Tap to hear her line');
+      function onPlay() {
+        playBtn.removeEventListener('click', onPlay);
+        // hide coach while listening; advance when playback completes (survives pause/resume)
+        var coach = document.getElementById('onboard-coach');
+        if (coach) coach.classList.remove('show');
+        var sawPlaying = false;
+        if (_obStepPoll) clearInterval(_obStepPoll);
+        _obStepPoll = setInterval(function() {
+          if (!_onboardingActive) { clearInterval(_obStepPoll); _obStepPoll = null; return; }
+          if (phase === 'slow') sawPlaying = true;
+          else if (sawPlaying && phase === 'idle') {
+            clearInterval(_obStepPoll); _obStepPoll = null;
+            _obStep3Record();
+          }
+        }, 200);
+      }
+      playBtn.addEventListener('click', onPlay);
+    }
+
+    // Step 3: spotlight Record; warm encouraging copy; advance on tap.
+    function _obStep3Record() {
+      if (!_onboardingActive) return;
+      _obClearLift();
+      var recBtn = document.getElementById('bn');
+      if (!recBtn) { _obTeardown(); return; }
+      _obLift(recBtn);
+      _obCoachAt(recBtn, '<span class="coachmark-hand">👆</span>Your turn — don\'t worry about mistakes, just say it 😄');
+      function onRec() {
+        recBtn.removeEventListener('click', onRec);
+        // tear down the spotlight so the existing record→eval→celebration flow runs cleanly.
+        // sl_onboard_done is set ONLY when the score/coin celebration actually appears
+        // (see _obOnCelebration), so a denied/empty record keeps onboarding alive.
+        _obClearLift();
+        var ids = ['onboard-mask', 'onboard-coach', 'onboard-skip'];
+        ids.forEach(function(id) { var e = document.getElementById(id); if (e) e.classList.remove('show'); });
+      }
+      recBtn.addEventListener('click', onRec);
+    }
+
+    // Called when the real eval result (score) renders. Completes onboarding.
+    function _obOnCelebration() {
+      if (!_onboardingActive) return;
+      _obDone();
+      _obTeardown();
+    }
+
+    function _obSkip() {
+      _obDone();      // user chose to skip → don't nag again
+      _obTeardown();
+    }
+    // v1.5 entry point (corner mascot replay will call this)
+    function replayOnboarding() {
+      try { localStorage.removeItem('sl_onboard_done'); } catch(e) {}
+      _obTeardown();
+      maybeStartOnboarding();
+    }
+
     function changeLesson(dir) {
       var next = lessonIdx + dir;
       if (next < 0 || next >= LESSONS.length) return;
@@ -12617,7 +12847,14 @@
           _flushPending = false;
           bn.disabled = false;
           function _finalize() {
-            if (audioChunks.length === 0) { setStatus('准备好了 Ready'); busy = false; return; }
+            if (audioChunks.length === 0) {
+              // 静默空录兜底：给出可见反馈而非默默重置（首次授权/麦克风未就绪时最易触发）
+              setStatus('准备好了 Ready'); busy = false; phase = 'idle';
+              var _bn0 = document.getElementById('bn');
+              if (_bn0) { _bn0.textContent = '🎤 Record'; _bn0.classList.remove('active'); _bn0.disabled = false; }
+              showShardToast('🎙 没听到声音，请再按一次录音 · Didn\'t catch that — tap Record to try again');
+              return;
+            }
             var blob = new Blob(audioChunks, { type: _mimeType });
             audioChunks = [];
             evaluateAudio(blob);
@@ -12909,6 +13146,8 @@
       document.getElementById("eval-hint-card").style.display = "none";  // 旧卡片永久隐藏
       document.getElementById("eval-nav").style.display = "";
       document.getElementById("eval-result-area").classList.add("show");
+      // 首次引导：真正的分数/回声币庆祝画面已落下 → 完成引导并置标记
+      try { _obOnCelebration(); } catch(e) {}
 
       var numEl = document.getElementById("eval-score-num");
       numEl.textContent = "0";
@@ -14944,8 +15183,8 @@
       setStepTitle("第2步：轮到你说 🎯", "按对话顺序：先听上方，再说/听下方");
       dialogRoundIdx = 0;
       renderDialogYourTurn();
-      // 进入跟读页时显示一次性语速引导（已看过则跳过）
-      setTimeout(function() { try { maybeShowSpeedHint(); } catch(e) {} }, 600);
+      // 进入跟读页：首次走新手引导，否则显示一次性语速引导
+      setTimeout(function() { try { maybeStartOnboarding(); } catch(e) {} }, 600);
     }
 
     // ── 工具：把一行台词渲染到指定的 context 容器（上方 / 下方） ──
@@ -17381,6 +17620,16 @@
   </div>
 
   <!-- 地道指南页 Insider Tip Page -->
+  <!-- Part B onboarding (placeholder mascot; reuses coachmark + existing celebration) -->
+  <div id="onboard-mask"></div>
+  <div id="onboard-coach"></div>
+  <div id="onboard-card">
+    <div id="onboard-mascot">🦊</div>
+    <div class="ob-text">You're <b>Nora</b>. Listen to the others, then say your lines.</div>
+    <button class="ob-start" onclick="_obStartFromCard()">Start →</button>
+  </div>
+  <button id="onboard-skip" onclick="_obSkip()">Skip</button>
+
   <div id="tip-page">
     <div class="page-top-bar">
       <div class="pth-inner">
@@ -17476,7 +17725,7 @@
 
       <!-- 首次出现人物介绍时的提示气泡（一次性） -->
       <div class="profile-hint-bubble" id="profile-hint-bubble" onclick="dismissProfileHint()">
-        👆 看看 TA 的故事
+        <span class="coachmark-hand-inline">👆</span> 看看 TA 的故事
       </div>
 
     </div>
