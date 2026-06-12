@@ -296,7 +296,7 @@
     }
     /* Active / inactive card states on shadowing page */
     .context-panel.ctx-active { opacity: 1; }
-    .context-panel.ctx-inactive { opacity: 0.72; }
+    .context-panel.ctx-inactive { opacity: 1; }
     .sentence-box.sb-active { opacity: 1; }
     .sentence-box.sb-inactive { opacity: 0.45; }
 
@@ -1221,6 +1221,15 @@
       50%      { opacity: 1; }
     }
     .speed-control { position: relative; }
+    #speed-hint-row {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #60a5fa;
+      padding: 6px 0 2px;
+      animation: speedHintBreathe 2.4s ease-in-out infinite;
+      cursor: pointer;
+    }
 
     /* Status + speech indicator */
     .status-row {
@@ -4185,8 +4194,8 @@
 
     /* ── 双面板练习页 Dual-panel practice ─────────────────────── */
     .context-panel {
-      background: rgba(17,24,39,0.7);
-      border: 1.5px solid var(--border);
+      background: #1e293b;
+      border: 1.5px solid #2d3f5c;
       border-radius: 14px;
       padding: 14px 18px 14px;
       margin-bottom: 10px;
@@ -4281,15 +4290,12 @@
       color: var(--green);
     }
     .your-turn-tag {
-      display: inline-block;
       font-size: 11px;
-      font-weight: 600;
-      color: #86efac;
-      background: rgba(34, 197, 94, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      border-radius: 20px;
-      padding: 1px 7px;
-      letter-spacing: 0.01em;
+      font-weight: 500;
+      color: #4ade80;
+      opacity: 0.8;
+      letter-spacing: 0.02em;
+      pointer-events: none;
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -5461,6 +5467,10 @@
     </div>
 
     <div class="controls">
+      <!-- 语速一次性引导提示（JS控制show/hide，不用absolute定位） -->
+      <div id="speed-hint-row" style="display:none">
+        Too fast? Drag to adjust speed &nbsp;↓
+      </div>
       <!-- 速度条 -->
       <div class="speed-control" style="margin:0 0 4px;">
         <span>Slow</span>
@@ -12199,37 +12209,24 @@
       });
     }
 
-    // ── 速度条一次性引导气泡：首次进跟读页时出现，点击关闭，永不再弹 ──
+    // ── 速度条一次性引导：首次进跟读页显示，滑动一次或5秒后消失，永不再弹 ──
     function maybeShowSpeedHint() {
       try {
         if (localStorage.getItem('sl_speed_hint_seen') === '1') return;
       } catch(e) { return; }
-      var ctrl = document.querySelector('#practice .speed-control')
-              || document.querySelector('.speed-control');
-      if (!ctrl) return;
-      if (ctrl.querySelector('.speed-hint-bubble')) return; // 已经在显示
-      var bubble = document.createElement('div');
-      bubble.className = 'speed-hint-bubble';
-      bubble.innerHTML = '慢一点? 拖这里调整语速 · Too fast? Drag to adjust speed';
+      var row = document.getElementById('speed-hint-row');
+      if (!row || row.style.display !== 'none') return;
+      row.style.display = '';
       function _dismiss() {
         try { localStorage.setItem('sl_speed_hint_seen', '1'); } catch(e) {}
-        bubble.style.transition = 'opacity 0.4s ease';
-        bubble.style.opacity = '0';
-        setTimeout(function() { if (bubble.parentNode) bubble.parentNode.removeChild(bubble); }, 420);
+        row.style.transition = 'opacity 0.4s ease';
+        row.style.opacity = '0';
+        setTimeout(function() { row.style.display = 'none'; row.style.opacity = ''; row.style.transition = ''; }, 430);
       }
-      bubble.addEventListener('click', _dismiss);
-      // 用户调一次速度也算"看见过"，自动关闭
+      row.addEventListener('click', _dismiss, { once: true });
       var slider = document.getElementById('speed-slider');
       if (slider) slider.addEventListener('input', _dismiss, { once: true });
-      ctrl.appendChild(bubble);
-      // 8 秒后自动收回（防止挡视线太久），但不写 localStorage —— 给真正没注意到的用户再看一次的机会
-      setTimeout(function() {
-        if (bubble.parentNode && bubble.style.opacity !== '0') {
-          bubble.style.transition = 'opacity 0.6s ease';
-          bubble.style.opacity = '0';
-          setTimeout(function() { if (bubble.parentNode) bubble.parentNode.removeChild(bubble); }, 620);
-        }
-      }, 8000);
+      setTimeout(_dismiss, 5000);
     }
 
     function changeLesson(dir) {
