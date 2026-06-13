@@ -16932,12 +16932,8 @@
     function chsUpdateHeader() {
       var titleEl = document.getElementById('chs-header-title');
       if (!titleEl) return;
-      if (chsView === 'units') {
-        titleEl.textContent = 'Choose Your Unit';
-      } else {
-        var u = UNITS[chsActiveUnitIdx];
-        titleEl.textContent = tField(u, 'title');
-      }
+      // 中性文案，避免「居中第1课」与单元名(如 New Arrival)矛盾
+      titleEl.textContent = 'Choose a Chapter';
     }
 
     function chsUpdateBg() {
@@ -17333,7 +17329,7 @@
     <button class="chs-back-btn" id="chs-back-btn" onclick="chsBackToUnits()">← Back</button>
     <div class="chs-header">
       <div class="chs-header-eyebrow">EchoChinese · Speak real Chinese through story</div>
-      <div class="chs-header-title" id="chs-header-title">Choose Your Unit</div>
+      <div class="chs-header-title" id="chs-header-title">Choose a Chapter</div>
     </div>
     <div class="chs-track-wrap" id="chs-track-wrap">
       <div class="chs-track" id="chs-track">
