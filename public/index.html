@@ -1381,6 +1381,28 @@
       padding: 4px 0 14px;
       cursor: pointer;
     }
+    /* In-store coachmark — above the gacha store overlay */
+    #gacha-coach {
+      position: fixed;
+      z-index: 9300;
+      max-width: 280px;
+      display: none;
+    }
+    #gacha-coach.show { display: inline-block; }
+    /* First-pull-free rules banner inside the store */
+    .gs-free-banner {
+      margin: 0 auto 12px;
+      max-width: 340px;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 600;
+      color: #4ade80;
+      background: rgba(34,197,94,0.10);
+      border: 1px solid rgba(34,197,94,0.35);
+      border-radius: 12px;
+      padding: 9px 14px;
+    }
 
     /* Status + speech indicator */
     .status-row {
@@ -2309,6 +2331,16 @@
     .aha-row {
       display: flex; align-items: center; gap: 16px;
     }
+    /* Clickable variant → opens the blind box store */
+    .aha-row-btn {
+      width: 100%; cursor: pointer;
+      background: rgba(31,204,102,0.08);
+      border: 1px solid rgba(31,204,102,0.35);
+      border-radius: 14px; padding: 12px 14px;
+      text-align: left; transition: background 0.15s;
+    }
+    .aha-row-btn:hover { background: rgba(31,204,102,0.16); }
+    .aha-row-chevron { margin-left: auto; font-size: 26px; color: #1fcc66; font-weight: 700; line-height: 1; }
     .aha-icon { font-size: 36px; flex-shrink: 0; line-height: 1; }
     .aha-text { display: flex; flex-direction: column; gap: 4px; }
     .aha-zh { font-size: 20px; font-weight: 700; color: #f1f5f9; }
@@ -5476,7 +5508,7 @@
   (function(){
     if (location.search.indexOf('reset=1') === -1) return;
     var hints = ['sl_speed_hint_seen','sl_hint_coin_seen','sl_hint_profile_seen',
-                 'echo_coin_aha_seen','guideLegendSeen','sl_onboard_done'];
+                 'echo_coin_aha_seen','guideLegendSeen','sl_onboard_done','sl_free_pull_used'];
     hints.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
     var qs = location.search.replace(/[?&]reset=1/g,'').replace(/^\?$/,'');
     history.replaceState(null,'', location.pathname + (qs ? '?'+qs.replace(/^&/,'') : ''));
@@ -8521,14 +8553,16 @@
       pity.sinceLastSsr    = (tier === 'SSR')                   ? 0 : pity.sinceLastSsr    + 1;
     }
 
-    function pullGacha(seriesId) {
+    function pullGacha(seriesId, opts) {
+      opts = opts || {};
+      var free = !!opts.free; // 首抽免费：仅跳过金币成本，奖池/随机逻辑完全不变
       var series = GACHA_SERIES[seriesId];
       if (!series) return { ok: false, reason: 'no-series' };
 
       var state = loadGachaState();
       var cost  = getCurrentThreshold(state.flags.pullCount);
 
-      if (getCoins() < cost) return { ok: false, reason: 'no-coins', need: cost, have: getCoins() };
+      if (!free && getCoins() < cost) return { ok: false, reason: 'no-coins', need: cost, have: getCoins() };
 
       // 抽卡池 = 本系列非 CG 卡（CG 为单元通关赠送，不入池）；去重按整池算
       var pool = series.items.filter(function(it) { return it.type !== 'cg'; });
@@ -8555,8 +8589,9 @@
         refund = GACHA_DUP_REFUND;  // 安慰返还
       }
 
-      // 扣币（集满重复时净扣 cost - refund）
-      setCoins(getCoins() - cost + refund);
+      // 扣币（集满重复时净扣 cost - refund）；免费首抽 effectiveCost=0
+      var effectiveCost = free ? 0 : cost;
+      setCoins(getCoins() - effectiveCost + refund);
 
       // 入库
       if (state.collection[item.id]) {
@@ -8565,7 +8600,8 @@
         state.collection[item.id] = { count: 1, firstAt: Date.now() };
       }
 
-      state.flags.pullCount++;
+      // 免费首抽不推进 pullCount —— 保证之后第一笔付费仍是原价（价格表零改动）
+      if (!free) state.flags.pullCount++;
       saveGachaState(state);
       try { refreshCoinDisplay(); } catch(e) {}
 
@@ -8573,7 +8609,7 @@
         tier:        item.tier,
         item_id:     item.id,
         is_dup:      isDup,
-        coins_spent: cost,
+        coins_spent: effectiveCost,
         refund:      refund,
         pull_count:  state.flags.pullCount
       });
@@ -8583,7 +8619,7 @@
         item:      item,
         isDup:     isDup,
         tier:      item.tier,
-        cost:      cost,
+        cost:      effectiveCost,
         refund:    refund,
         pullCount: state.flags.pullCount,
         nextCost:  getCurrentThreshold(state.flags.pullCount)
@@ -8652,6 +8688,12 @@
 
     // ─ 5.4 入口逻辑 ─────────────────────────────────────────────
     var _gachaStoreEl = null;
+    // 首抽免费 / 新手引导进店流程标记（仅影响：免费首抽、规则横幅、Continue 文案、店内 coachmark）
+    var _gachaOnboardFlow = false;
+    var _gsCoachStep2Pending = false;
+    function _freePullAvailable() {
+      try { return !localStorage.getItem('sl_free_pull_used'); } catch(e) { return false; }
+    }
 
     // 每次加币后检查是否首次解锁（终生仅触发一次 Toast）
     function checkGachaUnlock() {
@@ -8799,10 +8841,61 @@
 
     function closeGachaStore() {
       if (!_gachaStoreEl) return;
+      _gsHideCoach();
+      _gachaOnboardFlow = false;       // 离店即退出引导进店流程
+      _gsCoachStep2Pending = false;
       _gachaStoreEl.classList.remove('gs-visible');
       var el = _gachaStoreEl;
       _gachaStoreEl = null;
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+    }
+
+    // 引导进店专用「← Continue lesson」：只移除叠层 → 回到底下评分页(同一课同位置)
+    function _gsContinueLesson() {
+      _gachaOnboardFlow = false;
+      _gsCoachStep2Pending = false;
+      closeGachaStore();
+    }
+
+    // ── 店内 coachmark（复用 .coachmark，专用元素 z-index 高于商店）──────
+    function _gsEnsureCoachEl() {
+      var c = document.getElementById('gacha-coach');
+      if (!c) {
+        c = document.createElement('div');
+        c.id = 'gacha-coach';
+        document.body.appendChild(c);
+      }
+      return c;
+    }
+    function _gsHideCoach() {
+      var c = document.getElementById('gacha-coach');
+      if (c) { c.classList.remove('show'); c.innerHTML = ''; }
+    }
+    function _gsCoachAt(targetEl, html, dir) {
+      var c = _gsEnsureCoachEl();
+      if (!targetEl) { _gsHideCoach(); return; }
+      var arrowCls = (dir === 'up') ? 'coachmark-arrow-up' : 'coachmark-arrow-down';
+      c.innerHTML = '<div class="coachmark ' + arrowCls + '" style="display:inline-block">' + html + '</div>';
+      c.classList.add('show');
+      var r = targetEl.getBoundingClientRect();
+      var cw = c.offsetWidth, ch = c.offsetHeight;
+      var left = r.left + r.width / 2 - cw / 2;
+      left = Math.max(10, Math.min(left, window.innerWidth - cw - 10));
+      var top;
+      if (dir === 'up') { top = r.bottom + 12; if (top + ch > window.innerHeight - 10) top = r.top - ch - 12; }
+      else { top = r.top - ch - 12; if (top < 10) top = r.bottom + 12; }
+      c.style.left = left + 'px';
+      c.style.top  = top + 'px';
+    }
+    function _gsShowCoachStep1() {
+      if (!_gachaOnboardFlow) return;
+      var btn = document.getElementById('gs-pull-btn');
+      if (btn) _gsCoachAt(btn, 'Tap to open your box<span class="coachmark-hand-down">👇</span>', 'down');
+    }
+    function _gsShowCoachStep2() {
+      if (!_gachaOnboardFlow) return;
+      var btn = _gachaStoreEl ? _gachaStoreEl.querySelector('.gs-back-btn') : null;
+      if (btn) _gsCoachAt(btn, '<span class="coachmark-hand">👆</span>It\'s yours! Keep practicing to earn more coins.', 'up');
     }
 
     // ── 顶栏提示气泡 ──────────────────────────────────────────────
@@ -8837,7 +8930,8 @@
       var series = GACHA_SERIES[_currentGachaSeriesId];
       var cost   = getCurrentThreshold(state.flags.pullCount);
       var coins  = getCoins();
-      var canPull = coins >= cost;
+      var freeNow = _gachaOnboardFlow && _freePullAvailable(); // 首抽免费可用
+      var canPull = freeNow || coins >= cost;
 
       // 同步 _gsSeriesActiveIdx 和 _currentGachaSeriesId
       var _seriesKeys = Object.keys(GACHA_SERIES);
@@ -8860,7 +8954,9 @@
       container.innerHTML =
         // ── 顶部状态栏（Back | coins | … | Collection 胶囊右上）
         '<div class="gs-topbar">' +
-          '<button class="gs-back-btn" onclick="closeGachaStore()">◀ Back</button>' +
+          (_gachaOnboardFlow
+            ? '<button class="gs-back-btn" onclick="_gsContinueLesson()">← Continue lesson</button>'
+            : '<button class="gs-back-btn" onclick="closeGachaStore()">◀ Back</button>') +
           '<div class="gs-topbar-coins" onclick="showTopbarTooltip(\'coin\',this)">' +
             '<div class="echo-coin" style="width:22px;height:22px;flex-shrink:0">' +
               '<svg width="10" height="10" viewBox="0 0 11 11" class="ec-svg">' +
@@ -8885,17 +8981,26 @@
         '<div class="gs-series-title" id="gs-series-title">' +
           '<div class="gs-series-name-en" id="gs-series-name-en">' + tField(series, 'name') + '</div>' +
         '</div>' +
+        // ── 首抽免费规则横幅（仅引导进店且免费未用）
+        (freeNow
+          ? '<div class="gs-free-banner">First pull is on us! After that, each box costs ' +
+              getCurrentThreshold(0) + ' coins — earn coins by practicing.</div>'
+          : '') +
         // ── Draw 主按钮（仅一个，居中）
         '<div class="gs-action-area">' +
           '<button class="gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled') + '"' +
             ' id="gs-pull-btn"' +
             ' onclick="onGachaPullClick()"' +
             (canPull ? '' : ' disabled') + '>' +
-            (canPull ? 'Draw' : 'Not enough coins') +
+            (freeNow ? 'Draw · Free' : (canPull ? 'Draw' : 'Not enough coins')) +
           '</button>' +
         '</div>'
 
       requestAnimationFrame(function() { _gsInitSeriesCarousel(); });
+      // 引导进店：抽前 coachmark（step 1，指向 Draw）
+      if (_gachaOnboardFlow && _freePullAvailable()) {
+        setTimeout(function() { _gsShowCoachStep1(); }, 450);
+      }
     }
 
     function _renderPreviewGrid(series, state) {
@@ -8920,7 +9025,8 @@
       var state   = loadGachaState();
       var coins   = getCoins();
       var cost    = getCurrentThreshold(state.flags.pullCount);
-      var canPull = coins >= cost;
+      var freeNow = _gachaOnboardFlow && _freePullAvailable();
+      var canPull = freeNow || coins >= cost;
 
       var numEl   = document.getElementById('gs-coin-num');
       var pullBtn = document.getElementById('gs-pull-btn');
@@ -8930,7 +9036,12 @@
       if (pullBtn) {
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
-        pullBtn.innerHTML = canPull ? 'Draw' : 'Not enough coins';
+        pullBtn.innerHTML = freeNow ? 'Draw · Free' : (canPull ? 'Draw' : 'Not enough coins');
+      }
+      // 免费用掉后移除规则横幅，避免残留
+      if (!freeNow) {
+        var bn = _gachaStoreEl.querySelector('.gs-free-banner');
+        if (bn && bn.parentNode) bn.parentNode.removeChild(bn);
       }
       // 刷新 Collection 右上角胶囊数字（集满时绿色）
       var colCount = document.getElementById('gs-col-count');
@@ -9004,22 +9115,31 @@
     }
 
     function onGachaPullClick() {
-      var state = loadGachaState();
-      var cost  = getCurrentThreshold(state.flags.pullCount);
-      if (getCoins() < cost) {
-        var btn = document.getElementById('gs-pull-btn');
-        if (btn) {
-          btn.classList.add('gs-btn-flash-red');
-          setTimeout(function() { btn.classList.remove('gs-btn-flash-red'); }, 450);
+      // 首抽免费路径：仅在引导进店且免费未用时；跳过金币校验与扣币，奖池随机不变
+      var isFree = _gachaOnboardFlow && _freePullAvailable();
+      if (!isFree) {
+        var state = loadGachaState();
+        var cost  = getCurrentThreshold(state.flags.pullCount);
+        if (getCoins() < cost) {
+          var btn = document.getElementById('gs-pull-btn');
+          if (btn) {
+            btn.classList.add('gs-btn-flash-red');
+            setTimeout(function() { btn.classList.remove('gs-btn-flash-red'); }, 450);
+          }
+          return;
         }
-        return;
+        triggerCoinFlyOff(cost);
       }
-      triggerCoinFlyOff(cost);
+      // 抽前移除店内 coachmark（step 1）
+      _gsHideCoach();
       playChimeSound();
-      var result = pullGacha(_currentGachaSeriesId);
+      var result = pullGacha(_currentGachaSeriesId, { free: isFree });
       if (!result.ok) return;
+      if (isFree) { try { localStorage.setItem('sl_free_pull_used', '1'); } catch(e) {} }
       refreshCoinDisplay();
       _refreshGachaStoreUI();
+      // 抽到后用引导第二步 coachmark（结果卡关闭时显示）
+      if (_gachaOnboardFlow) _gsCoachStep2Pending = true;
       // M3: 先播拆盒动画，结束后显示物品卡
       playUnboxingAnimation(result, function() {
         showGachaResultCard(result);
@@ -9249,6 +9369,11 @@
       if (!el) return;
       el.classList.remove('gr-visible');
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
+      // 引导进店：结果卡关闭后显示第二步 coachmark（指向 Continue lesson）
+      if (_gsCoachStep2Pending && _gachaOnboardFlow) {
+        _gsCoachStep2Pending = false;
+        setTimeout(function() { _gsShowCoachStep2(); }, 320);
+      }
     }
 
     // ════════════════════════════════════════════════════════════
@@ -10108,10 +10233,11 @@
           '</div>' +
           '<div class="aha-coincount">' + getCoins() + ' coins</div>' +
           '<div class="aha-rows" style="align-items:center;">' +
-            '<div class="aha-row">' +
+            '<button class="aha-row aha-row-btn" id="aha-open-store">' +
               '<span class="aha-icon">🎁</span>' +
               '<div class="aha-text"><span class="aha-en-main">Open Blind Boxes</span></div>' +
-            '</div>' +
+              '<span class="aha-row-chevron">›</span>' +
+            '</button>' +
           '</div>' +
           '<button class="aha-btn" id="aha-got-it">Got it</button>' +
         '</div>';
@@ -10120,10 +10246,17 @@
         ov.style.animation = 'ahaFadeIn 0.18s ease reverse forwards';
         setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 180);
       }
+      function openStoreFromAha() {
+        // 进店是可选路径：关弹窗后用叠层方式打开商店（不导航 → 关店即回本课原位）
+        if (ov.parentNode) ov.parentNode.removeChild(ov);
+        _gachaOnboardFlow = true;
+        try { openGachaStore(); } catch(e) {}
+      }
       ov.addEventListener('click', dismiss);
       // prevent card clicks from bubbling to overlay (only btn dismisses)
       ov.querySelector('.aha-card').addEventListener('click', function(e) { e.stopPropagation(); });
       ov.querySelector('#aha-got-it').addEventListener('click', dismiss);
+      ov.querySelector('#aha-open-store').addEventListener('click', function(e) { e.stopPropagation(); openStoreFromAha(); });
       document.body.appendChild(ov);
     }
 
