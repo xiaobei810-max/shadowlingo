@@ -1338,11 +1338,11 @@
       flex-shrink: 0;
       width: 54px; height: 54px;
       border-radius: 50%;
-      background: radial-gradient(circle at 50% 38%, #22c55e, #14532d);
+      background: #F3EEE2;  /* 浅奶白底，衬托深色八哥 */
       display: flex; align-items: center; justify-content: center;
-      font-size: 28px;
       box-shadow: 0 0 14px rgba(34,197,94,0.4);
     }
+    #onboard-mascot img { width: 80%; height: 80%; object-fit: contain; }
     #onboard-card .ob-text {
       flex: 1; min-width: 0;
       color: #e2e8f0; font-size: 14.5px; line-height: 1.5; font-weight: 500;
@@ -2317,6 +2317,7 @@
     .aha-en { font-size: 13px; color: #94a3b8; font-weight: 400; }
     .aha-en-main { font-size: 20px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.2px; }
     .aha-coincount { font-size: 15px; font-weight: 600; color: #fbbf24; margin: -8px 0 20px; text-align: center; }
+    .aha-mascot { display: block; width: 84px; height: 84px; object-fit: contain; margin: 0 auto 10px; }
     .aha-btn {
       width: 100%; padding: 14px; background: #1fcc66; border: none;
       border-radius: 14px; color: #000; font-size: 16px; font-weight: 800;
@@ -7946,6 +7947,12 @@
     let sessionScores = [];
     var _sessionCoinsEarned = 0; // 本课本次会话累计获得的回声币
     let slowSpeed = 0.7;
+    // 吉祥物（八哥）图片集中映射 —— 以后整体换图/加动效只改这里
+    const MASCOT = {
+      idle:  '/mascot/mynah-idle.svg',
+      point: '/mascot/mynah-point.svg',
+      cheer: '/mascot/mynah-cheer.svg'
+    };
     var _evalGeneration = 0;  // 每次新录音递增；旧评测回调发现版本不匹配时静默丢弃
 
     // ── buildLessonMeta: derives dialogue from LESSONS[i].sentences ─────
@@ -10089,6 +10096,7 @@
       ov.className = 'aha-overlay';
       ov.innerHTML =
         '<div class="aha-card">' +
+          '<img class="aha-mascot" src="' + MASCOT.cheer + '" alt="">' +
           '<div class="aha-title" style="display:flex;align-items:center;justify-content:center;gap:10px;">' +
             '<div class="echo-coin echo-coin-sm" style="width:28px;height:28px;flex-shrink:0;">' +
               '<svg width="16" height="14" viewBox="0 0 28 24" class="ec-svg">' +
@@ -12462,6 +12470,8 @@
       var card = document.getElementById('onboard-card');
       var skip = document.getElementById('onboard-skip');
       var box  = document.getElementById('sentence-box');
+      var mImg = document.getElementById('onboard-mascot-img');
+      if (mImg && !mImg.getAttribute('src')) mImg.src = MASCOT.point; // 抬翅"指"
       if (mask) mask.classList.add('show');
       if (skip) skip.classList.add('show');
       if (box)  _obLift(box); // highlight Nora's bubble during the intro card too
@@ -17702,7 +17712,7 @@
   <div id="onboard-mask"></div>
   <div id="onboard-coach"></div>
   <div id="onboard-card">
-    <div id="onboard-mascot">🦊</div>
+    <div id="onboard-mascot"><img id="onboard-mascot-img" alt=""></div>
     <div class="ob-text">You're <b>Nora</b>. Listen to the others, then say your lines.</div>
     <button class="ob-start" onclick="_obStartFromCard()">Start →</button>
   </div>

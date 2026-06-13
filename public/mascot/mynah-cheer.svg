@@ -1,0 +1,27 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>EchoChinese mynah mascot, celebrating</title>
+<path d="M34,58 l2,6 l6,2 l-6,2 l-2,6 l-2,-6 l-6,-2 l6,-2 z" fill="#EFC04A"/>
+<path d="M170,60 l1.6,5 l5,1.6 l-5,1.6 l-1.6,5 l-1.6,-5 l-5,-1.6 l5,-1.6 z" fill="#2BD96B"/>
+<ellipse cx="160" cy="104" rx="4" ry="3" fill="#2BD96B"/>
+<path d="M163.5,104 v-13" stroke="#2BD96B" stroke-width="2" stroke-linecap="round"/>
+<path d="M100,50 C97,34 99,26 103,22 C107,27 106,38 105,50 Z" fill="#1B222A"/>
+<path d="M91,52 C88,38 89,30 91,26 C95,32 95,42 97,52 Z" fill="#232A33"/>
+<path d="M109,52 C112,38 111,30 109,26 C105,32 105,42 103,52 Z" fill="#232A33"/>
+<path d="M100,48 C133,48 158,74 158,106 C158,134 132,156 100,156 C68,156 42,134 42,106 C42,74 67,48 100,48 Z" fill="#232A33"/>
+<path d="M90,150 l-5,11 M90,150 l0,12 M90,150 l5,11" stroke="#FF9E2C" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+<path d="M110,150 l-5,11 M110,150 l0,12 M110,150 l5,11" stroke="#FF9E2C" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+<path d="M74,62 C61,71 59,91 68,107 C81,93 94,75 100,64 C91,58 81,58 74,62 Z" fill="#2BD96B" opacity="0.28"/>
+<ellipse cx="100" cy="128" rx="30" ry="22" fill="#2E3741"/>
+<path d="M60,98 C46,82 34,74 26,74 C30,84 40,96 52,106 C56,104 59,102 60,98 Z" fill="#1B222A"/>
+<ellipse cx="42" cy="86" rx="6" ry="9" fill="#ECECEC" transform="rotate(-38 42 86)"/>
+<path d="M140,98 C154,82 166,74 174,74 C170,84 160,96 148,106 C144,104 141,102 140,98 Z" fill="#1B222A"/>
+<ellipse cx="158" cy="86" rx="6" ry="9" fill="#ECECEC" transform="rotate(38 158 86)"/>
+<path d="M88,91 Q100,88 112,91 L100,113 Z" fill="#FFB22C"/>
+<path d="M94,102 L106,102 L100,113 Z" fill="#E08E1C"/>
+<circle cx="95" cy="95" r="1.4" fill="#9A6A12"/>
+<circle cx="84" cy="76" r="13" fill="#FAF3D8"/><circle cx="116" cy="76" r="13" fill="#FAF3D8"/>
+<circle cx="84" cy="76" r="13" fill="none" stroke="#E0C24A" stroke-width="2"/>
+<circle cx="116" cy="76" r="13" fill="none" stroke="#E0C24A" stroke-width="2"/>
+<circle cx="85" cy="75" r="6.5" fill="#16241C"/><circle cx="115" cy="75" r="6.5" fill="#16241C"/>
+<circle cx="87" cy="71" r="2.4" fill="#fff"/><circle cx="117" cy="71" r="2.4" fill="#fff"/>
+</svg>

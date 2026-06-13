@@ -1,0 +1,24 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>EchoChinese mynah mascot, pointing</title>
+<path d="M100,50 C97,34 99,26 103,22 C107,27 106,38 105,50 Z" fill="#1B222A"/>
+<path d="M91,52 C88,38 89,30 91,26 C95,32 95,42 97,52 Z" fill="#232A33"/>
+<path d="M109,52 C112,38 111,30 109,26 C105,32 105,42 103,52 Z" fill="#232A33"/>
+<path d="M100,48 C133,48 158,74 158,106 C158,134 132,156 100,156 C68,156 42,134 42,106 C42,74 67,48 100,48 Z" fill="#232A33"/>
+<path d="M90,150 l-5,11 M90,150 l0,12 M90,150 l5,11" stroke="#FF9E2C" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+<path d="M110,150 l-5,11 M110,150 l0,12 M110,150 l5,11" stroke="#FF9E2C" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+<path d="M74,62 C61,71 59,91 68,107 C81,93 94,75 100,64 C91,58 81,58 74,62 Z" fill="#2BD96B" opacity="0.28"/>
+<ellipse cx="100" cy="128" rx="30" ry="22" fill="#2E3741"/>
+<path d="M58,104 C45,111 45,134 60,143 C66,134 66,114 64,105 Z" fill="#1B222A"/>
+<ellipse cx="58" cy="122" rx="7" ry="10" fill="#ECECEC" transform="rotate(-8 58 122)"/>
+<path d="M140,98 C154,82 166,74 174,74 C170,84 160,96 148,106 C144,104 141,102 140,98 Z" fill="#1B222A"/>
+<ellipse cx="158" cy="86" rx="6" ry="9" fill="#ECECEC" transform="rotate(38 158 86)"/>
+<path d="M174,67 q6,-2 9,3" stroke="#2BD96B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M88,91 Q100,88 112,91 L100,113 Z" fill="#FFB22C"/>
+<path d="M94,102 L106,102 L100,113 Z" fill="#E08E1C"/>
+<circle cx="95" cy="95" r="1.4" fill="#9A6A12"/>
+<circle cx="84" cy="76" r="13" fill="#FAF3D8"/><circle cx="116" cy="76" r="13" fill="#FAF3D8"/>
+<circle cx="84" cy="76" r="13" fill="none" stroke="#E0C24A" stroke-width="2"/>
+<circle cx="116" cy="76" r="13" fill="none" stroke="#E0C24A" stroke-width="2"/>
+<circle cx="86" cy="77" r="6.5" fill="#16241C"/><circle cx="114" cy="77" r="6.5" fill="#16241C"/>
+<circle cx="88" cy="73" r="2.4" fill="#fff"/><circle cx="116" cy="73" r="2.4" fill="#fff"/>
+</svg>
