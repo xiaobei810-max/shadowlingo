@@ -10116,6 +10116,7 @@
           '<button class="aha-btn" id="aha-got-it">Got it</button>' +
         '</div>';
       function dismiss() {
+        _speedHintArmed = true; // First Coin closed → speed hint may show on next practice render
         ov.style.animation = 'ahaFadeIn 0.18s ease reverse forwards';
         setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 180);
       }
@@ -12396,6 +12397,9 @@
     // listeners only READ state to advance; never touches audio/eval/track.
     // ══════════════════════════════════════════════════════════════
     var _onboardingActive = false;
+    // Speed coachmark is armed later (First Coin closed / first next-sentence),
+    // then shown on the next practice render — never at first-run start.
+    var _speedHintArmed = false;
     var _obStepPoll = null;
 
     function _obDone() {
@@ -12451,12 +12455,14 @@
     function maybeStartOnboarding() {
       var done = false;
       try { done = localStorage.getItem('sl_onboard_done') === '1'; } catch(e) {}
-      if (done) { maybeShowSpeedHint(); return; } // normal path keeps speed hint
+      // Speed hint no longer fires on entry — it's armed later (First Coin closed
+      // or first "next sentence"), then shown on the next practice render.
+      if (done) { return; }
       // Only run when a Nora line (Play + Record) is actually present this round.
       var noraBox = document.getElementById('sentence-box');
       var recBtn  = document.getElementById('bn');
       if (!noraBox || noraBox.style.display === 'none' || !recBtn || recBtn.style.display === 'none') {
-        maybeShowSpeedHint(); return;
+        return;
       }
       _onboardingActive = true; // speed hint suppressed until onboarding completes
       _obStep1Card();
@@ -13875,7 +13881,7 @@
       currentSentenceForEval = null;
       if (dialogMode && dialogStep === 2) {
         if (dialogRoundIdx >= getDialogRoundCount() - 1) { enterDialogStep3(); }
-        else { dialogRoundIdx++; renderDialogYourTurn(); }
+        else { _speedHintArmed = true; dialogRoundIdx++; renderDialogYourTurn(); } // first "next sentence" arms speed hint
         return;
       }
       var lesson = LESSONS[lessonIdx];
@@ -15483,6 +15489,11 @@
         void panelEl.offsetWidth;
         panelEl.classList.add('panel-switching');
       });
+
+      // 语速提示靠后触发：armed（First Coin 关闭 / 首次翻到下一句）后，在跟读页可见时显示一次
+      if (_speedHintArmed && !_onboardingActive) {
+        setTimeout(function() { try { maybeShowSpeedHint(); } catch(e) {} }, 600);
+      }
     }
     // 第 3 步：地道指南
     function enterDialogStep3() {
