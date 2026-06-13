@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="100%" role="img">
+<title>EchoChinese parrot — cheer</title>
+<path d="M90,34 C86,18 88,9 92,5 C96,11 95,24 94,34 Z" fill="#5FD64E"/>
+<path d="M78,36 C72,23 69,15 70,11 C77,18 82,28 84,36 Z" fill="#5FD64E"/>
+<path d="M102,36 C108,23 111,15 110,11 C103,18 98,28 96,36 Z" fill="#5FD64E"/>
+<path d="M90,30 C121,30 140,55 140,87 C140,113 122,132 90,132 C58,132 40,113 40,87 C40,55 59,30 90,30 Z" fill="#2BD96B"/>
+<ellipse cx="90" cy="104" rx="30" ry="26" fill="#FFF4D6"/>
+<path d="M80,131 L76,142 M80,131 L80,143 M80,131 L84,142" stroke="#FF9E2C" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100,131 L96,142 M100,131 L100,143 M100,131 L104,142" stroke="#FF9E2C" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M54,84 C40,74 29,58 27,46 C23,50 23,63 30,73 C36,81 46,88 52,90 Z" fill="#18A352"/>
+<path d="M126,84 C140,74 151,58 153,46 C157,50 157,63 150,73 C144,81 134,88 128,90 Z" fill="#18A352"/>
+<ellipse cx="55" cy="86" rx="7" ry="5" fill="#FF8DA1" opacity="0.55"/>
+<ellipse cx="125" cy="86" rx="7" ry="5" fill="#FF8DA1" opacity="0.55"/>
+<path d="M76,80 C76,74 104,74 104,80 C104,92 98,103 90,106 C82,103 76,92 76,80 Z" fill="#FF9E2C"/>
+<path d="M80,90 C84,98 96,98 100,90 C98,103 82,103 80,90 Z" fill="#C46A12"/>
+<path d="M84,98 C87,101 93,101 96,98 C92,101 88,101 84,98 Z" fill="#FF8DA1"/>
+<path d="M64,66 C68,60 80,60 84,66" stroke="#16241C" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path d="M96,66 C100,60 112,60 116,66" stroke="#16241C" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path d="M40,40 l3,7 l7,3 l-7,3 l-3,7 l-3,-7 l-7,-3 l7,-3 Z" fill="#5FD64E"/>
+<path d="M142,44 l2.5,6 l6,2.5 l-6,2.5 l-2.5,6 l-2.5,-6 l-6,-2.5 l6,-2.5 Z" fill="#FFE08A"/>
+<circle cx="160" cy="92" r="3.5" fill="#5FD64E"/>
+<circle cx="22" cy="100" r="3" fill="#FFE08A"/>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="100%" role="img">
+<title>EchoChinese parrot — point</title>
+<path d="M90,34 C86,18 88,9 92,5 C96,11 95,24 94,34 Z" fill="#5FD64E"/>
+<path d="M78,36 C72,23 69,15 70,11 C77,18 82,28 84,36 Z" fill="#5FD64E"/>
+<path d="M102,36 C108,23 111,15 110,11 C103,18 98,28 96,36 Z" fill="#5FD64E"/>
+<path d="M90,30 C121,30 140,55 140,87 C140,113 122,132 90,132 C58,132 40,113 40,87 C40,55 59,30 90,30 Z" fill="#2BD96B"/>
+<ellipse cx="90" cy="104" rx="30" ry="26" fill="#FFF4D6"/>
+<path d="M80,131 L76,142 M80,131 L80,143 M80,131 L84,142" stroke="#FF9E2C" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100,131 L96,142 M100,131 L100,143 M100,131 L104,142" stroke="#FF9E2C" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M52,86 C40,94 42,116 56,126 C61,116 62,98 59,88 C56,85 54,84 52,86 Z" fill="#18A352"/>
+<path d="M126,84 C140,74 151,58 153,46 C157,50 157,63 150,73 C144,81 134,88 128,90 Z" fill="#18A352"/>
+<ellipse cx="55" cy="84" rx="7" ry="4.5" fill="#FF8DA1" opacity="0.5"/>
+<ellipse cx="125" cy="84" rx="7" ry="4.5" fill="#FF8DA1" opacity="0.5"/>
+<path d="M76,80 C76,74 104,74 104,80 C104,90 98,99 90,102 C82,99 76,90 76,80 Z" fill="#FF9E2C"/>
+<path d="M82,92 C86,98 94,98 98,92 C96,102 84,102 82,92 Z" fill="#E8851A"/>
+<circle cx="74" cy="64" r="13" fill="#fff"/><circle cx="106" cy="64" r="13" fill="#fff"/>
+<circle cx="76" cy="66" r="7" fill="#16241C"/><circle cx="104" cy="66" r="7" fill="#16241C"/>
+<circle cx="78.5" cy="61" r="2.6" fill="#fff"/><circle cx="106.5" cy="61" r="2.6" fill="#fff"/>
+</svg>

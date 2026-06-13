@@ -1337,12 +1337,10 @@
     #onboard-mascot {
       flex-shrink: 0;
       width: 54px; height: 54px;
-      border-radius: 50%;
-      background: #F3EEE2;  /* 浅奶白底，衬托深色八哥 */
+      background: transparent;  /* 与卡片底色一致，无圆圈/badge */
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 14px rgba(34,197,94,0.4);
     }
-    #onboard-mascot img { width: 80%; height: 80%; object-fit: contain; }
+    #onboard-mascot img { width: 86%; height: 86%; object-fit: contain; }
     #onboard-card .ob-text {
       flex: 1; min-width: 0;
       color: #e2e8f0; font-size: 14.5px; line-height: 1.5; font-weight: 500;
@@ -7949,9 +7947,9 @@
     let slowSpeed = 0.7;
     // 吉祥物（八哥）图片集中映射 —— 以后整体换图/加动效只改这里
     const MASCOT = {
-      idle:  '/mascot/mynah-idle.svg',
-      point: '/mascot/mynah-point.svg',
-      cheer: '/mascot/mynah-cheer.svg'
+      idle:  '/mascot/parrot-idle.svg',
+      point: '/mascot/parrot-point.svg',
+      cheer: '/mascot/parrot-cheer.svg'
     };
     var _evalGeneration = 0;  // 每次新录音递增；旧评测回调发现版本不匹配时静默丢弃
 
