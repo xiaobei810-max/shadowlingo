@@ -3257,6 +3257,10 @@
     .gcb-empty {
       text-align: center; color: #374151; font-size: 15px; margin-top: 60px;
     }
+    .gcb-empty-hint {
+      color: #94a3b8; font-size: 15px; font-weight: 500; line-height: 1.6;
+      padding: 0 28px; max-width: 340px; margin-left: auto; margin-right: auto;
+    }
     .gcb-grid { display: none; } /* kept for fallback; carousel replaces it */
 
     /* ── 收集册轮播 (Carousel) ─────────────────────────────── */
@@ -5508,7 +5512,8 @@
   (function(){
     if (location.search.indexOf('reset=1') === -1) return;
     var hints = ['sl_speed_hint_seen','sl_hint_coin_seen','sl_hint_profile_seen',
-                 'echo_coin_aha_seen','guideLegendSeen','sl_onboard_done','sl_free_pull_used'];
+                 'echo_coin_aha_seen','guideLegendSeen','sl_onboard_done','sl_free_pull_used',
+                 'sl_store_hint_done','sl_collection_hint_done'];
     hints.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
     var qs = location.search.replace(/[?&]reset=1/g,'').replace(/^\?$/,'');
     history.replaceState(null,'', location.pathname + (qs ? '?'+qs.replace(/^&/,'') : ''));
@@ -8892,10 +8897,36 @@
       var btn = document.getElementById('gs-pull-btn');
       if (btn) _gsCoachAt(btn, 'Tap to open your box<span class="coachmark-hand-down">👇</span>', 'down');
     }
-    function _gsShowCoachStep2() {
-      if (!_gachaOnboardFlow) return;
-      var btn = _gachaStoreEl ? _gachaStoreEl.querySelector('.gs-back-btn') : null;
-      if (btn) _gsCoachAt(btn, '<span class="coachmark-hand">👆</span>It\'s yours! Keep practicing to earn more coins.', 'up');
+    // one-time 提示工具
+    function _hintDone(k) { try { return localStorage.getItem(k) === '1'; } catch(e) { return false; } }
+    function _hintSet(k)  { try { localStorage.setItem(k, '1'); } catch(e) {} }
+    function _ownsAnyCollectible() {
+      var st = loadGachaState();
+      for (var id in st.collection) { if (st.collection[id]) return true; }
+      return false;
+    }
+    // 点击任意处关闭店内 coachmark（capture 阶段，不拦截底层点击）
+    function _gsArmCoachDismiss(onDismiss) {
+      function h() { document.removeEventListener('click', h, true); _gsHideCoach(); if (onDismiss) onDismiss(); }
+      setTimeout(function() { document.addEventListener('click', h, true); }, 60);
+    }
+    // 抽到后链式提示：① It's yours（指金币）→ ② Collection（指收藏胶囊），各 one-time
+    function _gsRunPostPullHints() {
+      _gsShowItsYoursHint();
+    }
+    function _gsShowItsYoursHint() {
+      if (_hintDone('sl_store_hint_done') || !_gachaStoreEl) { _gsShowCollectionHint(); return; }
+      var coins = _gachaStoreEl.querySelector('.gs-topbar-coins');
+      if (!coins) { _gsShowCollectionHint(); return; }
+      _gsCoachAt(coins, '<span class="coachmark-hand">👆</span>It\'s yours! Keep practicing to earn more coins.', 'up');
+      _gsArmCoachDismiss(function() { _hintSet('sl_store_hint_done'); _gsShowCollectionHint(); });
+    }
+    function _gsShowCollectionHint() {
+      if (_hintDone('sl_collection_hint_done') || !_gachaStoreEl || !_ownsAnyCollectible()) return;
+      var pill = document.getElementById('gs-col-btn');
+      if (!pill) return;
+      _gsCoachAt(pill, '<span class="coachmark-hand">👆</span>Your items live here — tap to view', 'up');
+      _gsArmCoachDismiss(function() { _hintSet('sl_collection_hint_done'); });
     }
 
     // ── 顶栏提示气泡 ──────────────────────────────────────────────
@@ -8992,7 +9023,7 @@
             ' id="gs-pull-btn"' +
             ' onclick="onGachaPullClick()"' +
             (canPull ? '' : ' disabled') + '>' +
-            (freeNow ? 'Draw · Free' : (canPull ? 'Draw' : 'Not enough coins')) +
+            (freeNow ? 'Open Box · Free' : 'Open Box · ' + cost + ' 🪙') +
           '</button>' +
         '</div>'
 
@@ -9036,7 +9067,7 @@
       if (pullBtn) {
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
-        pullBtn.innerHTML = freeNow ? 'Draw · Free' : (canPull ? 'Draw' : 'Not enough coins');
+        pullBtn.innerHTML = freeNow ? 'Open Box · Free' : 'Open Box · ' + cost + ' 🪙';
       }
       // 免费用掉后移除规则横幅，避免残留
       if (!freeNow) {
@@ -9138,8 +9169,8 @@
       if (isFree) { try { localStorage.setItem('sl_free_pull_used', '1'); } catch(e) {} }
       refreshCoinDisplay();
       _refreshGachaStoreUI();
-      // 抽到后用引导第二步 coachmark（结果卡关闭时显示）
-      if (_gachaOnboardFlow) _gsCoachStep2Pending = true;
+      // 抽到后在结果卡关闭时跑一次性提示链（It's yours → Collection）
+      _gsCoachStep2Pending = true;
       // M3: 先播拆盒动画，结束后显示物品卡
       playUnboxingAnimation(result, function() {
         showGachaResultCard(result);
@@ -9369,10 +9400,10 @@
       if (!el) return;
       el.classList.remove('gr-visible');
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
-      // 引导进店：结果卡关闭后显示第二步 coachmark（指向 Continue lesson）
-      if (_gsCoachStep2Pending && _gachaOnboardFlow) {
+      // 结果卡关闭后跑一次性提示链（It's yours → Collection），仅当商店仍开着
+      if (_gsCoachStep2Pending && _gachaStoreEl) {
         _gsCoachStep2Pending = false;
-        setTimeout(function() { _gsShowCoachStep2(); }, 320);
+        setTimeout(function() { _gsRunPostPullHints(); }, 320);
       }
     }
 
@@ -9715,10 +9746,20 @@
       series.items.forEach(function(it) { if (state.collection[it.id]) ownedAll++; });
       if (prog) prog.textContent = ownedAll + ' / ' + totalAll;
 
-      if (!items.length || !root) {
-        if (root) root.innerHTML = '<div class="gcb-empty">暂无物品</div>';
+      // 空状态：该分类当前一件都没拥有时，按获取方式给一句引导（非气泡，不打断）
+      var ownedOfType = items.filter(function(it) { return !!state.collection[it.id]; }).length;
+      if (root && (!items.length || ownedOfType === 0)) {
+        var EMPTY_HINTS = {
+          card:   'No cards yet — open boxes to collect them.',
+          outfit: 'No outfits yet — open boxes to find them.',
+          diary:  'Keep playing to unlock these.',
+          cg:     'Keep playing to unlock these.'
+        };
+        root.innerHTML = '<div class="gcb-empty gcb-empty-hint">' +
+          (EMPTY_HINTS[_collectionBookTab] || 'Keep playing to unlock these.') + '</div>';
         return;
       }
+      if (!root) return;
 
       _carouselItems = items;
       _carouselIdx = Math.max(0, Math.min(_carouselIdx, items.length - 1));
