@@ -3246,6 +3246,11 @@
     .wp-cta-active:hover {
       background: linear-gradient(135deg, rgba(34,197,94,0.24), rgba(34,197,94,0.14)) !important;
     }
+    .wp-cta-arrow { margin-left: auto; opacity: 0.85; font-weight: 700; }
+    .wp-cta-caption {
+      margin-top: 8px; text-align: center;
+      font-size: 11.5px; color: rgba(255,255,255,0.5); letter-spacing: 0.2px;
+    }
 
     /* ── 收集册 Collection Book (M4) ───────────────────────── */
     .gacha-collection-overlay {
@@ -8739,13 +8744,9 @@
 
     // 每次加币后检查是否首次解锁（终生仅触发一次 Toast）
     function checkGachaUnlock() {
-      var state = loadGachaState();
-      var threshold = getCurrentThreshold(state.flags.pullCount);
-      if (getCoins() >= threshold && !state.flags.storeUnlockedSeen) {
-        state.flags.storeUnlockedSeen = true;
-        saveGachaState(state);
-        try { playUnlockAnimation(); } catch(e) {}
-      }
+      // 商店已随时可进（拆掉了币解锁门）→ "Blind Box Shop Unlocked!" 仪式不再有意义，
+      // 不再触发，避免"没有锁却说解锁了"的困惑。playUnlockAnimation 保留为可复用资产。
+      return;
     }
 
     // 一次性解锁动画：光束从分数下方回声币飞到右上角图标，再冒出气泡
@@ -10280,12 +10281,7 @@
     }
     function openWallet() {
       if (_walletEl && _walletEl.parentNode) _walletEl.parentNode.removeChild(_walletEl);
-      var bal      = getCoins();
-      var gState   = loadGachaState();
-      var goal     = getCurrentThreshold(gState.flags.pullCount);
-      var pct      = Math.min(100, Math.round(bal / goal * 100));
-      var rem      = Math.max(0, goal - bal);
-      var canOpen  = bal >= goal;
+      var bal = getCoins();
       // outer overlay (click to dismiss)
       var ov = document.createElement('div');
       ov.className = 'wallet-overlay'; ov.id = 'wallet-panel';
@@ -10294,13 +10290,12 @@
       var card = document.createElement('div');
       card.className = 'wallet-panel';
       card.addEventListener('click', function(e) { e.stopPropagation(); });
-      var ctaHtml = canOpen
-        ? '<div class="wp-cta wp-cta-active" onclick="openGachaStore()" style="cursor:pointer">' +
-            '<span>🎁</span><span>Blind Box Shop</span>' +
-          '</div>'
-        : '<div class="wp-cta">' +
-            '<span>🔒</span><span>Blind Box Shop (' + goal + ')</span>' +
-          '</div>';
+      // 商店随时可进（已拆 10/15 币解锁门）：CTA 永久可点，下方一句奖励导向说明
+      var ctaHtml =
+        '<div class="wp-cta wp-cta-active" onclick="_openStoreFromWallet()" style="cursor:pointer">' +
+          '<span>🎁</span><span>Blind Box Shop</span><span class="wp-cta-arrow">→</span>' +
+        '</div>' +
+        '<div class="wp-cta-caption">Open boxes to grow your collection</div>';
       card.innerHTML =
         '<button class="wp-close" onclick="closeWallet()">✕</button>' +
         '<div class="wp-header">' +
@@ -10308,18 +10303,6 @@
           '<div class="wp-header-label">Coins</div>' +
         '</div>' +
         '<div class="wp-bal-num">' + bal + '<span class="wp-bal-unit">coins</span></div>' +
-        '<div class="wp-track-wrap">' +
-          '<div class="wp-track-label">' +
-            '<span class="wp-track-label-l">0</span>' +
-            '<span class="wp-track-label-r">' + goal + '</span>' +
-          '</div>' +
-          '<div class="wp-track"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
-        '</div>' +
-        (!canOpen
-          ? '<div class="wp-hint">' +
-              '<span class="wp-hint-en">' + rem + ' more to unlock</span>' +
-            '</div>'
-          : '') +
         ctaHtml;
       ov.appendChild(card);
       document.body.appendChild(ov);
@@ -10328,6 +10311,13 @@
     function closeWallet() {
       if (_walletEl && _walletEl.parentNode) _walletEl.parentNode.removeChild(_walletEl);
       _walletEl = null; _walletOpen = false;
+    }
+    // 从币弹窗进店：进店前按"首抽是否可用"设引导 flag，复用 aha 那条免费首抽路径。
+    // 首抽未用 → 免费首抽 + Continue/coach 引导；用过 → 普通进店。每次进店重算，不卡。
+    // 不动 _freePullAvailable/sl_free_pull_used 的判定本身。
+    function _openStoreFromWallet() {
+      _gachaOnboardFlow = _freePullAvailable();
+      try { openGachaStore(); } catch(e) {}
     }
 
     // ── Aha! first-coin spotlight ──────────────────────────────
