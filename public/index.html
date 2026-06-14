@@ -9013,15 +9013,15 @@
         '</div>' +
         // ── 首抽免费规则横幅（仅引导进店且免费未用）
         (freeNow
-          ? '<div class="gs-free-banner">First box free · 15 coins each after · practice to earn · odds in ⓘ</div>'
-          : '<div class="gs-free-banner">15 coins per box · practice to earn · odds in ⓘ</div>') +
+          ? "<div class=\"gs-free-banner\">First box's on us 🎁 Then " + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for odds.</div>"
+          : "<div class=\"gs-free-banner\">" + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for odds.</div>") +
         // ── Draw 主按钮（仅一个，居中）
         '<div class="gs-action-area">' +
           '<button class="gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled') + '"' +
             ' id="gs-pull-btn"' +
             ' onclick="onGachaPullClick()"' +
             (canPull ? '' : ' disabled') + '>' +
-            (freeNow ? 'Open Box · Free' : 'Open Box · ' + cost + ' 🪙') +
+            (freeNow ? 'Open Free Box 🎁' : 'Open Box · ' + cost + ' 🪙') +
           '</button>' +
         '</div>'
 
@@ -9065,7 +9065,7 @@
       if (pullBtn) {
         pullBtn.disabled  = !canPull;
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
-        pullBtn.innerHTML = freeNow ? 'Open Box · Free' : 'Open Box · ' + cost + ' 🪙';
+        pullBtn.innerHTML = freeNow ? 'Open Free Box 🎁' : 'Open Box · ' + cost + ' 🪙';
       }
       // 规则横幅为两态常驻文案（freeNow / !freeNow），由 render 建一次，refresh 不再触碰
       // 刷新 Collection 右上角胶囊数字（集满时绿色）
