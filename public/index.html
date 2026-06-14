@@ -8248,7 +8248,7 @@
     //         无 UI，可通过 window.__gacha 在控制台测试
 
     // ─ 配置层 ───────────────────────────────────────────────────
-    var GACHA_THRESHOLDS = [10, 20, 30];                       // 渐进门槛
+    var GACHA_BOX_PRICE = 15;                                  // 单一固定价（阶梯已废）
     // 各角色封面默认立绘路径（M8 替换为正式全身立绘）
     var DEFAULT_COVER = {
       nora:     '/assets/clothes/nora_clothes.png',
@@ -8507,8 +8507,7 @@
 
     // ─ 抽卡核心 ─────────────────────────────────────────────────
     function getCurrentThreshold(pullCount) {
-      var idx = Math.min(pullCount, GACHA_THRESHOLDS.length - 1);
-      return GACHA_THRESHOLDS[idx];
+      return GACHA_BOX_PRICE;   // 固定价，递增阶梯逻辑已删除
     }
 
     function rollTier(pity) {
@@ -9014,9 +9013,8 @@
         '</div>' +
         // ── 首抽免费规则横幅（仅引导进店且免费未用）
         (freeNow
-          ? '<div class="gs-free-banner">First pull is on us! After that, each box costs ' +
-              getCurrentThreshold(0) + ' coins — earn coins by practicing.</div>'
-          : '') +
+          ? '<div class="gs-free-banner">First box free · 15 coins each after · practice to earn · odds in ⓘ</div>'
+          : '<div class="gs-free-banner">15 coins per box · practice to earn · odds in ⓘ</div>') +
         // ── Draw 主按钮（仅一个，居中）
         '<div class="gs-action-area">' +
           '<button class="gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled') + '"' +
@@ -9069,11 +9067,7 @@
         pullBtn.className = 'gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled');
         pullBtn.innerHTML = freeNow ? 'Open Box · Free' : 'Open Box · ' + cost + ' 🪙';
       }
-      // 免费用掉后移除规则横幅，避免残留
-      if (!freeNow) {
-        var bn = _gachaStoreEl.querySelector('.gs-free-banner');
-        if (bn && bn.parentNode) bn.parentNode.removeChild(bn);
-      }
+      // 规则横幅为两态常驻文案（freeNow / !freeNow），由 render 建一次，refresh 不再触碰
       // 刷新 Collection 右上角胶囊数字（集满时绿色）
       var colCount = document.getElementById('gs-col-count');
       if (colCount) {
