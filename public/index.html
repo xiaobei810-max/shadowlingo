@@ -4440,6 +4440,13 @@
       gap: 8px;
       margin-bottom: 8px;
     }
+    /* 名字 + "i" 编为一组放左侧，"i" 紧贴名字（间距来自 .char-profile-btn margin-left:6px）；
+       Play 按钮仍由 space-between 推到最右 */
+    .ctx-name-group {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
     .ctx-speaker {
       font-size: 13px;
       color: var(--green);
@@ -5630,8 +5637,10 @@
           </div>
           <div class="card-content-col" style="cursor:pointer" onclick="if(!event.target.closest('.ctx-kchar,button'))playContext()">
             <div class="ctx-header">
-              <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
-              <button class="char-profile-btn" id="ctx-profile-btn" style="display:none" title="查看角色档案">i</button>
+              <div class="ctx-name-group">
+                <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
+                <button class="char-profile-btn" id="ctx-profile-btn" style="display:none" title="查看角色档案">i</button>
+              </div>
               <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ Play</button>
             </div>
             <div class="ctx-zh" id="ctx-zh"></div>
@@ -5686,8 +5695,10 @@
           </div>
           <div class="card-content-col" style="cursor:pointer" onclick="if(!event.target.closest('.ctx-kchar,button'))playContextBelow()">
             <div class="ctx-header">
-              <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
-              <button class="char-profile-btn" id="ctx-profile-btn-below" style="display:none" title="查看角色档案">i</button>
+              <div class="ctx-name-group">
+                <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
+                <button class="char-profile-btn" id="ctx-profile-btn-below" style="display:none" title="查看角色档案">i</button>
+              </div>
               <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ Play</button>
             </div>
             <div class="ctx-zh" id="ctx-zh-below"></div>
