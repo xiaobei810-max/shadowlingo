@@ -5631,6 +5631,7 @@
           <div class="card-content-col" style="cursor:pointer" onclick="if(!event.target.closest('.ctx-kchar,button'))playContext()">
             <div class="ctx-header">
               <span class="ctx-speaker" id="ctx-speaker">赵明轩 · Zhao Mingxuan</span>
+              <button class="char-profile-btn" id="ctx-profile-btn" style="display:none" title="查看角色档案">i</button>
               <button class="ctx-play-btn" id="ctx-play-btn" onclick="playContext()">▶ Play</button>
             </div>
             <div class="ctx-zh" id="ctx-zh"></div>
@@ -5686,6 +5687,7 @@
           <div class="card-content-col" style="cursor:pointer" onclick="if(!event.target.closest('.ctx-kchar,button'))playContextBelow()">
             <div class="ctx-header">
               <span class="ctx-speaker" id="ctx-speaker-below">赵明轩 · Zhao Mingxuan</span>
+              <button class="char-profile-btn" id="ctx-profile-btn-below" style="display:none" title="查看角色档案">i</button>
               <button class="ctx-play-btn" id="ctx-play-btn-below" onclick="playContextBelow()">▶ Play</button>
             </div>
             <div class="ctx-zh" id="ctx-zh-below"></div>
@@ -15552,6 +15554,17 @@
       var sp = document.getElementById(idMap.speaker);
       if (sp) sp.textContent = line.speaker || '';
 
+      // staff 判定（档案入口 + 下方头像共用，单次计算）
+      var isStaff = line._sid === 'staff' || _isStaffSpeaker(line.speaker);
+      // 角色档案 "i" 入口：仅有名 NPC（mingxuan/qiqi/david/linwan）显示；
+      // 无名 staff 与诺拉一侧不显示。每次渲染按当前 NPC 重绑，切句不串角色。
+      var canProfile = line._sid && !isStaff && line._sid !== 'nora';
+      var pBtn = document.getElementById(panelKind === 'above' ? 'ctx-profile-btn' : 'ctx-profile-btn-below');
+      if (pBtn) {
+        pBtn.style.display = canProfile ? '' : 'none';
+        if (canProfile) pBtn.setAttribute('onclick', "showCharProfile('" + line._sid + "')");
+      }
+
       var zhEl = document.getElementById(idMap.zh);
       if (zhEl) {
         buildCtxKara(zhEl, line.zh, line.pinyin);
@@ -15563,8 +15576,7 @@
       var btn = document.getElementById(idMap.btn);
       if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
 
-      // 头像：mingxuan / nora / staff
-      var isStaff = line._sid === 'staff' || _isStaffSpeaker(line.speaker);
+      // 头像：mingxuan / nora / staff（isStaff 已于上方单次计算）
       if (panelKind === 'above') {
         var aWrap  = document.getElementById(idMap.avWrap);
         var aBadge = document.getElementById(idMap.avBadge);
