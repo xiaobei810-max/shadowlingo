@@ -12684,7 +12684,7 @@
       if (!coach || !targetEl) return;
       var arrowCls = (dir === 'up') ? 'coachmark-arrow-up' : 'coachmark-arrow-down';
       coach.innerHTML = '<div class="coachmark ' + arrowCls + '" style="display:inline-block">' +
-        '<button class="ob-coach-x" onclick="_obSkip()" aria-label="Skip">✕</button>' +
+        '<button class="ob-coach-x" onclick="_obDismissCurrent()" aria-label="Dismiss">✕</button>' +
         html + '</div>';
       coach.classList.add('show');
       // measure then place relative to the target
@@ -12841,6 +12841,19 @@
     function _obSkip() {
       _obDone();      // user chose to skip → don't nag again
       _obTeardown();
+    }
+    // Per-bubble ✕: close ONLY the current hint (bubble + spotlight + mask),
+    // keep the flow alive so later steps still fire on their own action triggers.
+    // Does NOT set sl_onboard_done (only the bottom "✕ Skip" skips the whole series).
+    // Subsequent steps call _obCoachAt(), which re-adds coach .show + refills the
+    // bubble, so the next hint pops without the mask (lightweight continuation).
+    function _obDismissCurrent() {
+      _obClearLift();
+      ['onboard-mask', 'onboard-coach'].forEach(function(id) {
+        var e = document.getElementById(id); if (e) e.classList.remove('show');
+      });
+      var coach = document.getElementById('onboard-coach');
+      if (coach) coach.innerHTML = '';
     }
     // v1.5 entry point (corner mascot replay will call this)
     function replayOnboarding() {
