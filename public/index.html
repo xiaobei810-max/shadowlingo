@@ -2504,6 +2504,24 @@
       display: block; font-size: 10px; color: #64748b; line-height: 1.5;
       margin-top: 2px; letter-spacing: 0.3px;
     }
+    /* ⓘ 顶栏按钮（常驻、可点，复用 tooltip 弹层） */
+    .gs-info-btn {
+      position: relative;            /* tooltip 锚点 */
+      margin-left: 4px;
+      width: 24px; height: 24px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1;
+      border-radius: 999px; transition: color 0.15s, background 0.15s;
+    }
+    .gs-info-btn:hover  { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.06); }
+    .gs-info-btn:active { transform: scale(0.94); }
+    /* info 态弹层：稍宽、左对齐，三句逐行 */
+    .gs-topbar-tooltip-info { min-width: 244px; max-width: 260px; text-align: left; }
+    .gs-topbar-tooltip .tt-li {
+      display: block; font-size: 11.5px; color: #cbd5e1; line-height: 1.55;
+      margin-top: 6px;
+    }
 
     /* ── 居中梦境英雄图（四边渐隐遮罩 + 暗角叠加） ─────────────── */
     .gs-hero {
@@ -8931,12 +8949,21 @@
     // ── 顶栏提示气泡 ──────────────────────────────────────────────
     function showTopbarTooltip(type, anchorEl) {
       hideTopbarTooltip();
-      var html =
-        '<b>Coins</b>' +
-        '<span class="tt-en">Earn from lessons; spend to pull boxes</span>';
+      var html;
+      if (type === 'info') {
+        html =
+          '<b>How boxes work</b>' +
+          '<span class="tt-li">· Each box reveals a new item you don\'t own yet.</span>' +
+          '<span class="tt-li">· Collect the whole set — no duplicates along the way.</span>' +
+          '<span class="tt-li">· Once a set\'s complete, extra boxes give ' + GACHA_DUP_REFUND + ' 🪙 back.</span>';
+      } else {
+        html =
+          '<b>Coins</b>' +
+          '<span class="tt-en">Earn from lessons; spend to pull boxes</span>';
+      }
       var tip = document.createElement('div');
       tip.id = 'gs-topbar-tooltip';
-      tip.className = 'gs-topbar-tooltip';
+      tip.className = 'gs-topbar-tooltip' + (type === 'info' ? ' gs-topbar-tooltip-info' : '');
       tip.innerHTML = html;
       anchorEl.appendChild(tip);
       function outsideClick(e) {
@@ -8998,6 +9025,7 @@
             '</div>' +
             '<span class="gs-coin-num" id="gs-coin-num">' + coins + '</span>' +
           '</div>' +
+          '<button class="gs-info-btn" aria-label="How boxes work" onclick="showTopbarTooltip(\'info\',this)">ⓘ</button>' +
           '<button class="gs-col-pill" id="gs-col-btn" onclick="openCollectionBook(null, _currentGachaSeriesId)">' +
             _colGridSvg + 'Collection ' + _colCountHtml +
           '</button>' +
@@ -9013,8 +9041,8 @@
         '</div>' +
         // ── 首抽免费规则横幅（仅引导进店且免费未用）
         (freeNow
-          ? "<div class=\"gs-free-banner\">First box's on us 🎁 Then " + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for odds.</div>"
-          : "<div class=\"gs-free-banner\">" + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for odds.</div>") +
+          ? "<div class=\"gs-free-banner\">First box's on us 🎁 Then " + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for details.</div>"
+          : "<div class=\"gs-free-banner\">" + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for details.</div>") +
         // ── Draw 主按钮（仅一个，居中）
         '<div class="gs-action-area">' +
           '<button class="gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled') + '"' +
