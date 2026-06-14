@@ -16787,7 +16787,9 @@
       track('lesson_start', { lesson_number: lessonIdx + 1, lesson_id: lesson.id, lesson_title: lesson.title });
       var newChars   = lesson.newChars || [];
 
-      if (newChars.length > 0) {
+      // 第一课(lessonIdx===0)跳过阻断式角色介绍：对话前两句已自然介绍明轩/诺拉，
+      // 降低新用户在录音前的摩擦。其余课(L5/8/13)的新角色登场介绍保持不变。
+      if (newChars.length > 0 && lessonIdx !== 0) {
         // 有新角色 → 先隐藏封面，再进角色介绍（已移除角色介绍后的 CG 过场页）
         document.getElementById('cover-page').classList.remove('show');
         var _ciOverlay = document.getElementById('char-intro-overlay');
