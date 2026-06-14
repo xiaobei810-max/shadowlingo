@@ -1389,8 +1389,9 @@
       display: none;
     }
     #gacha-coach.show { display: inline-block; }
-    /* First-pull-free rules banner inside the store */
+    /* First-pull-free rules banner inside the store (temporary toast) */
     .gs-free-banner {
+      position: relative;
       margin: 0 auto 12px;
       max-width: 340px;
       text-align: center;
@@ -1401,8 +1402,22 @@
       background: rgba(34,197,94,0.10);
       border: 1px solid rgba(34,197,94,0.35);
       border-radius: 12px;
-      padding: 9px 14px;
+      padding: 9px 34px 9px 14px;   /* 右留位给 ✕ */
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.32s ease, transform 0.32s ease;
     }
+    .gs-free-banner.gs-banner-in  { opacity: 1; transform: translateY(0); }
+    .gs-free-banner.gs-banner-out { opacity: 0; transform: translateY(-4px); }
+    .gs-banner-close {
+      position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+      width: 20px; height: 20px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer;
+      color: rgba(74,222,128,0.6); font-size: 13px; line-height: 1;
+      border-radius: 999px; transition: color 0.15s, background 0.15s;
+    }
+    .gs-banner-close:hover { color: #4ade80; background: rgba(34,197,94,0.18); }
 
     /* Status + speech indicator */
     .status-row {
@@ -2511,11 +2526,16 @@
       width: 24px; height: 24px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
       background: none; border: none; cursor: pointer;
-      color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1;
+      color: #67e8a3; font-size: 16px; line-height: 1;   /* 提亮：暖绿高对比 */
       border-radius: 999px; transition: color 0.15s, background 0.15s;
+      animation: infoPulse 2s ease-in-out infinite;       /* 轻柔脉动提示可点 */
     }
-    .gs-info-btn:hover  { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.06); }
+    .gs-info-btn:hover  { color: #a7f3cf; background: rgba(34,197,94,0.12); animation: none; }
     .gs-info-btn:active { transform: scale(0.94); }
+    @keyframes infoPulse {
+      0%, 100% { opacity: 0.72; transform: scale(1); }
+      50%      { opacity: 1;    transform: scale(1.07); }
+    }
     /* info 态弹层：稍宽、左对齐，三句逐行 */
     .gs-topbar-tooltip-info { min-width: 244px; max-width: 260px; text-align: left; }
     .gs-topbar-tooltip .tt-li {
@@ -8848,6 +8868,8 @@
       requestAnimationFrame(function() {
         requestAnimationFrame(function() { el.classList.add('gs-visible'); });
       });
+      // 进店首页：弹一次临时规则 banner（store 滑入后）
+      setTimeout(_gsShowBanner, 420);
 
       // 商店完全到位后撤掉 shield
       function removeShield() {
@@ -9039,10 +9061,8 @@
         '<div class="gs-series-title" id="gs-series-title">' +
           '<div class="gs-series-name-en" id="gs-series-name-en">' + tField(series, 'name') + '</div>' +
         '</div>' +
-        // ── 首抽免费规则横幅（仅引导进店且免费未用）
-        (freeNow
-          ? "<div class=\"gs-free-banner\">First box's on us 🎁 Then " + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for details.</div>"
-          : "<div class=\"gs-free-banner\">" + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for details.</div>") +
+        // ── 规则提示 banner 的定位占位（内容由 _gsShowBanner() 临时填充/清空，非渲染绑定）
+        '<div id="gs-banner-slot"></div>' +
         // ── Draw 主按钮（仅一个，居中）
         '<div class="gs-action-area">' +
           '<button class="gs-pull-btn' + (canPull ? '' : ' gs-pull-disabled') + '"' +
@@ -9058,6 +9078,40 @@
       if (_gachaOnboardFlow && _freePullAvailable()) {
         setTimeout(function() { _gsShowCoachStep1(); }, 450);
       }
+    }
+
+    // ── 规则提示 banner：临时 toast（进店首页 / 收藏册返回时弹一次，~5s 自动淡出，可手动 ✕）
+    var _gsBannerTimer = null;
+    function _gsClearBannerTimer() {
+      if (_gsBannerTimer) { clearTimeout(_gsBannerTimer); _gsBannerTimer = null; }
+    }
+    function _gsShowBanner() {
+      if (!_gachaStoreEl) return;
+      var slot = _gachaStoreEl.querySelector('#gs-banner-slot');
+      if (!slot) return;
+      _gsClearBannerTimer();                 // 重弹先清旧计时器，避免旧 timer 误藏新 banner
+      var state   = loadGachaState();
+      var cost    = getCurrentThreshold(state.flags.pullCount);
+      var freeNow = _gachaOnboardFlow && _freePullAvailable();
+      var inner   = freeNow
+        ? "First box's on us 🎁 Then " + cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for details."
+        : cost + " 🪙 per box — earn coins by practicing. Tap ⓘ for details.";
+      slot.innerHTML =
+        '<div class="gs-free-banner" id="gs-banner-live">' +
+          '<span class="gs-banner-text">' + inner + '</span>' +
+          '<button class="gs-banner-close" aria-label="Dismiss" onclick="_gsDismissBanner()">✕</button>' +
+        '</div>';
+      var bn = document.getElementById('gs-banner-live');
+      requestAnimationFrame(function() { if (bn) bn.classList.add('gs-banner-in'); });
+      _gsBannerTimer = setTimeout(_gsDismissBanner, 5000);
+    }
+    function _gsDismissBanner() {
+      _gsClearBannerTimer();                 // ✕ 或自动到点都先清计时器
+      var bn = document.getElementById('gs-banner-live');
+      if (!bn) return;
+      bn.classList.remove('gs-banner-in');
+      bn.classList.add('gs-banner-out');
+      setTimeout(function() { if (bn.parentNode) bn.parentNode.removeChild(bn); }, 360);
     }
 
     function _renderPreviewGrid(series, state) {
@@ -9474,6 +9528,8 @@
       var el = _collectionBookEl;
       _collectionBookEl = null;
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+      // 返回商店首页：若商店仍开着，临时 banner 再弹一次（收藏册关闭不重渲染商店，需显式补触发）
+      if (_gachaStoreEl) setTimeout(_gsShowBanner, 360);
     }
 
     function _buildCollectionBook(container) {
