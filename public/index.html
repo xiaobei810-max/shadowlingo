@@ -1271,21 +1271,15 @@
       display: flex; align-items: center; justify-content: center;
       z-index: 1;
     }
-    /* "Next ›" corner control — same top-right anchor as ob-coach-x, pill shape for text */
-    .ob-coach-next {
-      position: absolute;
-      top: -11px; right: -9px;
-      height: 22px; padding: 0 11px;
-      border-radius: 11px;
-      background: rgba(15,23,42,0.96);
-      border: 1px solid rgba(148,163,184,0.5);
-      color: #e2e8f0;
-      font-size: 11px; font-weight: 700; line-height: 1;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1; white-space: nowrap;
+    /* In-bubble bottom CTA (Next / Got it) — mirrors step-1 Start button design */
+    .ob-coach-cta {
+      display: block; margin: 11px auto 0;
+      background: var(--green); color: #000;
+      border: none; border-radius: 10px;
+      padding: 8px 18px; font-size: 13.5px; font-weight: 700;
+      line-height: 1; cursor: pointer; white-space: nowrap;
     }
-    .ob-coach-next:hover { background: rgba(30,41,59,0.98); border-color: rgba(148,163,184,0.8); }
+    .ob-coach-cta:hover { filter: brightness(1.06); }
     /* Hand below text, pointing down — for bubbles sitting ABOVE their target */
     .coachmark-hand-down {
       display: block;
@@ -12702,11 +12696,14 @@
       var coach = document.getElementById('onboard-coach');
       if (!coach || !targetEl) return;
       var arrowCls = (dir === 'up') ? 'coachmark-arrow-up' : 'coachmark-arrow-down';
-      var cornerHtml = (corner === 'next')
-        ? '<button class="ob-coach-next" onclick="_obNext()" aria-label="Next">Next ›</button>'
+      // 气泡内底部 CTA（绿色实心，对齐 step1 Start）：'next' 前进，'gotit' 干净结束引导
+      var ctaHtml = (corner === 'next')
+        ? '<button class="ob-coach-cta" onclick="_obNext()" aria-label="Next">Next ›</button>'
+        : (corner === 'gotit')
+        ? '<button class="ob-coach-cta" onclick="_obSkip()" aria-label="Got it">Got it</button>'
         : '';
       coach.innerHTML = '<div class="coachmark ' + arrowCls + '" style="display:inline-block">' +
-        cornerHtml + html + '</div>';
+        html + ctaHtml + '</div>';
       coach.classList.add('show');
       // measure then place relative to the target
       var r = targetEl.getBoundingClientRect();
@@ -12869,8 +12866,8 @@
       var recBtn = document.getElementById('bn');
       if (!recBtn) { _obTeardown(); return; }
       _obLift(recBtn);
-      _obCoachAt(recBtn, 'Your turn — don\'t worry about mistakes, just say it 😄<span class="coachmark-hand-down">👇</span>', 'down', 'none');
-      _obNextHandler = null; // 末步无 Next：录音推进 / 底部 Skip 退出
+      _obCoachAt(recBtn, 'Your turn — don\'t worry about mistakes, just say it 😄<span class="coachmark-hand-down">👇</span>', 'down', 'gotit');
+      _obNextHandler = null; // 末步无 Next：录音推进 / "Got it" 干净结束 / 底部 Skip 退出
       function onRec() {
         recBtn.removeEventListener('click', onRec);
         // tear down the spotlight so the existing record→eval→celebration flow runs cleanly.
