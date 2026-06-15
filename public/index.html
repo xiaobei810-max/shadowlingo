@@ -5514,6 +5514,8 @@
     function showUnitEmailCard() {
       _unitEmailTimer = null;
       try { if (localStorage.getItem('sl_email_submitted')) return; } catch(e) {}
+      // set-on-show：弹过即标记，跳过没提交也不再弹
+      try { localStorage.setItem('sl_email_l1_prompted', '1'); } catch(e) {}
       var c = document.getElementById('email-unit-card');
       if (c) c.classList.add('show');
     }
@@ -5535,19 +5537,9 @@
     // 完课时决策（只处理场景 B：单元小卡片；场景 A 移到 tipNextLesson 拦截）
     function maybeShowEmailPrompts(idx) {
       try { if (localStorage.getItem('sl_email_submitted')) return; } catch(e) {}
-      if (typeof LESSONS === 'undefined' || typeof UNITS === 'undefined') return;
-      // 最后一课不在此处弹（等用户点"下一课"再弹）
-      if (idx === LESSONS.length - 1) return;
-      // 场景 B：单元最后一课，且后面还有内容
-      var uIdx = -1;
-      for (var i = 0; i < UNITS.length; i++) {
-        if (UNITS[i] && UNITS[i].lessons && UNITS[i].lessons.indexOf(idx) !== -1) { uIdx = i; break; }
-      }
-      if (uIdx === -1) return;
-      var u = UNITS[uIdx];
-      var lastInUnit = u.lessons[u.lessons.length - 1] === idx;
-      var hasMore    = uIdx < UNITS.length - 1;
-      if (lastInUnit && hasMore) {
+      try { if (localStorage.getItem('sl_email_l1_prompted')) return; } catch(e) {}
+      // 场景 B：仅第 1 课完成后弹一次（非阻断小卡，可一键 × 跳过）
+      if (idx === 0) {
         _unitEmailTimer = setTimeout(showUnitEmailCard, 2200);
       }
     }
@@ -5572,7 +5564,7 @@
     if (location.search.indexOf('reset=1') === -1) return;
     var hints = ['sl_speed_hint_seen','sl_hint_coin_seen','sl_hint_profile_seen',
                  'echo_coin_aha_seen','guideLegendSeen','sl_onboard_done','sl_free_pull_used',
-                 'sl_store_hint_done','sl_collection_hint_done'];
+                 'sl_store_hint_done','sl_collection_hint_done','sl_email_l1_prompted'];
     hints.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
     var qs = location.search.replace(/[?&]reset=1/g,'').replace(/^\?$/,'');
     history.replaceState(null,'', location.pathname + (qs ? '?'+qs.replace(/^&/,'') : ''));
@@ -18187,12 +18179,12 @@
   <!-- ── 邮箱场景 B：单元完成小提示卡片（可关闭）─────────────── -->
   <div class="email-unit-card" id="email-unit-card">
     <button class="email-unit-close" onclick="closeUnitEmailCard()" aria-label="关闭">×</button>
-    <div class="email-unit-title">🎉 本单元完成 <span class="euc-en">· Unit Complete</span></div>
-    <div class="email-unit-sub">想第一时间收到新内容？<br/><span class="euc-en">Want to know the moment new content drops?</span></div>
+    <div class="email-unit-title">Nice — lesson 1 done! 🎉</div>
+    <div class="email-unit-sub">Want more? Leave your email and we'll tell you when new lessons drop.</div>
     <div class="email-unit-form" id="email-unit-form">
       <input class="email-input" id="email-unit-input" type="email"
              placeholder="your@email.com" autocomplete="email" />
-      <button class="email-btn" onclick="submitUnitEmail()">Notify me</button>
+      <button class="email-btn" onclick="submitUnitEmail()">Keep me posted</button>
     </div>
     <div class="email-unit-thanks" id="email-unit-thanks">
       ✓ 已收到，有新课立刻告诉你<br/>
