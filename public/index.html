@@ -12817,7 +12817,7 @@
       var playBtn = document.getElementById('sentence-play-btn');
       if (!box || !playBtn) { _obTeardown(); return; }
       _obLift(playBtn); // spotlight only the Play button, not the whole bubble
-      _obCoachAt(playBtn, 'Now hear your line<span class="coachmark-hand-down">👇</span>', 'down', 'next');
+      _obCoachAt(playBtn, 'Now hear your line first 👂<span class="coachmark-hand-down">👇</span>', 'down', 'next');
       // Next 与音频结束 poll 共用：幂等推进，撤本步监听+清 poll，防双重推进把人拽回
       var advanced = false;
       function advance() {
@@ -12855,7 +12855,9 @@
       var recBtn = document.getElementById('bn');
       if (!recBtn) { _obTeardown(); return; }
       _obLift(recBtn);
-      _obCoachAt(recBtn, 'Your turn — don\'t worry about mistakes, just say it 😄<span class="coachmark-hand-down">👇</span>', 'down', 'gotit');
+      _obCoachAt(recBtn, 'Your turn — just say it 😄<span class="coachmark-hand-down">👇</span>', 'down', 'gotit');
+      var _obC = document.querySelector('#onboard-coach .coachmark');
+      if (_obC) _obC.style.maxWidth = '200px';
       _obNextHandler = null; // 末步无 Next：录音推进 / "Got it" 干净结束 / 底部 Skip 退出
       function onRec() {
         recBtn.removeEventListener('click', onRec);
@@ -18111,7 +18113,7 @@
   <div id="onboard-coach"></div>
   <div id="onboard-card">
     <div id="onboard-mascot"><img id="onboard-mascot-img" alt=""></div>
-    <div class="ob-text">You're <b>Nora</b>. Listen to the others, then say your lines.</div>
+    <div class="ob-text">You're <b>Nora</b> 🎬 Let's walk through it.</div>
     <button class="ob-start" onclick="_obStartFromCard()">Start →</button>
   </div>
   <button id="onboard-skip" onclick="_obSkip()">✕ Skip</button>
