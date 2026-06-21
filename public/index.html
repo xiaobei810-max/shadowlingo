@@ -12752,12 +12752,9 @@
       if (skip) skip.classList.add('show');
       if (card) {
         // position card directly under the Nora bubble (covering the speed bar is fine)
-        if (box) {
-          var r = box.getBoundingClientRect();
-          card.style.left = (r.left + r.width / 2) + 'px';
-          card.style.bottom = 'auto';
-          card.style.top = (r.bottom + 14) + 'px';
-        }
+        card.style.left = '50%';
+        card.style.bottom = 'auto';
+        card.style.top = '42%';
         card.classList.add('show');
       }
     }
