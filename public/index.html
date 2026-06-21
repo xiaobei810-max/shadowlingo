@@ -12857,7 +12857,7 @@
       _obLift(recBtn);
       _obCoachAt(recBtn, 'Your turn — just say it 😄<span class="coachmark-hand-down">👇</span>', 'down', 'gotit');
       var _obC = document.querySelector('#onboard-coach .coachmark');
-      if (_obC) _obC.style.maxWidth = '200px';
+      if (_obC) { _obC.style.maxWidth = '260px'; _obC.style.whiteSpace = 'nowrap'; }
       _obNextHandler = null; // 末步无 Next：录音推进 / "Got it" 干净结束 / 底部 Skip 退出
       function onRec() {
         recBtn.removeEventListener('click', onRec);
