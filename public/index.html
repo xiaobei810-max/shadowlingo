@@ -12764,7 +12764,6 @@
     function _obStartFromCard() {
       var card = document.getElementById('onboard-card');
       if (card) card.classList.remove('show');
-      try { prewarmMic(); } catch(e) {} // acquire mic permission inside this user gesture
       _obStepListenNPC();
     }
 
@@ -13184,15 +13183,87 @@
       if (micStream && micStream.active) {
         _go(micStream, 0);          // stream already warm → start immediately
       } else {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (s) { _go(s, 2000); }) // cold start: 2 s countdown; overlay shows "2→1"
-          .catch(function (err) {
-            console.warn('[Rec] getUserMedia failed:', err && err.name);
-            var msg = (err && err.name === 'NotAllowedError')
-              ? '⚠️ 麦克风权限被拒绝，请在浏览器设置中允许'
-              : '⚠️ 无法访问麦克风，请检查设备';
-            _recError(msg);
+        // Reset button state while we check permissions / show pre-prompt
+        phase = 'idle'; busy = false;
+        var bn = document.getElementById('bn');
+        if (bn) { bn.textContent = '🎤 Record'; bn.classList.remove('active'); bn.disabled = false; }
+
+        function _showDenied() {
+          // Listen-only mode: leave all lesson UI intact, just disable Record
+          if (bn) bn.disabled = true;
+          var existing = document.getElementById('mic-denied-banner');
+          if (existing) return;
+          var banner = document.createElement('div');
+          banner.id = 'mic-denied-banner';
+          banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
+            'max-width:340px;width:90%;background:#1a1a2e;border:1.5px solid #e53e3e;border-radius:12px;' +
+            'padding:16px 18px;z-index:9999;font-size:13.5px;line-height:1.55;color:#e2e8f0;box-shadow:0 4px 24px rgba(0,0,0,0.5)';
+          banner.innerHTML =
+            '<div style="font-weight:700;margin-bottom:6px;">⚠️ Microphone access is blocked.</div>' +
+            '<div>To enable: tap the <b>address-bar icon</b> → <b>Allow Microphone</b> → <b>refresh</b>.</div>' +
+            '<div style="margin-top:6px;color:#a0aec0;font-size:12px;">麦克风被拒绝，请点击地址栏图标 → 允许麦克风 → 刷新</div>' +
+            '<div style="margin-top:10px;color:#68d391;font-size:12px;">You can still listen through the lesson below. 🎧</div>';
+          document.body.appendChild(banner);
+        }
+
+        function _doGetUserMedia() {
+          // Remove pre-prompt overlay before calling getUserMedia
+          var pp = document.getElementById('mic-preprompt-overlay');
+          if (pp) pp.parentNode.removeChild(pp);
+          // Re-arm busy state
+          phase = 'recording'; busy = true;
+          if (bn) { bn.textContent = '✕ Cancel'; bn.disabled = false; }
+          navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function (s) { _go(s, 2000); })
+            .catch(function (err) {
+              console.warn('[Rec] getUserMedia failed:', err && err.name);
+              if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+                phase = 'idle'; busy = false;
+                if (bn) { bn.textContent = '🎤 Record'; bn.classList.remove('active'); bn.disabled = true; }
+                _showDenied();
+              } else {
+                _recError('⚠️ Mic unavailable — please check your device. (无法访问麦克风，请检查设备)');
+              }
+            });
+        }
+
+        function _showPrePrompt() {
+          var overlay = document.createElement('div');
+          overlay.id = 'mic-preprompt-overlay';
+          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;' +
+            'display:flex;align-items:center;justify-content:center;padding:24px';
+          overlay.innerHTML =
+            '<div style="background:#111827;border:1px solid #1a2540;border-radius:16px;' +
+            'max-width:320px;width:100%;padding:28px 24px;text-align:center;color:#e2e8f0">' +
+            '<div style="font-size:2rem;margin-bottom:12px;">🎤</div>' +
+            '<div style="font-weight:700;font-size:1rem;margin-bottom:10px;line-height:1.4">' +
+            'EchoChinese needs your microphone to score your pronunciation.</div>' +
+            '<div style="font-size:0.88rem;color:#a0aec0;margin-bottom:6px;">Tap <b style="color:#e2e8f0">Allow</b> on the next prompt.</div>' +
+            '<div style="font-size:0.78rem;color:#4b5563;margin-bottom:22px;">麦克风用于发音打分，请在弹窗中点击"允许"</div>' +
+            '<button id="mic-preprompt-btn" style="background:#22c55e;color:#000;border:none;border-radius:10px;' +
+            'padding:13px 28px;font-size:0.97rem;font-weight:700;cursor:pointer;width:100%">' +
+            'Got it — Allow Microphone</button>' +
+            '</div>';
+          document.body.appendChild(overlay);
+          document.getElementById('mic-preprompt-btn').addEventListener('click', function () {
+            _doGetUserMedia();
           });
+        }
+
+        // Check if already denied (Safari may not support permissions.query — handle gracefully)
+        if (navigator.permissions && navigator.permissions.query) {
+          navigator.permissions.query({ name: 'microphone' }).then(function (result) {
+            if (result.state === 'denied') {
+              _showDenied();
+            } else {
+              _showPrePrompt(); // 'granted' or 'prompt'
+            }
+          }).catch(function () {
+            _showPrePrompt(); // Safari fallback: permissions.query unsupported
+          });
+        } else {
+          _showPrePrompt(); // Safari fallback
+        }
       }
     }
 
@@ -16243,7 +16314,6 @@
       if (dlpKaraTimerId) { clearInterval(dlpKaraTimerId); dlpKaraTimerId = null; }
       stopAudio();
       _clearAudioError(); // dismiss stale banner entering practice
-      prewarmMic(); // 保底预热：确保进入跟读前麦克风已就绪
       // 确保 tip-page 不遮挡跟读页（重新复习流程中可能残留）
       var tipEl = document.getElementById('tip-page');
       if (tipEl) tipEl.classList.remove('show');
@@ -16831,7 +16901,6 @@
     // ══════════════════════════════════════════════════════════════
 
     function startLesson() {
-      prewarmMic();
       var lesson     = LESSONS[lessonIdx];
       track('lesson_start', { lesson_number: lessonIdx + 1, lesson_id: lesson.id, lesson_title: lesson.title });
       var newChars   = lesson.newChars || [];
