@@ -13188,6 +13188,19 @@
         var bn = document.getElementById('bn');
         if (bn) { bn.textContent = '🎤 Record'; bn.classList.remove('active'); bn.disabled = false; }
 
+        function _showDeniedInline() {
+          // Collapsed inline hint below Record button — tapping re-opens full banner
+          var existing = document.getElementById('mic-blocked-hint');
+          if (existing) return;
+          var hint = document.createElement('div');
+          hint.id = 'mic-blocked-hint';
+          hint.style.cssText = 'text-align:center;margin-top:8px;font-size:12px;color:#fc8181;cursor:pointer;';
+          hint.textContent = '🎤 Mic blocked — tap to fix / 麦克风被拒绝，点击查看';
+          hint.addEventListener('click', function () { _showDenied(); });
+          var bnEl = document.getElementById('bn');
+          if (bnEl && bnEl.parentNode) bnEl.parentNode.insertBefore(hint, bnEl.nextSibling);
+        }
+
         function _showDenied() {
           // Listen-only mode: leave all lesson UI intact, just disable Record
           if (bn) bn.disabled = true;
@@ -13199,11 +13212,20 @@
             'max-width:340px;width:90%;background:#1a1a2e;border:1.5px solid #e53e3e;border-radius:12px;' +
             'padding:16px 18px;z-index:9999;font-size:13.5px;line-height:1.55;color:#e2e8f0;box-shadow:0 4px 24px rgba(0,0,0,0.5)';
           banner.innerHTML =
-            '<div style="font-weight:700;margin-bottom:6px;">⚠️ Microphone access is blocked.</div>' +
-            '<div>To enable: tap the <b>address-bar icon</b> → <b>Allow Microphone</b> → <b>refresh</b>.</div>' +
-            '<div style="margin-top:6px;color:#a0aec0;font-size:12px;">麦克风被拒绝，请点击地址栏图标 → 允许麦克风 → 刷新</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">' +
+              '<div style="font-weight:700;">⚠️ Microphone access is blocked.</div>' +
+              '<button id="mic-denied-close" style="background:none;border:none;color:#a0aec0;font-size:18px;' +
+                'line-height:1;cursor:pointer;padding:0 0 0 12px;flex-shrink:0;">✕</button>' +
+            '</div>' +
+            '<div>Your browser is blocking the microphone. Open your browser\'s <b>site settings</b> for ' +
+              '<b>echochinese.com</b>, set <b>Microphone</b> to <b>Allow</b>, then refresh.</div>' +
+            '<div style="margin-top:6px;color:#a0aec0;font-size:12px;">你的浏览器拦截了麦克风，请在浏览器的网站设置中将 echochinese.com 的麦克风改为允许，然后刷新</div>' +
             '<div style="margin-top:10px;color:#68d391;font-size:12px;">You can still listen through the lesson below. 🎧</div>';
           document.body.appendChild(banner);
+          document.getElementById('mic-denied-close').addEventListener('click', function () {
+            banner.parentNode.removeChild(banner);
+            _showDeniedInline();
+          });
         }
 
         function _doGetUserMedia() {
