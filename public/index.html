@@ -12750,7 +12750,6 @@
       if (mImg && !mImg.getAttribute('src')) mImg.src = MASCOT.point; // 抬翅"指"
       if (mask) mask.classList.add('show');
       if (skip) skip.classList.add('show');
-      if (box)  _obLift(box); // highlight Nora's bubble during the intro card too
       if (card) {
         // position card directly under the Nora bubble (covering the speed bar is fine)
         if (box) {
@@ -12820,8 +12819,8 @@
       var box = document.getElementById('sentence-box');
       var playBtn = document.getElementById('sentence-play-btn');
       if (!box || !playBtn) { _obTeardown(); return; }
-      _obLift(box); // whole bubble (line + play button) lifted above the mask
-      _obCoachAt(box, 'Now hear your line<span class="coachmark-hand-down">👇</span>', 'down', 'next');
+      _obLift(playBtn); // spotlight only the Play button, not the whole bubble
+      _obCoachAt(playBtn, 'Now hear your line<span class="coachmark-hand-down">👇</span>', 'down', 'next');
       // Next 与音频结束 poll 共用：幂等推进，撤本步监听+清 poll，防双重推进把人拽回
       var advanced = false;
       function advance() {
