@@ -10517,6 +10517,7 @@
     var mediaRecorder = null;   // current MediaRecorder (fresh per recording session)
     var micStream = null;       // MediaStream kept alive across recordings (no re-permission)
     var audioChunks = [];       // all chunks from recorder start (incl. countdown warmup)
+    var _micDenied = false;     // set true when mic permission is denied; persists across rounds
     var _isCapturing = false;   // true after countdown; gates UI state, not data collection
     var _flushPending = false;  // one-shot: capture the requestData() tail chunk
     var _countdownTimer = null;
@@ -13203,7 +13204,8 @@
 
         function _showDenied() {
           // Listen-only mode: leave all lesson UI intact, just disable Record
-          if (bn) bn.disabled = true;
+          _micDenied = true;
+          if (bn) { bn.disabled = true; bn.textContent = '🔒 Record'; }
           var existing = document.getElementById('mic-denied-banner');
           if (existing) return;
           var banner = document.createElement('div');
@@ -13259,9 +13261,10 @@
             'max-width:320px;width:100%;padding:28px 24px;text-align:center;color:#e2e8f0">' +
             '<div style="font-size:2rem;margin-bottom:12px;">🎤</div>' +
             '<div style="font-weight:700;font-size:1rem;margin-bottom:10px;line-height:1.4">' +
-            'EchoChinese needs your microphone to score your pronunciation.</div>' +
-            '<div style="font-size:0.88rem;color:#a0aec0;margin-bottom:6px;">Tap <b style="color:#e2e8f0">Allow</b> on the next prompt.</div>' +
-            '<div style="font-size:0.78rem;color:#4b5563;margin-bottom:22px;">麦克风用于发音打分，请在弹窗中点击"允许"</div>' +
+            'Allow microphone to score your pronunciation</div>' +
+            '<div style="font-size:0.88rem;color:#a0aec0;margin-bottom:8px;line-height:1.55;">EchoChinese gives you real-time feedback on every line — like a native speaker correcting you on the spot. Your recording is only used for scoring and is never saved.</div>' +
+            '<div style="font-size:0.78rem;color:#4b5563;margin-bottom:6px;">麦克风用于实时发音打分，录音不会被保存。</div>' +
+            '<div style="font-size:0.88rem;color:#a0aec0;margin-bottom:22px;">Tap <b style="color:#e2e8f0">"Allow"</b> on the next prompt.</div>' +
             '<button id="mic-preprompt-btn" style="background:#22c55e;color:#000;border:none;border-radius:10px;' +
             'padding:13px 28px;font-size:0.97rem;font-weight:700;cursor:pointer;width:100%">' +
             'Got it — Allow Microphone</button>' +
@@ -15782,7 +15785,7 @@
       // ── 切换前彻底清空上一轮评测残影 ──────────────
       if (el("eval-page"))        el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
-      if (el("bn"))     { el("bn").disabled = false;     el("bn").classList.remove("active");     el("bn").textContent = "🎤 Record"; }
+      if (el("bn"))     { el("bn").disabled = _micDenied; el("bn").classList.remove("active");     el("bn").textContent = _micDenied ? "🔒 Record" : "🎤 Record"; }
       if (el("bs"))     { el("bs").disabled = false;     el("bs").classList.remove("active");     el("bs").textContent = "▶ Listen"; }
       if (el("sentence-play-btn")) { el("sentence-play-btn").textContent = '▶ Play'; el("sentence-play-btn").classList.remove('playing'); }
       if (el("bm"))     el("bm").classList.remove("active");
