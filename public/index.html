@@ -5718,9 +5718,10 @@
     <div class="controls">
       <!-- 语速一次性引导提示（JS控制show/hide，不用absolute定位） -->
       <div id="speed-hint-row" style="display:none">
-        <div class="coachmark coachmark-arrow-down">
+        <div class="coachmark coachmark-arrow-down" style="position:relative;padding-right:30px;">
           Too fast? Drag to adjust speed
           <span class="coachmark-hand-down">👇</span>
+          <button id="speed-hint-close" style="position:absolute;top:50%;right:8px;transform:translateY(-50%);background:none;border:none;color:#a0aec0;font-size:18px;line-height:1;cursor:pointer;padding:0;flex-shrink:0;">✕</button>
         </div>
       </div>
       <!-- 速度条 -->
