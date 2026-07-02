@@ -1863,6 +1863,26 @@
     }
     #ending-locked-hint.show { display: block; }
 
+    @keyframes scoreReveal {
+      from { opacity: 0; transform: scale(0.7); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .avg-score-anim { animation: scoreReveal 0.35s ease-out forwards; }
+
+    #cg-hint-bubble {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      background: rgba(3,9,18,0.92); border: 1.5px solid rgba(34,197,94,0.5);
+      color: #22c55e; font-size: 13.5px; font-weight: 600; line-height: 1.45;
+      border-radius: 12px; padding: 10px 14px;
+      box-shadow: 0 0 20px rgba(34,197,94,0.18), 0 4px 18px rgba(0,0,0,0.5);
+      opacity: 0; transition: opacity 0.4s ease; margin-top: 8px;
+    }
+    #cg-hint-bubble.visible { opacity: 1; }
+    #cg-hint-close {
+      background: none; border: none; color: #a0aec0; font-size: 18px;
+      line-height: 1; cursor: pointer; padding: 0; flex-shrink: 0;
+    }
+
     /* ── 得分完成页（全屏，与其他页面统一布局） ────────────── */
     .overlay {
       display: none;
@@ -5798,7 +5818,11 @@
       <div class="completion-primary-btns">
         <button class="btn-restart" onclick="dismissOverlay()">Native Insider Tip →</button>
         <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ View HD CG</button>
-        <div id="ending-locked-hint">🔒 达到 80 分解锁原图 · Score 80 to Unlock CG</div>
+        <div id="ending-locked-hint">🔒 Score 80+ to unlock this scene in HD</div>
+        <div id="cg-hint-bubble" style="display:none">
+          <span>✨ You've unlocked the full scene — tap to see it in HD</span>
+          <button id="cg-hint-close" onclick="event.stopPropagation();document.getElementById('cg-hint-bubble').style.display='none'">✕</button>
+        </div>
       </div>
       <a class="btn-review-link" onclick="reviewLesson()">↺ Review</a>
     </div>
@@ -14298,8 +14322,23 @@
       var oColor = noPractice ? "#64748b" :
         overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
 
-      document.getElementById("avg-score").textContent = noPractice ? '--' : overall;
-      document.getElementById("avg-score").style.color = oColor;
+      var avgEl = document.getElementById("avg-score");
+      avgEl.style.color = oColor;
+      if (noPractice) {
+        avgEl.textContent = '--';
+      } else {
+        avgEl.textContent = '0';
+        avgEl.classList.remove('avg-score-anim');
+        void avgEl.offsetWidth; // reflow to restart animation
+        avgEl.classList.add('avg-score-anim');
+        var _scoreTarget = overall, _scoreStart = Date.now(), _scoreDur = 900;
+        (function _tick() {
+          var elapsed = Date.now() - _scoreStart;
+          if (elapsed >= _scoreDur) { avgEl.textContent = _scoreTarget; return; }
+          avgEl.textContent = Math.round(_scoreTarget * (elapsed / _scoreDur));
+          requestAnimationFrame(_tick);
+        })();
+      }
 
       var grade = noPractice ? "No Practice" :
         overall >= 90 ? "Excellent" :
@@ -14381,6 +14420,29 @@
             if (cgBg) cgBg.classList.add('reveal');
             if (btnCgView) { btnCgView.style.display = 'flex'; }
           }, 300);
+          // 1.3s 后淡入引导气泡
+          setTimeout(function() {
+            var bubble = document.getElementById('cg-hint-bubble');
+            if (!bubble) return;
+            bubble.style.display = 'flex';
+            void bubble.offsetWidth;
+            bubble.classList.add('visible');
+            // 点气泡本体关闭
+            bubble.addEventListener('click', function _bubbleClick(e) {
+              if (e.target.id === 'cg-hint-close') return; // 叉号有自己的 handler
+              bubble.style.display = 'none';
+              bubble.classList.remove('visible');
+              bubble.removeEventListener('click', _bubbleClick);
+            });
+            // 点 View HD CG 按钮也关闭气泡
+            if (btnCgView) {
+              btnCgView.addEventListener('click', function _cgClose() {
+                bubble.style.display = 'none';
+                bubble.classList.remove('visible');
+                btnCgView.removeEventListener('click', _cgClose);
+              }, true); // capture: 先于 viewCG 执行
+            }
+          }, 1300);
         } else {
           // 低分：图片保持模糊，显示解锁提示
           if (lockedHint) lockedHint.classList.add('show');
