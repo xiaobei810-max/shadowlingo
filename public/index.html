@@ -14421,11 +14421,13 @@
         return;
       }
 
-      // 辅助：用 stageIn animation 淡入元素
+      // 辅助：transition 淡入（直接写 inline opacity/transform，优先级最高）
       function _stageIn(el, delay) {
         if (!el) return;
         setTimeout(function() {
-          el.style.animation = 'stageIn 0.32s ease forwards';
+          el.style.transition = 'opacity 0.32s ease, transform 0.32s ease';
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
         }, delay);
       }
 
