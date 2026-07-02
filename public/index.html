@@ -5832,10 +5832,6 @@
         <button class="btn-restart" onclick="dismissOverlay()">Native Insider Tip →</button>
         <button class="btn-cg-view" id="btn-cg-view" onclick="viewCG(event)">✨ View HD CG</button>
         <div id="ending-locked-hint">🔒 Score 80+ to unlock this scene in HD</div>
-        <div id="cg-hint-bubble" style="display:none">
-          <span>✨ You've unlocked the full scene — tap to see it in HD</span>
-          <button id="cg-hint-close" onclick="event.stopPropagation();document.getElementById('cg-hint-bubble').style.display='none'">✕</button>
-        </div>
       </div>
       <a class="btn-review-link" onclick="reviewLesson()">↺ Review</a>
     </div>
@@ -14332,12 +14328,9 @@
       var oColor = noPractice ? "#64748b" :
         overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
 
-      // ── 文案内容赋值（不变） ─────────────────────────────────
-      var grade = noPractice ? "No Practice" :
-        overall >= 90 ? "Excellent" : overall >= 80 ? "Great" :
-        overall >= 70 ? "Good" : "Keep Going";
-      document.getElementById("score-grade").innerHTML = grade;
-      document.getElementById("score-grade").style.color = oColor;
+      // ── 文案内容赋值 ─────────────────────────────────────────
+      // #score-grade 已精简掉，隐藏确保不占布局位置
+      document.getElementById("score-grade").style.display = "none";
 
       if (noPractice) {
         document.getElementById("praise-block").innerHTML =
@@ -14413,17 +14406,15 @@
 
       // ── 入场动画编排 ─────────────────────────────────────────
       var avgEl      = document.getElementById("avg-score");
-      var gradeEl    = document.getElementById("score-grade");
       var praiseEl   = document.getElementById("praise-block");
       var btnRestart = document.querySelector('.btn-restart');
       var btnReview  = document.querySelector('.btn-review-link');
-      var bubble     = document.getElementById('cg-hint-bubble');
 
       // noPractice：跳过动画，全部静态显示
       if (noPractice) {
         avgEl.textContent = '--';
         avgEl.style.color = oColor;
-        [gradeEl, praiseEl, btnRestart, btnReview].forEach(function(el) {
+        [praiseEl, btnRestart, btnReview].forEach(function(el) {
           if (el) { el.style.opacity = '1'; el.style.transform = ''; }
         });
         if (coinRow && _coinRowVisible) coinRow.style.opacity = '1';
@@ -14439,12 +14430,10 @@
       }
 
       // 阶段 1：除 avg-score 外全部隐藏
-      [gradeEl, praiseEl, btnRestart, btnReview].forEach(function(el) {
+      [praiseEl, btnRestart, btnReview].forEach(function(el) {
         if (el) { el.style.opacity = '0'; el.style.transform = 'translateY(10px)'; }
       });
       if (_coinRowVisible && coinRow) { coinRow.style.opacity = '0'; coinRow.style.transform = 'translateY(10px)'; }
-      if (btnCgView) { /* already opacity:0 from above */ }
-      if (lockedHint) { /* stays display:none until classList.add('show') */ }
 
       // 分数从 0 滚动（约 0.9s）
       avgEl.style.color = oColor;
@@ -14469,58 +14458,33 @@
         requestAnimationFrame(_tick);
       })();
 
-      // 阶段 3：其余元素依次淡入（滚动结束后开始，间隔 130ms）
+      // 阶段 3：其余元素依次淡入（滚动结束后開始，间隔 130ms）
       function _runPhase3() {
-        var T = 60; // 滚动停下后稍等 60ms 开始淡入，流畅衔接
-        _stageIn(gradeEl,   T);
-        _stageIn(praiseEl,  T + 130);
+        var T = 60;
+        _stageIn(praiseEl,  T);
         if (_coinRowVisible && coinRow) {
-          _stageIn(coinRow, T + 260);
-          // coin 音效和弹跳动画与 coinRow 淡入同步，确保只触发一次
+          _stageIn(coinRow, T + 130);
           if (_sessionCoinsEarned > 0) {
             setTimeout(function() {
               var icon = document.getElementById('completion-coin-icon');
               if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
               playCoinSound(_sessionCoinsEarned);
-            }, T + 260);
+            }, T + 130);
           }
         }
-        _stageIn(btnRestart, T + 390);
+        _stageIn(btnRestart, T + 260);
 
         if (overall >= 80) {
-          // btnCgView 已在 300ms 设好 display:flex + opacity:0，此时直接 stageIn
-          _stageIn(btnCgView, T + 520);
-          _stageIn(btnReview, T + 650);
-          // 阶段 4：气泡弹跳（所有元素淡入后）
-          setTimeout(function() {
-            if (!bubble) return;
-            bubble.style.display = 'flex';
-            bubble.classList.remove('pop');
-            void bubble.offsetWidth;
-            bubble.classList.add('pop');
-            bubble.addEventListener('click', function _bubbleClick(e) {
-              if (e.target.id === 'cg-hint-close') return;
-              bubble.style.display = 'none';
-              bubble.classList.remove('pop');
-              bubble.removeEventListener('click', _bubbleClick);
-            });
-            if (btnCgView) {
-              btnCgView.addEventListener('click', function _cgClose() {
-                bubble.style.display = 'none';
-                bubble.classList.remove('pop');
-                btnCgView.removeEventListener('click', _cgClose);
-              }, true);
-            }
-          }, T + 1000);
+          _stageIn(btnCgView, T + 390);
+          _stageIn(btnReview, T + 520);
         } else {
-          // 低分：显示锁定提示 + Review
           if (lockedHint) {
             lockedHint.classList.add('show');
             lockedHint.style.opacity = '0';
             lockedHint.style.transform = 'translateY(10px)';
-            _stageIn(lockedHint, T + 520);
+            _stageIn(lockedHint, T + 390);
           }
-          _stageIn(btnReview, T + 650);
+          _stageIn(btnReview, T + 520);
         }
       }
     }
