@@ -14329,26 +14329,26 @@
       var sum = sessionScores.reduce(function (a, b) { return a + b; }, 0);
       var overall = Math.min(100, totalSentences > 0 ? Math.round(sum / totalSentences) : 0);
       var noPractice = recorded === 0;
-      var oColor = noPractice ? “#64748b” :
-        overall >= 85 ? “#22c55e” : overall >= 70 ? “#facc15” : “#f87171”;
+      var oColor = noPractice ? "#64748b" :
+        overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
 
       // ── 文案内容赋值（不变） ─────────────────────────────────
-      var grade = noPractice ? “No Practice” :
-        overall >= 90 ? “Excellent” : overall >= 80 ? “Great” :
-        overall >= 70 ? “Good” : “Keep Going”;
-      document.getElementById(“score-grade”).innerHTML = grade;
-      document.getElementById(“score-grade”).style.color = oColor;
+      var grade = noPractice ? "No Practice" :
+        overall >= 90 ? "Excellent" : overall >= 80 ? "Great" :
+        overall >= 70 ? "Good" : "Keep Going";
+      document.getElementById("score-grade").innerHTML = grade;
+      document.getElementById("score-grade").style.color = oColor;
 
       if (noPractice) {
-        document.getElementById(“praise-block”).innerHTML =
-          “<div style='font-size:15px;font-weight:600;color:#94a3b8;'>Try recording each sentence to see your score!</div>”;
+        document.getElementById("praise-block").innerHTML =
+          "<div style='font-size:15px;font-weight:600;color:#94a3b8;'>Try recording each sentence to see your score!</div>";
       } else {
         var praiseSub, praiseColor;
-        if (overall >= 90)      { praiseSub = “Almost like a local!”;           praiseColor = “#22c55e”; }
-        else if (overall >= 60) { praiseSub = “Good job, keep it up!”;          praiseColor = “#facc15”; }
-        else                    { praiseSub = “Keep practicing — you'll get there!”; praiseColor = “#64748b”; }
-        document.getElementById(“praise-block”).innerHTML =
-          “<div style='font-size:15px;font-weight:600;color:” + praiseColor + “;'>” + praiseSub + “</div>”;
+        if (overall >= 90)      { praiseSub = "Almost like a local!";           praiseColor = "#22c55e"; }
+        else if (overall >= 60) { praiseSub = "Good job, keep it up!";          praiseColor = "#facc15"; }
+        else                    { praiseSub = "Keep practicing — you'll get there!"; praiseColor = "#64748b"; }
+        document.getElementById("praise-block").innerHTML =
+          "<div style='font-size:15px;font-weight:600;color:" + praiseColor + ";'>" + praiseSub + "</div>";
       }
 
       // ── Coin row 内容（不变），display 由动画阶段控制 ─────────
@@ -14388,7 +14388,7 @@
 
       if (!noPractice) {
         if (cgBg && LESSONS[lessonIdx] && LESSONS[lessonIdx].cgImage) {
-          cgBg.style.backgroundImage = “url('” + LESSONS[lessonIdx].cgImage + “')”;
+          cgBg.style.backgroundImage = "url('" + LESSONS[lessonIdx].cgImage + "')";
         }
         if (cgBg) cgBg.classList.add('show');
         if (ovEl) ovEl.classList.add('cg-active');
@@ -14407,14 +14407,14 @@
 
       // ── 基础显示 ─────────────────────────────────────────────
       markLessonCompleted(lessonIdx);
-      document.getElementById(“overlay”).classList.add(“show”);
+      document.getElementById("overlay").classList.add("show");
       if (!noPractice) launchFireworks();
       try { maybeShowEmailPrompts(lessonIdx); } catch(e) {}
 
       // ── 入场动画编排 ─────────────────────────────────────────
-      var avgEl      = document.getElementById(“avg-score”);
-      var gradeEl    = document.getElementById(“score-grade”);
-      var praiseEl   = document.getElementById(“praise-block”);
+      var avgEl      = document.getElementById("avg-score");
+      var gradeEl    = document.getElementById("score-grade");
+      var praiseEl   = document.getElementById("praise-block");
       var btnRestart = document.querySelector('.btn-restart');
       var btnReview  = document.querySelector('.btn-review-link');
       var bubble     = document.getElementById('cg-hint-bubble');
