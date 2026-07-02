@@ -1863,11 +1863,24 @@
     }
     #ending-locked-hint.show { display: block; }
 
-    @keyframes scoreReveal {
-      from { opacity: 0; transform: scale(0.7); }
-      to   { opacity: 1; transform: scale(1); }
+    @keyframes scorePop {
+      0%  { transform: scale(1); }
+      35% { transform: scale(1.22); }
+      65% { transform: scale(0.92); }
+      85% { transform: scale(1.06); }
+      100%{ transform: scale(1); }
     }
-    .avg-score-anim { animation: scoreReveal 0.35s ease-out forwards; }
+    @keyframes stageIn {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes bubblePop {
+      0%  { opacity:0; transform:scale(0.55); }
+      60% { opacity:1; transform:scale(1.1); }
+      80% { transform:scale(0.95); }
+      100%{ opacity:1; transform:scale(1); }
+    }
+    .score-pop { animation: scorePop 0.45s cubic-bezier(.36,.07,.19,.97) forwards; }
 
     #cg-hint-bubble {
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -1875,9 +1888,9 @@
       color: #22c55e; font-size: 13.5px; font-weight: 600; line-height: 1.45;
       border-radius: 12px; padding: 10px 14px;
       box-shadow: 0 0 20px rgba(34,197,94,0.18), 0 4px 18px rgba(0,0,0,0.5);
-      opacity: 0; transition: opacity 0.4s ease; margin-top: 8px;
+      margin-top: 8px; opacity: 0;
     }
-    #cg-hint-bubble.visible { opacity: 1; }
+    #cg-hint-bubble.pop { animation: bubblePop 0.5s cubic-bezier(.36,.07,.19,.97) forwards; }
     #cg-hint-close {
       background: none; border: none; color: #a0aec0; font-size: 18px;
       line-height: 1; cursor: pointer; padding: 0; flex-shrink: 0;
@@ -14302,8 +14315,7 @@
     }
 
     function showCompletion() {
-      // 对话模式下按“可评分轮次”（含 Nora 跟读句的页）计总分；
-      // 整页无 Nora 的页（如 L3 末页）不计入分母，避免无录音页拖低均分。
+      // ── 分数计算（不变） ─────────────────────────────────────
       var scorableRounds = 0;
       if (dialogMode && dialogRounds && dialogRounds.length) {
         for (var _r = 0; _r < dialogRounds.length; _r++) {
@@ -14314,150 +14326,203 @@
         ? (scorableRounds > 0 ? scorableRounds : getDialogRoundCount())
         : LESSONS[lessonIdx].sentences.length;
       var recorded = sessionScores.filter(function (v) { return typeof v === 'number'; }).length;
-      // Skipped sentences count as 0 — divide by total, not just recorded
       var sum = sessionScores.reduce(function (a, b) { return a + b; }, 0);
       var overall = Math.min(100, totalSentences > 0 ? Math.round(sum / totalSentences) : 0);
-
       var noPractice = recorded === 0;
-      var oColor = noPractice ? "#64748b" :
-        overall >= 85 ? "#22c55e" : overall >= 70 ? "#facc15" : "#f87171";
+      var oColor = noPractice ? “#64748b” :
+        overall >= 85 ? “#22c55e” : overall >= 70 ? “#facc15” : “#f87171”;
 
-      var avgEl = document.getElementById("avg-score");
-      avgEl.style.color = oColor;
-      if (noPractice) {
-        avgEl.textContent = '--';
-      } else {
-        avgEl.textContent = '0';
-        avgEl.classList.remove('avg-score-anim');
-        void avgEl.offsetWidth; // reflow to restart animation
-        avgEl.classList.add('avg-score-anim');
-        var _scoreTarget = overall, _scoreStart = Date.now(), _scoreDur = 900;
-        (function _tick() {
-          var elapsed = Date.now() - _scoreStart;
-          if (elapsed >= _scoreDur) { avgEl.textContent = _scoreTarget; return; }
-          avgEl.textContent = Math.round(_scoreTarget * (elapsed / _scoreDur));
-          requestAnimationFrame(_tick);
-        })();
-      }
-
-      var grade = noPractice ? "No Practice" :
-        overall >= 90 ? "Excellent" :
-        overall >= 80 ? "Great" :
-        overall >= 70 ? "Good" : "Keep Going";
-      document.getElementById("score-grade").innerHTML = grade;
-      document.getElementById("score-grade").style.color = oColor;
+      // ── 文案内容赋值（不变） ─────────────────────────────────
+      var grade = noPractice ? “No Practice” :
+        overall >= 90 ? “Excellent” : overall >= 80 ? “Great” :
+        overall >= 70 ? “Good” : “Keep Going”;
+      document.getElementById(“score-grade”).innerHTML = grade;
+      document.getElementById(“score-grade”).style.color = oColor;
 
       if (noPractice) {
-        document.getElementById("praise-block").innerHTML =
-          "<div style='font-size:15px;font-weight:600;color:#94a3b8;'>Try recording each sentence to see your score!</div>";
+        document.getElementById(“praise-block”).innerHTML =
+          “<div style='font-size:15px;font-weight:600;color:#94a3b8;'>Try recording each sentence to see your score!</div>”;
       } else {
         var praiseSub, praiseColor;
-        if (overall >= 90) {
-          praiseSub   = "Almost like a local!";
-          praiseColor = "#22c55e";
-        } else if (overall >= 60) {
-          praiseSub   = "Good job, keep it up!";
-          praiseColor = "#facc15";
-        } else {
-          praiseSub   = "Keep practicing — you'll get there!";
-          praiseColor = "#64748b";
-        }
-        document.getElementById("praise-block").innerHTML =
-          "<div style='font-size:15px;font-weight:600;color:" + praiseColor + ";'>" + praiseSub + "</div>";
+        if (overall >= 90)      { praiseSub = “Almost like a local!”;           praiseColor = “#22c55e”; }
+        else if (overall >= 60) { praiseSub = “Good job, keep it up!”;          praiseColor = “#facc15”; }
+        else                    { praiseSub = “Keep practicing — you'll get there!”; praiseColor = “#64748b”; }
+        document.getElementById(“praise-block”).innerHTML =
+          “<div style='font-size:15px;font-weight:600;color:” + praiseColor + “;'>” + praiseSub + “</div>”;
       }
 
-      // 本课回声币汇总（始终显示，0币也展示）
+      // ── Coin row 内容（不变），display 由动画阶段控制 ─────────
       var coinRow  = document.getElementById('completion-coin-row');
       var coinText = document.getElementById('completion-coin-text');
       var coinSub  = document.getElementById('completion-coin-sub');
-      // 更新顶部 header 的课序标签
+      var _coinRowVisible = false;
       if (coinRow && !noPractice) {
         var coinFloat = document.getElementById('completion-coin-float');
-        if (coinFloat) coinFloat.style.display = ''; // reset in case previous run hid it
+        if (coinFloat) coinFloat.style.display = '';
         if (_sessionCoinsEarned > 0) {
           coinText.textContent = '+' + _sessionCoinsEarned + ' Coins';
           if (coinSub) coinSub.style.display = 'none';
           coinRow.style.display = 'flex';
-          setTimeout(function() {
-            var icon = document.getElementById('completion-coin-icon');
-            if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
-            playCoinSound(_sessionCoinsEarned);
-          }, 600);
+          _coinRowVisible = true;
         } else {
-          // 0 币：展示但不显示动画硬币
           coinText.textContent = 'Coins: 0';
           coinSub.textContent  = '';
           coinRow.style.display = 'flex';
-          // 隐藏大硬币，只留文字
-          var coinFloat = document.getElementById('completion-coin-float');
-          if (coinFloat) coinFloat.style.display = 'none';
+          var coinFloat2 = document.getElementById('completion-coin-float');
+          if (coinFloat2) coinFloat2.style.display = 'none';
+          _coinRowVisible = true;
         }
       } else if (coinRow) {
         coinRow.style.display = 'none';
       }
 
-      // ── 结尾 CG 奖励 ─────────────────────────────────────────
+      // ── CG 背景 / 按钮重置（不变） ───────────────────────────
       var cgBg      = document.getElementById('ending-cg-bg');
       var btnCgView = document.getElementById('btn-cg-view');
       var lockedHint = document.getElementById('ending-locked-hint');
       var ovEl       = document.getElementById('overlay');
-      // 先全部重置（防重复触发）
       if (cgBg)      { cgBg.classList.remove('reveal'); }
-      if (btnCgView) { btnCgView.style.display = 'none'; }
+      if (btnCgView) { btnCgView.style.display = 'none'; btnCgView.style.opacity = ''; }
       if (lockedHint){ lockedHint.classList.remove('show'); }
       if (ovEl)      { ovEl.classList.remove('cg-active'); }
 
       if (!noPractice) {
-        // 动态设置结尾 CG 背景为本课图片（每课独立）
         if (cgBg && LESSONS[lessonIdx] && LESSONS[lessonIdx].cgImage) {
-          cgBg.style.backgroundImage = "url('" + LESSONS[lessonIdx].cgImage + "')";
+          cgBg.style.backgroundImage = “url('” + LESSONS[lessonIdx].cgImage + “')”;
         }
-        if (cgBg)  cgBg.classList.add('show');
-        if (ovEl)  ovEl.classList.add('cg-active');
+        if (cgBg) cgBg.classList.add('show');
+        if (ovEl) ovEl.classList.add('cg-active');
         if (overall >= 80) {
-          // 高分：0.3s 后模糊变清晰，同时显示 CG 按钮
+          // CG 背景 blur→clear 保持 300ms（视觉背景，不影响卡片动画）
+          setTimeout(function() { if (cgBg) cgBg.classList.add('reveal'); }, 300);
+          // btnCgView 在 300ms 设 display:flex 但先保持 opacity:0，由阶段 3 淡入
+          if (btnCgView) btnCgView.style.opacity = '0';
           setTimeout(function() {
-            if (cgBg) cgBg.classList.add('reveal');
             if (btnCgView) { btnCgView.style.display = 'flex'; }
           }, 300);
-          // 1.3s 后淡入引导气泡
-          setTimeout(function() {
-            var bubble = document.getElementById('cg-hint-bubble');
-            if (!bubble) return;
-            bubble.style.display = 'flex';
-            void bubble.offsetWidth;
-            bubble.classList.add('visible');
-            // 点气泡本体关闭
-            bubble.addEventListener('click', function _bubbleClick(e) {
-              if (e.target.id === 'cg-hint-close') return; // 叉号有自己的 handler
-              bubble.style.display = 'none';
-              bubble.classList.remove('visible');
-              bubble.removeEventListener('click', _bubbleClick);
-            });
-            // 点 View HD CG 按钮也关闭气泡
-            if (btnCgView) {
-              btnCgView.addEventListener('click', function _cgClose() {
-                bubble.style.display = 'none';
-                bubble.classList.remove('visible');
-                btnCgView.removeEventListener('click', _cgClose);
-              }, true); // capture: 先于 viewCG 执行
-            }
-          }, 1300);
-        } else {
-          // 低分：图片保持模糊，显示解锁提示
-          if (lockedHint) lockedHint.classList.add('show');
         }
       } else {
         if (cgBg) cgBg.classList.remove('show');
       }
 
-      markLessonCompleted(lessonIdx); // 解锁下一课
-      document.getElementById("overlay").classList.add("show");
+      // ── 基础显示 ─────────────────────────────────────────────
+      markLessonCompleted(lessonIdx);
+      document.getElementById(“overlay”).classList.add(“show”);
       if (!noPractice) launchFireworks();
-      // 金币提示气泡：不论本课得币多少，只要是首次看到成绩单就出现
-      // 金币提示气泡已下线（已被一次性解锁动画取代）
-      // 邮箱触发：最后一课 → 全屏页；单元最后一课 → 小卡片
       try { maybeShowEmailPrompts(lessonIdx); } catch(e) {}
+
+      // ── 入场动画编排 ─────────────────────────────────────────
+      var avgEl      = document.getElementById(“avg-score”);
+      var gradeEl    = document.getElementById(“score-grade”);
+      var praiseEl   = document.getElementById(“praise-block”);
+      var btnRestart = document.querySelector('.btn-restart');
+      var btnReview  = document.querySelector('.btn-review-link');
+      var bubble     = document.getElementById('cg-hint-bubble');
+
+      // noPractice：跳过动画，全部静态显示
+      if (noPractice) {
+        avgEl.textContent = '--';
+        avgEl.style.color = oColor;
+        [gradeEl, praiseEl, btnRestart, btnReview].forEach(function(el) {
+          if (el) { el.style.opacity = '1'; el.style.transform = ''; }
+        });
+        if (coinRow && _coinRowVisible) coinRow.style.opacity = '1';
+        return;
+      }
+
+      // 辅助：用 stageIn animation 淡入元素
+      function _stageIn(el, delay) {
+        if (!el) return;
+        setTimeout(function() {
+          el.style.animation = 'stageIn 0.32s ease forwards';
+        }, delay);
+      }
+
+      // 阶段 1：除 avg-score 外全部隐藏
+      [gradeEl, praiseEl, btnRestart, btnReview].forEach(function(el) {
+        if (el) { el.style.opacity = '0'; el.style.transform = 'translateY(10px)'; }
+      });
+      if (_coinRowVisible && coinRow) { coinRow.style.opacity = '0'; coinRow.style.transform = 'translateY(10px)'; }
+      if (btnCgView) { /* already opacity:0 from above */ }
+      if (lockedHint) { /* stays display:none until classList.add('show') */ }
+
+      // 分数从 0 滚动（约 0.9s）
+      avgEl.style.color = oColor;
+      avgEl.style.opacity = '1';
+      avgEl.style.transform = '';
+      avgEl.textContent = '0';
+
+      var _scoreTarget = overall, _scoreStart = Date.now(), _scoreDur = 900;
+      (function _tick() {
+        var elapsed = Date.now() - _scoreStart;
+        if (elapsed >= _scoreDur) {
+          avgEl.textContent = _scoreTarget;
+          // 阶段 2：定格 → 金色 + 弹跳
+          avgEl.style.color = '#FFD700';
+          avgEl.classList.remove('score-pop');
+          void avgEl.offsetWidth;
+          avgEl.classList.add('score-pop');
+          _runPhase3();
+          return;
+        }
+        avgEl.textContent = Math.round(_scoreTarget * (elapsed / _scoreDur));
+        requestAnimationFrame(_tick);
+      })();
+
+      // 阶段 3：其余元素依次淡入（滚动结束后开始，间隔 130ms）
+      function _runPhase3() {
+        var T = 60; // 滚动停下后稍等 60ms 开始淡入，流畅衔接
+        _stageIn(gradeEl,   T);
+        _stageIn(praiseEl,  T + 130);
+        if (_coinRowVisible && coinRow) {
+          _stageIn(coinRow, T + 260);
+          // coin 音效和弹跳动画与 coinRow 淡入同步，确保只触发一次
+          if (_sessionCoinsEarned > 0) {
+            setTimeout(function() {
+              var icon = document.getElementById('completion-coin-icon');
+              if (icon) { icon.classList.remove('coin-pop-anim'); void icon.offsetWidth; icon.classList.add('coin-pop-anim'); }
+              playCoinSound(_sessionCoinsEarned);
+            }, T + 260);
+          }
+        }
+        _stageIn(btnRestart, T + 390);
+
+        if (overall >= 80) {
+          // btnCgView 已在 300ms 设好 display:flex + opacity:0，此时直接 stageIn
+          _stageIn(btnCgView, T + 520);
+          _stageIn(btnReview, T + 650);
+          // 阶段 4：气泡弹跳（所有元素淡入后）
+          setTimeout(function() {
+            if (!bubble) return;
+            bubble.style.display = 'flex';
+            bubble.classList.remove('pop');
+            void bubble.offsetWidth;
+            bubble.classList.add('pop');
+            bubble.addEventListener('click', function _bubbleClick(e) {
+              if (e.target.id === 'cg-hint-close') return;
+              bubble.style.display = 'none';
+              bubble.classList.remove('pop');
+              bubble.removeEventListener('click', _bubbleClick);
+            });
+            if (btnCgView) {
+              btnCgView.addEventListener('click', function _cgClose() {
+                bubble.style.display = 'none';
+                bubble.classList.remove('pop');
+                btnCgView.removeEventListener('click', _cgClose);
+              }, true);
+            }
+          }, T + 1000);
+        } else {
+          // 低分：显示锁定提示 + Review
+          if (lockedHint) {
+            lockedHint.classList.add('show');
+            lockedHint.style.opacity = '0';
+            lockedHint.style.transform = 'translateY(10px)';
+            _stageIn(lockedHint, T + 520);
+          }
+          _stageIn(btnReview, T + 650);
+        }
+      }
     }
 
     function showTipPage() {
