@@ -13273,10 +13273,12 @@
         // Check if already denied (Safari may not support permissions.query — handle gracefully)
         if (navigator.permissions && navigator.permissions.query) {
           navigator.permissions.query({ name: 'microphone' }).then(function (result) {
-            if (result.state === 'denied') {
+            if (result.state === 'granted') {
+              _doGetUserMedia(); // already authorised — skip bubble
+            } else if (result.state === 'denied') {
               _showDenied();
             } else {
-              _showPrePrompt(); // 'granted' or 'prompt'
+              _showPrePrompt(); // 'prompt' (never asked) — only time bubble should appear
             }
           }).catch(function () {
             _showPrePrompt(); // Safari fallback: permissions.query unsupported
