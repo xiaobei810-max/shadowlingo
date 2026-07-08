@@ -15496,8 +15496,9 @@
       stopAudio();
       var cacheKey = role + ':' + (rate || 1.0).toFixed(2) + ':' + text;
 
-      // ── Static audio shortcut (only at normal speed 1.0×) ──────
-      if (Math.abs((rate || 1.0) - 1.0) < 0.05) {
+      // ── Static audio shortcut：任何速度都优先用预生成正版录音，靠 playbackRate 变速
+      // （与角色介绍页一致）；慢速时不再退回 Edge TTS 免费版，避免林晚等音源机械音 ──
+      if (true) {
         var staticUrl = getStaticAudioUrl(text);
         if (staticUrl) {
           // Reuse pre-buffered Audio element if it already has data, else create fresh
