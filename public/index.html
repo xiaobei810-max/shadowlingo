@@ -16074,12 +16074,12 @@
           if (getStaticAudioUrl(item.zh)) return; // 有本地静态音频，无需预取TTS
           var _pnd = _normD(item);
           var role = (_pnd.role === 'learner') ? 'learner' : _speakerRole(_pnd._sid || item.speaker || item.name);
-          var key  = role + ':1.00:' + item.zh;
+          var key  = role + ':' + slowSpeed.toFixed(2) + ':' + item.zh;
           if (_ttsCache[key]) return; // 已缓存，跳过
           fetch('/api/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: item.zh, role: role, rate: 1.0 })
+            body: JSON.stringify({ text: item.zh, role: role, rate: slowSpeed })
           })
           .then(function(r) { return r.ok ? r.blob() : null; })
           .then(function(blob) { if (blob) _ttsCache[key] = URL.createObjectURL(blob); })
@@ -16369,10 +16369,10 @@
       if (plpNextD && !getStaticAudioUrl(_plpNextZh)) {
         var plpNextNd = _normD(plpNextD);
         var plpNextRole = (plpNextNd.role === 'learner') ? 'learner' : _speakerRole(plpNextNd._sid || plpNextD.speaker || plpNextD.name);
-        var plpNextKey = plpNextRole + ':1.00:' + _plpNextZh;
+        var plpNextKey = plpNextRole + ':' + slowSpeed.toFixed(2) + ':' + _plpNextZh;
         if (!_ttsCache[plpNextKey]) {
           fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: _plpNextZh, role: plpNextRole, rate: 1.0 }) })
+            body: JSON.stringify({ text: _plpNextZh, role: plpNextRole, rate: slowSpeed }) })
           .then(function (r) { return r.ok ? r.blob() : null; })
           .then(function (blob) { if (blob) _ttsCache[plpNextKey] = URL.createObjectURL(blob); })
           .catch(function () {});
