@@ -15331,10 +15331,10 @@
       var nextD = dlpSeq[idx + 1] ? _normD(dlpSeq[idx + 1]) : null;
       if (nextD && !getStaticAudioUrl(nextD.zh)) {
         var nextRole = nextD.role === 'local' ? _speakerRole(nextD._sid || nextD.speaker) : 'learner';
-        var nextKey  = nextRole + ':1.00:' + nextD.zh;
+        var nextKey  = nextRole + ':' + slowSpeed.toFixed(2) + ':' + nextD.zh;
         if (!_ttsCache[nextKey]) {
           fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: nextD.zh, role: nextRole, rate: 1.0 }) })
+            body: JSON.stringify({ text: nextD.zh, role: nextRole, rate: slowSpeed }) })
           .then(function (r) { return r.ok ? r.blob() : null; })
           .then(function (blob) { if (blob) _ttsCache[nextKey] = URL.createObjectURL(blob); })
           .catch(function () {});
