@@ -273,6 +273,19 @@ for li, lesson in enumerate(LESSONS):
         audio_partial.append((map_key, title, covered, len(dia), missing))
 
 
+# ── TTS 一致性守门：防止「延迟/机械音」回退 ─────────────────────────────
+# 现行架构（af8ecc5）：所有 /api/tts 一律 rate=1.0，cacheKey 恒用 :1.00:（rate 不进 key，
+# 慢速由客户端 playbackRate 实现）。若有人把预取/播放改回 slowSpeed，会同时重现：
+#   ① 慢速服务端合成 → 机械音   ② 预取与播放 key 不匹配 → 缓存命不中 → 首播延迟。
+# 这里把这两种回退写法升级为阻断级错误，push 时直接挡住。
+if "rate: slowSpeed" in src:
+    err("tts", "发现 `rate: slowSpeed` → 会重现慢速服务端合成(机械音)+cacheKey mismatch(延迟)。"
+               "所有 /api/tts 预取/播放必须 rate=1.0，慢速交给客户端 playbackRate。")
+if "slowSpeed.toFixed" in src:
+    err("tts", "发现 `slowSpeed.toFixed` → cacheKey 引入了 slowSpeed，预取与播放 key 不匹配、"
+               "缓存永命不中 → 首播延迟回退。cacheKey 必须恒用 :1.00:。")
+
+
 # ── 输出报告 ────────────────────────────────────────────────────────
 print(f"\n校验 {len(LESSONS)} 课 · {sum(len(l.get('sentences', [])) for l in LESSONS)} 句\n")
 
