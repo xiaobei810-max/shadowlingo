@@ -1744,13 +1744,15 @@
     /* keyword highlight — bold white, works in both zh and en */
     .tip-hl { font-weight: 700; color: #ffffff; font-style: normal; }
     .tip-footer {
-      padding: 16px 20px; border-top: 1px solid var(--border);
-      display: flex; gap: 10px; flex-shrink: 0;
+      padding: 16px 12px; border-top: 1px solid var(--border);
+      display: flex; gap: 6px; flex-shrink: 0;
+      width: 100%; max-width: 480px; box-sizing: border-box;
     }
     .tip-btn {
-      flex: 1; padding: 16px 12px; border-radius: 14px;
-      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      flex: 1; min-width: 0; padding: 16px 6px; border-radius: 14px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
       line-height: 1; text-align: center; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
     .tip-btn-back {
       background: transparent; border: 1.5px solid var(--border); color: var(--text);
@@ -14557,6 +14559,18 @@
       try { closeUnitEmailCard(); } catch(e) {}
     }
 
+    // 结算/地道指南页「后退一页」→ 回到跟读页（第2步最后一轮），保留本课进度与得分
+    function tipBack() {
+      document.getElementById("tip-page").classList.remove("show");
+      document.getElementById("overlay").classList.remove("show"); // 关掉叠加的得分弹窗
+      _resetEndingCg();
+      stopFireworks();
+      dialogStep = 2;
+      var last = getDialogRoundCount() - 1;
+      dialogRoundIdx = last < 0 ? 0 : last;
+      renderDialogYourTurn();
+    }
+
     function tipReturn() {
       document.getElementById("tip-page").classList.remove("show");
       document.getElementById("overlay").classList.remove("show");
@@ -18252,8 +18266,9 @@
       <div id="tip-inner-content"></div>
     </div>
     <div class="tip-footer">
-      <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ Back to Start</button>
-      <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">Next Lesson ▶</button>
+      <button class="tip-btn tip-btn-back" onclick="tipBack()">◀ Prev</button>
+      <button class="tip-btn tip-btn-back" onclick="tipReturn()">↩ Start</button>
+      <button class="tip-btn tip-btn-next" onclick="tipNextLesson()">Next ▶</button>
     </div>
   </div>
 
