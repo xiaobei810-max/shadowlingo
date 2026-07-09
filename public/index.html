@@ -17104,19 +17104,7 @@
       // 顶部 bar 同步（原 fc-count 已移至顶部 header-right）
       var fcTopCount = document.getElementById('fc-top-count');
       if (fcTopCount) fcTopCount.textContent = (fcIdx + 1) + ' / ' + vocab.length;
-      var fcTopProg = document.getElementById('fc-top-prog');
-      if (fcTopProg) fcTopProg.style.width = Math.round(fcIdx / vocab.length * 100) + '%';
       document.getElementById('fc-next-btn').textContent = 'Next ▶';
-      // animate timer bar
-      var fill = document.getElementById('fc-timer-fill');
-      fill.style.transition = 'none';
-      fill.style.width = '100%';
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-          fill.style.transition = 'width ' + (FC_DURATION / 1000) + 's linear';
-          fill.style.width = '0%';
-        });
-      });
       // Preload TTS so "朗读" plays instantly on click
       var vocabRole = v.role || 'local';
       var cacheKey = vocabRole + ':1.00:' + v.zh;
@@ -17139,9 +17127,7 @@
           speakAzure(vAuto.zh, vAuto.role || 'local', 1.0, restore, null);
         }, 300);
       })(fcIdx);
-      // auto-advance
-      if (fcTimer) clearTimeout(fcTimer);
-      fcTimer = setTimeout(fcNext, FC_DURATION);
+      // 不自动翻页：由用户点 Next/Prev/Skip 自行控制节奏
     }
 
     function fcNext() {
@@ -17926,13 +17912,11 @@
           </div>
         </div>
       </div>
-      <div class="pth-bar-wrap"><div class="pth-bar-fill" id="fc-top-prog" style="width:0%"></div></div>
     </div>
     <div class="fc-inner">
       <div class="fc-header">
         <div class="fc-title">⚡ Key Vocabulary</div>
       </div>
-      <div class="fc-timer-bar"><div class="fc-timer-fill" id="fc-timer-fill"></div></div>
       <div class="fc-card">
         <div class="fc-zh" id="fc-zh">不好意思</div>
         <div class="fc-py" id="fc-py">bù hǎo yì si</div>
