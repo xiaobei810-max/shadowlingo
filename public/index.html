@@ -14967,6 +14967,7 @@
     function initDialogMode() {
       setStepTitle("第1步：先听一遍 👂", "跟着完整对话先感受语气");
       dialogLessonMeta = buildLessonMeta(LESSONS[lessonIdx] || LESSONS[0]);
+      _prefetchDlpTTS(dialogLessonMeta && dialogLessonMeta.dialogue);  // 进课即预取诺拉等无录音句
       buildDialogRounds();
       renderDialogStep1Intro();
     }
@@ -15398,6 +15399,31 @@
         }, i * 80);
       });
       console.log('[Audio] Prebuffering', list.length, 'files for', lessonId);
+    }
+
+    // 批量预取本课所有「无静态录音」的句子（尤其诺拉/learner —— 她是"你的角色"，
+    // 永远没有真人录音、每句必走 TTS）。进课即在后台把整课备好，轮到诺拉时直接命中
+    // 缓存，消除首播延迟。key/rate 与 speakAzure 播放端一致（rate=1.0 / key=:1.00:）。
+    function _prefetchDlpTTS(dialogue) {
+      if (!dialogue || !dialogue.length) return;
+      var delay = 0;
+      dialogue.forEach(function (raw) {
+        var d = _normD(raw);
+        var zh = d.zh;
+        if (!zh || getStaticAudioUrl(zh)) return;  // 有真人录音的句子跳过
+        var role = (d.role === 'local') ? _speakerRole(d._sid || d.speaker) : 'learner';
+        var key = role + ':1.00:' + zh;
+        if (_ttsCache[key]) return;                // 已缓存跳过（幂等，可重复调用）
+        setTimeout(function () {
+          if (_ttsCache[key]) return;
+          fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: zh, role: role, rate: 1.0 }) })
+          .then(function (r) { return r.ok ? r.blob() : null; })
+          .then(function (blob) { if (blob) _ttsCache[key] = URL.createObjectURL(blob); })
+          .catch(function () {});
+        }, delay);
+        delay += 150;  // 错开发起，避免瞬间并发过多
+      });
     }
 
     function _loadAudioMap() {
