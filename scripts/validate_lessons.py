@@ -212,8 +212,82 @@ for lesson in LESSONS:
                     warn(lid, f"sentences[{i}].{ckey}.speaker 未识别: {ctx['speaker']!r}")
 
 
+# ── 音频覆盖审计：防止机械音悄悄上线 ──────────────────────────────────
+# 机械音 = 某句没有预生成真人录音，运行时退回服务端合成。
+# audioMap.json 按「拉平后的 dialogue 位置」索引（与 buildLessonMeta 一致：
+# contextAbove → 主行 → contextBelow 依次展开），句号 1,2,3... 对应展开序列。
+# 这里精确复刻该展开，逐行判断有没有录音，把「将走机器音」的句子全列出来。
+AUDIO_MAP_PATH = ROOT / "public" / "audio" / "audioMap.json"
+try:
+    AUDIO_MAP = json5.loads(AUDIO_MAP_PATH.read_text(encoding="utf-8"))
+except Exception as e:
+    AUDIO_MAP = {}
+    warn("audio", f"读不到 audioMap.json（{e}）→ 全部台词都会走服务端合成")
+
+
+def flatten_dialogue(lesson):
+    """复刻 buildLessonMeta：把 sentences 展开成运行时播放的行序列。"""
+    dia = []
+    last_local = None
+    for s in lesson.get("sentences", []) or []:
+        ca = s.get("contextAbove")
+        if ca and ca.get("zh") != last_local:
+            dia.append(("local", ca.get("speaker", "") or "", ca.get("zh", "") or ""))
+            last_local = ca.get("zh")
+        dia.append((s.get("role", "learner") or "learner",
+                    s.get("speaker", "") or "", s.get("zh", "") or ""))
+        cb = s.get("contextBelow")
+        if cb:
+            dia.append(("local", cb.get("speaker", "") or "", cb.get("zh", "") or ""))
+            last_local = cb.get("zh")
+    return dia
+
+
+audio_partial = []      # 混播课（有录音但不全）——最危险，逐句列出
+audio_none    = []      # 整课无录音——折叠成一行
+tts_total     = 0       # 全站将走机器音的句子数
+for li, lesson in enumerate(LESSONS):
+    lid     = lesson.get("id", "??")
+    map_key = f"lesson{li + 1:02d}"
+    lmap    = AUDIO_MAP.get(map_key, {}) or {}
+    dia     = flatten_dialogue(lesson)
+    if not dia:
+        continue
+    covered, missing = 0, []
+    for di, (role, spk, zh) in enumerate(dia):
+        url = lmap.get(str(di + 1))
+        if url:
+            disk = ROOT / "public" / url.lstrip("/")
+            if disk.exists():
+                covered += 1
+            else:  # 登记了录音但文件丢了 → 运行时 404 退回机器音（回归，必须挡）
+                err(lid, f"audioMap 指向的录音文件不存在 → 会 404 退回机器音: {url}")
+                missing.append((role, spk, zh))
+        else:
+            missing.append((role, spk, zh))
+    tts_total += len(missing)
+    if covered == 0:
+        audio_none.append(map_key)
+    elif missing:  # 部分覆盖：真人音与机器音混播，最容易漏听
+        title = (lesson.get("title", "") or "")[:16]
+        audio_partial.append((map_key, title, covered, len(dia), missing))
+
+
 # ── 输出报告 ────────────────────────────────────────────────────────
 print(f"\n校验 {len(LESSONS)} 课 · {sum(len(l.get('sentences', [])) for l in LESSONS)} 句\n")
+
+# 音频覆盖报告
+print(f"🔊 音频覆盖审计：全站 {tts_total} 句将走服务端合成（机器音）")
+if audio_partial:
+    print(f"   ⚠️ 以下 {len(audio_partial)} 课「真人音+机器音混播」，最容易漏听——请逐句确认：")
+    for map_key, title, cov, tot, missing in audio_partial:
+        print(f"      {map_key}「{title}」 {cov}/{tot} 真人录音，{len(missing)} 句机器音：")
+        for role, spk, zh in missing:
+            label = spk or ("诺拉 · Nora" if role == "learner" else "?")
+            print(f"          · {label[:14]:<14} {zh[:24]}")
+if audio_none:
+    print(f"   · 整课无录音（全机器音）：{', '.join(audio_none)}")
+print()
 
 if warnings:
     print(f"△ 警告 ({len(warnings)}):")
