@@ -297,7 +297,7 @@
     }
     /* Active / inactive card states on shadowing page */
     .context-panel.ctx-active { opacity: 1; }
-    .context-panel.ctx-inactive { opacity: 1; }
+    .context-panel.ctx-inactive { opacity: 0.45; }
     .sentence-box.sb-active { opacity: 1; }
     .sentence-box.sb-inactive { opacity: 0.45; }
 
@@ -12347,13 +12347,15 @@
         av.classList.toggle('glow', active);
       }
 
+      // 'idle' = 无人说话：三个面板都高亮（都不 dim），符合"没人说话时都亮"的设计
+      var isIdle    = activePanel === 'idle';
       var isLearner = activePanel === 'learner';
       var isAbove   = activePanel === 'above';
       var isBelow   = activePanel === 'below';
 
-      setCard(sb,   isLearner);
-      setCard(ctx,  isAbove);
-      setCard(ctxB, isBelow);
+      setCard(sb,   isLearner || isIdle);
+      setCard(ctx,  isAbove   || isIdle);
+      setCard(ctxB, isBelow   || isIdle);
       setAv(avN,   isLearner);
       setAv(avMx,  isAbove);
       setAv(avMxB, isBelow);
@@ -12984,8 +12986,8 @@
       // 动态更新练习面板的角色名（支持多课不同主角）
       var lpName = document.getElementById('learner-panel-name');
       if (lpName) lpName.textContent = s.speaker || (lesson.learnerName || '诺拉 · Nora');
-      // 默认焦点在学员面板（诺拉）
-      setPanelFocus('learner');
+      // 新句就绪、无人说话：两面板都高亮（谁开口再让谁独亮）
+      setPanelFocus('idle');
 
       if (el("eval-page")) el("eval-page").classList.remove("show");
       if (el("speech-indicator")) el("speech-indicator").classList.remove("active");
@@ -13068,6 +13070,7 @@
       
       var estSec = Math.max(2.0, s.zh.replace(/[，。！？,.!?]/g, '').length * 0.28 / slowSpeed);
       if (btn) { btn.classList.add("active"); btn.textContent = "⏸ Pause"; }
+      setPanelFocus('learner');  // 诺拉开口：高亮诺拉面板，对方变暗
       resetKara();
 
       // 【核心修复】：动态映射声音角色（staff→linyue, cashier→cashier, cafestaff→cafestaff,
@@ -13088,6 +13091,7 @@
           completeKara();
           if (btn) { btn.classList.remove("active"); btn.textContent = "▶ Play"; }
           busy = false; phase = "idle";
+          setPanelFocus('idle');  // 诺拉说完：无人说话，两面板都高亮
         },
         function (actualDuration) {
           if (phase !== "slow") return;
@@ -14089,7 +14093,7 @@
       if (btnTop)   { btnTop.textContent   = '▶ Play'; btnTop.classList.remove('playing'); }
       ctxPlayingId = null;
       ctxPausedId = null;
-      setPanelFocus('learner');
+      setPanelFocus('idle');
     }
 
     function playContext() {
@@ -14136,7 +14140,7 @@
         pauseCtxKara();
         ctxPausedId = 'above'; ctxPlayingId = null;
         if (btn) { btn.textContent = '▶ Resume'; btn.classList.remove('playing'); }
-        setPanelFocus('learner');
+        setPanelFocus('idle');
         return;
       }
       stopCtxTTS();
@@ -14148,7 +14152,7 @@
         function () {
           if (ctxPlayingId === 'above') { ctxPlayingId = null; ctxPausedId = null; }
           if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
-          setPanelFocus('learner');
+          setPanelFocus('idle');
         },
         function (dur) {
           if (ctxZhEl) ctxRunKara(ctxZhEl, dur * 1000,
@@ -14199,7 +14203,7 @@
         pauseCtxKara();
         ctxPausedId = 'below'; ctxPlayingId = null;
         if (btn) { btn.textContent = '▶ Resume'; btn.classList.remove('playing'); }
-        setPanelFocus('learner');
+        setPanelFocus('idle');
         return;
       }
       stopCtxTTS();
@@ -14211,7 +14215,7 @@
         function () {
           if (ctxPlayingId === 'below') { ctxPlayingId = null; ctxPausedId = null; }
           if (btn) { btn.textContent = '▶ Play'; btn.classList.remove('playing'); }
-          setPanelFocus('learner');
+          setPanelFocus('idle');
         },
         function (dur) {
           if (ctxBelowZhEl) ctxRunKara(ctxBelowZhEl, dur * 1000,
