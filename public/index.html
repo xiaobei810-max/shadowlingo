@@ -15331,10 +15331,10 @@
       var nextD = dlpSeq[idx + 1] ? _normD(dlpSeq[idx + 1]) : null;
       if (nextD && !getStaticAudioUrl(nextD.zh)) {
         var nextRole = nextD.role === 'local' ? _speakerRole(nextD._sid || nextD.speaker) : 'learner';
-        var nextKey  = nextRole + ':' + slowSpeed.toFixed(2) + ':' + nextD.zh;
+        var nextKey  = nextRole + ':1.00:' + nextD.zh;
         if (!_ttsCache[nextKey]) {
           fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: nextD.zh, role: nextRole, rate: slowSpeed }) })
+            body: JSON.stringify({ text: nextD.zh, role: nextRole, rate: 1.0 }) })
           .then(function (r) { return r.ok ? r.blob() : null; })
           .then(function (blob) { if (blob) _ttsCache[nextKey] = URL.createObjectURL(blob); })
           .catch(function () {});
@@ -15494,7 +15494,9 @@
     // onplay(actualDuration) fires when audio starts; onend fires when done
     function speakAzure(text, role, rate, onend, onplay) {
       stopAudio();
-      var cacheKey = role + ':' + (rate || 1.0).toFixed(2) + ':' + text;
+      // cacheKey 恒用 1.00：服务端一律按 1.0× 合成，慢速由客户端 playbackRate 实现，
+      // 故同一句话与 slowSpeed 无关 → 预取与播放的 key 永远一致，杜绝 cacheKey mismatch
+      var cacheKey = role + ':1.00:' + text;
 
       // ── Static audio shortcut：任何速度都优先用预生成正版录音，靠 playbackRate 变速
       // （与角色介绍页一致）；慢速时不再退回 Edge TTS 免费版，避免林晚等音源机械音 ──
@@ -15570,8 +15572,9 @@
         var _onplayDone = false; // one-shot: onplay callback fires once per play, NOT on resume
         function _fireOnplayOnce(d) { if (_onplayDone || !onplay) return; _onplayDone = true; onplay(d); }
         _currentAudio = audio;
-        // Azure 服务端按 rate 合成的 MP3，记录合成速率用于后续 playbackRate 比例缩放
-        audio._synthRate = (typeof rate === 'number' && rate > 0) ? rate : 1.0;
+        // 服务端一律按 1.0× 合成（慢速服务端合成会劣化=机械音），慢速改由客户端
+        // playbackRate 变速实现（与静态录音同机制、preservesPitch 抗机械），合成速率恒 1.0
+        audio._synthRate = 1.0;
         _applyPlaybackScale(audio);
         audio.onloadedmetadata = function () {
           _knownDuration = isFinite(audio.duration) ? audio.duration : null;
@@ -15614,7 +15617,7 @@
         fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, role: role, rate: rate || 1.0 })
+          body: JSON.stringify({ text: text, role: role, rate: 1.0 })
         })
         .then(function (r) {
           if (!r.ok) throw new Error('tts ' + r.status);
@@ -16075,12 +16078,12 @@
           if (getStaticAudioUrl(item.zh)) return; // 有本地静态音频，无需预取TTS
           var _pnd = _normD(item);
           var role = (_pnd.role === 'learner') ? 'learner' : _speakerRole(_pnd._sid || item.speaker || item.name);
-          var key  = role + ':' + slowSpeed.toFixed(2) + ':' + item.zh;
+          var key  = role + ':1.00:' + item.zh;
           if (_ttsCache[key]) return; // 已缓存，跳过
           fetch('/api/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: item.zh, role: role, rate: slowSpeed })
+            body: JSON.stringify({ text: item.zh, role: role, rate: 1.0 })
           })
           .then(function(r) { return r.ok ? r.blob() : null; })
           .then(function(blob) { if (blob) _ttsCache[key] = URL.createObjectURL(blob); })
@@ -16370,10 +16373,10 @@
       if (plpNextD && !getStaticAudioUrl(_plpNextZh)) {
         var plpNextNd = _normD(plpNextD);
         var plpNextRole = (plpNextNd.role === 'learner') ? 'learner' : _speakerRole(plpNextNd._sid || plpNextD.speaker || plpNextD.name);
-        var plpNextKey = plpNextRole + ':' + slowSpeed.toFixed(2) + ':' + _plpNextZh;
+        var plpNextKey = plpNextRole + ':1.00:' + _plpNextZh;
         if (!_ttsCache[plpNextKey]) {
           fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: _plpNextZh, role: plpNextRole, rate: slowSpeed }) })
+            body: JSON.stringify({ text: _plpNextZh, role: plpNextRole, rate: 1.0 }) })
           .then(function (r) { return r.ok ? r.blob() : null; })
           .then(function (blob) { if (blob) _ttsCache[plpNextKey] = URL.createObjectURL(blob); })
           .catch(function () {});
