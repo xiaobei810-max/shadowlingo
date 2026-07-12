@@ -5071,11 +5071,12 @@
     }
     .fc-prev-btn:hover { border-color: var(--green); color: var(--green); }
     .fc-skip-btn {
-      flex: 1; padding: 14px 0; background: transparent; border: 1.5px solid var(--border);
-      border-radius: 14px; color: #64748b; font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+      background: none; border: none; padding: 2px 0;
+      color: var(--text); font-size: 13px; font-weight: 500;
+      cursor: pointer; text-decoration: none;
+      transition: color 0.2s; white-space: nowrap;
     }
-    .fc-skip-btn:hover { border-color: var(--green); color: var(--green); }
+    .fc-skip-btn:hover { color: #94a3b8; }
     .fc-next-btn {
       flex: 1; padding: 14px 0; background: var(--green); border: none;
       border-radius: 14px; color: #000; font-size: 16px; font-weight: 700;
@@ -17930,6 +17931,7 @@
     <div class="fc-inner">
       <div class="fc-header">
         <div class="fc-title">⚡ Key Vocabulary</div>
+        <button class="fc-skip-btn" onclick="fcSkipAll()">Skip all →</button>
       </div>
       <div class="fc-card">
         <div class="fc-zh" id="fc-zh">不好意思</div>
@@ -17939,7 +17941,6 @@
       </div>
       <div class="fc-footer">
         <button class="fc-prev-btn" id="fc-prev-btn" onclick="fcPrev()">◀ Prev</button>
-        <button class="fc-skip-btn" onclick="fcSkipAll()">Skip</button>
         <button class="fc-next-btn" id="fc-next-btn" onclick="fcNext()">Next ▶</button>
       </div>
     </div>
