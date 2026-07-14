@@ -6,6 +6,7 @@
     "api/ping.js":     { "maxDuration": 10 }
   },
   "routes": [
+    { "src": "/go", "status": 302, "headers": { "Location": "/?utm_source=youtube&utm_medium=shorts&utm_content=endcard" } },
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)",     "dest": "/public/index.html" }
