@@ -12628,7 +12628,63 @@
       _syncPreviewSpeedSlider();
       // 即时变速：如果当前有音频正在播放，立即按新比例调整 playbackRate
       _applyPlaybackScale(_currentAudio);
+      recalibrateKara();   // 正在跑的高亮同步换挡，拖动过程中即时跟上
       saveState();
+    }
+
+    // ── 播放途中改语速：把正在跑的卡拉OK按新语速重新校准 ──────────────
+    // 语速条是 oninput，拖动中每秒触发几十次。两条纪律：
+    //  · 每次都从 audio.currentTime（音频自己的播放位置＝唯一真相）重新推导，
+    //    绝不基于上一次状态做增量，拖 50 次也不会累积漂移；
+    //  · 只就地改 _kts / _ctxKts / dlpKaraParams，不重启定时器——三个 tick 都是
+    //    每跳现读这些状态，改完下一跳（40–50ms 内）即生效。重启定时器反而会让
+    //    首跳被推迟，拖动中每 8ms 撕一次会导致高亮直接卡住不动。
+    //    （早期版本用 rAF 节流，但 rAF 在标签页/面板隐藏时不触发，校准会静默失效。）
+    function recalibrateKara() {
+      var a = _currentAudio;
+      var wall = _wallClockDuration(a);        // 新语速下的总墙钟时长
+      if (!wall) return;                       // 无音频 / 时长未知：保持原样
+      var newDurMs = wall * 1000;
+      var frac = a.currentTime / a.duration;
+      frac = Math.max(0, Math.min(1, isFinite(frac) ? frac : 0));
+      var progressedMs = frac * newDurMs;      // 新时间轴上「已走过」的位置
+
+      // timings 与总时长同比例缩放：音频里的停顿也随 playbackRate 一起变快变慢，
+      // 所以整体等比缩放是精确的，不需要按文本重算。
+      function rescale(timings, oldDurMs) {
+        var k = newDurMs / oldDurMs;
+        if (!timings || !isFinite(k) || k <= 0) return null;
+        return timings.map(function (t) {
+          return { start: t.start * k, end: t.end * k };
+        });
+      }
+
+      // main（练习页）
+      if (karaTimerId && _kts.dur > 0) {
+        var mt = rescale(_kts.timings, _kts.dur);
+        if (mt) {
+          _kts.timings = mt; _kts.dur = newDurMs;
+          _kts.pausedMs = progressedMs; _kts.startTime = Date.now();
+        }
+      }
+
+      // ctx（上下文面板）
+      if (_ctxKaraTimer && _ctxKts.dur > 0) {
+        var ct = rescale(_ctxKts.timings, _ctxKts.dur);
+        if (ct) {
+          _ctxKts.timings = ct; _ctxKts.dur = newDurMs;
+          _ctxKts.pausedMs = progressedMs; _ctxKts.startTime = performance.now();
+        }
+      }
+
+      // dlp（对话听力页）
+      if (dlpKaraTimerId && dlpKaraParams && dlpKaraParams.durationMs > 0) {
+        var dt = rescale(dlpKaraParams.timings, dlpKaraParams.durationMs);
+        if (dt) {
+          dlpKaraParams.timings = dt; dlpKaraParams.durationMs = newDurMs;
+          dlpKaraStart = performance.now() - progressedMs;
+        }
+      }
     }
 
     // 把当前 slowSpeed 投影成 0~100% 填充比例，更新所有滑轨颜色
@@ -15198,11 +15254,13 @@
       dlpKaraStart = performance.now() - offsetMs;
       var barFill = document.getElementById(barFillId);
       dlpKaraTimerId = setInterval(function () {
+        // 现读 dlpKaraParams（而非闭包里的入参），使 recalibrateKara 的就地改动即时生效
+        var prm = dlpKaraParams || { durationMs: durationMs, timings: timings };
         var elapsed = (performance.now() - dlpKaraStart) / 1000;
-        var pct = Math.min(1, elapsed / (durationMs / 1000));
+        var pct = Math.min(1, elapsed / (prm.durationMs / 1000));
         if (barFill) barFill.style.width = (pct * 100) + '%';
         chars.forEach(function (el, i) {
-          var t = timings[i]; if (!t) return;
+          var t = prm.timings[i]; if (!t) return;
           if (elapsed >= t.end) el.className = 'dlp-kchar dlp-done';
           else if (elapsed >= t.start) el.className = 'dlp-kchar dlp-active';
           else el.className = 'dlp-kchar';
