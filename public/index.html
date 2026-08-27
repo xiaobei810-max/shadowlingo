@@ -15498,6 +15498,19 @@
       ratio = Math.max(0.25, Math.min(4.0, ratio));
       try { audioEl.playbackRate = ratio; } catch(e) {}
     }
+
+    // 音频元素的「墙钟时长」。audio.duration 是未变速的媒体长度，实际播放耗时
+    // 为 duration / playbackRate。卡拉OK高亮由 Date.now() 驱动，走的是墙钟，
+    // 必须拿这个值——否则整句高亮与音频按语速比例错位：
+    // 0.7× 时高亮提前 43% 跑完，1.5× 时音频先念完而颜色还在走。
+    function _wallClockDuration(audioEl) {
+      if (!audioEl) return null;
+      var d = audioEl.duration;
+      // 注意 isFinite(null) === true，必须先判元素再判时长，否则 null 会穿过守卫
+      if (!isFinite(d) || d <= 0) return null;
+      var r = audioEl.playbackRate;
+      return (isFinite(r) && r > 0) ? d / r : d;
+    }
     var _needsGesture = false; // autoplay blocked — waiting for user tap
     var _gestureCallback = null;
 
@@ -15553,7 +15566,7 @@
           function _fireOnplay() {
             if (_onplayCalled || !onplay) return;
             _onplayCalled = true;
-            onplay(sAu.duration);
+            onplay(_wallClockDuration(sAu));
           }
           // Guard: onerror and play().catch can both fire for the same failure;
           // also prevents fallback TTS from starting while sAu is already playing
@@ -15607,7 +15620,7 @@
         audio._synthRate = 1.0;
         _applyPlaybackScale(audio);
         audio.onloadedmetadata = function () {
-          _knownDuration = isFinite(audio.duration) ? audio.duration : null;
+          _knownDuration = _wallClockDuration(audio);
           if (_playFired) { _fireOnplayOnce(_knownDuration); _playFired = false; }
         };
         audio.onplay = function () {
