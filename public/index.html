@@ -12231,79 +12231,64 @@
     var karaStart = 0, karaEnd = 0, karaActive = false;
     var karaTimerId = null; // 对话 Listen 模式下的定时器驱动高亮
 
+    // 标点处 TTS 会真实停顿，必须在时间轴上占位；否则停顿被平摊进前后汉字，
+    // 造成句子中段高亮漂移（用户反馈「高亮速度和念的速度对不上」的主因之一）。
+    var KARA_PAUSE_SEC = {
+      '，': 0.22, ',': 0.22, '、': 0.22, '；': 0.22, ';': 0.22, '：': 0.18, ':': 0.18,
+      '。': 0.30, '.': 0.30, '！': 0.30, '!': 0.30, '？': 0.30, '?': 0.30, '…': 0.30, '—': 0.20
+    };
+    var KARA_PAUSE_MAX_RATIO = 0.35;   // 停顿最多占整段音频的比例，保护极短音频
+
     function computeCharTimings(sentence) {
-      var duration = sentence.end - sentence.start;
-      var chars = Array.from(sentence.zh);
-
-      var syllables = sentence.pinyin
-        .replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, "a")
-        .replace(/[,，。！？.!?]/g, " ")
-        .trim().split(/\s+/).filter(function (s) { return s.length > 0; });
-
-      var weights = [];
-      var sIdx = 0;
-      for (var i = 0; i < chars.length; i++) {
-        if (/[\u4e00-\u9fff]/.test(chars[i])) {
-          weights.push(Math.max((syllables[sIdx] || "aa").length, 1));
-          sIdx++;
-        }
-      }
-      var totalWeight = weights.reduce(function (a, b) { return a + b; }, 0) || 1;
-
-      var timings = [];
-      var wIdx = 0;
-      var elapsed = 0;
-      for (var i = 0; i < chars.length; i++) {
-        if (/[\u4e00-\u9fff]/.test(chars[i])) {
-          var w = weights[wIdx++] || 2;
-          var dur = (w / totalWeight) * duration;
-          timings.push({ start: elapsed, end: elapsed + dur });
-          elapsed += dur;
-        } else {
-          timings.push({ start: elapsed, end: elapsed + 0.05 });
-        }
-      }
-      return timings;
+      return computeCharTimingsForDuration(
+        sentence.zh, sentence.pinyin, sentence.end - sentence.start);
     }
 
     // 基于总时长的字符时间表（用于 TTS / 全对话模式）
+    // 汉字等分时长：普通话音节时长近似相等，按拼音字母数加权反而失真
+    // （shuāng 6 字母 / yī 2 字母 并不意味着前者念得久 3 倍）。
+    // pinyinStr 保留在签名里仅为兼容调用点，不再参与权重计算。
     function computeCharTimingsForDuration(text, pinyinStr, totalSeconds) {
-      var sentence = {
-        zh: text,
-        pinyin: pinyinStr || ""
-      };
-      // 复用上面的逻辑，但用人工设定的总时长
-      var duration = totalSeconds;
-      var chars = Array.from(sentence.zh);
+      var chars = Array.from(text || '');
+      var duration = Math.max(0, totalSeconds || 0);
 
-      var syllables = (sentence.pinyin || "")
-        .replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, "a")
-        .replace(/[,，。！？.!?]/g, " ")
-        .trim().split(/\s+/).filter(function (s) { return s.length > 0; });
-
-      var weights = [];
-      var sIdx = 0;
+      // 1) 切成「发音单元」：汉字各占一格；连续拉丁/数字合并为一格；标点单独计停顿
+      var units = [], run = null;
       for (var i = 0; i < chars.length; i++) {
-        if (/[\u4e00-\u9fff]/.test(chars[i])) {
-          weights.push(Math.max((syllables[sIdx] || "aa").length, 1));
-          sIdx++;
-        }
-      }
-      var totalWeight = weights.reduce(function (a, b) { return a + b; }, 0) || 1;
-
-      var timings = [];
-      var wIdx = 0;
-      var elapsed = 0;
-      for (var j = 0; j < chars.length; j++) {
-        if (/[\u4e00-\u9fff]/.test(chars[j])) {
-          var w = weights[wIdx++] || 2;
-          var dur = (w / totalWeight) * duration;
-          timings.push({ start: elapsed, end: elapsed + dur });
-          elapsed += dur;
+        var c = chars[i];
+        if (/[一-鿿]/.test(c)) {
+          units.push({ speak: true, idxs: [i] }); run = null;
+        } else if (KARA_PAUSE_SEC[c] != null) {
+          units.push({ speak: false, idxs: [i], sec: KARA_PAUSE_SEC[c] }); run = null;
+        } else if (/\s/.test(c)) {
+          units.push({ speak: false, idxs: [i], sec: 0 }); run = null;
         } else {
-          timings.push({ start: elapsed, end: elapsed + 0.05 });
+          if (!run) { run = { speak: true, idxs: [] }; units.push(run); }
+          run.idxs.push(i);
         }
       }
+
+      // 2) 停顿总量封顶，避免短音频被停顿吃光
+      var speakCount = 0, pauseTotal = 0;
+      units.forEach(function (u) {
+        if (u.speak) speakCount++; else pauseTotal += u.sec;
+      });
+      var cap = duration * KARA_PAUSE_MAX_RATIO;
+      var scale = (pauseTotal > cap && pauseTotal > 0) ? (cap / pauseTotal) : 1;
+
+      // 3) 剩余时间在发音单元之间等分（拉丁串内部再按字符均分）
+      var perUnit = speakCount ? (duration - pauseTotal * scale) / speakCount : 0;
+
+      var timings = new Array(chars.length);
+      var elapsed = 0;
+      units.forEach(function (u) {
+        var span = u.speak ? perUnit : u.sec * scale;
+        var each = span / u.idxs.length;
+        u.idxs.forEach(function (idx, k) {
+          timings[idx] = { start: elapsed + each * k, end: elapsed + each * (k + 1) };
+        });
+        elapsed += span;
+      });
       return timings;
     }
 
